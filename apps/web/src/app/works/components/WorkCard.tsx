@@ -5,6 +5,7 @@ import { Calendar, ExternalLink, Tag, Users } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 import ThumbnailImage from "@/components/ui/thumbnail-image";
+import { normalizeJstDateString } from "@/utils/date-format";
 
 interface WorkCardProps {
 	work: WorkPlainObject;
@@ -12,38 +13,41 @@ interface WorkCardProps {
 	priority?: boolean; // LCP画像最適化用
 }
 
-// 日付フォーマット関数を外部に抽出
-const formatDate = (dateString: string) => {
-	try {
-		// 日本語形式の日付（例: "2024年04月27日"）をパース
-		const japaneseMatch = dateString.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
-		if (japaneseMatch) {
-			const [, year, month, day] = japaneseMatch;
-			const date = new Date(Number(year), Number(month) - 1, Number(day));
-			return date.toLocaleDateString("ja-JP", {
-				timeZone: "Asia/Tokyo",
-				year: "numeric",
-				month: "2-digit",
-				day: "2-digit",
-			});
-		}
+// 発売日フォーマット関数（"YYYY/MM/DD" 表示）。
+//
+// 正本: DLsite の発売日（work.releaseDate）は JST の壁時計。表示も JST の暦日のみ。
+// パースは TZ に依存してはならない。`new Date("2023-05-06 16:00:00")` のように TZ 指定の
+// 無い文字列を `new Date()` に渡すと実行環境の TZ で解釈され、SSR(本番=UTC)とクライアント(JST)で
+// 暦日がズレて hydration mismatch (React #418) を起こす（SPR-135）。
+//
+// 入力解釈は date-format.ts の `normalizeJstDateString` に集約（TZ-less は JST、Z/オフセット付きは
+// 絶対時刻として尊重）。日付のみの曖昧さの無い表記（年月日・スラッシュ）は文字列から直接取り出す。
+const pad2 = (value: string | undefined) => (value ?? "").padStart(2, "0");
 
-		// ISO形式やその他の形式を試す
-		const date = new Date(dateString);
-		if (!Number.isNaN(date.getTime())) {
-			return date.toLocaleDateString("ja-JP", {
-				timeZone: "Asia/Tokyo",
-				year: "numeric",
-				month: "2-digit",
-				day: "2-digit",
-			});
-		}
-
-		// パースできない場合は元の文字列を返す
-		return dateString;
-	} catch {
-		return dateString;
+export const formatDate = (dateString: string) => {
+	// "YYYY年M月D日"（日付のみ・曖昧さ無し）
+	const jp = dateString.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
+	if (jp) {
+		return `${jp[1]}/${pad2(jp[2])}/${pad2(jp[3])}`;
 	}
+	// "YYYY/M/D..."（日付のみ・曖昧さ無し）
+	const slash = dateString.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})/);
+	if (slash) {
+		return `${slash[1]}/${pad2(slash[2])}/${pad2(slash[3])}`;
+	}
+	// ISO / 日時文字列。Z・オフセットの有無は date-format.ts と同一規則で解決し、
+	// JST の暦日に整形する（TZ 非依存・決定論的）。
+	const date = new Date(normalizeJstDateString(dateString));
+	if (!Number.isNaN(date.getTime())) {
+		return date.toLocaleDateString("ja-JP", {
+			timeZone: "Asia/Tokyo",
+			year: "numeric",
+			month: "2-digit",
+			day: "2-digit",
+		});
+	}
+	// パースできない場合は元の文字列を返す
+	return dateString;
 };
 
 // 声優情報の表示コンポーネントを抽出
