@@ -1,6 +1,11 @@
+import { LoadingSkeleton } from "@suzumina.click/ui/components/custom/loading-skeleton";
+import { Suspense } from "react";
+import HomeSearch from "@/components/home/home-search";
+
 /**
  * ホームページのヒーローセクション。
  * PPR の静的シェルに含めるため、データ取得を持たない純粋なサーバーコンポーネント。
+ * 検索フォームのみ Client Component（HomeSearch）として Suspense 境界に切り出す。
  */
 export function HeroSection() {
 	return (
@@ -26,6 +31,9 @@ export function HeroSection() {
 						<br />
 						あーたたちが集まる、あーたたちのためのファンサイトです
 					</p>
+					<Suspense fallback={<LoadingSkeleton variant="form" />}>
+						<HomeSearch />
+					</Suspense>
 				</div>
 			</div>
 		</section>
