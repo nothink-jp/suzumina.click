@@ -1,0 +1,81 @@
+name: Chromatic
+
+# packages/ui の Storybook を Chromatic にアップロードし視覚回帰(visual regression)を検出する（SPR-130）。
+# コスト設計: ui 変更時のみ実行 + TurboSnap(--only-changed) で変更 story だけスナップショットし無料枠を節約。
+# - pull_request: マージ前に視覚差分をレビュー（exitZeroOnChanges で GH チェックはブロックしない＝段階的導入）。
+# - push(main): マージ後のベースライン確立。autoAcceptChanges で main の見た目を新ベースラインに自動採用。
+# play/a11y は storybook-test.yml、本番ビルド回帰は e2e-smoke.yml が担い、本 workflow は見た目の差分のみ担保する。
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      ui: ${{ steps.changes.outputs.ui }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            ui:
+              - 'packages/ui/**'
+              - 'packages/shared-types/**'
+              - 'pnpm-lock.yaml'
+              - '.github/workflows/chromatic.yml'
+
+  chromatic:
+    name: Visual regression (Chromatic)
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.ui == 'true'
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # TurboSnap は変更検出に git 履歴を使うため全履歴を取得する
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24.16.0'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Chromatic
+        uses: chromaui/action@v17
+        with:
+          projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+          workingDir: packages/ui
+          buildScriptName: build-storybook
+          # TurboSnap: 変更に関係する story のみスナップショット
+          onlyChanged: true
+          # 視覚差分があっても GH チェックは成功させる（差分は Chromatic 上でレビュー＝段階的導入）
+          exitZeroOnChanges: true
+          # main では差分を新ベースラインとして自動採用（PR で既にレビュー済みのため）
+          autoAcceptChanges: main
