@@ -1,6 +1,9 @@
+import HomeSearch from "@/components/home/home-search";
+
 /**
  * ホームページのヒーローセクション。
  * PPR の静的シェルに含めるため、データ取得を持たない純粋なサーバーコンポーネント。
+ * 検索フォーム（HomeSearch）は client island だが動的データを読まないため静的シェルに含まれる。
  */
 export function HeroSection() {
 	return (
@@ -26,6 +29,7 @@ export function HeroSection() {
 						<br />
 						あーたたちが集まる、あーたたちのためのファンサイトです
 					</p>
+					<HomeSearch />
 				</div>
 			</div>
 		</section>
