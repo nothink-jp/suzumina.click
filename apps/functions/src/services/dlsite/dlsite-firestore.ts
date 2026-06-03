@@ -4,7 +4,7 @@
  * YouTube実装パターンに従い、DLsite作品データのFirestore保存・取得・更新を行います。
  */
 
-import type { Query } from "@google-cloud/firestore";
+import { FieldValue, type Query } from "@google-cloud/firestore";
 import type { WorkDocument } from "@suzumina.click/shared-types";
 import firestore from "../../infrastructure/database/firestore";
 import { chunkArray } from "../../shared/array-utils";
@@ -15,6 +15,32 @@ import { FAILURE_REASONS, trackMultipleFailedWorks } from "./failure-tracker";
 
 // Firestore関連の定数
 const DLSITE_WORKS_COLLECTION = "works";
+
+/**
+ * Firestore 書き込み用にドキュメントを正規化する。
+ *
+ * クライアントは `ignoreUndefinedProperties: true`、書き込みは `set(..., { merge: true })`。
+ * この組み合わせでは値が undefined のフィールドは「スキップ」されるだけで「削除」されず、
+ * 既存の値が温存される。結果、セール終了で discount / original が消えても古い割引が残り続け、
+ * 「セール中」表示が解除されない（不在＝状態、なのに不在を書き込めない問題）。
+ *
+ * price の任意フィールド（original / discount / point）は不在時に FieldValue.delete() を
+ * 明示し、セール終了などの状態遷移を Firestore 上の正本へ確実に反映する。
+ */
+function toWorkWriteData(work: WorkDocument): WorkDocument {
+	const { original, discount, point } = work.price;
+	// FieldValue.delete() は型上 number ではないため、書き込み専用の値として cast する。
+	const del = FieldValue.delete() as unknown as undefined;
+	return {
+		...work,
+		price: {
+			...work.price,
+			original: original ?? del,
+			discount: discount ?? del,
+			point: point ?? del,
+		},
+	};
+}
 
 /**
  * 単一チャンクのバッチ処理
@@ -29,7 +55,7 @@ async function processChunk(
 
 	for (const work of chunk) {
 		const docRef = collection.doc(work.productId);
-		chunkBatch.set(docRef, work, { merge: true });
+		chunkBatch.set(docRef, toWorkWriteData(work), { merge: true });
 	}
 
 	const startTime = Date.now();
@@ -120,7 +146,7 @@ async function processSingleBatch(works: WorkDocument[]): Promise<void> {
 
 	for (const work of works) {
 		const docRef = collection.doc(work.productId);
-		batch.set(docRef, work, { merge: true });
+		batch.set(docRef, toWorkWriteData(work), { merge: true });
 	}
 
 	await batch.commit();

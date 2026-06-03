@@ -3,6 +3,7 @@
  * 重要な機能に絞った簡潔なテスト
  */
 
+import { FieldValue } from "@google-cloud/firestore";
 import type { WorkDocument } from "@suzumina.click/shared-types";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -112,6 +113,39 @@ describe("dlsite-firestore", () => {
 
 			expect(mockBatch.set).not.toHaveBeenCalled();
 			expect(mockBatch.commit).not.toHaveBeenCalled();
+		});
+
+		it("セール終了時（discount/original/point が不在）は FieldValue.delete() で旧値を消す", async () => {
+			// merge 書き込み + ignoreUndefinedProperties では undefined はスキップされ古い割引が残る。
+			// 不在の任意価格フィールドは明示削除されることを保証する（セール中表示が解除されない回帰の防止）。
+			const workAfterSale: WorkDocument = {
+				...sampleWork,
+				price: { current: 1650, currency: "JPY" },
+			};
+			mockQuery.get.mockResolvedValue({ empty: true, docs: [] });
+
+			await saveWorksToFirestore([workAfterSale]);
+
+			const payload = mockBatch.set.mock.calls[0][1] as { price: Record<string, unknown> };
+			expect((payload.price.discount as any).isEqual(FieldValue.delete())).toBe(true);
+			expect((payload.price.original as any).isEqual(FieldValue.delete())).toBe(true);
+			expect((payload.price.point as any).isEqual(FieldValue.delete())).toBe(true);
+			expect(payload.price.current).toBe(1650);
+		});
+
+		it("セール中（discount/original あり）はその値を保持する", async () => {
+			const workOnSale: WorkDocument = {
+				...sampleWork,
+				price: { current: 1320, original: 1650, discount: 20, currency: "JPY" },
+			};
+			mockQuery.get.mockResolvedValue({ empty: true, docs: [] });
+
+			await saveWorksToFirestore([workOnSale]);
+
+			const payload = mockBatch.set.mock.calls[0][1] as { price: Record<string, unknown> };
+			expect(payload.price.discount).toBe(20);
+			expect(payload.price.original).toBe(1650);
+			expect(payload.price.current).toBe(1320);
 		});
 
 		it("最適化構造では全データを保存する（バリデーションはマッパー段階で実行）", async () => {

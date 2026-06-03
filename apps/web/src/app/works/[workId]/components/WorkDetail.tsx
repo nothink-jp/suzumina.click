@@ -66,16 +66,17 @@ function StarRating({ rating }: { rating: number }) {
 // 価格情報を計算
 function calculatePriceInfo(work: WorkPlainObject) {
 	const currentPrice = work.price.current;
-	// 元の価格を取得、もしくは割引率から計算
-	const originalPrice =
-		work.price.original ||
-		(work.price.discount !== undefined && work.price.discount > 0
-			? Math.round(currentPrice / (1 - work.price.discount / 100))
-			: undefined);
-	// NOTE: 将来的にはWorkPrice.isDiscounted()を使用することを推奨
-	const isOnSale = work.price.discount !== undefined && work.price.discount > 0;
+	// セール判定は「実割引（current < original）」を正本とする。
+	// discount フィールドはセール終了後も古い値が残りうるため判定にも表示にも使わない（軸3: 正本の整合性）。
+	const isOnSale = work.price.isDiscounted;
+	const originalPrice = isOnSale ? work.price.original : undefined;
+	// 割引率も current/original から算出し、判定と表示の正本を揃える。
+	const discountRate =
+		isOnSale && originalPrice
+			? Math.round(((originalPrice - currentPrice) / originalPrice) * 100)
+			: undefined;
 
-	return { currentPrice, originalPrice, isOnSale };
+	return { currentPrice, originalPrice, isOnSale, discountRate };
 }
 
 // シェア処理
@@ -107,7 +108,10 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 	}, [work.ageRating]);
 
 	// 価格情報の計算
-	const { currentPrice, originalPrice, isOnSale } = useMemo(() => calculatePriceInfo(work), [work]);
+	const { currentPrice, originalPrice, isOnSale, discountRate } = useMemo(
+		() => calculatePriceInfo(work),
+		[work],
+	);
 
 	// ランキング情報は現在利用できません
 	const latestRank = undefined;
@@ -198,7 +202,7 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 										¥{originalPrice.toLocaleString("ja-JP")}
 									</span>
 									<Badge className="bg-destructive/10 text-destructive text-lg px-3 py-1">
-										{work.price.discount}% OFF
+										{discountRate}% OFF
 									</Badge>
 								</div>
 							) : (
