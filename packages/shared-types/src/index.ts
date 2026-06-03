@@ -141,14 +141,6 @@ export * from "./utilities/firestore-utils";
 export * from "./utilities/formatters/relative-time";
 // 価格履歴関連の型とスキーマのエクスポート
 export * from "./utilities/price-history";
-// Search date-range preset → range (extracted from utilities/search-filters)
-export * from "./utilities/search/date-range-preset";
-// Search filter description builders (extracted from utilities/search-filters)
-export * from "./utilities/search/filter-descriptors";
-// Search filter state check (extracted from utilities/search-filters)
-export * from "./utilities/search/filter-state";
-// 検索フィルター関連の型とスキーマのエクスポート
-export * from "./utilities/search-filters";
 // User display name resolution (extracted from entities/user)
 export * from "./utilities/user/display-name";
 // User role label (extracted from entities/user)
