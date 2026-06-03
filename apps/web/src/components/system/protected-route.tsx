@@ -60,7 +60,7 @@ export default async function ProtectedRoute({
 export async function requireAuth(): Promise<UserSession> {
 	const session = await auth();
 
-	if (!session?.user || !session.user.isActive) {
+	if (!session?.user?.isActive) {
 		redirect("/auth/signin");
 	}
 
