@@ -199,4 +199,31 @@ describe.skipIf(!RUN)("checkDataIntegrity (integration / Firestore Emulator)", (
 			false,
 		);
 	});
+
+	it("400件超の修正でもバッチ分割で例外なく完了する（WriteBatch 再利用回帰 / SPR-142）", async () => {
+		const db = getFirestore();
+		// 存在する作品を1件用意（存在チェックを通し、circle あたりの batch 操作を1回に保つ）
+		await db.collection("works").doc("RJ001").set({ title: "w1", circleId: "RG0" });
+
+		// FIRESTORE_BATCH_LIMIT(400) を超える 401 サークルに重複 workIds を仕込む
+		const COUNT = 401;
+		const seed = db.batch(); // Firestore のバッチ上限は500なので 401 は1バッチで投入可
+		for (let i = 0; i < COUNT; i++) {
+			seed.set(db.collection("circles").doc(`RG${i}`), { workIds: ["RJ001", "RJ001"] });
+		}
+		await seed.commit();
+
+		// 修正前は 401 件目の update が commit 済み batch への書き込みで例外になる。
+		// 修正後は 400 件ごとに新バッチへ差し替わり、例外なく完走する。
+		const result = await runIntegrityCheck();
+
+		expect(result.checks.circleWorkCounts.checked).toBe(COUNT);
+		expect(result.checks.circleWorkCounts.fixed).toBeGreaterThanOrEqual(COUNT);
+
+		// 重複が全サークルで解消されている（境界の先頭・末尾を抜き取り確認）
+		for (const id of ["RG0", "RG400"]) {
+			const circle = await db.collection("circles").doc(id).get();
+			expect(circle.data()?.workIds as string[]).toEqual(["RJ001"]);
+		}
+	});
 });

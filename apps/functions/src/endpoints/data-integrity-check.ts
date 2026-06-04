@@ -30,6 +30,18 @@ const INTEGRITY_CHECK_DOC_ID = "dataIntegrityCheck";
 const FIRESTORE_BATCH_LIMIT = 400;
 
 /**
+ * バッチをコミットして新しい空バッチを返す。
+ *
+ * @google-cloud/firestore では commit 済みの WriteBatch に再度書き込む／コミットすると
+ * 例外（Cannot modify a WriteBatch that has been committed）になる。
+ * 400件ごとの分割コミットのたびに、このヘルパで必ず新しいバッチへ差し替えること。
+ */
+async function commitAndRenew(batch: WriteBatch): Promise<WriteBatch> {
+	await batch.commit();
+	return firestore.batch();
+}
+
+/**
  * 整合性チェックの実行オプション
  */
 export interface IntegrityCheckOptions {
@@ -81,7 +93,7 @@ async function checkCircleWorkCounts(result: IntegrityCheckResult, dryRun: boole
 	logger.info("CircleのworkIds配列の整合性チェックを開始");
 
 	const circlesSnapshot = await firestore.collection("circles").get();
-	const batch = firestore.batch();
+	let batch = firestore.batch();
 	let batchCount = 0;
 
 	for (const circleDoc of circlesSnapshot.docs) {
@@ -110,7 +122,7 @@ async function checkCircleWorkCounts(result: IntegrityCheckResult, dryRun: boole
 
 			// バッチサイズ制限
 			if (!dryRun && batchCount >= FIRESTORE_BATCH_LIMIT) {
-				await batch.commit();
+				batch = await commitAndRenew(batch);
 				batchCount = 0;
 			}
 		}
@@ -140,7 +152,7 @@ async function checkCircleWorkCounts(result: IntegrityCheckResult, dryRun: boole
 			batchCount++;
 
 			if (!dryRun && batchCount >= FIRESTORE_BATCH_LIMIT) {
-				await batch.commit();
+				batch = await commitAndRenew(batch);
 				batchCount = 0;
 			}
 		}
@@ -162,7 +174,7 @@ async function checkOrphanedCreators(result: IntegrityCheckResult, dryRun: boole
 	logger.info("孤立したCreatorマッピングのチェックを開始");
 
 	const creatorsSnapshot = await firestore.collection("creators").get();
-	const batch = firestore.batch();
+	let batch = firestore.batch();
 	let batchCount = 0;
 
 	for (const creatorDoc of creatorsSnapshot.docs) {
@@ -185,7 +197,7 @@ async function checkOrphanedCreators(result: IntegrityCheckResult, dryRun: boole
 				batchCount++;
 
 				if (!dryRun && batchCount >= FIRESTORE_BATCH_LIMIT) {
-					await batch.commit();
+					batch = await commitAndRenew(batch);
 					batchCount = 0;
 				}
 			} else {
@@ -201,7 +213,7 @@ async function checkOrphanedCreators(result: IntegrityCheckResult, dryRun: boole
 			batchCount++;
 
 			if (!dryRun && batchCount >= FIRESTORE_BATCH_LIMIT) {
-				await batch.commit();
+				batch = await commitAndRenew(batch);
 				batchCount = 0;
 			}
 		}
@@ -296,21 +308,26 @@ async function restoreCreatorWorkMapping(
 }
 
 /**
- * バッチが満杯の場合はコミット（dryRun の場合は書き込まない）
+ * バッチが満杯の場合はコミットし、新しい空バッチを返す（dryRun の場合は書き込まない）。
+ *
+ * commit 済みの WriteBatch は再利用できないため、呼び出し側は必ず戻り値で
+ * バッチを差し替えること（`batch = await commitBatchIfNeeded(batch, ...)`）。
  */
 async function commitBatchIfNeeded(
 	batch: WriteBatch,
 	stats: RestoreStats,
 	force = false,
 	dryRun = false,
-): Promise<void> {
+): Promise<WriteBatch> {
 	if (dryRun) {
-		return;
+		return batch;
 	}
 	if (stats.batchCount >= FIRESTORE_BATCH_LIMIT || (force && stats.batchCount > 0)) {
 		await batch.commit();
 		stats.batchCount = 0;
+		return firestore.batch();
 	}
+	return batch;
 }
 
 /**
@@ -323,7 +340,7 @@ async function restoreCreatorWorkRelations(
 	logger.info("Creator-Work関連の復元を開始");
 
 	const worksSnapshot = await firestore.collection("works").get();
-	const batch = firestore.batch();
+	let batch = firestore.batch();
 	const processedCreators = new Set<string>();
 
 	const stats: RestoreStats = {
@@ -364,19 +381,19 @@ async function restoreCreatorWorkRelations(
 				);
 
 				// バッチサイズチェック
-				await commitBatchIfNeeded(batch, stats, false, dryRun);
+				batch = await commitBatchIfNeeded(batch, stats, false, dryRun);
 
 				// Creator-Workマッピングの復元
 				await restoreCreatorWorkMapping(creatorRef, workDoc, workData, creator, type, batch, stats);
 
 				// バッチサイズチェック
-				await commitBatchIfNeeded(batch, stats, false, dryRun);
+				batch = await commitBatchIfNeeded(batch, stats, false, dryRun);
 			}
 		}
 	}
 
 	// 残りのバッチをコミット
-	await commitBatchIfNeeded(batch, stats, true, dryRun);
+	batch = await commitBatchIfNeeded(batch, stats, true, dryRun);
 
 	// 結果に追加
 	result.checks.creatorWorkRestore = {
@@ -400,7 +417,7 @@ async function checkWorkCircleConsistency(
 	logger.info("Work-Circle相互参照の整合性チェックを開始");
 
 	const worksSnapshot = await firestore.collection("works").get();
-	const batch = firestore.batch();
+	let batch = firestore.batch();
 	let batchCount = 0;
 
 	for (const workDoc of worksSnapshot.docs) {
@@ -443,7 +460,7 @@ async function checkWorkCircleConsistency(
 			batchCount++;
 
 			if (!dryRun && batchCount >= FIRESTORE_BATCH_LIMIT) {
-				await batch.commit();
+				batch = await commitAndRenew(batch);
 				batchCount = 0;
 			}
 		}
