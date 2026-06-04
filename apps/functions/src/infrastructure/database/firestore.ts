@@ -29,6 +29,13 @@ export function createFirestoreInstance(): Firestore {
 		);
 	}
 
+	// 本番が Emulator に接続するのは致命的な誤設定。明示的に弾く
+	if (process.env.NODE_ENV === "production" && process.env.FIRESTORE_EMULATOR_HOST) {
+		throw new Error(
+			"FIRESTORE_EMULATOR_HOST is set in production. Refusing to connect Firestore to an emulator.",
+		);
+	}
+
 	const instance = new Firestore({
 		// undefined値を無視するオプションを有効化
 		ignoreUndefinedProperties: true,

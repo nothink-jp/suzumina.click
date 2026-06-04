@@ -68,7 +68,14 @@
 			}
 		},
 		{
-			"includes": ["**/coverage/**", "**/dist/**", "**/build/**", "**/.turbo/**", "**/.cache/**"],
+			"includes": [
+				"**/coverage/**",
+				"**/dist/**",
+				"**/build/**",
+				"**/.turbo/**",
+				"**/.cache/**",
+				"**/tools/firestore-local/fixtures/**"
+			],
 			"linter": {
 				"enabled": false
 			},

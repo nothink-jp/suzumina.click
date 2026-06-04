@@ -1,0 +1,680 @@
+{
+  "collection": "circles",
+  "docs": [
+    {
+      "id": "RG01001793",
+      "data": {
+        "circleId": "RG01001793",
+        "name": "①⑨①⑨LAB",
+        "nameEn": "1919LAB",
+        "createdAt": {
+          "__type__": "timestamp",
+          "seconds": 1753876166,
+          "nanoseconds": 927000000
+        },
+        "workIds": [
+          "RJ01084276",
+          "RJ01103596"
+        ],
+        "updatedAt": {
+          "__type__": "timestamp",
+          "seconds": 1753876186,
+          "nanoseconds": 425000000
+        }
+      }
+    },
+    {
+      "id": "RG01002100",
+      "data": {
+        "circleId": "RG01002100",
+        "name": "蜜恋",
+        "nameEn": "In close contact LOVE",
+        "workIds": [
+          "RJ01103823"
+        ],
+        "createdAt": {
+          "__type__": "timestamp",
+          "seconds": 1753876168,
+          "nanoseconds": 340000000
+        },
+        "updatedAt": {
+          "__type__": "timestamp",
+          "seconds": 1753876168,
+          "nanoseconds": 340000000
+        }
+      }
+    },
+    {
+      "id": "RG01002487",
+      "data": {
+        "circleId": "RG01002487",
+        "name": "ピンクオパール",
+        "nameEn": "",
+        "workIds": [
+          "RJ01360244"
+        ],
+        "createdAt": {
+          "__type__": "timestamp",
+          "seconds": 1753876222,
+          "nanoseconds": 9000000
+        },
+        "updatedAt": {
+          "__type__": "timestamp",
+          "seconds": 1753876222,
+          "nanoseconds": 9000000
+        }
+      }
+    },
+    {
+      "id": "RG01002869",
+      "data": {
+        "circleId": "RG01002869",
+        "name": "三色だんご屋",
+        "nameEn": "SANSHOKUDANGOYA",
+        "createdAt": {
+          "__type__": "timestamp",
+          "seconds": 1753876189,
+          "nanoseconds": 510000000
+        },
+        "workIds": [
+          "RJ01211707",
+          "RJ01241368",
+          "RJ01297681"
+        ],
+        "updatedAt": {
+          "__type__": "timestamp",
+          "seconds": 1753876209,
+          "nanoseconds": 276000000
+        }
+      }
+    },
+    {
+      "id": "RG01003963",
+      "data": {
+        "circleId": "RG01003963",
+        "name": "おいなりボイス(肩引こ)",
+        "nameEn": "OinariVoice",
+        "createdAt": {
+          "__type__": "timestamp",
+          "seconds": 1753876162,
+          "nanoseconds": 226000000
+        },
+        "updatedAt": {
+          "__type__": "timestamp",
+          "seconds": 1759417671,
+          "nanoseconds": 839000000
+        },
+        "workIds": [
+          "RJ01068389",
+          "RJ01424072"
+        ]
+      }
+    },
+    {
+      "id": "RG01004457",
+      "data": {
+        "circleId": "RG01004457",
+        "name": "しのびごえ",
+        "nameEn": "Shinobigoe",
+        "workIds": [
+          "RJ01101757"
+        ],
+        "createdAt": {
+          "__type__": "timestamp",
+          "seconds": 1753876167,
+          "nanoseconds": 219000000
+        },
+        "updatedAt": {
+          "__type__": "timestamp",
+          "seconds": 1753876167,
+          "nanoseconds": 219000000
+        }
+      }
+    },
+    {
+      "id": "RG01005392",
+      "data": {
+        "circleId": "RG01005392",
+        "name": "ゆきんこ王国",
+        "nameEn": "",
+        "workIds": [
+          "RJ01609516"
+        ],
+        "createdAt": {
+          "__type__": "timestamp",
+          "seconds": 1777316601,
+          "nanoseconds": 689000000
+        },
+        "updatedAt": {
+          "__type__": "timestamp",
+          "seconds": 1777316601,
+          "nanoseconds": 689000000
+        }
+      }
+    },
+    {
+      "id": "RG01005741",
+      "data": {
+        "circleId": "RG01005741",
+        "name": "性交倶楽部",
+        "nameEn": "sexual intercourse‐club",
+        "workIds": [
+          "RJ01101822"
+        ],
+        "createdAt": {
+          "__type__": "timestamp",
+          "seconds": 1753876170,
+          "nanoseconds": 405000000
+        },
+        "updatedAt": {
+          "__type__": "timestamp",
+          "seconds": 1753876170,
+          "nanoseconds": 405000000
+        }
+      }
+    },
+    {
+      "id": "RG01008789",
+      "data": {
+        "circleId": "RG01008789",
+        "name": "少女クロイスタ",
+        "nameEn": "Girls' Cloister",
+        "createdAt": {
+          "__type__": "timestamp",
+          "seconds": 1753876172,
+          "nanoseconds": 776000000
+        },
+        "updatedAt": {
+          "__type__": "timestamp",
+          "seconds": 1774544623,
+          "nanoseconds": 795000000
+        },
+        "workIds": [
+          "RJ01122461",
+          "RJ01229116",
+          "RJ01258883",
+          "RJ01326292",
+          "RJ01338507",
+          "RJ01411411",
+          "RJ01511327",
+          "RJ01556806",
+          "RJ01584196"
+        ]
+      }
+    },
+    {
+      "id": "RG01008800",
+      "data": {
+        "circleId": "RG01008800",
+        "name": "すろ～モード",
+        "nameEn": "slowmode",
+        "createdAt": {
+          "__type__": "timestamp",
+          "seconds": 1753876220,
+          "nanoseconds": 547000000
+        },
+        "updatedAt": {
+          "__type__": "timestamp",
+          "seconds": 1769706480,
+          "nanoseconds": 454000000
+        },
+        "workIds": [
+          "RJ01349891",
+          "RJ01400154",
+          "RJ01530810"
+        ]
+      }
+    },
+    {
+      "id": "RG01009042",
+      "data": {
+        "circleId": "RG01009042",
+        "name": "ロマンスすとーりー",
+        "nameEn": "Romance Story",
+        "workIds": [
+          "RJ01558848"
+        ],
+        "createdAt": {
+          "__type__": "timestamp",
+          "seconds": 1770340099,
+          "nanoseconds": 134000000
+        },
+        "updatedAt": {
+          "__type__": "timestamp",
+          "seconds": 1770340099,
+          "nanoseconds": 134000000
+        }
+      }
+    },
+    {
+      "id": "RG01009372",
+      "data": {
+        "circleId": "RG01009372",
+        "name": "マリヲンネット",
+        "nameEn": "mariwonnet",
+        "workIds": [
+          "RJ01211192"
+        ],
+        "createdAt": {
+          "__type__": "timestamp",
+          "seconds": 1753876189,
+          "nanoseconds": 370000000
+        },
+        "updatedAt": {
+          "__type__": "timestamp",
+          "seconds": 1753876189,
+          "nanoseconds": 370000000
+        }
+      }
+    },
+    {
+      "id": "RG01010711",
+      "data": {
+        "circleId": "RG01010711",
+        "name": "かずたまそふと",
+        "nameEn": "Kazutama Soft",
+        "createdAt": {
+          "__type__": "timestamp",
+          "seconds": 1753876191,
+          "nanoseconds": 346000000
+        },
+        "updatedAt": {
+          "__type__": "timestamp",
+          "seconds": 1778864637,
+          "nanoseconds": 782000000
+        },
+        "workIds": [
+          "RJ01208576",
+          "RJ01229260",
+          "RJ01275281",
+          "RJ01299959",
+          "RJ01393393",
+          "RJ01410817",
+          "RJ01424067",
+          "RJ01505699",
+          "RJ01529541",
+          "RJ01524324",
+          "RJ01532987",
+          "RJ01561427",
+          "RJ01567789",
+          "RJ01598466",
+          "RJ01618548"
+        ]
+      }
+    },
+    {
+      "id": "RG01010898",
+      "data": {
+        "circleId": "RG01010898",
+        "name": "騎乗の空論",
+        "nameEn": "",
+        "workIds": [
+          "RJ01205605"
+        ],
+        "createdAt": {
+          "__type__": "timestamp",
+          "seconds": 1753876189,
+          "nanoseconds": 37000000
+        },
+        "updatedAt": {
+          "__type__": "timestamp",
+          "seconds": 1753876189,
+          "nanoseconds": 37000000
+        }
+      }
+    },
+    {
+      "id": "RG01012478",
+      "data": {
+        "circleId": "RG01012478",
+        "name": "ズーリーズ",
+        "nameEn": "",
+        "workIds": [
+          "RJ01495700"
+        ],
+        "createdAt": {
+          "__type__": "timestamp",
+          "seconds": 1763111274,
+          "nanoseconds": 921000000
+        },
+        "updatedAt": {
+          "__type__": "timestamp",
+          "seconds": 1763111274,
+          "nanoseconds": 922000000
+        }
+      }
+    },
+    {
+      "id": "RG01014281",
+      "data": {
+        "circleId": "RG01014281",
+        "name": "星空しゅがー",
+        "nameEn": "Sugar Star",
+        "workIds": [
+          "RJ01176442"
+        ],
+        "createdAt": {
+          "__type__": "timestamp",
+          "seconds": 1753876185,
+          "nanoseconds": 913000000
+        },
+        "updatedAt": {
+          "__type__": "timestamp",
+          "seconds": 1753876185,
+          "nanoseconds": 913000000
+        }
+      }
+    },
+    {
+      "id": "RG01014547",
+      "data": {
+        "circleId": "RG01014547",
+        "name": "波のカナタ",
+        "nameEn": "",
+        "createdAt": {
+          "__type__": "timestamp",
+          "seconds": 1753876182,
+          "nanoseconds": 385000000
+        },
+        "workIds": [
+          "RJ01162689",
+          "RJ01190733"
+        ],
+        "updatedAt": {
+          "__type__": "timestamp",
+          "seconds": 1753876186,
+          "nanoseconds": 61000000
+        }
+      }
+    },
+    {
+      "id": "RG01016709",
+      "data": {
+        "circleId": "RG01016709",
+        "name": "夢幻トリップ@催眠音声特化サークル",
+        "nameEn": "Dream Trip@Circle specializing in hypnotic voice",
+        "workIds": [
+          "RJ01172338"
+        ],
+        "createdAt": {
+          "__type__": "timestamp",
+          "seconds": 1753876184,
+          "nanoseconds": 379000000
+        },
+        "updatedAt": {
+          "__type__": "timestamp",
+          "seconds": 1753876184,
+          "nanoseconds": 379000000
+        }
+      }
+    },
+    {
+      "id": "RG01017618",
+      "data": {
+        "circleId": "RG01017618",
+        "createdAt": {
+          "__type__": "timestamp",
+          "seconds": 1767200873,
+          "nanoseconds": 825000000
+        },
+        "name": "デュオナほ!",
+        "nameEn": "duonaho",
+        "updatedAt": {
+          "__type__": "timestamp",
+          "seconds": 1779476602,
+          "nanoseconds": 586000000
+        },
+        "workIds": [
+          "RJ01523868",
+          "RJ01583702",
+          "RJ01615872"
+        ]
+      }
+    },
+    {
+      "id": "RG01017642",
+      "data": {
+        "circleId": "RG01017642",
+        "name": "中出し委員会",
+        "nameEn": "Cream Pie Committee",
+        "createdAt": {
+          "__type__": "timestamp",
+          "seconds": 1753876185,
+          "nanoseconds": 183000000
+        },
+        "workIds": [
+          "RJ01186886",
+          "RJ01191904",
+          "RJ01208514",
+          "RJ01280164"
+        ],
+        "updatedAt": {
+          "__type__": "timestamp",
+          "seconds": 1753876205,
+          "nanoseconds": 144000000
+        }
+      }
+    },
+    {
+      "id": "RG01018109",
+      "data": {
+        "circleId": "RG01018109",
+        "name": "みみえろす",
+        "nameEn": "",
+        "workIds": [
+          "RJ01183040"
+        ],
+        "createdAt": {
+          "__type__": "timestamp",
+          "seconds": 1753876184,
+          "nanoseconds": 139000000
+        },
+        "updatedAt": {
+          "__type__": "timestamp",
+          "seconds": 1753876184,
+          "nanoseconds": 139000000
+        }
+      }
+    },
+    {
+      "id": "RG01018276",
+      "data": {
+        "circleId": "RG01018276",
+        "name": "貞操観念逆転世界",
+        "nameEn": "Abekobe World",
+        "workIds": [
+          "RJ01496560"
+        ],
+        "createdAt": {
+          "__type__": "timestamp",
+          "seconds": 1762441679,
+          "nanoseconds": 930000000
+        },
+        "updatedAt": {
+          "__type__": "timestamp",
+          "seconds": 1762441679,
+          "nanoseconds": 930000000
+        }
+      }
+    },
+    {
+      "id": "RG01020010",
+      "data": {
+        "circleId": "RG01020010",
+        "name": "音声工房DigZap",
+        "nameEn": "Voicefactory DigZap",
+        "workIds": [
+          "RJ01538000"
+        ],
+        "createdAt": {
+          "__type__": "timestamp",
+          "seconds": 1773594191,
+          "nanoseconds": 433000000
+        },
+        "updatedAt": {
+          "__type__": "timestamp",
+          "seconds": 1773594191,
+          "nanoseconds": 433000000
+        }
+      }
+    },
+    {
+      "id": "RG01020387",
+      "data": {
+        "circleId": "RG01020387",
+        "name": "オトヨメ",
+        "nameEn": "otoyome",
+        "createdAt": {
+          "__type__": "timestamp",
+          "seconds": 1765573751,
+          "nanoseconds": 445000000
+        },
+        "updatedAt": {
+          "__type__": "timestamp",
+          "seconds": 1771089210,
+          "nanoseconds": 879000000
+        },
+        "workIds": [
+          "RJ01495866",
+          "RJ01527868",
+          "RJ01549602"
+        ]
+      }
+    },
+    {
+      "id": "RG01020515",
+      "data": {
+        "circleId": "RG01020515",
+        "name": "ろまあぽ",
+        "nameEn": "Romaapo",
+        "createdAt": {
+          "__type__": "timestamp",
+          "seconds": 1753876196,
+          "nanoseconds": 803000000
+        },
+        "updatedAt": {
+          "__type__": "timestamp",
+          "seconds": 1771700880,
+          "nanoseconds": 289000000
+        },
+        "workIds": [
+          "RJ01241841",
+          "RJ01570263"
+        ]
+      }
+    },
+    {
+      "id": "RG01020596",
+      "data": {
+        "circleId": "RG01020596",
+        "name": "Curiocity",
+        "nameEn": "Curiocity",
+        "workIds": [
+          "RJ01558759"
+        ],
+        "createdAt": {
+          "__type__": "timestamp",
+          "seconds": 1772219358,
+          "nanoseconds": 579000000
+        },
+        "updatedAt": {
+          "__type__": "timestamp",
+          "seconds": 1772219358,
+          "nanoseconds": 579000000
+        }
+      }
+    },
+    {
+      "id": "RG01020616",
+      "data": {
+        "circleId": "RG01020616",
+        "name": "ぺろりむ",
+        "nameEn": "perorimu",
+        "createdAt": {
+          "__type__": "timestamp",
+          "seconds": 1753876229,
+          "nanoseconds": 502000000
+        },
+        "updatedAt": {
+          "__type__": "timestamp",
+          "seconds": 1778526212,
+          "nanoseconds": 219000000
+        },
+        "workIds": [
+          "RJ01374366",
+          "RJ01589215"
+        ]
+      }
+    },
+    {
+      "id": "RG01020733",
+      "data": {
+        "circleId": "RG01020733",
+        "name": "イデアリズム少女人形",
+        "nameEn": "idealism girls doll",
+        "createdAt": {
+          "__type__": "timestamp",
+          "seconds": 1753876191,
+          "nanoseconds": 440000000
+        },
+        "updatedAt": {
+          "__type__": "timestamp",
+          "seconds": 1762960128,
+          "nanoseconds": 516000000
+        },
+        "workIds": [
+          "RJ01217061",
+          "RJ01228049",
+          "RJ01243033",
+          "RJ01273547",
+          "RJ01489129",
+          "RJ01498849"
+        ]
+      }
+    },
+    {
+      "id": "RG01021453",
+      "data": {
+        "circleId": "RG01021453",
+        "name": "こまつなきっく",
+        "nameEn": "",
+        "createdAt": {
+          "__type__": "timestamp",
+          "seconds": 1753876194,
+          "nanoseconds": 281000000
+        },
+        "workIds": [
+          "RJ01237532",
+          "RJ01238118",
+          "RJ01364127"
+        ],
+        "updatedAt": {
+          "__type__": "timestamp",
+          "seconds": 1753876222,
+          "nanoseconds": 820000000
+        }
+      }
+    },
+    {
+      "id": "RG01022309",
+      "data": {
+        "circleId": "RG01022309",
+        "name": "んぽ印良品",
+        "nameEn": "NPbranded goods",
+        "workIds": [
+          "RJ01231657"
+        ],
+        "createdAt": {
+          "__type__": "timestamp",
+          "seconds": 1753876194,
+          "nanoseconds": 521000000
+        },
+        "updatedAt": {
+          "__type__": "timestamp",
+          "seconds": 1753876194,
+          "nanoseconds": 521000000
+        }
+      }
+    }
+  ]
+}

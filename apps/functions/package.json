@@ -14,6 +14,8 @@
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"test:coverage": "vitest run --coverage",
+		"seed:dump": "dotenv -e .env -- tsx src/tools/firestore-local/dump.ts",
+		"seed:load": "tsx src/tools/firestore-local/seed.ts",
 		"collect:work-ids": "dotenv -e .env -- tsx src/tools/core/collect-work-ids.ts",
 		"collect:complete-local": "dotenv -e .env -- tsx src/tools/core/local-complete-collector.ts",
 		"detect:region-restrictions": "dotenv -e .env -- tsx src/tools/core/region-restriction-detector.ts",
