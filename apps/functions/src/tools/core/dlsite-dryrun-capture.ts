@@ -16,6 +16,13 @@
  *   pnpm --filter @suzumina.click/functions tools:capture -- --limit 20
  *   pnpm --filter @suzumina.click/functions tools:capture -- --workid RJ01234567,RJ07654321
  *   pnpm --filter @suzumina.click/functions tools:capture -- --limit 50 --out apps/functions/tmp/x --no-save
+ *   # 前回比 drift: 前回の baseline(JSON配列 / report.json) と比較
+ *   pnpm --filter @suzumina.click/functions tools:capture -- --limit 150 --baseline tmp/prev.json
+ *   # 今回の観測フィールド集合を baseline として書き出す
+ *   pnpm --filter @suzumina.click/functions tools:capture -- --limit 150 --update-baseline tmp/baseline.json
+ *
+ * ベースライン比: 既定は SPR-140 の KNOWN_FIELDS（本番 drift 検知と同じ基準）。
+ *   --baseline でカスタム JSON（string[] / {fields:[]} / capture の report.json）に差し替え可能。
  *
  * 注意: 外部 API は実物（モック厳禁）。地域制限の観測は日本IPからの実行が前提。
  */
@@ -24,6 +31,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { DLsiteApiResponse } from "@suzumina.click/shared-types";
 import { batchFetchIndividualInfo } from "../../services/dlsite/individual-info-api-client";
+import { KNOWN_FIELDS } from "../../services/dlsite/schema-drift";
 import * as logger from "../../shared/logger";
 
 // パッケージルート（apps/functions）基準のパス
@@ -48,6 +56,22 @@ export interface CaptureOptions {
 	delayMs: number;
 	/** raw JSON を保存するか（false でレポートのみ） */
 	save: boolean;
+	/** ベースライン比較に使うフィールド集合の JSON パス（未指定なら SPR-140 の KNOWN_FIELDS） */
+	baselinePath?: string;
+	/** 観測フィールド集合の和集合を JSON 配列で書き出すパス（前回比の baseline 更新用） */
+	updateBaselinePath?: string;
+}
+
+/**
+ * ベースライン比較の差分（純粋関数の出力）
+ */
+export interface BaselineDiff {
+	/** 基準フィールド数 */
+	baselineSize: number;
+	/** ベースラインに無い＝今回新たに観測されたフィールド（＝真の新規 drift） */
+	newFields: string[];
+	/** ベースラインにあるが今回観測されなかったフィールド（少数サンプルでは条件付きフィールド多数） */
+	goneFields: string[];
 }
 
 /**
@@ -90,6 +114,12 @@ const VALUE_FLAGS: Record<string, (opts: CaptureOptions, value: string) => void>
 	},
 	"--delay": (opts, v) => {
 		opts.delayMs = toInt(v, opts.delayMs, 0);
+	},
+	"--baseline": (opts, v) => {
+		opts.baselinePath = resolve(v);
+	},
+	"--update-baseline": (opts, v) => {
+		opts.updateBaselinePath = resolve(v);
 	},
 };
 
@@ -182,9 +212,74 @@ export function analyzeFields(
 }
 
 /**
+ * 取得した raw レスポンス群から観測されたトップレベルフィールドの和集合を返す（純粋関数・ソート済み）
+ */
+export function observedFieldSet(responses: Array<Record<string, unknown>>): string[] {
+	const fields = new Set<string>();
+	for (const res of responses) {
+		if (!res || typeof res !== "object") continue;
+		for (const key of Object.keys(res)) {
+			fields.add(key);
+		}
+	}
+	return Array.from(fields).sort();
+}
+
+/**
+ * 観測フィールドをベースラインと比較し、新規/消失を算出する（純粋関数）
+ */
+export function diffBaseline(observed: string[], baseline: ReadonlySet<string>): BaselineDiff {
+	const observedSet = new Set(observed);
+	const newFields = observed.filter((f) => !baseline.has(f)).sort();
+	const goneFields = Array.from(baseline)
+		.filter((f) => !observedSet.has(f))
+		.sort();
+	return { baselineSize: baseline.size, newFields, goneFields };
+}
+
+/**
+ * baseline JSON の中身からフィールド名配列を取り出す（純粋関数）。
+ * 受理する形式: string[] / { fields: string[] } / capture の report.json（fieldUsage を持つ）。
+ */
+export function extractFieldsFromBaselineJson(parsed: unknown): string[] {
+	if (Array.isArray(parsed)) {
+		return parsed.filter((x): x is string => typeof x === "string");
+	}
+	if (parsed && typeof parsed === "object") {
+		const obj = parsed as Record<string, unknown>;
+		if (Array.isArray(obj.fields)) {
+			return obj.fields.filter((x): x is string => typeof x === "string");
+		}
+		const fu = obj.fieldUsage as
+			| { presence?: Array<{ field?: unknown }>; unknownFields?: Array<{ field?: unknown }> }
+			| undefined;
+		if (fu) {
+			return [...(fu.presence ?? []), ...(fu.unknownFields ?? [])]
+				.map((e) => e.field)
+				.filter((x): x is string => typeof x === "string");
+		}
+	}
+	throw new Error(
+		"baseline ファイルの形式を認識できません（string[] / {fields:[]} / capture の report.json）",
+	);
+}
+
+/**
+ * baseline JSON ファイルを読み、フィールド集合を返す
+ */
+function loadBaselineFields(path: string): Set<string> {
+	const parsed = JSON.parse(readFileSync(path, "utf-8"));
+	return new Set(extractFieldsFromBaselineJson(parsed));
+}
+
+/**
  * 人間可読のレポート文字列を組み立てる（純粋関数）
  */
-export function formatReport(report: FieldUsageReport, unavailableWorkIds: string[]): string {
+export function formatReport(
+	report: FieldUsageReport,
+	baselineDiff: BaselineDiff,
+	unavailableWorkIds: string[],
+): string {
 	const lines: string[] = [];
 	lines.push("=====================================");
 	lines.push(
@@ -192,10 +287,31 @@ export function formatReport(report: FieldUsageReport, unavailableWorkIds: strin
 	);
 	lines.push("=====================================");
 
+	// 主シグナル: ベースライン比（新規＝真の drift / 消失）
 	lines.push("");
+	lines.push(`🔎 ベースライン比（基準 ${baselineDiff.baselineSize} フィールド）:`);
 	lines.push(
-		`🆕 スキーマ未モデルのフィールド（${report.unknownFields.length}種・新規 drift はここに現れる）:`,
+		`  🆕 新規（ベースライン外＝真の drift）: ${
+			baselineDiff.newFields.length === 0 ? "なし" : baselineDiff.newFields.join(", ")
+		}`,
 	);
+	if (baselineDiff.goneFields.length === 0) {
+		lines.push("  ⚠️  消失（今回未観測）: なし");
+	} else {
+		const shownGone = baselineDiff.goneFields.slice(0, 25);
+		lines.push(
+			`  ⚠️  消失（今回未観測・${baselineDiff.goneFields.length}種）: ${shownGone.join(", ")}${
+				baselineDiff.goneFields.length > 25 ? " ..." : ""
+			}`,
+		);
+		lines.push(
+			"  ※ 少数サンプルでは条件付き出現フィールド（prices/sales_status/rate_* 等）が多数並ぶ。" +
+				"消失 drift の判定は十分な件数で行うこと。",
+		);
+	}
+
+	lines.push("");
+	lines.push(`🧬 スキーマ未モデルのフィールド（vs Zod・${report.unknownFields.length}種・参考）:`);
 	if (report.unknownFields.length === 0) {
 		lines.push("  なし");
 	} else {
@@ -205,20 +321,7 @@ export function formatReport(report: FieldUsageReport, unavailableWorkIds: strin
 			lines.push(`  ... 他${report.unknownFields.length - 25}種（全量は report.json 参照）`);
 		}
 		lines.push(
-			"  ※ DLsite API は約254フィールド。本スキーマは必要分のみモデル化のため、既存の未モデル分を多く含む。",
-		);
-		lines.push("  ※ 継続的な drift 監視は前回 report.json との差分で行うこと。");
-	}
-
-	lines.push("");
-	lines.push("⚠️  消失フィールド（既知だが今回1件も出現せず）:");
-	if (report.absentKnownFields.length === 0) {
-		lines.push("  なし");
-	} else {
-		lines.push(`  ${report.absentKnownFields.join(", ")}`);
-		lines.push(
-			"  ※ 少数サンプルでは条件付き出現フィールド（prices/sales_status/rate_* 等）が多数並ぶ。" +
-				"消失（drift）の判定は十分な件数で行うこと。",
+			"  ※ DLsite API は約254フィールド。本スキーマは必要分のみモデル化のため未モデル分を多く含む（drift 判定はベースライン比を参照）。",
 		);
 	}
 
@@ -301,6 +404,19 @@ async function main(): Promise<void> {
 
 	const report = analyzeFields(rawResponses, knownTopLevelFields());
 
+	// ベースライン比（既定は SPR-140 の KNOWN_FIELDS。--baseline で前回 report.json 等に差し替え可能）
+	const observed = observedFieldSet(rawResponses);
+	const baseline = opts.baselinePath ? loadBaselineFields(opts.baselinePath) : KNOWN_FIELDS;
+	const baselineDiff = diffBaseline(observed, baseline);
+
+	// 観測フィールド集合を baseline として書き出す（前回比の更新用）
+	if (opts.updateBaselinePath) {
+		writeFileSync(opts.updateBaselinePath, JSON.stringify(observed, null, 2));
+		logger.info(`観測フィールド集合(${observed.length}種)を baseline に書き出しました`, {
+			path: opts.updateBaselinePath,
+		});
+	}
+
 	if (opts.save) {
 		// outDir は rawDir 作成時に併せて作られている
 		writeFileSync(
@@ -311,6 +427,8 @@ async function main(): Promise<void> {
 					targets: workIds.length,
 					succeeded: rawResponses.length,
 					unavailable: failedWorkIds,
+					observedFields: observed,
+					baselineDiff,
 					fieldUsage: report,
 				},
 				null,
@@ -319,7 +437,7 @@ async function main(): Promise<void> {
 		);
 	}
 
-	process.stdout.write(`${formatReport(report, failedWorkIds)}\n`);
+	process.stdout.write(`${formatReport(report, baselineDiff, failedWorkIds)}\n`);
 	logger.info(
 		`✅ 完了（成功 ${rawResponses.length}/${workIds.length}件・${(elapsed / 1000).toFixed(1)}s）${
 			opts.save ? ` / 保存先: ${opts.outDir}` : ""
