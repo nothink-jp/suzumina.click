@@ -8,6 +8,7 @@
 import type { DLsiteApiResponse } from "@suzumina.click/shared-types";
 import { generateDLsiteHeaders } from "../../infrastructure/management/user-agent-manager";
 import * as logger from "../../shared/logger";
+import { recordSchemaDriftForBatch } from "./schema-drift";
 
 // API設定
 const INDIVIDUAL_INFO_API_BASE_URL = "https://www.dlsite.com/maniax/api/=/product.json";
@@ -285,6 +286,12 @@ export async function batchFetchIndividualInfo(
 			`API取得失敗が多数: ${failedWorkIds.length}件 (失敗率${((failedWorkIds.length / workIds.length) * 100).toFixed(1)}%)`,
 		);
 	}
+
+	// スキーマドリフト観測（SPR-140）: 既知集合に無い新フィールドが出たら WARN（重複抑制・例外は無視）
+	recordSchemaDriftForBatch(
+		Array.from(results.values()) as unknown as Array<Record<string, unknown>>,
+		{ batchSize: workIds.length },
+	);
 
 	return { results, failedWorkIds };
 }
