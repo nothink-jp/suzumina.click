@@ -14,6 +14,7 @@
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"test:coverage": "vitest run --coverage",
+		"test:integration": "vitest run src/endpoints/__tests__/data-integrity-check.integration.test.ts",
 		"seed:dump": "dotenv -e .env -- tsx src/tools/firestore-local/dump.ts",
 		"seed:load": "tsx src/tools/firestore-local/seed.ts",
 		"collect:work-ids": "dotenv -e .env -- tsx src/tools/core/collect-work-ids.ts",
