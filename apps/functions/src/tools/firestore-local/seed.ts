@@ -34,6 +34,9 @@ async function loadFixtureFiles(): Promise<CollectionFixture[]> {
 	return fixtures;
 }
 
+// 注意: 既存ドキュメントは set で上書きするが、フィクスチャから外した（=もう存在しない）
+// ドキュメントの削除は行わない。Emulator はメモリ常駐で再起動時に全消去されるため通常は問題ないが、
+// 稼働中の Emulator を再利用して再 seed する場合は旧データが残る点に留意。
 async function seedCollection(firestore: Firestore, fixture: CollectionFixture): Promise<void> {
 	const { collection, docs } = fixture;
 	for (let i = 0; i < docs.length; i += BATCH_LIMIT) {

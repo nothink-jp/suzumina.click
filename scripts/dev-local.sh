@@ -16,9 +16,11 @@ STARTED_EMULATOR=0
 EMULATOR_PID=""
 
 cleanup() {
-  if [[ "${STARTED_EMULATOR}" == "1" && -n "${EMULATOR_PID}" ]]; then
-    echo "[dev:local] Emulator (pid ${EMULATOR_PID}) を停止します"
-    kill "${EMULATOR_PID}" 2>/dev/null || true
+  if [[ "${STARTED_EMULATOR}" == "1" ]]; then
+    echo "[dev:local] Emulator を停止します"
+    [[ -n "${EMULATOR_PID}" ]] && kill "${EMULATOR_PID}" 2>/dev/null || true
+    # gcloud 配下の Java 子プロセスが取り残されることがあるためフォールバックで掃除
+    pkill -f "cloud-firestore-emulator" 2>/dev/null || true
   fi
 }
 trap cleanup EXIT INT TERM

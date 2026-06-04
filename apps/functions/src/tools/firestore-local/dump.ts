@@ -62,7 +62,8 @@ async function main(): Promise<void> {
 	}
 
 	const projectId = process.env.GOOGLE_CLOUD_PROJECT || "suzumina-click";
-	const limit = Number(process.env.LIMIT ?? 100);
+	// LIMIT が空文字や不正値（Number("")===0, NaN）でも既定 100 に落ちるようにする
+	const limit = Number(process.env.LIMIT) || 100;
 	const firestore = new Firestore({ projectId });
 
 	await mkdir(FIXTURES_DIR, { recursive: true });
