@@ -340,5 +340,18 @@ describe("firestore", () => {
 				process.env.NODE_ENV = originalEnv;
 			}
 		});
+
+		it("本番で FIRESTORE_EMULATOR_HOST が設定されていたら接続を拒否すること", () => {
+			const originalEnv = process.env.NODE_ENV;
+			process.env.NODE_ENV = "production";
+			process.env.FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080";
+
+			try {
+				expect(() => createFirestoreInstance()).toThrow(/FIRESTORE_EMULATOR_HOST/);
+			} finally {
+				process.env.NODE_ENV = originalEnv;
+				delete process.env.FIRESTORE_EMULATOR_HOST;
+			}
+		});
 	});
 });

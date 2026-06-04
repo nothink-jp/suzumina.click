@@ -15,14 +15,7 @@ export default defineConfig({
 		server: {
 			deps: {
 				external: ["googleapis"],
-				inline: [
-					"cheerio",
-					"css-select",
-					"css-what",
-					"cheerio-select",
-					"domutils",
-					"boolbase",
-				],
+				inline: ["cheerio", "css-select", "css-what", "cheerio-select", "domutils", "boolbase"],
 			},
 		},
 		coverage: {
@@ -36,6 +29,7 @@ export default defineConfig({
 				"**/*.d.ts",
 				"**/*.config.{js,ts,mjs,cjs,mts,cts}",
 				"src/development/**", // Development tools and debug scripts
+				"src/tools/firestore-local/**", // ローカル Emulator のシード/ダンプ用 dev ツール
 				"scripts/**", // Build scripts
 			],
 			thresholds: {

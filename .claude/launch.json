@@ -16,6 +16,13 @@
 			"autoPort": false
 		},
 		{
+			"name": "web-local",
+			"runtimeExecutable": "pnpm",
+			"runtimeArgs": ["--filter", "@suzumina.click/web", "dev:local"],
+			"port": 3000,
+			"autoPort": false
+		},
+		{
 			"name": "web-prod",
 			"runtimeExecutable": "pnpm",
 			"runtimeArgs": ["--filter", "@suzumina.click/web", "start", "--port", "3001"],

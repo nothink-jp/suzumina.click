@@ -41,6 +41,19 @@ describe("firestore module", () => {
 			process.env.GOOGLE_CLOUD_PROJECT = undefined;
 		});
 
+		it("should throw when FIRESTORE_EMULATOR_HOST is set in production", async () => {
+			const prevNodeEnv = process.env.NODE_ENV;
+			process.env.NODE_ENV = "production";
+			process.env.FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080";
+			vi.resetModules();
+
+			const { createFirestoreInstance } = await import("../firestore");
+			expect(() => createFirestoreInstance()).toThrow(/FIRESTORE_EMULATOR_HOST/);
+
+			process.env.NODE_ENV = prevNodeEnv;
+			delete process.env.FIRESTORE_EMULATOR_HOST;
+		});
+
 		it("should create new Firestore instance with fallback project ID when env var is not set", async () => {
 			delete process.env.GOOGLE_CLOUD_PROJECT;
 			vi.resetModules();
