@@ -39,6 +39,8 @@ const PACKAGE_ROOT = resolve(__dirname, "../../..");
 const DEFAULT_OUT_DIR = join(PACKAGE_ROOT, "tmp/dlsite-capture"); // tmp/ は .gitignore 済み
 const ASSET_FILE = join(PACKAGE_ROOT, "src/assets/dlsite-work-ids.json");
 const DEFAULT_LIMIT = 20;
+// この件数未満で baseline を書き出すと、条件付きフィールドの取りこぼしで後の比較が誤検知しやすい
+const MIN_RELIABLE_BASELINE_SAMPLE = 50;
 
 /**
  * CLI オプション
@@ -301,7 +303,7 @@ export function formatReport(
 		const shownGone = baselineDiff.goneFields.slice(0, 25);
 		lines.push(
 			`  ⚠️  消失（今回未観測・${baselineDiff.goneFields.length}種）: ${shownGone.join(", ")}${
-				baselineDiff.goneFields.length > 25 ? " ..." : ""
+				baselineDiff.goneFields.length > 25 ? ` ... 他${baselineDiff.goneFields.length - 25}種` : ""
 			}`,
 		);
 		lines.push(
@@ -411,6 +413,12 @@ async function main(): Promise<void> {
 
 	// 観測フィールド集合を baseline として書き出す（前回比の更新用）
 	if (opts.updateBaselinePath) {
+		if (rawResponses.length < MIN_RELIABLE_BASELINE_SAMPLE) {
+			logger.warn(
+				`baseline を ${rawResponses.length}件 の小サンプルから書き出します。条件付きフィールドを取りこぼし、` +
+					`後の比較で実在フィールドが「新規」誤検知されやすい。--limit ${MIN_RELIABLE_BASELINE_SAMPLE} 以上を推奨。`,
+			);
+		}
 		writeFileSync(opts.updateBaselinePath, JSON.stringify(observed, null, 2));
 		logger.info(`観測フィールド集合(${observed.length}種)を baseline に書き出しました`, {
 			path: opts.updateBaselinePath,
