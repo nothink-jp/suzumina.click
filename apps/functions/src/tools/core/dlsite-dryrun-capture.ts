@@ -216,6 +216,10 @@ export function formatReport(report: FieldUsageReport, unavailableWorkIds: strin
 		lines.push("  なし");
 	} else {
 		lines.push(`  ${report.absentKnownFields.join(", ")}`);
+		lines.push(
+			"  ※ 少数サンプルでは条件付き出現フィールド（prices/sales_status/rate_* 等）が多数並ぶ。" +
+				"消失（drift）の判定は十分な件数で行うこと。",
+		);
 	}
 
 	lines.push("");
@@ -279,21 +283,26 @@ async function main(): Promise<void> {
 	});
 	const elapsed = Date.now() - startTime;
 
+	// 保存先ディレクトリは事前に1回だけ作成する
+	const rawDir = join(opts.outDir, "raw");
+	if (opts.save) {
+		mkdirSync(rawDir, { recursive: true });
+	}
+
 	// 成功した raw レスポンス（未知キーを含む生オブジェクト）を収集
 	const rawResponses: Array<Record<string, unknown>> = [];
 	for (const [workId, data] of results.entries()) {
 		const raw = data as unknown as Record<string, unknown>;
 		rawResponses.push(raw);
 		if (opts.save) {
-			mkdirSync(join(opts.outDir, "raw"), { recursive: true });
-			writeFileSync(join(opts.outDir, "raw", `${workId}.json`), JSON.stringify(raw, null, 2));
+			writeFileSync(join(rawDir, `${workId}.json`), JSON.stringify(raw, null, 2));
 		}
 	}
 
 	const report = analyzeFields(rawResponses, knownTopLevelFields());
 
 	if (opts.save) {
-		mkdirSync(opts.outDir, { recursive: true });
+		// outDir は rawDir 作成時に併せて作られている
 		writeFileSync(
 			join(opts.outDir, "report.json"),
 			JSON.stringify(
