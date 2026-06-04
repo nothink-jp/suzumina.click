@@ -5,6 +5,11 @@
  * - CircleのworkIds配列の整合性
  * - 孤立したCreatorマッピングのクリーンアップ
  * - Work-Circle相互参照の整合性
+ *
+ * dryRun（report-only）モード:
+ *   集計・検出は通常どおり行い「修正したであろう件数」をカウントするが、
+ *   Firestore への書き込み（batch.commit / 結果保存）は一切行わない。
+ *   本番データを汚さずに「整合性関数が何を直すか」を確認するための観測専用モード。
  */
 
 import type {
@@ -25,10 +30,23 @@ const INTEGRITY_CHECK_DOC_ID = "dataIntegrityCheck";
 const FIRESTORE_BATCH_LIMIT = 400;
 
 /**
+ * 整合性チェックの実行オプション
+ */
+export interface IntegrityCheckOptions {
+	/**
+	 * true の場合、検出・集計のみ行い Firestore への書き込みを一切行わない（report-only）。
+	 * 既定は false（＝従来どおり修正を書き込む）。本番スケジュール実行は false。
+	 */
+	dryRun?: boolean;
+}
+
+/**
  * 整合性チェック結果の型定義
  */
-interface IntegrityCheckResult {
+export interface IntegrityCheckResult {
 	timestamp: string;
+	/** report-only モードで実行されたか（書き込みをスキップしたか） */
+	dryRun: boolean;
 	checks: {
 		circleWorkCounts: {
 			checked: number;
@@ -59,7 +77,7 @@ interface IntegrityCheckResult {
 /**
  * CircleのworkIds配列の整合性をチェック
  */
-async function checkCircleWorkCounts(result: IntegrityCheckResult): Promise<void> {
+async function checkCircleWorkCounts(result: IntegrityCheckResult, dryRun: boolean): Promise<void> {
 	logger.info("CircleのworkIds配列の整合性チェックを開始");
 
 	const circlesSnapshot = await firestore.collection("circles").get();
@@ -91,7 +109,7 @@ async function checkCircleWorkCounts(result: IntegrityCheckResult): Promise<void
 			batchCount++;
 
 			// バッチサイズ制限
-			if (batchCount >= FIRESTORE_BATCH_LIMIT) {
+			if (!dryRun && batchCount >= FIRESTORE_BATCH_LIMIT) {
 				await batch.commit();
 				batchCount = 0;
 			}
@@ -121,26 +139,26 @@ async function checkCircleWorkCounts(result: IntegrityCheckResult): Promise<void
 			result.checks.circleWorkCounts.fixed++;
 			batchCount++;
 
-			if (batchCount >= FIRESTORE_BATCH_LIMIT) {
+			if (!dryRun && batchCount >= FIRESTORE_BATCH_LIMIT) {
 				await batch.commit();
 				batchCount = 0;
 			}
 		}
 	}
 
-	if (batchCount > 0) {
+	if (!dryRun && batchCount > 0) {
 		await batch.commit();
 	}
 
 	logger.info(
-		`CircleのworkIds配列チェック完了: ${result.checks.circleWorkCounts.checked}件チェック、${result.checks.circleWorkCounts.fixed}件修正`,
+		`CircleのworkIds配列チェック完了: ${result.checks.circleWorkCounts.checked}件チェック、${result.checks.circleWorkCounts.fixed}件${dryRun ? "要修正" : "修正"}`,
 	);
 }
 
 /**
  * 孤立したCreatorマッピングをチェック
  */
-async function checkOrphanedCreators(result: IntegrityCheckResult): Promise<void> {
+async function checkOrphanedCreators(result: IntegrityCheckResult, dryRun: boolean): Promise<void> {
 	logger.info("孤立したCreatorマッピングのチェックを開始");
 
 	const creatorsSnapshot = await firestore.collection("creators").get();
@@ -166,7 +184,7 @@ async function checkOrphanedCreators(result: IntegrityCheckResult): Promise<void
 				result.checks.orphanedCreators.cleaned++;
 				batchCount++;
 
-				if (batchCount >= FIRESTORE_BATCH_LIMIT) {
+				if (!dryRun && batchCount >= FIRESTORE_BATCH_LIMIT) {
 					await batch.commit();
 					batchCount = 0;
 				}
@@ -182,19 +200,19 @@ async function checkOrphanedCreators(result: IntegrityCheckResult): Promise<void
 			result.checks.orphanedCreators.cleaned++;
 			batchCount++;
 
-			if (batchCount >= FIRESTORE_BATCH_LIMIT) {
+			if (!dryRun && batchCount >= FIRESTORE_BATCH_LIMIT) {
 				await batch.commit();
 				batchCount = 0;
 			}
 		}
 	}
 
-	if (batchCount > 0) {
+	if (!dryRun && batchCount > 0) {
 		await batch.commit();
 	}
 
 	logger.info(
-		`孤立Creatorチェック完了: ${result.checks.orphanedCreators.checked}件チェック、${result.checks.orphanedCreators.cleaned}件クリーンアップ`,
+		`孤立Creatorチェック完了: ${result.checks.orphanedCreators.checked}件チェック、${result.checks.orphanedCreators.cleaned}件${dryRun ? "要クリーンアップ" : "クリーンアップ"}`,
 	);
 }
 
@@ -278,13 +296,17 @@ async function restoreCreatorWorkMapping(
 }
 
 /**
- * バッチが満杯の場合はコミット
+ * バッチが満杯の場合はコミット（dryRun の場合は書き込まない）
  */
 async function commitBatchIfNeeded(
 	batch: WriteBatch,
 	stats: RestoreStats,
 	force = false,
+	dryRun = false,
 ): Promise<void> {
+	if (dryRun) {
+		return;
+	}
 	if (stats.batchCount >= FIRESTORE_BATCH_LIMIT || (force && stats.batchCount > 0)) {
 		await batch.commit();
 		stats.batchCount = 0;
@@ -294,7 +316,10 @@ async function commitBatchIfNeeded(
 /**
  * 削除されたCreator-Work関連を復元
  */
-async function restoreCreatorWorkRelations(result: IntegrityCheckResult): Promise<void> {
+async function restoreCreatorWorkRelations(
+	result: IntegrityCheckResult,
+	dryRun: boolean,
+): Promise<void> {
 	logger.info("Creator-Work関連の復元を開始");
 
 	const worksSnapshot = await firestore.collection("works").get();
@@ -339,19 +364,19 @@ async function restoreCreatorWorkRelations(result: IntegrityCheckResult): Promis
 				);
 
 				// バッチサイズチェック
-				await commitBatchIfNeeded(batch, stats);
+				await commitBatchIfNeeded(batch, stats, false, dryRun);
 
 				// Creator-Workマッピングの復元
 				await restoreCreatorWorkMapping(creatorRef, workDoc, workData, creator, type, batch, stats);
 
 				// バッチサイズチェック
-				await commitBatchIfNeeded(batch, stats);
+				await commitBatchIfNeeded(batch, stats, false, dryRun);
 			}
 		}
 	}
 
 	// 残りのバッチをコミット
-	await commitBatchIfNeeded(batch, stats, true);
+	await commitBatchIfNeeded(batch, stats, true, dryRun);
 
 	// 結果に追加
 	result.checks.creatorWorkRestore = {
@@ -361,14 +386,17 @@ async function restoreCreatorWorkRelations(result: IntegrityCheckResult): Promis
 	};
 
 	logger.info(
-		`Creator-Work関連復元完了: ${worksSnapshot.size}件チェック、${stats.restoredCount}件マッピング復元、${stats.creatorsCreated}件Creator作成`,
+		`Creator-Work関連復元完了: ${worksSnapshot.size}件チェック、${stats.restoredCount}件マッピング${dryRun ? "要復元" : "復元"}、${stats.creatorsCreated}件Creator${dryRun ? "要作成" : "作成"}`,
 	);
 }
 
 /**
  * Work-Circle相互参照の整合性をチェック
  */
-async function checkWorkCircleConsistency(result: IntegrityCheckResult): Promise<void> {
+async function checkWorkCircleConsistency(
+	result: IntegrityCheckResult,
+	dryRun: boolean,
+): Promise<void> {
 	logger.info("Work-Circle相互参照の整合性チェックを開始");
 
 	const worksSnapshot = await firestore.collection("works").get();
@@ -414,19 +442,19 @@ async function checkWorkCircleConsistency(result: IntegrityCheckResult): Promise
 			result.checks.workCircleConsistency.fixed++;
 			batchCount++;
 
-			if (batchCount >= FIRESTORE_BATCH_LIMIT) {
+			if (!dryRun && batchCount >= FIRESTORE_BATCH_LIMIT) {
 				await batch.commit();
 				batchCount = 0;
 			}
 		}
 	}
 
-	if (batchCount > 0) {
+	if (!dryRun && batchCount > 0) {
 		await batch.commit();
 	}
 
 	logger.info(
-		`Work-Circle整合性チェック完了: ${result.checks.workCircleConsistency.checked}件チェック、${result.checks.workCircleConsistency.fixed}件修正`,
+		`Work-Circle整合性チェック完了: ${result.checks.workCircleConsistency.checked}件チェック、${result.checks.workCircleConsistency.fixed}件${dryRun ? "要修正" : "修正"}`,
 	);
 }
 
@@ -467,15 +495,26 @@ async function saveIntegrityCheckResult(result: IntegrityCheckResult): Promise<v
 }
 
 /**
- * Cloud Functions エントリーポイント
+ * 整合性チェックの本体ロジック
+ *
+ * 4種の検査（Circle workIds / 孤立Creator / Work-Circle / Creator-Work復元）を実行し、
+ * 結果を返す。dryRun=false（既定）の場合のみ Firestore へ修正と結果を書き込む。
+ *
+ * Cloud Functions ハンドラ（{@link checkDataIntegrity}）からも、
+ * ローカル手動実行・インテグレーションテストからも共通で呼ばれる正本。
+ *
+ * @param options.dryRun true で書き込みを一切行わない観測専用モード
+ * @returns 検査結果（dryRun でも「要修正件数」を含む）
  */
-export async function checkDataIntegrity(event: CloudEvent<unknown>): Promise<void> {
+export async function runIntegrityCheck(
+	options: IntegrityCheckOptions = {},
+): Promise<IntegrityCheckResult> {
+	const dryRun = options.dryRun ?? false;
 	const startTime = Date.now();
-
-	logger.info("データ整合性チェックを開始", { eventType: event.type });
 
 	const result: IntegrityCheckResult = {
 		timestamp: new Date().toISOString(),
+		dryRun,
 		checks: {
 			circleWorkCounts: { checked: 0, mismatches: 0, fixed: 0 },
 			orphanedCreators: { checked: 0, found: 0, cleaned: 0 },
@@ -486,36 +525,56 @@ export async function checkDataIntegrity(event: CloudEvent<unknown>): Promise<vo
 		executionTimeMs: 0,
 	};
 
-	try {
-		// 1. CircleのworkIds配列の整合性チェック
-		await checkCircleWorkCounts(result);
+	// 1. CircleのworkIds配列の整合性チェック
+	await checkCircleWorkCounts(result, dryRun);
 
-		// 2. 孤立したCreatorマッピングのクリーンアップ
-		await checkOrphanedCreators(result);
+	// 2. 孤立したCreatorマッピングのクリーンアップ
+	await checkOrphanedCreators(result, dryRun);
 
-		// 3. Work-Circle相互参照の整合性
-		await checkWorkCircleConsistency(result);
+	// 3. Work-Circle相互参照の整合性
+	await checkWorkCircleConsistency(result, dryRun);
 
-		// 4. Creator-Work関連の復元（削除されたデータの回復）
-		await restoreCreatorWorkRelations(result);
+	// 4. Creator-Work関連の復元（削除されたデータの回復）
+	await restoreCreatorWorkRelations(result, dryRun);
 
-		// 総計を計算
-		result.totalIssues =
-			result.checks.circleWorkCounts.mismatches +
-			result.checks.orphanedCreators.found +
-			result.checks.workCircleConsistency.mismatches;
+	// 総計を計算
+	result.totalIssues =
+		result.checks.circleWorkCounts.mismatches +
+		result.checks.orphanedCreators.found +
+		result.checks.workCircleConsistency.mismatches;
 
-		result.totalFixed =
-			result.checks.circleWorkCounts.fixed +
-			result.checks.orphanedCreators.cleaned +
-			result.checks.workCircleConsistency.fixed +
-			(result.checks.creatorWorkRestore?.restored || 0) +
-			(result.checks.creatorWorkRestore?.creatorsCreated || 0);
+	result.totalFixed =
+		result.checks.circleWorkCounts.fixed +
+		result.checks.orphanedCreators.cleaned +
+		result.checks.workCircleConsistency.fixed +
+		(result.checks.creatorWorkRestore?.restored || 0) +
+		(result.checks.creatorWorkRestore?.creatorsCreated || 0);
 
-		result.executionTimeMs = Date.now() - startTime;
+	result.executionTimeMs = Date.now() - startTime;
 
-		// 結果を保存
+	// 結果を保存（dryRun では書き込まない）
+	if (dryRun) {
+		logger.info("dry-run: 書き込みをスキップしました（検出のみ）", {
+			totalIssues: result.totalIssues,
+			wouldFix: result.totalFixed,
+		});
+	} else {
 		await saveIntegrityCheckResult(result);
+	}
+
+	return result;
+}
+
+/**
+ * Cloud Functions エントリーポイント
+ *
+ * 本番スケジュール実行用。常に dryRun=false（修正を書き込む）。
+ */
+export async function checkDataIntegrity(event: CloudEvent<unknown>): Promise<void> {
+	logger.info("データ整合性チェックを開始", { eventType: event.type });
+
+	try {
+		const result = await runIntegrityCheck();
 
 		logger.info("データ整合性チェック完了", {
 			totalChecked:

@@ -16,6 +16,7 @@
 		"typecheck": "pnpm -r typecheck",
 		"typecheck:fast": "pnpm -r typecheck:fast",
 		"test": "pnpm -r test",
+		"test:integration": "bash scripts/test-functions-integration.sh",
 		"verify": "pnpm lint && pnpm typecheck && pnpm test",
 		"test:coverage": "pnpm -r test:coverage",
 		"knip": "knip",

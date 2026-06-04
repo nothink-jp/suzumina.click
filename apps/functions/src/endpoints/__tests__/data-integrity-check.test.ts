@@ -32,7 +32,7 @@ vi.mock("../../shared/logger", () => ({
 
 import firestore from "../../infrastructure/database/firestore";
 // テスト対象をインポート（モックの後）
-import { checkDataIntegrity } from "../data-integrity-check";
+import { checkDataIntegrity, runIntegrityCheck } from "../data-integrity-check";
 
 // モック関数をvitestから取得
 const mockCollection = vi.mocked(firestore.collection);
@@ -397,5 +397,47 @@ describe("checkDataIntegrity", () => {
 				}),
 			}),
 		});
+	});
+
+	it("dry-run では不整合を検出するが Firestore へ書き込まない", async () => {
+		// 重複作品IDを持つサークル（要修正のケース）
+		const mockCircles = {
+			size: 1,
+			docs: [
+				{
+					id: "circle1",
+					data: () => ({
+						workIds: ["work1", "work1", "work2"], // 重複あり
+					}),
+					ref: { update: mockUpdate },
+				},
+			],
+		};
+		const mockWorkDoc = { get: vi.fn().mockResolvedValue({ exists: true }) };
+		const emptySnapshot = { size: 0, docs: [] };
+
+		mockCollection.mockImplementation((collName: string) => {
+			if (collName === "circles") {
+				return { get: vi.fn().mockResolvedValue(mockCircles), doc: mockDoc };
+			}
+			if (collName === "creators" || collName === "works") {
+				return { get: vi.fn().mockResolvedValue(emptySnapshot), doc: vi.fn(() => mockWorkDoc) };
+			}
+			// dlsiteMetadata に触れたら書き込み扱いなので最小限で返す
+			return {
+				doc: vi.fn(() => ({ set: mockSet, collection: vi.fn() })),
+			};
+		});
+
+		const result = await runIntegrityCheck({ dryRun: true });
+
+		// 検出・集計は行われる
+		expect(result.dryRun).toBe(true);
+		expect(result.checks.circleWorkCounts.fixed).toBeGreaterThan(0);
+		expect(result.totalFixed).toBeGreaterThan(0);
+
+		// 書き込み系は一切呼ばれない（commit / 結果保存の set）
+		expect(mockCommit).not.toHaveBeenCalled();
+		expect(mockSet).not.toHaveBeenCalled();
 	});
 });
