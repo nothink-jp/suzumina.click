@@ -40,7 +40,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      # advisory（非ブロッキング）なので失敗しても PR を赤くしない。
+      # 特に「この workflow 自体を変更した PR」は validation 仕様でハードエラーになるが無害。
+      # 注意: レビュー欠落（コメント未投稿）が失敗のサイン。緑＝必ずレビュー成功、ではない。
       - name: Claude Code Review
+        continue-on-error: true
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
