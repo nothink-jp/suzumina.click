@@ -1,11 +1,10 @@
 name: Claude AI Review
 
-# AI レビュー spike（SPR-37）: Claude Code Action による PR 自動レビュー。
+# AI レビュー（SPR-37）: Claude Code Action による PR 自動レビュー。CodeRabbit との A/B を経て本採用。
 # 認証は Max サブスクリプション枠（OAuth トークン）。API 従量課金は使わない。
 #   前提: ローカルで `claude setup-token` を実行し、出力を Secret `CLAUDE_CODE_OAUTH_TOKEN` に登録すること。
 # 方針: 非ブロッキング（PR を fail させない・必須チェックにしない）。所見は PR コメント/行内コメントで可視化するだけ。
-#   採否の最終判断は人=唯一のレビュアーが行う前提（ソロ開発のセルフマージ・ポリシー）。
-# 並走中の CodeRabbit（.coderabbit.yaml）と A/B 比較し、検出力・ノイズ・日本語品質を見極める。
+#   採否の最終判断は人=唯一のレビュアーが行う前提（CLAUDE.md §1 セルフマージ・ポリシー）。
 #
 # 重要: コメント投稿には公式 pr-review-comprehensive.yml 同様に track_progress: true と、
 #   claude_args の --allowedTools での明示許可が必須（agent モード既定ではコメント用 MCP が起動せず投稿できない）。
