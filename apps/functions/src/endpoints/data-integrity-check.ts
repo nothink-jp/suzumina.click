@@ -27,7 +27,8 @@ const INTEGRITY_CHECK_COLLECTION = "dlsiteMetadata";
 const INTEGRITY_CHECK_DOC_ID = "dataIntegrityCheck";
 
 // Firestoreバッチ操作の制限値（500より少し余裕を持たせた値）
-const FIRESTORE_BATCH_LIMIT = 400;
+// 分割コミットの境界。テストはこの値+1で分割パスを確実に踏むため export する。
+export const FIRESTORE_BATCH_LIMIT = 400;
 
 /**
  * バッチをコミットして新しい空バッチを返す。
