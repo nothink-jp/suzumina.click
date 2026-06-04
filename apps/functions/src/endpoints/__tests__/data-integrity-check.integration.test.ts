@@ -26,6 +26,7 @@ const PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT || "suzumina-click";
 let getFirestore: () => Firestore;
 let resetFirestoreInstance: () => void;
 let runIntegrityCheck: typeof RunIntegrityCheck;
+let batchLimit: number;
 
 // 変更前の env を退避し、afterAll で復元する（プロセスグローバルの汚染防止）
 let prevAllowTestFirestore: string | undefined;
@@ -59,7 +60,9 @@ describe.skipIf(!RUN)("checkDataIntegrity (integration / Firestore Emulator)", (
 		const firestoreModule = await import("../../infrastructure/database/firestore");
 		getFirestore = firestoreModule.getFirestore;
 		resetFirestoreInstance = firestoreModule.resetFirestoreInstance;
-		({ runIntegrityCheck } = await import("../data-integrity-check"));
+		const dicModule = await import("../data-integrity-check");
+		runIntegrityCheck = dicModule.runIntegrityCheck;
+		batchLimit = dicModule.FIRESTORE_BATCH_LIMIT;
 	});
 
 	beforeEach(async () => {
@@ -198,5 +201,69 @@ describe.skipIf(!RUN)("checkDataIntegrity (integration / Firestore Emulator)", (
 		expect((await db.collection("dlsiteMetadata").doc("dataIntegrityCheck").get()).exists).toBe(
 			false,
 		);
+	});
+
+	it("400件超の Circle 修正でもバッチ分割で例外なく完了する（commitAndRenew 回帰 / SPR-142）", async () => {
+		const db = getFirestore();
+		// 存在する作品を1件用意（存在チェックを通し、circle あたりの batch 操作を1回に保つ）
+		await db.collection("works").doc("RJ001").set({ title: "w1", circleId: "RG0" });
+
+		// 分割コミット境界（FIRESTORE_BATCH_LIMIT）を1件超えるサークルに重複 workIds を仕込む
+		const COUNT = batchLimit + 1;
+		// Firestore のバッチ上限は500。境界(400)+1 は1バッチで投入できる前提
+		const seed = db.batch();
+		for (let i = 0; i < COUNT; i++) {
+			seed.set(db.collection("circles").doc(`RG${i}`), { workIds: ["RJ001", "RJ001"] });
+		}
+		await seed.commit();
+
+		// 修正前は境界超過の update が commit 済み batch への書き込みで例外になる。
+		// 修正後は境界ごとに新バッチへ差し替わり、例外なく完走する。
+		const result = await runIntegrityCheck();
+
+		expect(result.checks.circleWorkCounts.checked).toBe(COUNT);
+		expect(result.checks.circleWorkCounts.fixed).toBeGreaterThanOrEqual(COUNT);
+
+		// 重複が全サークルで解消されている（境界の先頭・末尾を抜き取り確認）
+		for (const id of ["RG0", `RG${COUNT - 1}`]) {
+			const circle = await db.collection("circles").doc(id).get();
+			expect(circle.data()?.workIds as string[]).toEqual(["RJ001"]);
+		}
+	});
+
+	it("400件超の Creator-Work 復元でもバッチ分割で例外なく完了する（commitBatchIfNeeded 回帰 / SPR-142）", async () => {
+		const db = getFirestore();
+		// 1作品に境界超のクリエイターを詰め、復元側（commitBatchIfNeeded）の分割を強制する。
+		// クリエイター毎に ensure(set) + mapping(set) の2書き込みが出るため、COUNT 件で境界を複数回跨ぐ。
+		const COUNT = batchLimit + 1;
+		const voiceBy = Array.from({ length: COUNT }, (_, i) => ({ id: `C${i}`, name: `creator${i}` }));
+		await db
+			.collection("circles")
+			.doc("RG0")
+			.set({ workIds: ["RJ001"] });
+		await db
+			.collection("works")
+			.doc("RJ001")
+			.set({
+				title: "w1",
+				circleId: "RG0",
+				circle: "サークル名",
+				creators: { voice_by: voiceBy },
+			});
+
+		// 修正前は commit 済み batch への set で例外。修正後は分割コミットで完走する。
+		const result = await runIntegrityCheck();
+
+		expect(result.checks.creatorWorkRestore?.checked).toBe(1);
+		expect(result.checks.creatorWorkRestore?.restored).toBe(COUNT);
+		expect(result.checks.creatorWorkRestore?.creatorsCreated).toBe(COUNT);
+
+		// 境界の先頭・末尾のクリエイターとマッピングが実際に作成されている
+		for (const id of ["C0", `C${COUNT - 1}`]) {
+			expect((await db.collection("creators").doc(id).get()).exists).toBe(true);
+			expect(
+				(await db.collection("creators").doc(id).collection("works").doc("RJ001").get()).exists,
+			).toBe(true);
+		}
 	});
 });
