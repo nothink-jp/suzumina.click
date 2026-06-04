@@ -27,6 +27,18 @@ let getFirestore: () => Firestore;
 let resetFirestoreInstance: () => void;
 let runIntegrityCheck: typeof RunIntegrityCheck;
 
+// 変更前の env を退避し、afterAll で復元する（プロセスグローバルの汚染防止）
+let prevAllowTestFirestore: string | undefined;
+let prevProjectId: string | undefined;
+
+function restoreEnv(key: string, value: string | undefined): void {
+	if (value === undefined) {
+		delete process.env[key];
+	} else {
+		process.env[key] = value;
+	}
+}
+
 /** Emulator の全ドキュメントを消去する（REST 管理エンドポイント） */
 async function clearEmulator(): Promise<void> {
 	const url = `http://${EMULATOR_HOST}/emulator/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
@@ -39,6 +51,8 @@ async function clearEmulator(): Promise<void> {
 describe.skipIf(!RUN)("checkDataIntegrity (integration / Firestore Emulator)", () => {
 	beforeAll(async () => {
 		// 本番接続ブロック（NODE_ENV=test）を回避し Emulator へ向ける
+		prevAllowTestFirestore = process.env.ALLOW_TEST_FIRESTORE;
+		prevProjectId = process.env.GOOGLE_CLOUD_PROJECT;
 		process.env.ALLOW_TEST_FIRESTORE = "true";
 		process.env.GOOGLE_CLOUD_PROJECT = PROJECT_ID;
 
@@ -55,6 +69,9 @@ describe.skipIf(!RUN)("checkDataIntegrity (integration / Firestore Emulator)", (
 
 	afterAll(async () => {
 		await clearEmulator();
+		// env を元に戻し、他テストの本番接続ブロックを緩めたままにしない
+		restoreEnv("ALLOW_TEST_FIRESTORE", prevAllowTestFirestore);
+		restoreEnv("GOOGLE_CLOUD_PROJECT", prevProjectId);
 	});
 
 	it("Circle workIds の重複と存在しない作品IDを除去する", async () => {

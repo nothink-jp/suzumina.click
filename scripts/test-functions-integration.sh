@@ -10,6 +10,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 HOST_PORT="${FIRESTORE_EMULATOR_HOST:-127.0.0.1:8765}"
+EMU_PORT="${HOST_PORT##*:}"
 export FIRESTORE_EMULATOR_HOST="${HOST_PORT}"
 export GOOGLE_CLOUD_PROJECT="${GOOGLE_CLOUD_PROJECT:-suzumina-click}"
 
@@ -20,7 +21,9 @@ cleanup() {
   if [[ "${STARTED_EMULATOR}" == "1" ]]; then
     echo "[itest] Emulator を停止します"
     [[ -n "${EMULATOR_PID}" ]] && kill "${EMULATOR_PID}" 2>/dev/null || true
-    pkill -f "cloud-firestore-emulator" 2>/dev/null || true
+    # gcloud 配下の Java 子プロセスが残ることがあるためフォールバックで掃除するが、
+    # dev:local(8080) など別ポートのエミュレータを巻き込まないよう、起動したポートに限定する。
+    pkill -f "cloud_firestore_emulator.*${EMU_PORT}" 2>/dev/null || true
   fi
 }
 trap cleanup EXIT INT TERM
