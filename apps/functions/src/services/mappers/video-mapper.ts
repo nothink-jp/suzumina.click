@@ -61,7 +61,9 @@ function calculateAudioButtonInfo(videoType: string): {
 	count: number;
 	hasButtons: boolean;
 } {
-	const canCreate = videoType === "normal" || videoType === "archived";
+	// 許諾により音声ボタンを作成できるのは配信アーカイブ(archived)のみ。
+	// _computed.canCreateButton / shared-types の canCreateButton と判定を一致させる。
+	const canCreate = videoType === "archived";
 	return {
 		count: 0,
 		hasButtons: canCreate,
