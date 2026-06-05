@@ -1,0 +1,140 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+// quota monitor をモックして quota 充足/不足の両分岐を検証する
+const canExecuteOperation = vi.fn(() => true);
+const recordQuotaUsage = vi.fn();
+const logQuotaUsage = vi.fn();
+const suggestOptimalOperations = vi.fn(() => ({ feasible: true, alternatives: [] as string[] }));
+vi.mock("../../../infrastructure/monitoring/youtube-quota-monitor", () => ({
+	canExecuteOperation: (...a: unknown[]) => canExecuteOperation(...a),
+	recordQuotaUsage: (...a: unknown[]) => recordQuotaUsage(...a),
+	getYouTubeQuotaMonitor: () => ({ logQuotaUsage, suggestOptimalOperations }),
+}));
+
+vi.mock("../../../shared/logger", () => ({
+	info: vi.fn(),
+	warn: vi.fn(),
+	error: vi.fn(),
+	debug: vi.fn(),
+}));
+
+import {
+	fetchChannelPlaylists,
+	fetchPlaylistItems,
+	fetchVideoDetails,
+	searchVideos,
+} from "../youtube-api";
+
+const makeClient = () => ({
+	search: { list: vi.fn() },
+	videos: { list: vi.fn() },
+	playlists: { list: vi.fn() },
+	playlistItems: { list: vi.fn() },
+});
+// biome-ignore lint/suspicious/noExplicitAny: フェイククライアントを型に流し込む
+const asYoutube = (c: ReturnType<typeof makeClient>) => c as any;
+
+beforeEach(() => {
+	canExecuteOperation.mockReturnValue(true);
+	suggestOptimalOperations.mockReturnValue({ feasible: true, alternatives: [] });
+});
+
+afterEach(() => {
+	vi.clearAllMocks();
+});
+
+describe("searchVideos: クォータ不足", () => {
+	it("クォータ不足は例外", async () => {
+		canExecuteOperation.mockReturnValue(false);
+		await expect(searchVideos(asYoutube(makeClient()))).rejects.toThrow("クォータ");
+	});
+});
+
+describe("fetchVideoDetails: クォータ分岐", () => {
+	it("不足かつ代替不能なら例外（alternatives を含む）", async () => {
+		canExecuteOperation.mockReturnValue(false);
+		suggestOptimalOperations.mockReturnValue({ feasible: false, alternatives: ["後で再試行"] });
+		await expect(fetchVideoDetails(asYoutube(makeClient()), ["v1"])).rejects.toThrow("後で再試行");
+	});
+
+	it("不足でも代替可能なら処理を継続する", async () => {
+		canExecuteOperation.mockReturnValue(false);
+		suggestOptimalOperations.mockReturnValue({ feasible: true, alternatives: [] });
+		const c = makeClient();
+		c.videos.list.mockResolvedValue({ data: { items: [{ id: "v1" }] } });
+		const r = await fetchVideoDetails(asYoutube(c), ["v1"]);
+		expect(r).toHaveLength(1);
+	});
+});
+
+describe("fetchChannelPlaylists", () => {
+	it("クォータ不足は例外", async () => {
+		canExecuteOperation.mockReturnValue(false);
+		await expect(fetchChannelPlaylists(asYoutube(makeClient()), "ch")).rejects.toThrow("クォータ");
+	});
+
+	it("プレイリストを既定値付きで写像する", async () => {
+		const c = makeClient();
+		c.playlists.list.mockResolvedValue({
+			data: {
+				items: [
+					{
+						id: "p1",
+						snippet: { title: "PL1", description: "d", publishedAt: "2024" },
+						contentDetails: { itemCount: 3 },
+					},
+					{}, // 欠落フィールド → 既定値
+				],
+			},
+		});
+		const r = await fetchChannelPlaylists(asYoutube(c), "ch");
+		expect(r[0]).toEqual({
+			id: "p1",
+			title: "PL1",
+			videoCount: 3,
+			description: "d",
+			publishedAt: "2024",
+		});
+		expect(r[1]).toEqual({ id: "", title: "", videoCount: 0, description: "", publishedAt: "" });
+		expect(recordQuotaUsage).toHaveBeenCalledWith("playlists");
+	});
+
+	it("items 無しは空配列", async () => {
+		const c = makeClient();
+		c.playlists.list.mockResolvedValue({ data: {} });
+		expect(await fetchChannelPlaylists(asYoutube(c), "ch")).toEqual([]);
+	});
+
+	it("API エラーは再 throw", async () => {
+		const c = makeClient();
+		c.playlists.list.mockRejectedValue(new Error("pl fail"));
+		await expect(fetchChannelPlaylists(asYoutube(c), "ch")).rejects.toThrow("pl fail");
+	});
+});
+
+describe("fetchPlaylistItems", () => {
+	it("クォータ不足は空配列（即 break）", async () => {
+		canExecuteOperation.mockReturnValue(false);
+		expect(await fetchPlaylistItems(asYoutube(makeClient()), "pl")).toEqual([]);
+	});
+
+	it("ページネーションして videoId を集約する（空 videoId は除外）", async () => {
+		const c = makeClient();
+		c.playlistItems.list
+			.mockResolvedValueOnce({
+				data: { items: [{ contentDetails: { videoId: "a" } }], nextPageToken: "n1" },
+			})
+			.mockResolvedValueOnce({
+				data: { items: [{ contentDetails: { videoId: "b" } }, { contentDetails: {} }] },
+			});
+		const r = await fetchPlaylistItems(asYoutube(c), "pl");
+		expect(r).toEqual(["a", "b"]);
+		expect(c.playlistItems.list).toHaveBeenCalledTimes(2);
+	});
+
+	it("API エラーは break して取得済みを返す", async () => {
+		const c = makeClient();
+		c.playlistItems.list.mockRejectedValue(new Error("items fail"));
+		expect(await fetchPlaylistItems(asYoutube(c), "pl")).toEqual([]);
+	});
+});

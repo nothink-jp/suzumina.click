@@ -53,6 +53,15 @@ describe("Work ID Validator", () => {
 			expect(result).toHaveProperty("regionWarning");
 			expect(result).toHaveProperty("details");
 		});
+
+		it("logDetails 有効時は欠落/余剰の詳細ログ分岐を通る", () => {
+			// 期待: RJ123456/RJ789012/RJ111111/RJ222222（モック）
+			// 取得: 一部一致 + 期待外 → missing>0 かつ extra>0 の両分岐を通す
+			const result = validateWorkIds(["RJ123456", "RJ_EXTRA"], { logDetails: true });
+			expect(result.totalFound).toBe(2);
+			expect(result.details.expectedButNotFound.length).toBeGreaterThan(0);
+			expect(result.details.foundButNotExpected.length).toBeGreaterThan(0);
+		});
 	});
 
 	describe("handleNoWorkIdsError", () => {
