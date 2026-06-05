@@ -85,6 +85,11 @@ describe("fromFirestore", () => {
 			const r = fromFirestore(doc({ liveBroadcastContent: "live" } as never));
 			expect(r._computed.isLive).toBe(true);
 		});
+
+		it("liveBroadcastContent が upcoming なら isUpcoming", () => {
+			const r = fromFirestore(doc({ liveBroadcastContent: "upcoming" } as never));
+			expect(r._computed.isUpcoming).toBe(true);
+		});
 	});
 });
 

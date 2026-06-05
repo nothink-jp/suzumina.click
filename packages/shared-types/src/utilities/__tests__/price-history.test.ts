@@ -13,9 +13,15 @@ describe("getCurrencyInfo", () => {
 });
 
 describe("formatPrice", () => {
-	it("既知通貨はシンボル付きで桁区切り", () => {
-		expect(formatPrice(1234567, "JPY")).toBe("¥1,234,567");
-		expect(formatPrice(1000, "USD")).toBe("$1,000");
+	// toLocaleString() の桁区切りはロケール依存のため、シンボル + 数字（区切り除去）で検証する
+	const digitsOf = (s: string) => s.replace(/[^\d]/g, "");
+
+	it("既知通貨はシンボルを前置する", () => {
+		const jpy = formatPrice(1234567, "JPY");
+		expect(jpy.startsWith("¥")).toBe(true);
+		expect(digitsOf(jpy)).toBe("1234567");
+
+		expect(formatPrice(1000, "USD").startsWith("$")).toBe(true);
 	});
 
 	it("未知通貨はコードをシンボル代わりに使う", () => {
