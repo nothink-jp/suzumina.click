@@ -35,12 +35,13 @@ export default defineConfig({
 				"scripts/**", // Build scripts
 			],
 			// 現状の実測値を下限とするラチェット閾値（回帰ガード / SPR-152）。
-			// branches は video-mapper 網羅で 69% まで改善。目標 75 へは後続増分で。
+			// branches は video-mapper / youtube-api / youtube-firestore / config-manager
+			// 網羅で目標 75 を達成（実測 st83/br75/fn89/ln83）。
 			thresholds: {
-				statements: 75,
-				branches: 67,
-				functions: 82,
-				lines: 75,
+				statements: 82,
+				branches: 73,
+				functions: 88,
+				lines: 82,
 			},
 		},
 	},
