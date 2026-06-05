@@ -21,7 +21,7 @@ export default defineConfig({
 			],
 			// 実測フロアに合わせたラチェット閾値（回帰ガード / SPR-152）。
 			// statements / lines / functions は目標 80 を超過。
-			// branches は 73.2% まで改善（残りは後続増分で 80 を目指す）。
+			// branches は後続増分で 80 を目指す。
 			thresholds: {
 				statements: 82,
 				branches: 72,

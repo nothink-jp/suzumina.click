@@ -58,7 +58,6 @@ describe("アクセサ / ビジネスロジック", () => {
 	it("getAll は優先順位順に全クリエイターを返す", () => {
 		const all = sample().getAll();
 		expect(all[0]).toEqual({ type: "voice", name: "佐倉" });
-		// voice(1) → scenario(2) → illustration(3) の順
 		expect(all.map((c) => c.type)).toEqual(["voice", "voice", "scenario", "illustration"]);
 	});
 
