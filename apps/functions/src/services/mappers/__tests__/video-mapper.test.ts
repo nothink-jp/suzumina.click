@@ -13,23 +13,31 @@ vi.mock("../../../shared/logger", () => ({
 	debug: vi.fn(),
 }));
 
-const ytVideo = (overrides: Partial<youtube_v3.Schema$Video> = {}): youtube_v3.Schema$Video => ({
-	id: "vid123",
-	snippet: {
-		title: "テスト動画",
-		description: "説明",
-		channelId: "UCxxxx",
-		channelTitle: "チャンネル",
-		publishedAt: "2024-01-01T00:00:00Z",
-		tags: ["t1", "t2"],
-		thumbnails: { high: { url: "https://i/h.jpg" } },
-		liveBroadcastContent: "none",
-		...overrides.snippet,
-	},
-	contentDetails: { duration: "PT3M45S", ...overrides.contentDetails },
-	statistics: { viewCount: "1000", likeCount: "10", commentCount: "5", ...overrides.statistics },
-	...overrides,
-});
+const ytVideo = (overrides: Partial<youtube_v3.Schema$Video> = {}): youtube_v3.Schema$Video => {
+	const { snippet, contentDetails, statistics, ...rest } = overrides;
+	return {
+		id: "vid123",
+		...rest,
+		// ネストオブジェクトは個別に深いマージする（rest 展開で上書きされないよう後置）
+		snippet: {
+			title: "テスト動画",
+			description: "説明",
+			channelId: "UCxxxx",
+			channelTitle: "チャンネル",
+			publishedAt: "2024-01-01T00:00:00Z",
+			tags: ["t1", "t2"],
+			thumbnails: { high: { url: "https://i/h.jpg" } },
+			liveBroadcastContent: "none",
+			...snippet,
+		},
+		contentDetails: { duration: "PT3M45S", ...contentDetails },
+		// statistics は「キーを明示指定したら（undefined 含め）その値」を優先する
+		statistics:
+			"statistics" in overrides
+				? statistics
+				: { viewCount: "1000", likeCount: "10", commentCount: "5" },
+	};
+};
 
 describe("mapYouTubeToVideoPlainObject", () => {
 	it("id または snippet が無ければ null", () => {
@@ -50,12 +58,31 @@ describe("mapYouTubeToVideoPlainObject", () => {
 			contentTags: ["t1", "t2"],
 		});
 		expect(v?.videoType).toBe("normal");
-		expect(v?.hasAudioButtons).toBe(true); // normal はボタン作成可
+		// 注: normal は hasAudioButtons=true だが _computed.canCreateButton=false（archived のみ true）。
+		// ソース側の非一貫性だが現挙動として固定する（統一は別タスク）。
+		expect(v?.hasAudioButtons).toBe(true);
+		expect(v?._computed?.canCreateButton).toBe(false);
 	});
 
 	it("statistics 無しは undefined", () => {
 		const v = mapYouTubeToVideoPlainObject(ytVideo({ statistics: undefined }));
 		expect(v?.statistics).toBeUndefined();
+	});
+
+	it("snippet の欠落フィールドは既定値（空文字 / 空サムネ）で補完する", () => {
+		// 必須 id + 最小 snippet（title 等を持たない）でフォールバック分岐を通す
+		const v = mapYouTubeToVideoPlainObject({
+			id: "min1",
+			snippet: { channelId: "c1" },
+		} as youtube_v3.Schema$Video);
+		expect(v?.title).toBe("");
+		expect(v?.description).toBe("");
+		expect(v?.channelTitle).toBe("");
+		expect(v?.categoryId).toBe("");
+		expect(v?.duration).toBe("");
+		expect(v?.thumbnailUrl).toBe("");
+		expect(v?.liveBroadcastContent).toBe("none");
+		expect(v?.tags?.contentTags).toEqual([]);
 	});
 
 	describe("determineVideoType", () => {
