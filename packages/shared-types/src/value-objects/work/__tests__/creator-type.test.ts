@@ -132,12 +132,12 @@ describe("CreatorUtils", () => {
 		expect(CreatorUtils.mergeCreators(["a", "b"], ["b", "c"])).toEqual(["a", "b", "c"]);
 	});
 
-	it("fromApiCreaters は undefined で空 VO を返す", () => {
-		expect(CreatorUtils.fromApiCreaters().totalCount()).toBe(0);
+	it("fromApiCreators は undefined で空 VO を返す", () => {
+		expect(CreatorUtils.fromApiCreators().totalCount()).toBe(0);
 	});
 
-	it("fromApiCreaters は既知タイプへ振り分け、未知は other へ", () => {
-		const vo = CreatorUtils.fromApiCreaters([
+	it("fromApiCreators は既知タイプへ振り分け、未知は other へ", () => {
+		const vo = CreatorUtils.fromApiCreators([
 			{ type: "voice", name: "声優A" },
 			{ type: "Voice", name: "声優A" }, // 大文字小文字を吸収 + 重複除去
 			{ type: "unknown", name: "謎" },
