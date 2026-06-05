@@ -37,9 +37,9 @@ describe("toServerModel", () => {
 			{ videoId: "v1", title: "t", publishedAt: "not-a-date" },
 			fakeFirestore,
 		);
-		// new Date("not-a-date") は Invalid Date → fromDate に渡るが iso が例外、
-		// 実装は try/catch ではなく fromDate に委譲するため kind は fromDate になる
-		expect(result.publishedAt).toHaveProperty("kind");
+		// "not-a-date" → new Date() で Invalid Date → fromDate 内の toISOString() が
+		// RangeError → toServerModel の try/catch で捕捉され now() を返す
+		expect(result.publishedAt).toEqual({ kind: "now" });
 	});
 });
 
