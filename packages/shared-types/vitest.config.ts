@@ -23,10 +23,10 @@ export default defineConfig({
 			// statements / lines / functions は目標 80 を超過。
 			// branches は後続増分で 80 を目指す。
 			thresholds: {
-				statements: 82,
-				branches: 72,
-				functions: 85,
-				lines: 82,
+				statements: 85,
+				branches: 75,
+				functions: 88,
+				lines: 85,
 			},
 		},
 	},
