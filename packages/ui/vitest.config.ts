@@ -51,14 +51,12 @@ export default defineConfig({
 			],
 			// カバレッジレポート形式
 			reporter: ["text", "html", "lcov"],
-			// 実測フロアに合わせたラチェット閾値（回帰ガード / SPR-152）。
-			// configurable-list utils / category-utils を網羅し branches 64% まで改善。
-			// 残り（component/hook 描画系）は後続増分で。
+			// 実測フロアに合わせたラチェット閾値（回帰ガード / SPR-152）
 			thresholds: {
-				statements: 67,
-				branches: 62,
-				functions: 61,
-				lines: 67,
+				statements: 72,
+				branches: 67,
+				functions: 66,
+				lines: 72,
 			},
 		},
 	},
