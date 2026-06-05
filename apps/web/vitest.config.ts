@@ -35,13 +35,12 @@ export default defineConfig({
 				"**/e2e/**",
 				"src/**/layout.tsx", // App Router boilerplate
 			],
-			// 現状の実測値を下限とするラチェット閾値（回帰ガード）。
-			// 目標値への引き上げは SPR-152 で段階的に行う。
+			// 実測フロアに合わせたラチェット閾値（回帰ガード / SPR-152）
 			thresholds: {
-				statements: 62,
-				branches: 52,
-				functions: 60,
-				lines: 63,
+				statements: 66,
+				branches: 57,
+				functions: 66,
+				lines: 66,
 			},
 		},
 		exclude: [
