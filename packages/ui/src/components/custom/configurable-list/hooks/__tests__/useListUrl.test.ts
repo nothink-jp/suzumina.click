@@ -96,18 +96,23 @@ describe("useListUrl: setter（pushState）", () => {
 		expect(p.get("page")).toBeNull();
 	});
 
-	it("setSort は sort を設定", () => {
+	it("setSort は sort を設定しページを 1 に戻す（page は URL から消える）", () => {
+		setSP("page=3");
 		const { result } = renderHook(() => useListUrl({ filters }));
 		act(() => result.current.setSort("rating"));
-		expect(lastPushedParams(pushSpy).get("sort")).toBe("rating");
+		const p = lastPushedParams(pushSpy);
+		expect(p.get("sort")).toBe("rating");
+		expect(p.get("page")).toBeNull();
 	});
 
-	it("setFilter: 配列はパイプ結合、boolean/range もシリアライズ", () => {
+	it("setFilter: 配列はパイプ結合、range はハイフン結合、boolean は文字列化", () => {
 		const { result } = renderHook(() => useListUrl({ filters }));
 		act(() => result.current.setFilter("tags", ["a", "b"]));
 		expect(lastPushedParams(pushSpy).get("tags")).toBe("a|b");
 		act(() => result.current.setFilter("price", { min: 5, max: 9 }));
 		expect(lastPushedParams(pushSpy).get("price")).toBe("5-9");
+		act(() => result.current.setFilter("flag", true));
+		expect(lastPushedParams(pushSpy).get("flag")).toBe("true");
 	});
 
 	it("setFilter: 'all'（showAll）はURLから除外", () => {
