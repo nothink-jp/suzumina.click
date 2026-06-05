@@ -13,6 +13,8 @@ export default defineConfig({
 		environment: "happy-dom",
 		setupFiles: ["./vitest.setup.ts"],
 		coverage: {
+			// `vitest run`（= pnpm test / verify / CI）で常に閾値を強制する（SPR-151）
+			enabled: true,
 			// カバレッジ対象ファイルを明示的に指定
 			include: [
 				"src/components/custom/**/*.{ts,tsx}", // カスタムコンポーネントのみ
@@ -49,8 +51,6 @@ export default defineConfig({
 			],
 			// カバレッジレポート形式
 			reporter: ["text", "html", "lcov"],
-			// `vitest run`（= pnpm test / verify / CI）で常に閾値を強制する（SPR-151）
-			enabled: true,
 			// 現状の実測値を下限とするラチェット閾値（回帰ガード）。
 			// 目標値への引き上げは SPR-152 で段階的に行う。
 			thresholds: {
