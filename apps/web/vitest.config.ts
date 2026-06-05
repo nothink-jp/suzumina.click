@@ -35,9 +35,8 @@ export default defineConfig({
 				"**/e2e/**",
 				"src/**/layout.tsx", // App Router boilerplate
 			],
-			// 実測フロアに合わせたラチェット閾値（回帰ガード / SPR-152）。
-			// works/lib の純粋 util（sorting/similarity/filtering/statistics）を
-			// 網羅し branches 59% まで改善。残り（component/Server Actions）は後続増分。
+			// 実測フロアに合わせたラチェット閾値（回帰ガード）。
+			// 純粋 util を優先網羅。残り（component/Server Actions）は後続増分で引き上げる。
 			thresholds: {
 				statements: 66,
 				branches: 57,

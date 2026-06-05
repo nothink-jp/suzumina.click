@@ -18,9 +18,20 @@ describe("calculateSimilarityScore", () => {
 		expect(calculateSimilarityScore(work({ circle: "C1" }), base, false, false, false)).toBe(0);
 	});
 
-	it("声優の共通数 × 3（部分一致含む）", () => {
+	it("声優の共通数 × 3（完全一致）", () => {
 		const w = work({ creators: { voice_by: [{ name: "声優A" }] } as never });
 		expect(calculateSimilarityScore(w, base, false, true, false)).toBe(3);
+	});
+
+	it("声優は部分一致（includes）でも加点される", () => {
+		// base「フルネーム太郎」、work「太郎」→ includes でマッチ（1名 × 3）。
+		// category を base 側のみ設定し、未指定同士の category 一致(+1)を避ける。
+		const singleBase = work({
+			category: "SOU",
+			creators: { voice_by: [{ name: "フルネーム太郎" }] } as never,
+		});
+		const w = work({ category: "GAM", creators: { voice_by: [{ name: "太郎" }] } as never });
+		expect(calculateSimilarityScore(w, singleBase, false, true, false)).toBe(3);
 	});
 
 	it("ジャンルの共通数 × 2", () => {

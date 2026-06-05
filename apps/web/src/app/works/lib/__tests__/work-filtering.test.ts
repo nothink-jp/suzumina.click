@@ -77,10 +77,12 @@ describe("filterWorksByUnifiedData", () => {
 	it("ageRating（特定指定）", () => {
 		expect(run({ ageRating: ["18禁"] })).toEqual(["w2"]);
 	});
-	it("language 指定でも配列を返す（shared-types フィルタ経由）", () => {
+	// language / showR18 の実フィルタロジックは shared-types 側（filterWorksByLanguage /
+	// filterR18Content）の責務。ここでは当該分岐が実行され例外なく配列を返すことだけを担保する。
+	it("language 指定で当該分岐を通り配列を返す（実フィルタは shared-types の責務）", () => {
 		expect(Array.isArray(filterWorksByUnifiedData(works, { language: "ja" }))).toBe(true);
 	});
-	it("showR18:false でも配列を返す（R18 除外フィルタ経由）", () => {
+	it("showR18:false で R18 除外分岐を通り配列を返す（実フィルタは shared-types の責務）", () => {
 		expect(Array.isArray(filterWorksByUnifiedData(works, { showR18: false }))).toBe(true);
 	});
 });
