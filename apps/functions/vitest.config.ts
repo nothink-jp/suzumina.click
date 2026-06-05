@@ -34,13 +34,13 @@ export default defineConfig({
 				"src/tools/firestore-local/**", // ローカル Emulator のシード/ダンプ用 dev ツール
 				"scripts/**", // Build scripts
 			],
-			// 現状の実測値を下限とするラチェット閾値（回帰ガード）。
-			// 目標値への引き上げは SPR-152 で段階的に行う。
+			// 現状の実測値を下限とするラチェット閾値（回帰ガード / SPR-152）。
+			// branches は video-mapper 網羅で 69% まで改善。目標 75 へは後続増分で。
 			thresholds: {
-				statements: 72,
-				branches: 60,
-				functions: 80,
-				lines: 72,
+				statements: 75,
+				branches: 67,
+				functions: 82,
+				lines: 75,
 			},
 		},
 	},
