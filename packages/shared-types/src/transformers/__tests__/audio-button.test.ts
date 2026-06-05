@@ -118,6 +118,24 @@ describe("fromFirestore", () => {
 		});
 		expect(fromSeconds?.createdAt).toBe(new Date(1700000000 * 1000).toISOString());
 	});
+
+	it("updatedAt 未指定時は createdAt にフォールバックする", () => {
+		const r = fromFirestore({
+			buttonText: "a",
+			videoId: "v",
+			createdAt: "2024-01-01T00:00:00.000Z",
+		});
+		expect(r?.updatedAt).toBe("2024-01-01T00:00:00.000Z");
+	});
+
+	// 注意: fromFirestore の durationText は createAudioButton と算出ロジックが異なる。
+	// fromFirestore は buildComputedProperties で常に "m:ss"（5秒→"0:05"）を返す一方、
+	// createAudioButton は formatDuration で "再生"/"N秒"/"m:ss" を返す（実装の不整合）。
+	// 統一は別タスク。ここでは fromFirestore 側の現挙動を固定する。
+	it("fromFirestore の durationText は常に m:ss 形式（createAudioButton とは別ロジック）", () => {
+		const r = fromFirestore({ buttonText: "a", videoId: "v", startTime: 0, endTime: 5 });
+		expect(r?._computed?.durationText).toBe("0:05");
+	});
 });
 
 describe("toFirestore", () => {
