@@ -307,9 +307,9 @@ export const CreatorUtils = {
 	},
 
 	/**
-	 * APIのcreater情報からCreatorsオブジェクトを構築
+	 * APIのcreator情報からCreatorsオブジェクトを構築
 	 */
-	fromApiCreaters: (creaters?: Array<{ type: string; name: string }>): CreatorsInfoValueObject => {
+	fromApiCreators: (creators?: Array<{ type: string; name: string }>): CreatorsInfoValueObject => {
 		const result: Record<string, string[]> = {
 			voice: [],
 			scenario: [],
@@ -318,7 +318,7 @@ export const CreatorUtils = {
 			other: [],
 		};
 
-		if (!creaters) {
+		if (!creators) {
 			const createResult = CreatorsInfoValueObject.create(result);
 			if (!createResult.isOk()) {
 				throw new Error(createResult.error.message);
@@ -326,7 +326,7 @@ export const CreatorUtils = {
 			return createResult.value;
 		}
 
-		creaters.forEach(({ type, name }) => {
+		creators.forEach(({ type, name }) => {
 			const normalizedType = type.toLowerCase();
 			if (normalizedType in result && result[normalizedType]) {
 				result[normalizedType]?.push(name);

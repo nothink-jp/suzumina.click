@@ -247,7 +247,7 @@ describe("creator-type", () => {
 			});
 		});
 
-		describe("fromApiCreaters", () => {
+		describe("fromApiCreators", () => {
 			it("should convert API format to CreatorsInfo", () => {
 				const apiData = [
 					{ type: "voice", name: "涼花みなせ" },
@@ -256,19 +256,19 @@ describe("creator-type", () => {
 					{ type: "unknown", name: "Unknown Creator" }, // Should go to other
 				];
 
-				const creators = CreatorUtils.fromApiCreaters(apiData);
+				const creators = CreatorUtils.fromApiCreators(apiData);
 				expect(creators.voice).toEqual(["涼花みなせ", "Voice Actor 2"]);
 				expect(creators.scenario).toEqual(["Writer 1"]);
 				expect(creators.other).toEqual(["Unknown Creator"]);
 			});
 
 			it("should handle empty input", () => {
-				const creators = CreatorUtils.fromApiCreaters([]);
+				const creators = CreatorUtils.fromApiCreators([]);
 				expect(creators.hasCreators()).toBe(false);
 			});
 
 			it("should handle undefined input", () => {
-				const creators = CreatorUtils.fromApiCreaters(undefined);
+				const creators = CreatorUtils.fromApiCreators(undefined);
 				expect(creators.hasCreators()).toBe(false);
 			});
 
@@ -278,7 +278,7 @@ describe("creator-type", () => {
 					{ type: "voice", name: "涼花みなせ" }, // Duplicate
 				];
 
-				const creators = CreatorUtils.fromApiCreaters(apiData);
+				const creators = CreatorUtils.fromApiCreators(apiData);
 				expect(creators.voice).toEqual(["涼花みなせ"]);
 			});
 		});
