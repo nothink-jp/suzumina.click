@@ -67,7 +67,7 @@ describe("generateDataQualityReport", () => {
 		expect(report.hasRating).toBe(2);
 		expect(report.hasGenres).toBe(3);
 		expect(report.hasDataSources).toBe(1);
-		expect(report.dataSourceCoverage.allThree).toBe(1); // searchResult & infoAPI
+		expect(report.dataSourceCoverage.searchResultAndInfoAPI).toBe(1); // searchResult & infoAPI
 		expect(report.percentages.hasGenres).toBe(100);
 		expect(report.percentages.hasHighResImage).toBe(33); // round(1/3*100)
 	});
