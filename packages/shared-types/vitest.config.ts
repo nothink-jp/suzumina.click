@@ -20,13 +20,12 @@ export default defineConfig({
 				"**/plain-objects/**", // plain object types only
 			],
 			// 実測フロアに合わせたラチェット閾値（回帰ガード / SPR-152）。
-			// statements / lines / functions は目標 80 を超過。
-			// branches は後続増分で 80 を目指す。
+			// 4 指標すべて目標 80 を達成済み（実測 st89/br80/fn90/ln90）。
 			thresholds: {
-				statements: 85,
-				branches: 75,
+				statements: 87,
+				branches: 78,
 				functions: 88,
-				lines: 85,
+				lines: 88,
 			},
 		},
 	},
