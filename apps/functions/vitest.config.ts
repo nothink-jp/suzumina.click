@@ -19,6 +19,8 @@ export default defineConfig({
 			},
 		},
 		coverage: {
+			// `vitest run`（= pnpm test / verify / CI）で常に閾値を強制する（SPR-151）
+			enabled: true,
 			provider: "v8",
 			reporter: ["text", "json", "lcov", "clover"],
 			reportsDirectory: "./coverage",
@@ -32,11 +34,13 @@ export default defineConfig({
 				"src/tools/firestore-local/**", // ローカル Emulator のシード/ダンプ用 dev ツール
 				"scripts/**", // Build scripts
 			],
+			// 現状の実測値を下限とするラチェット閾値（回帰ガード）。
+			// 目標値への引き上げは SPR-152 で段階的に行う。
 			thresholds: {
-				statements: 50,
-				branches: 75,
-				functions: 70,
-				lines: 50,
+				statements: 72,
+				branches: 60,
+				functions: 80,
+				lines: 72,
 			},
 		},
 	},

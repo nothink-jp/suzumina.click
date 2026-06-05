@@ -7,6 +7,8 @@ export default defineConfig({
 		globals: true,
 		environment: "node",
 		coverage: {
+			// `vitest run`（= pnpm test / verify / CI）で常に閾値を強制する（SPR-151）
+			enabled: true,
 			provider: "v8",
 			reporter: ["text", "json", "lcov"],
 			exclude: [
@@ -17,11 +19,13 @@ export default defineConfig({
 				"**/types/firestore/**", // firestore type definitions only
 				"**/plain-objects/**", // plain object types only
 			],
+			// 現状の実測値を下限とするラチェット閾値（回帰ガード）。
+			// 目標値（80）への引き上げは SPR-152 で段階的に行う。
 			thresholds: {
-				statements: 80,
-				branches: 80,
-				functions: 80,
-				lines: 80,
+				statements: 72,
+				branches: 63,
+				functions: 77,
+				lines: 72,
 			},
 		},
 	},

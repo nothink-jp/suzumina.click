@@ -19,6 +19,31 @@ export default defineConfig({
 				external: ["next/server"],
 			},
 		},
+		coverage: {
+			// `vitest run`（= pnpm test / verify / CI）で常に閾値を強制する（SPR-151）
+			enabled: true,
+			provider: "v8",
+			reporter: ["text", "json", "lcov"],
+			exclude: [
+				"node_modules/**",
+				"**/dist/**",
+				"**/.next/**",
+				"**/*.d.ts",
+				"**/*.config.{js,ts,mjs,cjs,mts,cts}",
+				"**/*.stories.{ts,tsx}",
+				"**/__tests__/**",
+				"**/e2e/**",
+				"src/**/layout.tsx", // App Router boilerplate
+			],
+			// 現状の実測値を下限とするラチェット閾値（回帰ガード）。
+			// 目標値への引き上げは SPR-152 で段階的に行う。
+			thresholds: {
+				statements: 62,
+				branches: 52,
+				functions: 60,
+				lines: 63,
+			},
+		},
 		exclude: [
 			"**/node_modules/**",
 			"**/dist/**",
