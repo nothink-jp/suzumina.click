@@ -19,13 +19,14 @@ export default defineConfig({
 				"**/types/firestore/**", // firestore type definitions only
 				"**/plain-objects/**", // plain object types only
 			],
-			// 現状の実測値を下限とするラチェット閾値（回帰ガード）。
-			// 目標値（80）への引き上げは SPR-152 で段階的に行う。
+			// 実測フロアに合わせたラチェット閾値（回帰ガード / SPR-152）。
+			// statements / lines / functions は目標 80 に到達済み。
+			// branches は 71.3% まで改善（残りは後続増分で 80 を目指す）。
 			thresholds: {
-				statements: 72,
-				branches: 63,
-				functions: 77,
-				lines: 72,
+				statements: 80,
+				branches: 70,
+				functions: 83,
+				lines: 80,
 			},
 		},
 	},
