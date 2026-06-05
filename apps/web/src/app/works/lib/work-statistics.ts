@@ -15,8 +15,8 @@ interface QualityStats {
 	dataSourceCoverage: {
 		searchResult: number;
 		infoAPI: number;
-		detailPage: number;
-		allThree: number;
+		/** searchResult と infoAPI の両方を持つ件数（dataSources は detailPage を持たない） */
+		searchResultAndInfoAPI: number;
 	};
 }
 
@@ -55,7 +55,7 @@ function updateDataSourceStats(work: WorkDocument, stats: QualityStats) {
 		if (sources.infoAPI) stats.dataSourceCoverage.infoAPI++;
 
 		if (sources.searchResult && sources.infoAPI) {
-			stats.dataSourceCoverage.allThree++;
+			stats.dataSourceCoverage.searchResultAndInfoAPI++;
 		}
 	}
 }
@@ -71,7 +71,7 @@ function calculateQualityPercentages(stats: QualityStats) {
 		hasDetailedCreators: Math.round((stats.hasDetailedCreators / total) * 100),
 		hasRating: Math.round((stats.hasRating / total) * 100),
 		hasGenres: Math.round((stats.hasGenres / total) * 100),
-		dataSourceCoverage: Math.round((stats.dataSourceCoverage.allThree / total) * 100),
+		dataSourceCoverage: Math.round((stats.dataSourceCoverage.searchResultAndInfoAPI / total) * 100),
 	};
 }
 
@@ -215,8 +215,7 @@ export function generateDataQualityReport(allWorks: WorkDocument[]) {
 		dataSourceCoverage: {
 			searchResult: 0,
 			infoAPI: 0,
-			detailPage: 0,
-			allThree: 0,
+			searchResultAndInfoAPI: 0,
 		},
 	};
 
