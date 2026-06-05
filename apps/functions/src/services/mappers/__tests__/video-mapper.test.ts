@@ -1,14 +1,11 @@
-import { Video } from "@suzumina.click/shared-types";
 import type { youtube_v3 } from "googleapis";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
-	type BatchMappingResult,
-	mapYouTubeToVideoEntity,
-	mapYouTubeVideosToEntities,
+	mapYouTubeToVideoPlainObject,
 	mapYouTubeVideosWithErrors,
+	VideoMapper,
 } from "../video-mapper";
 
-// Mock logger
 vi.mock("../../../shared/logger", () => ({
 	info: vi.fn(),
 	warn: vi.fn(),
@@ -16,337 +13,167 @@ vi.mock("../../../shared/logger", () => ({
 	debug: vi.fn(),
 }));
 
-// biome-ignore lint/suspicious/noSkippedTests: Entity tests need migration to PlainObject
-describe.skip("Video Mapper V2 (Entity tests - needs migration to PlainObject)", () => {
-	// Sample YouTube API response
-	const createYouTubeVideo = (
-		overrides?: Partial<youtube_v3.Schema$Video>,
-	): youtube_v3.Schema$Video => ({
-		id: "test123test",
-		snippet: {
-			title: "Test Video",
-			description: "Test Description",
-			channelId: "UCxxxxxxxxxxxxxxxxxxxxxx",
-			channelTitle: "Test Channel",
-			publishedAt: "2024-01-01T00:00:00Z",
-			tags: ["tag1", "tag2"],
-			thumbnails: {
-				default: { url: "https://example.com/default.jpg" },
-				high: { url: "https://example.com/high.jpg" },
-			},
-			liveBroadcastContent: "none",
-		},
-		contentDetails: {
-			duration: "PT3M45S",
-			dimension: "2d",
-			definition: "hd",
-			caption: "true",
-			licensedContent: true,
-			projection: "rectangular",
-		},
-		statistics: {
-			viewCount: "1000000",
-			likeCount: "50000",
-			dislikeCount: "1000",
-			favoriteCount: "100",
-			commentCount: "5000",
-		},
-		status: {
-			uploadStatus: "processed",
-			privacyStatus: "public",
-			license: "youtube",
-		},
-		player: {
-			embedHtml: '<iframe src="..."></iframe>',
-		},
-		liveStreamingDetails: {
-			scheduledStartTime: "2024-02-01T10:00:00Z",
-			actualStartTime: "2024-02-01T10:05:00Z",
-			actualEndTime: "2024-02-01T12:00:00Z",
-			concurrentViewers: "1500",
-		},
-		...overrides,
+const ytVideo = (overrides: Partial<youtube_v3.Schema$Video> = {}): youtube_v3.Schema$Video => ({
+	id: "vid123",
+	snippet: {
+		title: "テスト動画",
+		description: "説明",
+		channelId: "UCxxxx",
+		channelTitle: "チャンネル",
+		publishedAt: "2024-01-01T00:00:00Z",
+		tags: ["t1", "t2"],
+		thumbnails: { high: { url: "https://i/h.jpg" } },
+		liveBroadcastContent: "none",
+		...overrides.snippet,
+	},
+	contentDetails: { duration: "PT3M45S", ...overrides.contentDetails },
+	statistics: { viewCount: "1000", likeCount: "10", commentCount: "5", ...overrides.statistics },
+	...overrides,
+});
+
+describe("mapYouTubeToVideoPlainObject", () => {
+	it("id または snippet が無ければ null", () => {
+		expect(mapYouTubeToVideoPlainObject({ snippet: {} } as youtube_v3.Schema$Video)).toBeNull();
+		expect(mapYouTubeToVideoPlainObject({ id: "x" } as youtube_v3.Schema$Video)).toBeNull();
 	});
 
-	beforeEach(() => {
-		vi.clearAllMocks();
+	it("通常動画の主要フィールドを写像する", () => {
+		const v = mapYouTubeToVideoPlainObject(ytVideo(), ["pl"], ["user"]);
+		expect(v?.videoId).toBe("vid123");
+		expect(v?.title).toBe("テスト動画");
+		expect(v?.statistics?.viewCount).toBe(1000);
+		expect(v?.thumbnailUrl).toBe("https://i/h.jpg");
+		expect(v?._computed?.youtubeUrl).toBe("https://youtube.com/watch?v=vid123");
+		expect(v?.tags).toEqual({
+			playlistTags: ["pl"],
+			userTags: ["user"],
+			contentTags: ["t1", "t2"],
+		});
+		expect(v?.videoType).toBe("normal");
+		expect(v?.hasAudioButtons).toBe(true); // normal はボタン作成可
 	});
 
-	describe("mapYouTubeToVideoEntity", () => {
-		it("should map complete YouTube video data to Video Entity", () => {
-			const youtubeVideo = createYouTubeVideo();
-			const playlistTags = ["playlist1", "playlist2"];
-			const userTags = ["user1", "user2"];
-
-			const video = mapYouTubeToVideoEntity(youtubeVideo, playlistTags, userTags);
-
-			expect(video).toBeDefined();
-			expect(video).toBeInstanceOf(Video);
-			expect(video?.id).toBe("test123test");
-			expect(video?.metadata.title.toString()).toBe("Test Video");
-			expect(video?.metadata.description.toString()).toBe("Test Description");
-			expect(video?.channel.id.toString()).toBe("UCxxxxxxxxxxxxxxxxxxxxxx");
-			expect(video?.channel.title.toString()).toBe("Test Channel");
-			expect(video?.content.publishedAt.toISOString()).toBe("2024-01-01T00:00:00.000Z");
-			// statistics getterはプレーンオブジェクトを返す
-			expect(video?.statistics?.viewCount).toBe(1000000);
-			// tagsは個別のgetterに分かれた
-			expect(video?.playlistTags).toEqual(playlistTags);
-			expect(video?.userTags).toEqual(userTags);
-			expect(video?.tags).toEqual(["tag1", "tag2"]);
-		});
-
-		it("should map minimal YouTube video data", () => {
-			const youtubeVideo = createYouTubeVideo({
-				contentDetails: undefined,
-				statistics: undefined,
-				status: undefined,
-				player: undefined,
-				liveStreamingDetails: undefined,
-			});
-
-			const video = mapYouTubeToVideoEntity(youtubeVideo);
-
-			expect(video).toBeDefined();
-			expect(video?.id).toBe("test123test");
-			expect(video?.statistics).toBeUndefined();
-			expect(video?.liveStreamingDetails).toBeUndefined();
-		});
-
-		it("should handle missing required fields", () => {
-			const videoWithoutId = createYouTubeVideo({ id: undefined });
-			expect(mapYouTubeToVideoEntity(videoWithoutId)).toBeNull();
-
-			const videoWithoutSnippet = createYouTubeVideo({ snippet: undefined });
-			expect(mapYouTubeToVideoEntity(videoWithoutSnippet)).toBeNull();
-		});
-
-		it("should handle missing channel information", () => {
-			const video = createYouTubeVideo({
-				snippet: {
-					...createYouTubeVideo().snippet,
-					channelId: undefined,
-				},
-			});
-
-			expect(mapYouTubeToVideoEntity(video)).toBeNull();
-		});
-
-		it("should map content details correctly", () => {
-			const video = mapYouTubeToVideoEntity(createYouTubeVideo());
-
-			expect(video?.metadata.duration?.toString()).toBe("PT3M45S");
-			expect(video?.metadata.dimension).toBe("2d");
-			expect(video?.metadata.definition).toBe("hd");
-			expect(video?.metadata.hasCaption).toBe(true);
-			expect(video?.metadata.isLicensedContent).toBe(true);
-		});
-
-		it("should map statistics correctly", () => {
-			const video = mapYouTubeToVideoEntity(createYouTubeVideo());
-
-			// statistics getterはプレーンオブジェクトを返す
-			expect(video?.statistics?.viewCount).toBe(1000000);
-			expect(video?.statistics?.likeCount).toBe(50000);
-			expect(video?.statistics?.dislikeCount).toBe(1000);
-			expect(video?.statistics?.favoriteCount).toBe(100);
-			expect(video?.statistics?.commentCount).toBe(5000);
-		});
-
-		it("should map live streaming details correctly", () => {
-			const video = mapYouTubeToVideoEntity(createYouTubeVideo());
-
-			// liveStreamingDetails getterはISO文字列を返す
-			expect(video?.liveStreamingDetails?.scheduledStartTime).toBe("2024-02-01T10:00:00.000Z");
-			expect(video?.liveStreamingDetails?.actualStartTime).toBe("2024-02-01T10:05:00.000Z");
-			expect(video?.liveStreamingDetails?.actualEndTime).toBe("2024-02-01T12:00:00.000Z");
-			expect(video?.liveStreamingDetails?.concurrentViewers).toBe(1500);
-		});
+	it("statistics 無しは undefined", () => {
+		const v = mapYouTubeToVideoPlainObject(ytVideo({ statistics: undefined }));
+		expect(v?.statistics).toBeUndefined();
 	});
 
-	describe("mapYouTubeVideosToEntities", () => {
-		it("should map multiple videos successfully", () => {
-			const youtubeVideos = [
-				createYouTubeVideo({ id: "video1" }),
-				createYouTubeVideo({ id: "video2" }),
-				createYouTubeVideo({ id: "video3" }),
-			];
+	describe("determineVideoType", () => {
+		const typeOf = (o: Partial<youtube_v3.Schema$Video>) =>
+			mapYouTubeToVideoPlainObject(ytVideo(o))?.videoType;
 
-			const playlistTagsMap = new Map([
-				["video1", ["playlist1"]],
-				["video2", ["playlist2"]],
-			]);
-
-			const userTagsMap = new Map([
-				["video1", ["user1"]],
-				["video3", ["user3"]],
-			]);
-
-			const videos = mapYouTubeVideosToEntities(youtubeVideos, playlistTagsMap, userTagsMap);
-
-			expect(videos).toHaveLength(3);
-			expect(videos[0].id).toBe("video1");
-			// tagsは個別のgetterに分かれた
-			expect(videos[0].playlistTags).toEqual(["playlist1"]);
-			expect(videos[0].userTags).toEqual(["user1"]);
-			expect(videos[1].id).toBe("video2");
-			expect(videos[1].playlistTags).toEqual(["playlist2"]);
-			expect(videos[1].userTags).toEqual([]);
-			expect(videos[2].id).toBe("video3");
-			expect(videos[2].playlistTags).toEqual([]);
-			expect(videos[2].userTags).toEqual(["user3"]);
+		it("#shorts をタイトル/説明に含むと short", () => {
+			expect(typeOf({ snippet: { title: "曲 #shorts" } })).toBe("short");
+			expect(typeOf({ snippet: { title: "x", description: "#shorts" } })).toBe("short");
 		});
 
-		it("should skip invalid videos", () => {
-			const youtubeVideos = [
-				createYouTubeVideo({ id: "valid1" }),
-				createYouTubeVideo({ id: undefined }), // Invalid
-				createYouTubeVideo({ snippet: undefined }), // Invalid
-				createYouTubeVideo({ id: "valid2" }),
-			];
-
-			const videos = mapYouTubeVideosToEntities(youtubeVideos);
-
-			expect(videos).toHaveLength(2);
-			expect(videos[0].id).toBe("valid1");
-			expect(videos[1].id).toBe("valid2");
+		it("60秒未満は short", () => {
+			expect(typeOf({ contentDetails: { duration: "PT30S" } })).toBe("short");
 		});
-	});
 
-	describe("mapYouTubeVideosWithErrors", () => {
-		it("should provide detailed error information", () => {
-			const youtubeVideos = [
-				createYouTubeVideo({ id: "valid1" }),
-				createYouTubeVideo({ id: undefined }), // Missing ID
-				createYouTubeVideo({ snippet: undefined }), // Missing snippet
-				createYouTubeVideo({
-					id: "invalid-channel",
-					snippet: {
-						...createYouTubeVideo().snippet,
-						channelId: undefined, // Missing channel
-					},
+		it("配信中（actualStartTime あり・未終了）は live", () => {
+			expect(typeOf({ liveStreamingDetails: { actualStartTime: "2024-01-01T00:00:00Z" } })).toBe(
+				"live",
+			);
+		});
+
+		it("配信予定（scheduledStartTime のみ）は upcoming", () => {
+			expect(typeOf({ liveStreamingDetails: { scheduledStartTime: "2099-01-01T00:00:00Z" } })).toBe(
+				"upcoming",
+			);
+		});
+
+		it("liveStreamingDetails あり・開始終了情報なしは premiere", () => {
+			expect(typeOf({ liveStreamingDetails: {} })).toBe("premiere");
+		});
+
+		it("終了済み・15分超は archived、15分以下は premiere", () => {
+			expect(
+				typeOf({
+					contentDetails: { duration: "PT20M" },
+					liveStreamingDetails: { actualEndTime: "2024-01-01T01:00:00Z" },
 				}),
-			];
-
-			const result: BatchMappingResult = mapYouTubeVideosWithErrors(youtubeVideos);
-
-			expect(result.totalProcessed).toBe(4);
-			expect(result.successCount).toBe(1);
-			expect(result.failureCount).toBe(3);
-			expect(result.videos).toHaveLength(1);
-			expect(result.errors).toHaveLength(3);
-
-			expect(result.errors[0]).toEqual({
-				field: "id",
-				reason: "Missing video ID",
-			});
-			expect(result.errors[1]).toEqual({
-				videoId: expect.any(String),
-				field: "snippet",
-				reason: "Missing video snippet",
-			});
-			expect(result.errors[2]).toEqual({
-				videoId: "invalid-channel",
-				field: "mapping",
-				reason: "Failed to create Video entity",
-			});
-		});
-
-		it("should handle all valid videos", () => {
-			const youtubeVideos = [
-				createYouTubeVideo({ id: "video1" }),
-				createYouTubeVideo({ id: "video2" }),
-			];
-
-			const result = mapYouTubeVideosWithErrors(youtubeVideos);
-
-			expect(result.totalProcessed).toBe(2);
-			expect(result.successCount).toBe(2);
-			expect(result.failureCount).toBe(0);
-			expect(result.videos).toHaveLength(2);
-			expect(result.errors).toHaveLength(0);
+			).toBe("archived");
+			expect(
+				typeOf({
+					contentDetails: { duration: "PT5M" },
+					liveStreamingDetails: { actualEndTime: "2024-01-01T01:00:00Z" },
+				}),
+			).toBe("premiere");
 		});
 	});
 
-	describe("Error handling", () => {
-		it("should handle exceptions during mapping", () => {
-			const invalidVideo = createYouTubeVideo({
-				snippet: {
-					...createYouTubeVideo().snippet,
-					publishedAt: "invalid-date", // This will create an invalid date
-				},
-			});
-
-			const video = mapYouTubeToVideoEntity(invalidVideo);
-			// With the new parseDate utility, invalid dates are handled gracefully
-			expect(video).toBeNull(); // Video creation fails due to invalid publishedAt
-		});
-
-		it("should handle invalid duration format", () => {
-			const video = createYouTubeVideo({
-				contentDetails: {
-					...createYouTubeVideo().contentDetails,
-					duration: "invalid-duration",
-				},
-			});
-
-			const result = mapYouTubeToVideoEntity(video);
-			// Video is still created with invalid duration string (duration validation is lenient)
-			expect(result).toBeDefined();
-			expect(result?.metadata.duration?.toString()).toBe("invalid-duration");
-		});
+	it("archived はボタン作成可・_computed フラグが整合する", () => {
+		const v = mapYouTubeToVideoPlainObject(
+			ytVideo({
+				contentDetails: { duration: "PT20M" },
+				liveStreamingDetails: { actualEndTime: "2024-01-01T01:00:00Z" },
+			}),
+		);
+		expect(v?._computed?.isArchived).toBe(true);
+		expect(v?._computed?.canCreateButton).toBe(true);
+		expect(v?.hasAudioButtons).toBe(true);
 	});
 
-	describe("NaN validation", () => {
-		it("should handle invalid favoriteCount values", () => {
-			const youtubeVideo: youtube_v3.Schema$Video = {
-				id: "test123",
-				snippet: {
-					title: "Test Video",
-					description: "Test Description",
-					channelId: "UCxxxxxxxxxxxxxxxxxxxxxx",
-					channelTitle: "Test Channel",
-					publishedAt: "2024-01-01T00:00:00Z",
-				},
-				statistics: {
-					viewCount: "1000",
-					favoriteCount: "invalid", // Invalid number string
-				},
-			};
-
-			const video = mapYouTubeToVideoEntity(youtubeVideo);
-			expect(video).not.toBeNull();
-			expect(video?.statistics?.favoriteCount).toBe(0); // Invalid values are converted to 0
-		});
-
-		it("should handle invalid concurrentViewers values", () => {
-			const youtubeVideo = createYouTubeVideo({
+	it("liveStreamingDetails の concurrentViewers(文字列)を数値化する", () => {
+		const v = mapYouTubeToVideoPlainObject(
+			ytVideo({
 				liveStreamingDetails: {
-					concurrentViewers: "not-a-number", // Invalid number string
+					actualStartTime: "2024-01-01T00:00:00Z",
+					concurrentViewers: "42",
 				},
-			});
+			}),
+		);
+		expect(v?.liveStreamingDetails?.concurrentViewers).toBe(42);
+	});
 
-			const video = mapYouTubeToVideoEntity(youtubeVideo);
-			expect(video).not.toBeNull();
-			expect(video?.liveStreamingDetails?.concurrentViewers).toBeUndefined();
+	describe("getBestThumbnail（thumbnailUrl 経由）", () => {
+		const thumbUrl = (thumbnails: youtube_v3.Schema$ThumbnailDetails) =>
+			mapYouTubeToVideoPlainObject(ytVideo({ snippet: { thumbnails } }))?.thumbnailUrl;
+
+		it("maxres > standard > high > medium > default の優先順", () => {
+			expect(thumbUrl({ maxres: { url: "max" }, high: { url: "high" } })).toBe("max");
+			expect(thumbUrl({ standard: { url: "std" }, high: { url: "high" } })).toBe("std");
+			expect(thumbUrl({ medium: { url: "med" }, default: { url: "def" } })).toBe("med");
+			expect(thumbUrl({ default: { url: "def" } })).toBe("def");
 		});
 
-		it("should handle invalid date values in liveStreamingDetails", () => {
-			const youtubeVideo = createYouTubeVideo({
-				liveStreamingDetails: {
-					scheduledStartTime: "invalid-date",
-					actualStartTime: "2024-99-99T99:99:99Z", // Invalid date format
-					actualEndTime: "not a date",
-					concurrentViewers: "1000",
-				},
-			});
-
-			const video = mapYouTubeToVideoEntity(youtubeVideo);
-			expect(video).not.toBeNull();
-			expect(video?.liveStreamingDetails?.scheduledStartTime).toBeUndefined();
-			expect(video?.liveStreamingDetails?.actualStartTime).toBeUndefined();
-			expect(video?.liveStreamingDetails?.actualEndTime).toBeUndefined();
-			expect(video?.liveStreamingDetails?.concurrentViewers).toBe(1000); // Valid number
+		it("サムネイル無しは空文字", () => {
+			expect(thumbUrl({})).toBe("");
 		});
+	});
+});
+
+describe("mapYouTubeVideosWithErrors", () => {
+	it("id 欠落・snippet 欠落をエラーとして収集する", () => {
+		const result = mapYouTubeVideosWithErrors([
+			{} as youtube_v3.Schema$Video, // id 欠落
+			{ id: "noSnippet" } as youtube_v3.Schema$Video, // snippet 欠落
+			ytVideo({ id: "ok1" }),
+		]);
+		expect(result.totalProcessed).toBe(3);
+		expect(result.successCount).toBe(1);
+		expect(result.failureCount).toBe(2);
+		expect(result.errors.map((e) => e.field).sort()).toEqual(["id", "snippet"]);
+		expect(result.videos[0]?.videoId).toBe("ok1");
+	});
+
+	it("playlistTags / userTags マップを引き当てる", () => {
+		const result = mapYouTubeVideosWithErrors(
+			[ytVideo({ id: "v1" })],
+			new Map([["v1", ["pl"]]]),
+			new Map([["v1", ["ut"]]]),
+		);
+		expect(result.videos[0]?.tags?.playlistTags).toEqual(["pl"]);
+		expect(result.videos[0]?.tags?.userTags).toEqual(["ut"]);
+	});
+});
+
+describe("VideoMapper（互換 API）", () => {
+	it("fromYouTubeAPI / fromYouTubeAPIWithTags", () => {
+		expect(VideoMapper.fromYouTubeAPI(ytVideo())?.videoId).toBe("vid123");
+		expect(VideoMapper.fromYouTubeAPIWithTags(ytVideo(), ["p"], ["u"])?.tags?.playlistTags).toEqual(
+			["p"],
+		);
 	});
 });
