@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../../shared/logger", () => ({
 	info: vi.fn(),
@@ -9,7 +9,12 @@ vi.mock("../../../shared/logger", () => ({
 
 import { ConfigManager, getConfig, isFeatureEnabled } from "../config-manager";
 
-const mgr = ConfigManager.getInstance();
+// 各テストでシングルトン状態をリセットし、テスト順序に依存させない
+let mgr: ConfigManager;
+beforeEach(() => {
+	(ConfigManager as unknown as { instance: ConfigManager | undefined }).instance = undefined;
+	mgr = ConfigManager.getInstance();
+});
 
 describe("ConfigManager: アクセサ", () => {
 	it("各セクションはコピーを返す", () => {
