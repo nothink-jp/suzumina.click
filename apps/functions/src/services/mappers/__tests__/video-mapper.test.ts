@@ -58,9 +58,8 @@ describe("mapYouTubeToVideoPlainObject", () => {
 			contentTags: ["t1", "t2"],
 		});
 		expect(v?.videoType).toBe("normal");
-		// 注: normal は hasAudioButtons=true だが _computed.canCreateButton=false（archived のみ true）。
-		// ソース側の非一貫性だが現挙動として固定する（統一は別タスク）。
-		expect(v?.hasAudioButtons).toBe(true);
+		// 許諾上ボタン作成可は archived のみ。normal は hasAudioButtons / canCreateButton とも false で整合する。
+		expect(v?.hasAudioButtons).toBe(false);
 		expect(v?._computed?.canCreateButton).toBe(false);
 	});
 
