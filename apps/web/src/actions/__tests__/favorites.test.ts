@@ -29,7 +29,7 @@ beforeEach(() => {
 describe("addFavoriteAction", () => {
 	it("未ログインはエラー", async () => {
 		logout();
-		expect(await addFavoriteAction({ audioButtonId: "a" } as never)).toEqual({
+		expect(await addFavoriteAction({ audioButtonId: "a" })).toEqual({
 			success: false,
 			error: "ログインが必要です",
 		});
@@ -39,7 +39,7 @@ describe("addFavoriteAction", () => {
 	it("ログイン時は addFavorite に委譲", async () => {
 		login();
 		fs.addFavorite.mockResolvedValue({ success: true } as never);
-		const r = await addFavoriteAction({ audioButtonId: "a" } as never);
+		const r = await addFavoriteAction({ audioButtonId: "a" });
 		expect(r).toEqual({ success: true });
 		expect(fs.addFavorite).toHaveBeenCalledWith("u1", { audioButtonId: "a" });
 	});
@@ -47,7 +47,7 @@ describe("addFavoriteAction", () => {
 	it("例外は catch してエラーメッセージを返す", async () => {
 		login();
 		fs.addFavorite.mockRejectedValue(new Error("boom"));
-		expect(await addFavoriteAction({ audioButtonId: "a" } as never)).toEqual({
+		expect(await addFavoriteAction({ audioButtonId: "a" })).toEqual({
 			success: false,
 			error: "boom",
 		});
@@ -55,12 +55,24 @@ describe("addFavoriteAction", () => {
 });
 
 describe("removeFavoriteAction", () => {
-	it("未ログインはエラー / ログイン時委譲", async () => {
+	it("未ログインはエラー", async () => {
 		logout();
-		expect((await removeFavoriteAction({ audioButtonId: "a" } as never)).success).toBe(false);
+		expect((await removeFavoriteAction({ audioButtonId: "a" })).success).toBe(false);
+	});
+
+	it("ログイン時は removeFavorite に委譲", async () => {
 		login();
 		fs.removeFavorite.mockResolvedValue({ success: true } as never);
-		expect(await removeFavoriteAction({ audioButtonId: "a" } as never)).toEqual({ success: true });
+		expect(await removeFavoriteAction({ audioButtonId: "a" })).toEqual({ success: true });
+	});
+
+	it("例外は catch してエラーメッセージを返す", async () => {
+		login();
+		fs.removeFavorite.mockRejectedValue(new Error("boom"));
+		expect(await removeFavoriteAction({ audioButtonId: "a" })).toEqual({
+			success: false,
+			error: "boom",
+		});
 	});
 });
 
@@ -71,9 +83,12 @@ describe("toggleFavoriteAction", () => {
 		expect(await toggleFavoriteAction("a")).toEqual({ success: true, isFavorited: true });
 	});
 
-	it("未ログインはエラー / 例外は catch", async () => {
+	it("未ログインはエラー", async () => {
 		logout();
 		expect((await toggleFavoriteAction("a")).success).toBe(false);
+	});
+
+	it("例外は catch する", async () => {
 		login();
 		fs.toggleFavorite.mockRejectedValue(new Error("x"));
 		expect((await toggleFavoriteAction("a")).success).toBe(false);
