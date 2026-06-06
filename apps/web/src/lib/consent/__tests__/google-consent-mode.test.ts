@@ -18,6 +18,8 @@ beforeEach(() => {
 
 afterEach(() => {
 	localStorage.clear();
+	// 文字列 "undefined" が残らないよう削除（テスト間の漏れ防止）
+	delete process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 });
 
 const grantAnalytics = {
@@ -105,7 +107,6 @@ describe("sendGoogleAnalyticsPageView / Event", () => {
 		expect(gtag).toHaveBeenCalledWith("config", "G-TEST", expect.objectContaining({ page_path: "/page" }));
 		sendGoogleAnalyticsEvent("my_event", { foo: 1 });
 		expect(gtag).toHaveBeenCalledWith("event", "my_event", { foo: 1 });
-		process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID = undefined;
 	});
 
 	it("gtag 未定義なら何もしない", () => {
