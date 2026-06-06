@@ -124,6 +124,9 @@ function createMockVideo(overrides?: Partial<any>): VideoPlainObject {
 				if (!overrides.statistics) {
 					firestoreData.statistics[key] = overrides[key];
 				}
+			} else if (key === "_computed" && overrides[key] !== undefined) {
+				// _computed は全置換せずマージ（既定フィールドを保持し暗黙のフォールバック依存を避ける）
+				firestoreData._computed = { ...firestoreData._computed, ...overrides[key] };
 			} else {
 				// その他のフィールドは直接上書き（undefinedも含む）
 				firestoreData[key] = overrides[key];
@@ -413,14 +416,8 @@ describe("VideoDetail", () => {
 
 		it("埋め込み制限（embeddable=false）は作成不可で理由が title に出る", () => {
 			(useSession as any).mockReturnValue({ data: { user: { discordId: "1" } } });
-			render(
-				<VideoDetail
-					video={createMockVideo({
-						status: { embeddable: false },
-						_computed: { canCreateButton: true },
-					})}
-				/>,
-			);
+			// embeddable=false は canCreateAudioButton より先に判定されるため _computed は不要
+			render(<VideoDetail video={createMockVideo({ status: { embeddable: false } })} />);
 
 			const createButton = screen.getByText("ボタンを作成").closest("button");
 			expect(createButton).toBeDisabled();
