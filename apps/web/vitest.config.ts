@@ -37,9 +37,9 @@ export default defineConfig({
 			],
 			// 実測フロアに合わせたラチェット閾値（回帰ガード / SPR-152）
 			thresholds: {
-				statements: 78,
-				branches: 67,
-				functions: 80,
+				statements: 79,
+				branches: 68,
+				functions: 81,
 				lines: 79,
 			},
 		},
