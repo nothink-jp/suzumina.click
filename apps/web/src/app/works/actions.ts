@@ -21,10 +21,10 @@ async function getWorksWithSimpleQuery(
 	firestore: FirebaseFirestore.Firestore,
 	params: EnhancedSearchParams,
 ): Promise<WorkListResultPlain> {
-	const { page = 1, limit = 12, sort = "newest", category, showR18, ageRating } = params;
+	const { page = 1, limit = 12, sort = "newest", category, ageRating } = params;
 
 	// クエリ構築
-	let query = buildWorksQuery(firestore, { category, showR18, ageRating, sort });
+	let query = buildWorksQuery(firestore, { category, ageRating, sort });
 	query = query.limit(limit);
 
 	// オフセット処理
@@ -91,7 +91,7 @@ async function getWorksWithComplexFiltering(
 	} = params;
 
 	// クエリ構築
-	let query = buildWorksQuery(firestore, { category, showR18, ageRating, sort });
+	let query = buildWorksQuery(firestore, { category, ageRating, sort });
 
 	// ページネーション用のオフセット
 	const startOffset = (page - 1) * limit;

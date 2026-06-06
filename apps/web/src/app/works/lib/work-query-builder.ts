@@ -5,7 +5,6 @@ export function buildWorksQuery(
 	firestore: FirebaseFirestore.Firestore,
 	params: {
 		category?: string;
-		showR18?: boolean;
 		ageRating?: string[];
 		sort?: string;
 	},
