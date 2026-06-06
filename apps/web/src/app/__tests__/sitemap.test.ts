@@ -202,6 +202,127 @@ describe("sitemap", () => {
 		expect(urls.every((url) => !url.match(/\/videos\/[^/]+$/))).toBe(true);
 	});
 
+	it("videos の可視性: status.privacyStatus が public 以外の動画は除外し、public は含める", async () => {
+		const firestoreMock = buildCollectionResolvers({
+			videos: async () =>
+				buildSnapshot([
+					{
+						id: "video-public",
+						data: () => ({
+							status: { privacyStatus: "public" },
+							updatedAt: "2024-01-01T00:00:00Z",
+						}),
+					},
+					{
+						id: "video-private",
+						data: () => ({
+							status: { privacyStatus: "private" },
+							updatedAt: "2024-01-01T00:00:00Z",
+						}),
+					},
+				]),
+			works: async () => buildSnapshot([]),
+			audioButtons: async () => buildSnapshot([]),
+		});
+
+		(getFirestore as any).mockReturnValue(firestoreMock);
+
+		const result = await sitemap();
+		const urls = result.map((entry) => entry.url);
+
+		expect(urls).toContain("https://suzumina.click/videos/video-public");
+		expect(urls).not.toContain("https://suzumina.click/videos/video-private");
+	});
+
+	it("lastModified の date フォールバック: updatedAt / createdAt が無くても Date.now() で URL は生成される", async () => {
+		const firestoreMock = buildCollectionResolvers({
+			// createdAt のみ（updatedAt 無し） / 日付なし（Date.now() フォールバック）
+			videos: async () =>
+				buildSnapshot([
+					{ id: "video-c", data: () => ({ createdAt: "2024-01-01T00:00:00Z" }) },
+					{ id: "video-nodate", data: () => ({}) },
+				]),
+			// updatedAt / createdAt いずれも無し → Date.now() にフォールバック
+			works: async () => buildSnapshot([{ id: "RJ-nodate", data: () => ({}) }]),
+			audioButtons: async () => buildSnapshot([{ id: "audio-nodate", data: () => ({}) }]),
+		});
+
+		(getFirestore as any).mockReturnValue(firestoreMock);
+
+		const result = await sitemap();
+		const byUrl = new Map(result.map((entry) => [entry.url, entry]));
+
+		expect(byUrl.has("https://suzumina.click/videos/video-c")).toBe(true);
+		expect(byUrl.has("https://suzumina.click/works/RJ-nodate")).toBe(true);
+		expect(byUrl.has("https://suzumina.click/buttons/audio-nodate")).toBe(true);
+		// 日付欠落でも lastModified は有効な Date になる
+		expect(byUrl.get("https://suzumina.click/works/RJ-nodate")?.lastModified).toBeInstanceOf(Date);
+	});
+
+	it("個別コレクション失敗時の fallback: works が throw しても videos/audioButtons は含まれ warn される", async () => {
+		const firestoreMock = buildCollectionResolvers({
+			videos: async () =>
+				buildSnapshot([{ id: "video-ok", data: () => ({ updatedAt: "2024-01-01T00:00:00Z" }) }]),
+			works: async () => {
+				throw new Error("works query failed");
+			},
+			audioButtons: async () =>
+				buildSnapshot([{ id: "audio-ok", data: () => ({ updatedAt: "2024-01-01T00:00:00Z" }) }]),
+		});
+
+		(getFirestore as any).mockReturnValue(firestoreMock);
+
+		const result = await sitemap();
+		const urls = result.map((entry) => entry.url);
+
+		expect(urls).toContain("https://suzumina.click/videos/video-ok");
+		expect(urls).toContain("https://suzumina.click/buttons/audio-ok");
+		expect(urls.every((url) => !url.match(/\/works\/[^/]+$/))).toBe(true);
+		expect(logger.warn).toHaveBeenCalledWith(
+			"Failed to fetch works for sitemap:",
+			expect.objectContaining({ error: expect.any(Error) }),
+		);
+	});
+
+	it("個別コレクション失敗時の fallback: audioButtons が throw しても videos/works は含まれ warn される", async () => {
+		const firestoreMock = buildCollectionResolvers({
+			videos: async () =>
+				buildSnapshot([{ id: "video-ok", data: () => ({ updatedAt: "2024-01-01T00:00:00Z" }) }]),
+			works: async () =>
+				buildSnapshot([{ id: "RJ-ok", data: () => ({ updatedAt: "2024-01-01T00:00:00Z" }) }]),
+			audioButtons: async () => {
+				throw new Error("audioButtons query failed");
+			},
+		});
+
+		(getFirestore as any).mockReturnValue(firestoreMock);
+
+		const result = await sitemap();
+		const urls = result.map((entry) => entry.url);
+
+		expect(urls).toContain("https://suzumina.click/videos/video-ok");
+		expect(urls).toContain("https://suzumina.click/works/RJ-ok");
+		expect(urls.every((url) => !url.match(/\/buttons\/[^/]+$/))).toBe(true);
+		expect(logger.warn).toHaveBeenCalledWith(
+			"Failed to fetch audio buttons for sitemap:",
+			expect.objectContaining({ error: expect.any(Error) }),
+		);
+	});
+
+	it("baseUrl フォールバック: NEXT_PUBLIC_APP_URL 未設定時は本番 URL を使う", async () => {
+		delete process.env.NEXT_PUBLIC_APP_URL;
+		const firestoreMock = buildCollectionResolvers({
+			videos: async () => buildSnapshot([]),
+			works: async () => buildSnapshot([]),
+			audioButtons: async () => buildSnapshot([]),
+		});
+
+		(getFirestore as any).mockReturnValue(firestoreMock);
+
+		const result = await sitemap();
+		expect(result.map((entry) => entry.url)).toContain("https://suzumina.click");
+	});
+
 	it("staticPages の保証: 公開ページ一覧が必ず含まれる", async () => {
 		const firestoreMock = buildCollectionResolvers({
 			videos: async () => buildSnapshot([]),
