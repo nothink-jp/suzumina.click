@@ -1,10 +1,10 @@
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { useSearchInput } from "../useSearchInput";
+import { useSearchInput } from "../use-search-input";
 
 const keyEvent = (key: string) => ({ key }) as React.KeyboardEvent<HTMLInputElement>;
 
-describe("useSearchInput", () => {
+describe("use-search-input", () => {
 	it("初期値を保持し、変更で localSearchValue が更新される", () => {
 		const onSearch = vi.fn();
 		const { result } = renderHook(() => useSearchInput({ initialValue: "init", onSearch }));
