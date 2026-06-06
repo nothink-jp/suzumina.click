@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { getPopularVideoTags, getVideosList, getVideoTitles } from "../actions";
+import {
+	getPopularVideoTags,
+	getTotalVideoCount,
+	getVideoById,
+	getVideosList,
+	getVideoTitles,
+} from "../actions";
 
 // Mock Firestore
 const mockGet = vi.fn();
@@ -527,6 +533,76 @@ describe("Video Server Actions", () => {
 			const result = await getPopularVideoTags();
 
 			expect(result).toEqual([]);
+		});
+	});
+
+	// --- SPR-153: 未カバーだった getVideoById / getTotalVideoCount ---
+
+	const videoData = (over: Record<string, unknown> = {}) => ({
+		id: "video-1",
+		videoId: "video-1",
+		title: "動画1",
+		channelId: "channel-1",
+		channelTitle: "チャンネル1",
+		publishedAt: new Date("2024-01-01").toISOString(),
+		duration: "PT5M",
+		thumbnailUrl: "https://example.com/t.jpg",
+		thumbnails: { high: { url: "https://example.com/t.jpg" } },
+		status: { privacyStatus: "public", uploadStatus: "processed" },
+		...over,
+	});
+
+	describe("getVideoById", () => {
+		it("存在しなければ null", async () => {
+			mockDoc.mockReturnValue({ get: vi.fn().mockResolvedValue({ exists: false }) });
+			expect(await getVideoById("video-404")).toBeNull();
+		});
+
+		it("存在すれば PlainObject を返す", async () => {
+			mockDoc.mockReturnValue({
+				get: vi.fn().mockResolvedValue({ id: "video-1", exists: true, data: () => videoData() }),
+			});
+			const r = await getVideoById("video-1");
+			expect(r?.videoId).toBe("video-1");
+		});
+
+		it("例外時は null", async () => {
+			mockDoc.mockReturnValue({ get: vi.fn().mockRejectedValue(new Error("fs")) });
+			expect(await getVideoById("video-1")).toBeNull();
+		});
+	});
+
+	describe("getTotalVideoCount", () => {
+		it("フィルタ無しは count() 集計の値を返す（fast path）", async () => {
+			mockCount.mockReturnValue({
+				get: vi.fn().mockResolvedValue({ data: () => ({ count: 42 }) }),
+			});
+			expect(await getTotalVideoCount()).toBe(42);
+		});
+
+		it("フィルタ有りは全件取得しメモリ上でフィルタした件数を返す", async () => {
+			mockGet.mockResolvedValue({
+				docs: [
+					{ id: "video-1", data: () => videoData() },
+					// 非公開は除外される
+					{
+						id: "video-2",
+						data: () =>
+							videoData({
+								id: "video-2",
+								videoId: "video-2",
+								status: { privacyStatus: "private" },
+							}),
+					},
+				],
+			});
+			const n = await getTotalVideoCount({ year: "2024" });
+			expect(n).toBe(1);
+		});
+
+		it("例外時は 0", async () => {
+			mockCount.mockReturnValue({ get: vi.fn().mockRejectedValue(new Error("fs")) });
+			expect(await getTotalVideoCount()).toBe(0);
 		});
 	});
 });
