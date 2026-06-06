@@ -7,7 +7,7 @@
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { FilterConfig } from "../types";
-import { getDefaultFilterValues } from "../utils/filterHelpers";
+import { getDefaultFilterValues } from "../utils/filter-helpers";
 
 interface UseListUrlOptions {
 	/** フィルター設定 */

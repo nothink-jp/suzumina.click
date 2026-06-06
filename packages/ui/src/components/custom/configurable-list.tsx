@@ -29,16 +29,16 @@ import type {
 	FilterConfig,
 	StandardListParams,
 } from "./configurable-list/types";
-import { calculatePagination } from "./configurable-list/utils/dataAdapter";
+import { calculatePagination } from "./configurable-list/utils/data-adapter";
 import {
 	generateOptions,
 	getDefaultFilterValues,
 	hasActiveFilters,
 	normalizeOptions,
-} from "./configurable-list/utils/filterHelpers";
+} from "./configurable-list/utils/filter-helpers";
 import { applyCustomFilters, applySearchFilter } from "./configurable-list/utils/filtering";
 import { sortItems } from "./configurable-list/utils/sorting";
-import { getFilterableValue } from "./configurable-list/utils/typeSafeAccess";
+import { getFilterableValue } from "./configurable-list/utils/type-safe-access";
 
 // Filter component helpers to reduce complexity
 function SelectFilter({

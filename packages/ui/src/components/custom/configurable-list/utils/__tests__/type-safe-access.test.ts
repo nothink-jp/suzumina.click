@@ -5,7 +5,7 @@ import {
 	getNumericProperty,
 	getSearchableText,
 	getStringProperty,
-} from "../typeSafeAccess";
+} from "../type-safe-access";
 
 describe("getSearchableText", () => {
 	it("オブジェクト以外は null", () => {

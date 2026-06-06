@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { generateGridClasses } from "../classHelpers";
+import { generateGridClasses } from "../class-helpers";
 
 describe("generateGridClasses", () => {
 	it("gridColumns 未指定は基本クラスのみ", () => {

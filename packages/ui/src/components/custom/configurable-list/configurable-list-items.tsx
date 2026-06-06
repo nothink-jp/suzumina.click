@@ -2,7 +2,7 @@
  * ConfigurableListのアイテム表示部分
  */
 
-import { generateGridClasses } from "./utils/classHelpers";
+import { generateGridClasses } from "./utils/class-helpers";
 
 interface ConfigurableListItemsProps<T> {
 	items: T[];

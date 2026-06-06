@@ -56,6 +56,10 @@
 				"noSkippedTests": "warn"
 			},
 			"style": {
+				"useFilenamingConvention": {
+					"level": "error",
+					"options": { "filenameCases": ["kebab-case"], "requireAscii": true }
+				},
 				"noDefaultExport": "off",
 				"noNonNullAssertion": "warn",
 				"noParameterAssign": "error",
