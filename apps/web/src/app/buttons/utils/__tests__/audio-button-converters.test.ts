@@ -29,7 +29,7 @@ describe("convertFirestoreToAudioButton", () => {
 		expect(r?.buttonText).toBe("ボタン");
 	});
 
-	it("必須欠落（buttonText/videoId なし）は null", () => {
+	it("必須フィールドが空文字なら null", () => {
 		expect(convertFirestoreToAudioButton(fsButton({ buttonText: "", videoId: "" }))).toBeNull();
 	});
 });
