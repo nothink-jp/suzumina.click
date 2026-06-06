@@ -757,8 +757,6 @@ describe("Audio Button Server Actions", () => {
 		});
 	});
 
-	// --- SPR-153: 未カバーだった関数 ---
-
 	describe("カウンタ操作（updateCounter 委譲）", () => {
 		it("各 increment/decrement は updateCounter に正しい引数で委譲する", async () => {
 			mockUpdateCounter.mockResolvedValue({ success: true });

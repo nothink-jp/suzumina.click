@@ -536,8 +536,6 @@ describe("Video Server Actions", () => {
 		});
 	});
 
-	// --- SPR-153: 未カバーだった getVideoById / getTotalVideoCount ---
-
 	const videoData = (over: Record<string, unknown> = {}) => ({
 		id: "video-1",
 		videoId: "video-1",
