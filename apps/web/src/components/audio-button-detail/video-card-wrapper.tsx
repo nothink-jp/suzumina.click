@@ -4,7 +4,7 @@ import { Card, CardContent } from "@suzumina.click/ui/components/ui/card";
 import Image from "next/image";
 import Link from "next/link";
 import { getVideoById } from "@/app/videos/actions";
-import VideoCard from "@/app/videos/components/VideoCard";
+import VideoCard from "@/app/videos/components/video-card";
 
 interface VideoCardWrapperProps {
 	videoId: string;

@@ -6,7 +6,7 @@ import { auth } from "@/auth";
 import { getAudioButtonsByUser } from "@/lib/audio-buttons-firestore";
 import { getUserFavoritesCount } from "@/lib/favorites-firestore";
 import { getUserByDiscordId } from "@/lib/user-firestore";
-import { UserProfileContent } from "./components/UserProfileContent";
+import { UserProfileContent } from "./components/user-profile-content";
 
 interface UserProfilePageProps {
 	params: Promise<{

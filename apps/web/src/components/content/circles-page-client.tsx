@@ -7,7 +7,7 @@ import {
 	ListPageLayout,
 } from "@suzumina.click/ui/components/custom";
 import { Suspense } from "react";
-import CirclesList from "@/app/circles/components/CirclesList";
+import CirclesList from "@/app/circles/components/circles-list";
 
 interface CirclesPageClientProps {
 	initialData: {

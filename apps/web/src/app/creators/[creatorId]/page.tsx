@@ -3,7 +3,7 @@ import { LoadingSkeleton } from "@suzumina.click/ui/components/custom/loading-sk
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { getCreatorInfo, getCreatorWorksList } from "./actions";
-import { CreatorPageClient } from "./components/CreatorPageClient";
+import { CreatorPageClient } from "./components/creator-page-client";
 
 interface CreatorPageProps {
 	params: Promise<{ creatorId: string }>;

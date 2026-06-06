@@ -7,7 +7,7 @@ import {
 	ListPageLayout,
 } from "@suzumina.click/ui/components/custom";
 import { Suspense } from "react";
-import WorksList from "@/app/works/components/WorksList";
+import WorksList from "@/app/works/components/works-list";
 import { useAgeVerification } from "@/contexts/age-verification-context";
 
 interface WorksPageClientProps {

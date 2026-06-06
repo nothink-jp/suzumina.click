@@ -28,7 +28,7 @@ vi.mock("../actions", () => ({
 }));
 
 // コンポーネントモック
-vi.mock("../components/CreatorWorksList", () => ({
+vi.mock("../components/creator-works-list", () => ({
 	default: vi.fn(() => <div data-testid="creator-works-list">CreatorWorksList</div>),
 }));
 
@@ -36,7 +36,7 @@ vi.mock("@/app/components/BackButton", () => ({
 	BackButton: () => <button type="button">戻る</button>,
 }));
 
-vi.mock("@/app/works/components/WorkCard", () => ({
+vi.mock("@/app/works/components/work-card", () => ({
 	default: ({ work }: any) => (
 		<div data-testid="work-card">
 			<h3>{work.title}</h3>

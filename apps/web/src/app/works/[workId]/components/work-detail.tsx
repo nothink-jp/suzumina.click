@@ -38,8 +38,8 @@ import { PriceHistory } from "@/components/price-history/price-history";
 import ThumbnailImage from "@/components/ui/thumbnail-image";
 import { formatJSTDateTime } from "@/utils/date-format";
 import { generateMockCharacteristicData } from "@/utils/mock-evaluation-data";
-import SampleImageGallery from "./SampleImageGallery";
-import WorkDescription from "./WorkDescription";
+import SampleImageGallery from "./sample-image-gallery";
+import WorkDescription from "./work-description";
 import { WorkEvaluation } from "./work-evaluation";
 
 interface WorkDetailProps {

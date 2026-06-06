@@ -9,7 +9,7 @@ import { ConfigurableList, type StandardListParams } from "@suzumina.click/ui/co
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import Link from "next/link";
 import { useCallback, useMemo } from "react";
-import { ListWrapper } from "@/components/list/ListWrapper";
+import { ListWrapper } from "@/components/list/list-wrapper";
 import { DEFAULT_LIST_PROPS } from "@/constants/list-options";
 import { getCreators } from "../actions";
 

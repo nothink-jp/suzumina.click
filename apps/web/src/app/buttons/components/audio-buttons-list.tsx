@@ -3,8 +3,8 @@
 import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
 import { ConfigurableList } from "@suzumina.click/ui/components/custom";
 import { useEffect, useMemo, useState } from "react";
-import { AudioButtonListItem } from "@/components/audio/AudioButtonListItem";
-import { ListWrapper } from "@/components/list/ListWrapper";
+import { AudioButtonListItem } from "@/components/audio/audio-button-list-item";
+import { ListWrapper } from "@/components/list/list-wrapper";
 import {
 	AUDIO_SORT_OPTIONS,
 	DEFAULT_ITEMS_PER_PAGE_OPTIONS,

@@ -7,7 +7,7 @@ import {
 	ListPageLayout,
 } from "@suzumina.click/ui/components/custom";
 import { Suspense } from "react";
-import CreatorsList from "@/app/creators/components/CreatorsList";
+import CreatorsList from "@/app/creators/components/creators-list";
 
 interface CreatorsPageClientProps {
 	initialData: {

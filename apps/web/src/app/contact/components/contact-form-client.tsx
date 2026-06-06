@@ -45,7 +45,7 @@ function ContactFormSkeleton() {
  * ContactForm を動的読み込みする。これにより Zod / react-hook-form を含む chunk が
  * /contact の First Load JS から外れる (SPR-72)。
  */
-const ContactForm = dynamic(() => import("./ContactForm").then((m) => m.ContactForm), {
+const ContactForm = dynamic(() => import("./contact-form").then((m) => m.ContactForm), {
 	ssr: false,
 	loading: () => <ContactFormSkeleton />,
 });

@@ -2,7 +2,7 @@ import type { AudioButton, VideoPlainObject } from "@suzumina.click/shared-types
 import { getLikeDislikeStatusAction } from "@/actions/dislikes";
 import { getFavoritesStatusAction } from "@/actions/favorites";
 import { auth } from "@/auth";
-import { RelatedAudioButtons } from "./RelatedAudioButtons";
+import { RelatedAudioButtons } from "./related-audio-buttons";
 
 interface RelatedAudioButtonsServerProps {
 	audioButtons: AudioButton[];

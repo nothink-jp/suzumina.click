@@ -3,7 +3,7 @@
 import type { VideoPlainObject } from "@suzumina.click/shared-types";
 import { ConfigurableList } from "@suzumina.click/ui/components/custom";
 import { useEffect, useMemo, useState } from "react";
-import { ListWrapper } from "@/components/list/ListWrapper";
+import { ListWrapper } from "@/components/list/list-wrapper";
 import {
 	DEFAULT_ITEMS_PER_PAGE_OPTIONS,
 	DEFAULT_LIST_PROPS,
@@ -11,7 +11,7 @@ import {
 	VIDEO_SORT_OPTIONS,
 } from "@/constants/list-options";
 import { getPopularVideoTags, getVideosList } from "../actions";
-import VideoCard from "./VideoCard";
+import VideoCard from "./video-card";
 
 interface VideoListProps {
 	initialData: {

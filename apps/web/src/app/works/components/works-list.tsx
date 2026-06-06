@@ -3,8 +3,8 @@
 import type { WorkListResultPlain, WorkPlainObject } from "@suzumina.click/shared-types";
 import { ConfigurableList, type StandardListParams } from "@suzumina.click/ui/components/custom";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ListWrapper } from "@/components/list/ListWrapper";
-import { WorkListItem } from "@/components/work/WorkListItem";
+import { ListWrapper } from "@/components/list/list-wrapper";
+import { WorkListItem } from "@/components/work/work-list-item";
 import {
 	DEFAULT_ITEMS_PER_PAGE_OPTIONS,
 	DEFAULT_LIST_PROPS,

@@ -6,7 +6,7 @@ import {
 import { Suspense } from "react";
 import type { AudioButtonQuery } from "@/types/audio-button";
 import { getAudioButtonsList } from "./actions";
-import AudioButtonsList from "./components/AudioButtonsList";
+import AudioButtonsList from "./components/audio-buttons-list";
 
 interface SearchParams {
 	q?: string;

@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getWorkById } from "../actions";
-import WorkDetail from "./components/WorkDetail";
+import WorkDetail from "./components/work-detail";
 import { getWorkEvaluation } from "./evaluation-actions";
 
 interface WorkDetailPageProps {

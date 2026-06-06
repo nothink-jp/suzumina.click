@@ -24,7 +24,7 @@ vi.mock("../actions", () => ({
 }));
 
 // コンポーネントモック
-vi.mock("../components/CirclePageClient", () => ({
+vi.mock("../components/circle-page-client", () => ({
 	CirclePageClient: ({ circle, initialData }: any) => (
 		<div data-testid="circle-page-client">
 			<h1>{circle.name}</h1>

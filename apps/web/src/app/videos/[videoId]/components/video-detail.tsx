@@ -22,7 +22,7 @@ import { useSession } from "next-auth/react";
 import React, { type ReactNode, useMemo } from "react";
 import { ThumbnailImage } from "@/components/ui";
 import { formatDescriptionText } from "@/lib/text-utils";
-import { VideoUserTagEditor } from "./VideoUserTagEditor";
+import { VideoUserTagEditor } from "./video-user-tag-editor";
 
 interface VideoDetailProps {
 	video: VideoPlainObject;

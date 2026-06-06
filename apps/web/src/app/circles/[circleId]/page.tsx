@@ -2,7 +2,7 @@ import { LoadingSkeleton } from "@suzumina.click/ui/components/custom/loading-sk
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { getCircleInfo, getCircleWorksList } from "./actions";
-import { CirclePageClient } from "./components/CirclePageClient";
+import { CirclePageClient } from "./components/circle-page-client";
 
 interface CirclePageProps {
 	params: Promise<{ circleId: string }>;
