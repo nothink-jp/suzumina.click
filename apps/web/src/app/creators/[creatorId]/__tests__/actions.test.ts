@@ -811,16 +811,12 @@ describe("Creator page server actions", () => {
 			["price_high", "RJ222222"],
 			["oldest", "RJ222222"],
 			["newest", "RJ111111"],
+			["popular", "RJ222222"], // 評価が高い方が先頭（compareByRating）
+			["unknown-sort", "RJ111111"], // default ブランチ = newest と同挙動
 		])("sort=%s で先頭が %s になる", async (sort, expectedFirst) => {
 			setupSortWorks();
 			const result = await getCreatorWorksList({ creatorId: "VA12345", sort });
 			expect(result.works[0]?.productId).toBe(expectedFirst);
-		});
-
-		it("sort=popular（評価順）でも 2 件返す", async () => {
-			setupSortWorks();
-			const result = await getCreatorWorksList({ creatorId: "VA12345", sort: "popular" });
-			expect(result.works).toHaveLength(2);
 		});
 
 		it("works サブコレクションが空なら空結果", async () => {
