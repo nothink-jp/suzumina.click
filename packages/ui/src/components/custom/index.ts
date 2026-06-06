@@ -20,7 +20,7 @@ export {
 	calculatePagination,
 	createDataAdapter,
 	wrapLegacyFetchData,
-} from "./configurable-list/utils/dataAdapter";
+} from "./configurable-list/utils/data-adapter";
 export {
 	generateOptions,
 	generateYearOptions,
@@ -30,7 +30,7 @@ export {
 	normalizeOptions,
 	transformFilterValue,
 	validateFilterValue,
-} from "./configurable-list/utils/filterHelpers";
+} from "./configurable-list/utils/filter-helpers";
 
 // Utility components
 export { HighlightText } from "./highlight-text";

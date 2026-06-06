@@ -8,10 +8,10 @@
 
 import { cn } from "@suzumina.click/ui/lib/utils";
 import { Play, Users } from "lucide-react";
-import { buildCompactTags } from "./three-layer-tag-display/buildCompactTags";
+import { buildCompactTags } from "./three-layer-tag-display/build-compact-tags";
 import { CategoryDisplay } from "./three-layer-tag-display/category-display";
 import { CompactTagDisplay } from "./three-layer-tag-display/compact-tag-display";
-import { getSizeClasses } from "./three-layer-tag-display/getSizeClasses";
+import { getSizeClasses } from "./three-layer-tag-display/get-size-classes";
 import { TagLayer } from "./three-layer-tag-display/tag-layer";
 
 export interface VideoTagDisplayProps {

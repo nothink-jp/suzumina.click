@@ -4,7 +4,7 @@
 
 import { useCallback } from "react";
 import type { FilterConfig, StandardListParams } from "../types";
-import { getDefaultFilterValues } from "../utils/filterHelpers";
+import { getDefaultFilterValues } from "../utils/filter-helpers";
 
 interface UseListHandlersOptions {
 	urlSync: boolean;

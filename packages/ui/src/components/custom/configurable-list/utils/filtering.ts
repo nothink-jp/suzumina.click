@@ -3,8 +3,8 @@
  */
 
 import type { FilterConfig } from "../types";
-import { transformFilterValue } from "./filterHelpers";
-import { getFilterableValue, getSearchableText } from "./typeSafeAccess";
+import { transformFilterValue } from "./filter-helpers";
+import { getFilterableValue, getSearchableText } from "./type-safe-access";
 
 /**
  * Apply search filter to items

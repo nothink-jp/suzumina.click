@@ -3,7 +3,7 @@ import { Badge } from "../ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { ConfigurableList } from "./configurable-list";
 import type { FilterConfig, SortConfig } from "./configurable-list/types";
-import { generateYearOptions } from "./configurable-list/utils/filterHelpers";
+import { generateYearOptions } from "./configurable-list/utils/filter-helpers";
 
 // サンプルデータの型
 interface Product {

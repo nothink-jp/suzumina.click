@@ -9,7 +9,7 @@ import {
 	normalizeOptions,
 	transformFilterValue,
 	validateFilterValue,
-} from "../filterHelpers";
+} from "../filter-helpers";
 
 const cfg = (over: Partial<FilterConfig> & { type: FilterConfig["type"] }): FilterConfig =>
 	over as FilterConfig;

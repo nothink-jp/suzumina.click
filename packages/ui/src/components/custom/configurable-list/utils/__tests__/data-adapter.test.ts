@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { StandardListParams } from "../../types";
-import { calculatePagination, createDataAdapter, wrapLegacyFetchData } from "../dataAdapter";
+import { calculatePagination, createDataAdapter, wrapLegacyFetchData } from "../data-adapter";
 
 const listParams = (over: Partial<StandardListParams> = {}): StandardListParams =>
 	({ page: 1, itemsPerPage: 10, filters: {}, ...over }) as StandardListParams;
