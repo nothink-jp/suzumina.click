@@ -1,6 +1,7 @@
 import type { VideoPlainObject } from "@suzumina.click/shared-types";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { useSession } from "next-auth/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import VideoDetail from "../video-detail";
 
@@ -355,6 +356,215 @@ describe("VideoDetail", () => {
 			// コメント数が表示されることを確認（より具体的に）
 			const commentsSection = screen.getByText("コメント数").closest("div");
 			expect(commentsSection).toHaveTextContent("100");
+		});
+	});
+
+	describe("動画タイプバッジ", () => {
+		it("配信中（live）はライブ配信バッジを表示する", () => {
+			render(<VideoDetail video={createMockVideo({ liveBroadcastContent: "live" })} />);
+			expect(screen.getByLabelText("現在配信中のライブ配信")).toBeInTheDocument();
+		});
+
+		it("配信予告（upcoming）は配信予定バッジを表示する", () => {
+			render(<VideoDetail video={createMockVideo({ liveBroadcastContent: "upcoming" })} />);
+			expect(screen.getByLabelText("配信予定のライブ配信")).toBeInTheDocument();
+		});
+
+		it("videoType=archived は配信アーカイブバッジを表示する", () => {
+			render(
+				<VideoDetail
+					video={createMockVideo({ liveBroadcastContent: "none", videoType: "archived" })}
+				/>,
+			);
+			expect(screen.getByLabelText("ライブ配信のアーカイブ")).toBeInTheDocument();
+		});
+
+		it("liveStreamingDetails に開始・終了がある none は配信アーカイブ扱い", () => {
+			render(
+				<VideoDetail
+					video={createMockVideo({
+						liveBroadcastContent: "none",
+						videoType: "normal",
+						liveStreamingDetails: {
+							actualStartTime: "2024-01-01T12:00:00Z",
+							actualEndTime: "2024-01-01T14:00:00Z",
+						},
+					})}
+				/>,
+			);
+			expect(screen.getByLabelText("ライブ配信のアーカイブ")).toBeInTheDocument();
+		});
+
+		it("通常動画は動画コンテンツバッジを表示する", () => {
+			render(<VideoDetail video={createMockVideo()} />);
+			expect(screen.getByLabelText("動画コンテンツ")).toBeInTheDocument();
+		});
+	});
+
+	describe("音声ボタン作成可否（getCanCreateButtonData）", () => {
+		it("未ログインは作成ボタンが無効でログイン理由が title に出る", () => {
+			(useSession as any).mockReturnValue({ data: null });
+			render(<VideoDetail video={createMockVideo()} />);
+
+			const createButton = screen.getByText("ボタンを作成").closest("button");
+			expect(createButton).toBeDisabled();
+			expect(createButton).toHaveAttribute("title", expect.stringMatching(/ログインが必要/));
+		});
+
+		it("埋め込み制限（embeddable=false）は作成不可で理由が title に出る", () => {
+			(useSession as any).mockReturnValue({ data: { user: { discordId: "1" } } });
+			render(
+				<VideoDetail
+					video={createMockVideo({
+						status: { embeddable: false },
+						_computed: { canCreateButton: true },
+					})}
+				/>,
+			);
+
+			const createButton = screen.getByText("ボタンを作成").closest("button");
+			expect(createButton).toBeDisabled();
+			expect(createButton).toHaveAttribute("title", expect.stringMatching(/埋め込みが制限/));
+		});
+
+		it("作成可能な動画はボタンが Link になり、サイドバーに新規作成リンクが出る", () => {
+			(useSession as any).mockReturnValue({ data: { user: { discordId: "1" } } });
+			render(<VideoDetail video={createMockVideo({ _computed: { canCreateButton: true } })} />);
+
+			const createLink = screen.getByText("ボタンを作成").closest("a");
+			expect(createLink).toHaveAttribute("href", "/buttons/create?video_id=abc123");
+			expect(screen.getByRole("link", { name: "新規作成" })).toHaveAttribute(
+				"href",
+				"/buttons/create?video_id=abc123",
+			);
+		});
+	});
+
+	describe("概要タブの説明・タグ", () => {
+		it("説明文が無い場合は代替テキストを表示する", () => {
+			render(<VideoDetail video={createMockVideo({ description: "" })} />);
+			expect(screen.getByText("説明文はありません")).toBeInTheDocument();
+		});
+
+		it("タグがある場合は概要タブにタグバッジを表示する", () => {
+			render(<VideoDetail video={createMockVideo({ tags: { userTags: ["独自タグ"] } })} />);
+			expect(screen.getByText("独自タグ")).toBeInTheDocument();
+		});
+	});
+
+	describe("詳細情報タブ", () => {
+		const richVideo = () =>
+			createMockVideo({
+				categoryId: "10", // 音楽（対応カテゴリ）
+				topicDetails: {
+					topicCategories: [
+						"https://en.wikipedia.org/wiki/Music",
+						"Music",
+						`https://example.com/${"a".repeat(70)}`, // 60字超 → 省略表示
+					],
+				},
+				recordingDetails: {
+					locationDescription: "東京スタジオ",
+					recordingDate: "2024-01-01T00:00:00Z",
+				},
+				regionRestriction: { allowed: ["JP", "US"], blocked: ["CN"] },
+				liveStreamingDetails: {
+					scheduledStartTime: "2024-01-01T10:00:00Z",
+					actualStartTime: "2024-01-01T12:00:00Z",
+					actualEndTime: "2024-01-01T14:00:00Z",
+					scheduledEndTime: "2024-01-01T13:00:00Z",
+					concurrentViewers: 1500,
+				},
+			});
+
+		it("対応カテゴリ・トピック・撮影・地域制限・ライブ配信詳細を表示する", async () => {
+			render(<VideoDetail video={richVideo()} />);
+			await userEvent.click(screen.getByRole("tab", { name: "詳細情報" }));
+
+			// カテゴリ（対応カテゴリ名）
+			expect(screen.getByText("音楽")).toBeInTheDocument();
+			// トピック: URL はリンク、非 URL は span
+			expect(screen.getByText("https://en.wikipedia.org/wiki/Music").closest("a")).toHaveAttribute(
+				"href",
+				"https://en.wikipedia.org/wiki/Music",
+			);
+			expect(screen.getByText("Music")).toBeInTheDocument();
+			// 撮影詳細
+			expect(screen.getByText("東京スタジオ")).toBeInTheDocument();
+			// 地域制限
+			expect(screen.getByText("JP, US")).toBeInTheDocument();
+			expect(screen.getByText("CN")).toBeInTheDocument();
+			// ライブ配信詳細
+			expect(screen.getByText("予定開始時刻")).toBeInTheDocument();
+			expect(screen.getByText("実際の開始時刻")).toBeInTheDocument();
+			expect(screen.getByText("実際の終了時刻")).toBeInTheDocument();
+			expect(screen.getByText("予定終了時刻")).toBeInTheDocument();
+			expect(screen.getByText("最大同時視聴者数")).toBeInTheDocument();
+			// 配信時間: 12:00Z〜14:00Z = 2時間0分
+			expect(screen.getByText("2時間0分")).toBeInTheDocument();
+		});
+
+		it("未対応カテゴリは『(未対応カテゴリ)』を表示する", async () => {
+			render(<VideoDetail video={createMockVideo({ categoryId: "99999" })} />);
+			await userEvent.click(screen.getByRole("tab", { name: "詳細情報" }));
+			expect(screen.getByText("(未対応カテゴリ)")).toBeInTheDocument();
+		});
+	});
+
+	describe("技術仕様タブ", () => {
+		it("HD・3D・字幕対応・ライセンス済み・公開・埋め込み許可などを表示する", async () => {
+			const video = createMockVideo({
+				definition: "hd",
+				dimension: "3d",
+				caption: true,
+				licensedContent: true,
+				status: {
+					privacyStatus: "public",
+					commentStatus: "enabled",
+					embeddable: true,
+					uploadStatus: "processed",
+				},
+				contentRating: { ytRating: "ytAgeRestricted" },
+				player: { embedWidth: 1280, embedHeight: 720, embedHtml: "<iframe></iframe>" },
+			});
+			render(<VideoDetail video={video} />);
+			await userEvent.click(screen.getByRole("tab", { name: "技術仕様" }));
+
+			expect(screen.getByText("高解像度 (HD)")).toBeInTheDocument();
+			expect(screen.getByText("3D")).toBeInTheDocument();
+			expect(screen.getByText("対応")).toBeInTheDocument();
+			expect(screen.getByText("ライセンス済み")).toBeInTheDocument();
+			expect(screen.getByText("公開")).toBeInTheDocument();
+			expect(screen.getByText("許可")).toBeInTheDocument();
+			expect(screen.getByText("processed")).toBeInTheDocument();
+			expect(screen.getByText("ytRating:")).toBeInTheDocument();
+			expect(screen.getByText("1280px")).toBeInTheDocument();
+			expect(screen.getByText("720px")).toBeInTheDocument();
+		});
+
+		it("SD・2D・字幕非対応・標準ライセンス・限定公開・埋め込み無効の分岐を表示する", async () => {
+			const video = createMockVideo({
+				definition: "sd",
+				dimension: "2d",
+				caption: false,
+				licensedContent: false,
+				status: { privacyStatus: "unlisted", commentStatus: "", embeddable: false },
+			});
+			render(<VideoDetail video={video} />);
+			await userEvent.click(screen.getByRole("tab", { name: "技術仕様" }));
+
+			expect(screen.getByText("標準解像度 (SD)")).toBeInTheDocument();
+			expect(screen.getByText("2D")).toBeInTheDocument();
+			expect(screen.getByText("非対応")).toBeInTheDocument();
+			expect(screen.getByText("標準")).toBeInTheDocument();
+			expect(screen.getByText("限定公開")).toBeInTheDocument();
+			expect(screen.getByText("無効")).toBeInTheDocument();
+		});
+
+		it("privacyStatus=private は『非公開』を表示する", async () => {
+			render(<VideoDetail video={createMockVideo({ status: { privacyStatus: "private" } })} />);
+			await userEvent.click(screen.getByRole("tab", { name: "技術仕様" }));
+			expect(screen.getByText("非公開")).toBeInTheDocument();
 		});
 	});
 });
