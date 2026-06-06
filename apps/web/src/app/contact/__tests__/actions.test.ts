@@ -11,6 +11,7 @@ vi.mock("@/lib/logger", () => ({ error: vi.fn() }));
 const { headers } = vi.mocked(await import("next/headers"));
 const { sendContactNotification } = vi.mocked(await import("@/lib/email"));
 const { getFirestore } = vi.mocked(await import("@/lib/firestore"));
+const { revalidatePath } = vi.mocked(await import("next/cache"));
 
 const validData: ContactFormData = {
 	category: "bug",
@@ -42,6 +43,8 @@ describe("submitContactForm", () => {
 			expect.objectContaining({ ipAddress: "1.2.3.4", status: "new" }),
 		);
 		expect(sendContactNotification).toHaveBeenCalled();
+		// キャッシュ無効化の契約も担保
+		expect(revalidatePath).toHaveBeenCalledWith("/contact");
 	});
 
 	it("バリデーション失敗（短い content）は errors を返す", async () => {
