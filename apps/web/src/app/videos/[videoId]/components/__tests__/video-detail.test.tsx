@@ -115,18 +115,22 @@ function createMockVideo(overrides?: Partial<any>): VideoPlainObject {
 
 	// overridesを適用（undefinedも許可）
 	if (overrides) {
+		// _computed は全置換せずマージ（既定フィールドを保持し暗黙のフォールバック依存を避ける）
+		if (overrides._computed !== undefined) {
+			firestoreData._computed = { ...firestoreData._computed, ...overrides._computed };
+		}
 		Object.keys(overrides).forEach((key) => {
+			if (key === "_computed") {
+				return; // 上でマージ済み
+			}
 			if (key === "statistics" && overrides[key] !== undefined) {
 				// statisticsが明示的に提供された場合はそれを使用
 				firestoreData[key] = overrides[key];
-			} else if (key === "viewCount" || key === "likeCount" || key === "commentCount") {
+			} else if (["viewCount", "likeCount", "commentCount"].includes(key)) {
 				// 個別の統計値が提供された場合
 				if (!overrides.statistics) {
 					firestoreData.statistics[key] = overrides[key];
 				}
-			} else if (key === "_computed" && overrides[key] !== undefined) {
-				// _computed は全置換せずマージ（既定フィールドを保持し暗黙のフォールバック依存を避ける）
-				firestoreData._computed = { ...firestoreData._computed, ...overrides[key] };
 			} else {
 				// その他のフィールドは直接上書き（undefinedも含む）
 				firestoreData[key] = overrides[key];
