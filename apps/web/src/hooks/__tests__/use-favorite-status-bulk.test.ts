@@ -8,7 +8,7 @@ import {
 	cleanupFavoriteCache,
 	getFavoriteCacheStats,
 	useFavoriteStatusBulk,
-} from "../useFavoriteStatusBulk";
+} from "../use-favorite-status-bulk";
 
 // getFavoritesStatusActionのモック
 vi.mock("@/actions/favorites", () => ({
@@ -19,7 +19,7 @@ import { getFavoritesStatusAction } from "@/actions/favorites";
 
 const mockGetFavoritesStatusAction = getFavoritesStatusAction as ReturnType<typeof vi.fn>;
 
-describe("useFavoriteStatusBulk", () => {
+describe("use-favorite-status-bulk", () => {
 	// メモリリーク防止：固定の配列を使用
 	const stableAudioButtonIds = ["audio-1", "audio-2", "audio-3"];
 	const singleAudioButtonId = ["audio-1"];

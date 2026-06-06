@@ -10,8 +10,8 @@ import {
 	DEFAULT_ITEMS_PER_PAGE_OPTIONS,
 	DEFAULT_LIST_PROPS,
 } from "@/constants/list-options";
-import { useFavoriteStatusBulk } from "@/hooks/useFavoriteStatusBulk";
-import { useLikeDislikeStatusBulk } from "@/hooks/useLikeDislikeStatusBulk";
+import { useFavoriteStatusBulk } from "@/hooks/use-favorite-status-bulk";
+import { useLikeDislikeStatusBulk } from "@/hooks/use-like-dislike-status-bulk";
 import type { AudioButtonQuery } from "@/types/audio-button";
 import { getAudioButtonsList } from "../actions";
 import { getPopularAudioButtonTags } from "../lib/audio-button-stats";

@@ -1,7 +1,7 @@
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { FilterConfig, StandardListParams } from "../../types";
-import { useListHandlers } from "../useListHandlers";
+import { useListHandlers } from "../use-list-handlers";
 
 const makeUrlHook = () => ({
 	setSearch: vi.fn(),

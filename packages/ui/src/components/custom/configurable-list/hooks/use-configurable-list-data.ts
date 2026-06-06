@@ -4,7 +4,7 @@
 
 import { useMemo } from "react";
 import type { DataAdapter, StandardListParams } from "../types";
-import { useListData } from "./useListData";
+import { useListData } from "./use-list-data";
 
 interface UseConfigurableListDataOptions<T> {
 	initialItems: T[];

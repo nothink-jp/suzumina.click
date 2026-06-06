@@ -20,10 +20,10 @@ import { ConfigurableListControls } from "./configurable-list/ConfigurableListCo
 import { ConfigurableListFooter } from "./configurable-list/ConfigurableListFooter";
 import { ConfigurableListHeader } from "./configurable-list/ConfigurableListHeader";
 import { ConfigurableListItems } from "./configurable-list/ConfigurableListItems";
-import { useConfigurableListData } from "./configurable-list/hooks/useConfigurableListData";
-import { useListHandlers } from "./configurable-list/hooks/useListHandlers";
-import { useListUrl } from "./configurable-list/hooks/useListUrl";
-import { useSearchInput } from "./configurable-list/hooks/useSearchInput";
+import { useConfigurableListData } from "./configurable-list/hooks/use-configurable-list-data";
+import { useListHandlers } from "./configurable-list/hooks/use-list-handlers";
+import { useListUrl } from "./configurable-list/hooks/use-list-url";
+import { useSearchInput } from "./configurable-list/hooks/use-search-input";
 import type {
 	ConfigurableListProps,
 	FilterConfig,

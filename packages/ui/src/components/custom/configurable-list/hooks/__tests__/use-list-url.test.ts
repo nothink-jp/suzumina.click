@@ -1,7 +1,7 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { FilterConfig } from "../../types";
-import { useListUrl } from "../useListUrl";
+import { useListUrl } from "../use-list-url";
 
 // useSearchParams を可変ホルダー経由でモック
 const h = vi.hoisted(() => ({ sp: new URLSearchParams() }));
