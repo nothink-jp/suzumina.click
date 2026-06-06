@@ -769,6 +769,63 @@ describe("Creator page server actions", () => {
 
 			expect(result).toEqual({ works: [], totalCount: 0 });
 		});
+
+		// --- ソート分岐（compareWorks）の網羅 ---
+		const sortWorks = [
+			{
+				id: "RJ111111",
+				productId: "RJ111111",
+				title: "A",
+				releaseDateISO: "2025-01-15",
+				price: { current: 1100, currency: "JPY" },
+				rating: { stars: 3, count: 10 },
+				creators: {},
+			},
+			{
+				id: "RJ222222",
+				productId: "RJ222222",
+				title: "B",
+				releaseDateISO: "2025-01-10",
+				price: { current: 2200, currency: "JPY" },
+				rating: { stars: 5, count: 50 },
+				creators: {},
+			},
+		];
+		const setupSortWorks = () => {
+			setupCreatorMocks(
+				{ name: "C" },
+				{ empty: false, docs: sortWorks.map((w) => ({ id: w.id, data: () => ({}) })) },
+			);
+			mockGetAll.mockImplementation((...refs: Array<{ id: string }>) =>
+				Promise.resolve(
+					refs.map((ref) => {
+						const w = sortWorks.find((x) => x.id === ref.id);
+						return { exists: !!w, id: ref.id, data: () => w };
+					}),
+				),
+			);
+		};
+
+		it.each([
+			["price_low", "RJ111111"],
+			["price_high", "RJ222222"],
+			["oldest", "RJ222222"],
+			["newest", "RJ111111"],
+			["popular", "RJ222222"], // 評価が高い方が先頭（compareByRating）
+			["unknown-sort", "RJ111111"], // default ブランチ = newest と同挙動
+		])("sort=%s で先頭が %s になる", async (sort, expectedFirst) => {
+			setupSortWorks();
+			const result = await getCreatorWorksList({ creatorId: "VA12345", sort });
+			expect(result.works[0]?.productId).toBe(expectedFirst);
+		});
+
+		it("works サブコレクションが空なら空結果", async () => {
+			setupCreatorMocks({ name: "C" }, { empty: true, docs: [] });
+			expect(await getCreatorWorksList({ creatorId: "VA12345" })).toEqual({
+				works: [],
+				totalCount: 0,
+			});
+		});
 	});
 
 	afterEach(() => {
