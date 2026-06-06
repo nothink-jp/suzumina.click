@@ -238,8 +238,6 @@ describe("Works Server Actions", () => {
 		});
 	});
 
-	// --- 以下 SPR-153: 未カバーだった Server Actions ---
-
 	const workData = (over: Record<string, unknown> = {}) => ({
 		productId: "RJ001",
 		title: "作品1",

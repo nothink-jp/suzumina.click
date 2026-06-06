@@ -2,9 +2,17 @@ import type { CreateAudioButtonInput } from "@suzumina.click/shared-types";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	createAudioButton,
+	decrementDislikeCount,
+	decrementLikeCount,
 	deleteAudioButton,
 	getAudioButtonById,
 	getAudioButtonsList,
+	getRecentAudioButtons,
+	incrementDislikeCount,
+	incrementLikeCount,
+	incrementPlayCount,
+	updateAudioButton,
+	updateAudioButtonTags,
 } from "../actions";
 
 // Mock Firestore
@@ -36,6 +44,12 @@ vi.mock("@google-cloud/firestore", () => ({
 	FieldValue: {
 		increment: vi.fn(),
 	},
+}));
+
+// increment/decrement 系は updateCounter への委譲のため、ヘルパーをモックして委譲を検証
+const mockUpdateCounter = vi.fn();
+vi.mock("@/lib/firestore-helpers", () => ({
+	updateCounter: (...args: unknown[]) => mockUpdateCounter(...args),
 }));
 
 // Mock logger
@@ -740,6 +754,88 @@ describe("Audio Button Server Actions", () => {
 			const count = await getAudioButtonCount("test-video-id");
 
 			expect(count).toBe(0);
+		});
+	});
+
+	describe("カウンタ操作（updateCounter 委譲）", () => {
+		it("各 increment/decrement は updateCounter に正しい引数で委譲する", async () => {
+			mockUpdateCounter.mockResolvedValue({ success: true });
+			await incrementLikeCount("ab1");
+			expect(mockUpdateCounter).toHaveBeenCalledWith("audioButtons", "ab1", "stats.likeCount", 1, {
+				min: 0,
+			});
+			await decrementLikeCount("ab1");
+			expect(mockUpdateCounter).toHaveBeenCalledWith("audioButtons", "ab1", "stats.likeCount", -1, {
+				min: 0,
+			});
+			await incrementDislikeCount("ab1");
+			expect(mockUpdateCounter).toHaveBeenCalledWith(
+				"audioButtons",
+				"ab1",
+				"stats.dislikeCount",
+				1,
+				{ min: 0 },
+			);
+			await decrementDislikeCount("ab1");
+			expect(mockUpdateCounter).toHaveBeenCalledWith(
+				"audioButtons",
+				"ab1",
+				"stats.dislikeCount",
+				-1,
+				{ min: 0 },
+			);
+			await incrementPlayCount("ab1");
+			expect(mockUpdateCounter).toHaveBeenCalledWith("audioButtons", "ab1", "stats.playCount", 1, {
+				min: 0,
+			});
+		});
+
+		it("updateCounter の結果をそのまま返す", async () => {
+			mockUpdateCounter.mockResolvedValue({ success: false, error: "x" });
+			expect(await incrementLikeCount("ab1")).toEqual({ success: false, error: "x" });
+		});
+	});
+
+	describe("updateAudioButton", () => {
+		it("存在しなければ失敗", async () => {
+			mockGet.mockResolvedValue({ exists: false });
+			const r = await updateAudioButton("ab1", { buttonText: "新" });
+			expect(r.success).toBe(false);
+		});
+
+		it("作成者以外は権限エラー", async () => {
+			mockGet.mockResolvedValue({ exists: true, data: () => ({ creatorId: "other-user" }) });
+			const r = await updateAudioButton("ab1", { buttonText: "新" });
+			expect(r.success).toBe(false);
+			expect(r.error).toBeDefined();
+		});
+
+		it("作成者本人は更新成功", async () => {
+			mockGet.mockResolvedValue({
+				exists: true,
+				data: () => ({ creatorId: "123456789012345678" }),
+			});
+			const r = await updateAudioButton("ab1", { buttonText: "新", isPublic: false });
+			expect(r.success).toBe(true);
+		});
+	});
+
+	describe("updateAudioButtonTags", () => {
+		it("存在しなければ失敗", async () => {
+			mockGet.mockResolvedValue({ exists: false });
+			expect((await updateAudioButtonTags("ab1", ["t"])).success).toBe(false);
+		});
+
+		it("ログインユーザーはタグ更新成功（作成者でなくても可）", async () => {
+			mockGet.mockResolvedValue({ exists: true, data: () => ({ creatorId: "other-user" }) });
+			expect((await updateAudioButtonTags("ab1", ["t1", "t2"])).success).toBe(true);
+		});
+	});
+
+	describe("getRecentAudioButtons", () => {
+		it("一覧取得失敗時は空配列を返す", async () => {
+			mockGet.mockRejectedValue(new Error("fs"));
+			expect(await getRecentAudioButtons(5)).toEqual([]);
 		});
 	});
 });
