@@ -89,7 +89,7 @@ vi.mock("next-auth/react", () => ({
 }));
 
 // Mock AudioButtonsList component
-vi.mock("../components/AudioButtonsList", () => ({
+vi.mock("../components/audio-buttons-list", () => ({
 	default: () => {
 		return (
 			<div data-testid="audio-buttons-list">

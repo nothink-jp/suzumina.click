@@ -6,7 +6,7 @@ import {
 	CarouselNext,
 	CarouselPrevious,
 } from "@suzumina.click/ui/components/ui/carousel";
-import VideoCard from "@/app/videos/components/VideoCard";
+import VideoCard from "@/app/videos/components/video-card";
 import { UI_MESSAGES } from "@/constants/ui-messages";
 
 export interface FeaturedVideosCarouselProps {

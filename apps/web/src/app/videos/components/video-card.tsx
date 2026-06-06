@@ -8,7 +8,7 @@ import Link from "next/link";
 import React from "react";
 import ThumbnailImage from "@/components/ui/thumbnail-image";
 import { buildTagSearchHref } from "@/lib/tag-search";
-import VideoCardActions from "./VideoCardActions";
+import VideoCardActions from "./video-card-actions";
 
 // 動画タイプ別バッジ情報（純関数）
 function getVideoBadgeInfo(video: VideoPlainObject) {

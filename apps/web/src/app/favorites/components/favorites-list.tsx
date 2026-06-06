@@ -3,7 +3,7 @@
 import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
 import { ConfigurableList } from "@suzumina.click/ui/components/custom";
 import { useCallback, useMemo } from "react";
-import { AudioButtonListItem } from "@/components/audio/AudioButtonListItem";
+import { AudioButtonListItem } from "@/components/audio/audio-button-list-item";
 import {
 	BASIC_SORT_OPTIONS,
 	DEFAULT_ITEMS_PER_PAGE_OPTIONS,

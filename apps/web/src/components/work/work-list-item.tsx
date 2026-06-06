@@ -1,5 +1,5 @@
 import type { WorkPlainObject } from "@suzumina.click/shared-types";
-import WorkCard from "@/app/works/components/WorkCard";
+import WorkCard from "@/app/works/components/work-card";
 
 interface WorkListItemProps {
 	work: WorkPlainObject;

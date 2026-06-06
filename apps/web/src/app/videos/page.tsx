@@ -5,7 +5,7 @@ import {
 } from "@suzumina.click/ui/components/custom";
 import { Suspense } from "react";
 import { getVideosList } from "./actions";
-import VideoList from "./components/VideoList";
+import VideoList from "./components/video-list";
 
 interface VideosPageProps {
 	searchParams: Promise<{ [key: string]: string | string[] | undefined }>;

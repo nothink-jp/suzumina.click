@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import { getAudioButtonCount, getAudioButtonsList } from "@/app/buttons/actions";
 import { getVideoById } from "../actions";
-import { RelatedAudioButtonsServer } from "./components/RelatedAudioButtonsServer";
-import VideoDetail from "./components/VideoDetail";
+import { RelatedAudioButtonsServer } from "./components/related-audio-buttons-server";
+import VideoDetail from "./components/video-detail";
 
 interface VideoDetailPageProps {
 	params: Promise<{

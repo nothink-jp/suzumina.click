@@ -9,10 +9,10 @@
 import { cn } from "@suzumina.click/ui/lib/utils";
 import { Play, Users } from "lucide-react";
 import { buildCompactTags } from "./three-layer-tag-display/buildCompactTags";
-import { CategoryDisplay } from "./three-layer-tag-display/CategoryDisplay";
-import { CompactTagDisplay } from "./three-layer-tag-display/CompactTagDisplay";
+import { CategoryDisplay } from "./three-layer-tag-display/category-display";
+import { CompactTagDisplay } from "./three-layer-tag-display/compact-tag-display";
 import { getSizeClasses } from "./three-layer-tag-display/getSizeClasses";
-import { TagLayer } from "./three-layer-tag-display/TagLayer";
+import { TagLayer } from "./three-layer-tag-display/tag-layer";
 
 export interface VideoTagDisplayProps {
 	/** 配信タイプタグ（自動分類） */

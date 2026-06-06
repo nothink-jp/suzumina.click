@@ -4,7 +4,7 @@ import type { CirclePlainObject } from "@suzumina.click/shared-types";
 import { ConfigurableList, type StandardListParams } from "@suzumina.click/ui/components/custom";
 import Link from "next/link";
 import { useCallback, useMemo } from "react";
-import { ListWrapper } from "@/components/list/ListWrapper";
+import { ListWrapper } from "@/components/list/list-wrapper";
 import { DEFAULT_LIST_PROPS } from "@/constants/list-options";
 import { getCircles } from "../actions";
 

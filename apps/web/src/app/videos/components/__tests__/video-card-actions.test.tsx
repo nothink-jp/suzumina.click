@@ -2,7 +2,7 @@ import type { VideoPlainObject } from "@suzumina.click/shared-types";
 import { render, screen } from "@testing-library/react";
 import { useSession } from "next-auth/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import VideoCardActions from "../VideoCardActions";
+import VideoCardActions from "../video-card-actions";
 
 vi.mock("next-auth/react", () => ({
 	useSession: vi.fn(),

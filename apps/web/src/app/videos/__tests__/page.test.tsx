@@ -53,7 +53,7 @@ vi.mock("../actions", () => ({
 }));
 
 // Mock VideoList component
-vi.mock("../components/VideoList", () => ({
+vi.mock("../components/video-list", () => ({
 	default: ({ initialData }: any) => (
 		<div data-testid="video-list">
 			{initialData.items.map((video: any) => (

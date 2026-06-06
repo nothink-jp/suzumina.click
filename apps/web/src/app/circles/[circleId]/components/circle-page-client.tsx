@@ -7,7 +7,7 @@ import {
 	ListPageLayout,
 } from "@suzumina.click/ui/components/custom";
 import { Suspense } from "react";
-import CircleWorksList from "./CircleWorksList";
+import CircleWorksList from "./circle-works-list";
 
 interface CirclePageClientProps {
 	circle: CirclePlainObject;

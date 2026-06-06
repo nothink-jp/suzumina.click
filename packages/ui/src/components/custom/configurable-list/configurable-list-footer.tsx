@@ -2,7 +2,7 @@
  * ConfigurableListのフッター部分（ページネーション）
  */
 
-import { ConfigurableListPagination } from "./ConfigurableListPagination";
+import { ConfigurableListPagination } from "./configurable-list-pagination";
 
 interface ConfigurableListFooterProps {
 	totalPages: number;

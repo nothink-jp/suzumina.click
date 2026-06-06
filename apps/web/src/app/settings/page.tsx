@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getUserByDiscordId } from "@/lib/user-firestore";
-import { UnifiedSettingsContent } from "./components/UnifiedSettingsContent";
+import { UnifiedSettingsContent } from "./components/unified-settings-content";
 
 export const metadata = {
 	title: "設定",

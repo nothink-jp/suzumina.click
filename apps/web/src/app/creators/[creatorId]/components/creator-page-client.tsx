@@ -7,7 +7,7 @@ import {
 	ListPageHeader,
 	ListPageLayout,
 } from "@suzumina.click/ui/components/custom";
-import CreatorWorksList from "./CreatorWorksList";
+import CreatorWorksList from "./creator-works-list";
 
 interface CreatorPageClientProps {
 	creator: CreatorPageInfo;

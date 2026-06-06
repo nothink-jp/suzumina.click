@@ -6,7 +6,7 @@ import {
 	CarouselNext,
 	CarouselPrevious,
 } from "@suzumina.click/ui/components/ui/carousel";
-import WorkCard from "@/app/works/components/WorkCard";
+import WorkCard from "@/app/works/components/work-card";
 import { UI_MESSAGES } from "@/constants/ui-messages";
 
 export interface FeaturedWorksCarouselProps {

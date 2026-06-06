@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getFavoritesList } from "./actions";
-import FavoritesList from "./components/FavoritesList";
+import FavoritesList from "./components/favorites-list";
 
 export const metadata: Metadata = {
 	title: "お気に入り | すずみなくりっく！",

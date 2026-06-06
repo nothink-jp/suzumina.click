@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatDate } from "../WorkCard";
+import { formatDate } from "../work-card";
 
 // SPR-135 回帰: 発売日表示は実行環境の TZ に依存してはならない。
 // TZ 指定の無い JST 壁時計文字列を `new Date()` でローカル TZ 解釈すると、
