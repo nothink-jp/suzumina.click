@@ -1,6 +1,6 @@
 import type { WorkPlainObject } from "@suzumina.click/shared-types";
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import WorkCard, { formatDate } from "../work-card";
 
 // next/link は素の <a> に置換（href 検証を容易にする）

@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useSession } from "next-auth/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { updateUserTagsAction } from "@/actions/user-tags";
+import { buildTagSearchHref } from "@/lib/tag-search";
 import { VideoUserTagEditor } from "../video-user-tag-editor";
 
 vi.mock("next-auth/react", () => ({
@@ -11,6 +12,16 @@ vi.mock("next-auth/react", () => ({
 
 vi.mock("@/actions/user-tags", () => ({
 	updateUserTagsAction: vi.fn(),
+}));
+
+// router.push / router.refresh の副作用を検証するため next/navigation をローカルでモックして捕捉する
+// （vitest.setup.ts のグローバルモックは毎回新しい vi.fn を返し捕捉できないため）。
+const { mockPush, mockRefresh } = vi.hoisted(() => ({
+	mockPush: vi.fn(),
+	mockRefresh: vi.fn(),
+}));
+vi.mock("next/navigation", () => ({
+	useRouter: () => ({ push: mockPush, refresh: mockRefresh }),
 }));
 
 // 子コンポーネントは本体ロジックの検証外なのでスタブ化する。
@@ -115,6 +126,8 @@ describe("VideoUserTagEditor", () => {
 			videoId: "abc123",
 			userTags: ["new-tag"],
 		});
+		// 成功時は最新データ取得のためページをリフレッシュする
+		expect(mockRefresh).toHaveBeenCalledTimes(1);
 	});
 
 	it("保存失敗（error あり）はそのエラーメッセージを返す", async () => {
@@ -189,11 +202,13 @@ describe("VideoUserTagEditor", () => {
 		expect(screen.getByRole("button", { name: "保存" })).toBeInTheDocument();
 	});
 
-	it("タグクリックで一覧へ遷移する（onTagClick 経由でクラッシュしない）", () => {
+	it("タグクリックで buildTagSearchHref の URL に router.push する", () => {
 		(useSession as any).mockReturnValue(loggedIn);
 		render(<VideoUserTagEditor video={createVideo()} />);
 
-		// ThreeLayerTagDisplay スタブのタグをクリックしても例外が出ない
-		expect(() => fireEvent.click(screen.getByText("tag-display"))).not.toThrow();
+		// ThreeLayerTagDisplay スタブが onTagClick("ASMR", "user") を発火する
+		fireEvent.click(screen.getByText("tag-display"));
+
+		expect(mockPush).toHaveBeenCalledWith(buildTagSearchHref("ASMR", "user"));
 	});
 });
