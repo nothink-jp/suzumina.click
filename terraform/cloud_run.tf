@@ -99,16 +99,11 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
         value = "1"
       }
 
-      # NextAuth設定
+      # better-auth のベース URL（SPR-158 で NextAuth から移行）
+      # 注: env は lifecycle.ignore_changes 対象で、実値は GitHub Actions の gcloud deploy が管理する。
       env {
-        name  = "NEXTAUTH_URL"
+        name  = "BETTER_AUTH_URL"
         value = var.environment == "production" && var.custom_domain != "" ? "https://${var.custom_domain}" : "auto"
-      }
-
-      # NextAuth.js v5でカスタムドメイン使用時に必要
-      env {
-        name  = "AUTH_TRUST_HOST"
-        value = var.environment == "production" ? "true" : "false"
       }
 
       # Discord OAuth Client ID (Secret Managerから取得)
@@ -134,9 +129,9 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
       }
 
 
-      # NextAuth Secret (Secret Managerから取得)
+      # better-auth Secret（SPR-158: 既存の NEXTAUTH_SECRET の値を流用し env 名のみ変更）
       env {
-        name = "NEXTAUTH_SECRET"
+        name = "BETTER_AUTH_SECRET"
         value_source {
           secret_key_ref {
             secret  = google_secret_manager_secret.secrets["NEXTAUTH_SECRET"].secret_id
@@ -337,12 +332,12 @@ output "cloud_run_service_account_email" {
 }
 
 # デバッグ用出力
-output "nextauth_url_debug" {
-  description = "NextAuth URL configuration for debugging"
+output "better_auth_url_debug" {
+  description = "better-auth URL configuration for debugging"
   value = {
-    environment   = var.environment
-    custom_domain = var.custom_domain
-    nextauth_url  = var.environment == "production" && var.custom_domain != "" ? "https://${var.custom_domain}" : "auto"
+    environment     = var.environment
+    custom_domain   = var.custom_domain
+    better_auth_url = var.environment == "production" && var.custom_domain != "" ? "https://${var.custom_domain}" : "auto"
   }
   sensitive = false
 }

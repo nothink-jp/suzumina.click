@@ -19,7 +19,7 @@
 		},
 		{
 			"description": "Critical auth packages - manual review required",
-			"matchPackageNames": ["next-auth", "@auth/core"],
+			"matchPackageNames": ["better-auth"],
 			"groupName": "authentication core",
 			"schedule": ["on the first day of the month before 6am"],
 			"automerge": false,

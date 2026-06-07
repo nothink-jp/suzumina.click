@@ -7,8 +7,8 @@ import {
 } from "../evaluation-actions";
 
 // Mock dependencies
-vi.mock("@/auth", () => ({
-	auth: vi.fn(),
+vi.mock("@/lib/auth/server", () => ({
+	getCurrentUser: vi.fn(),
 }));
 
 vi.mock("@/lib/firestore", () => ({
@@ -20,11 +20,11 @@ vi.mock("next/cache", () => ({
 }));
 
 // Import mocked modules
-import { auth } from "@/auth";
+import { getCurrentUser } from "@/lib/auth/server";
 import { getFirestore } from "@/lib/firestore";
 
 describe("evaluation-actions", () => {
-	const mockAuth = vi.mocked(auth);
+	const mockAuth = vi.mocked(getCurrentUser);
 	const mockGetFirestore = vi.mocked(getFirestore);
 
 	// Helper to create properly mocked Firestore
@@ -102,8 +102,8 @@ describe("evaluation-actions", () => {
 
 		it("returns error when user has no discordId", async () => {
 			mockAuth.mockResolvedValueOnce({
-				user: { id: "test-user", name: "Test User" },
-				expires: new Date().toISOString(),
+				id: "test-user",
+				name: "Test User",
 			} as any);
 
 			const result = await updateWorkEvaluation("RJ12345678", {
@@ -119,9 +119,7 @@ describe("evaluation-actions", () => {
 		});
 
 		it("validates input data", async () => {
-			mockAuth.mockResolvedValueOnce({
-				user: { discordId: "test-discord-id" },
-			} as any);
+			mockAuth.mockResolvedValueOnce({ discordId: "test-discord-id" } as any);
 
 			const result = await updateWorkEvaluation("RJ12345678", {
 				type: "star",
@@ -134,9 +132,7 @@ describe("evaluation-actions", () => {
 		});
 
 		it("handles transaction errors", async () => {
-			mockAuth.mockResolvedValueOnce({
-				user: { discordId: "test-discord-id" },
-			} as any);
+			mockAuth.mockResolvedValueOnce({ discordId: "test-discord-id" } as any);
 
 			const mockFirestore = {
 				runTransaction: vi.fn().mockRejectedValueOnce(new Error("Transaction failed")),
@@ -157,9 +153,7 @@ describe("evaluation-actions", () => {
 
 		describe("基本的な評価操作", () => {
 			it("creates new star evaluation", async () => {
-				mockAuth.mockResolvedValueOnce({
-					user: { discordId: "test-discord-id" },
-				} as any);
+				mockAuth.mockResolvedValueOnce({ discordId: "test-discord-id" } as any);
 
 				const savedEvaluation = {
 					id: "test-discord-id_RJ12345678",
@@ -190,9 +184,7 @@ describe("evaluation-actions", () => {
 			});
 
 			it("updates existing evaluation from star to ng", async () => {
-				mockAuth.mockResolvedValueOnce({
-					user: { discordId: "test-discord-id" },
-				} as any);
+				mockAuth.mockResolvedValueOnce({ discordId: "test-discord-id" } as any);
 
 				const existingEval = {
 					id: "test-discord-id_RJ12345678",
@@ -228,9 +220,7 @@ describe("evaluation-actions", () => {
 			});
 
 			it("removes evaluation", async () => {
-				mockAuth.mockResolvedValueOnce({
-					user: { discordId: "test-discord-id" },
-				} as any);
+				mockAuth.mockResolvedValueOnce({ discordId: "test-discord-id" } as any);
 
 				const existingEval = {
 					id: "test-discord-id_RJ12345678",
@@ -261,9 +251,7 @@ describe("evaluation-actions", () => {
 
 		describe("10選の複雑な操作", () => {
 			it("adds work to position 3 and shifts existing works", async () => {
-				mockAuth.mockResolvedValueOnce({
-					user: { discordId: "test-discord-id" },
-				} as any);
+				mockAuth.mockResolvedValueOnce({ discordId: "test-discord-id" } as any);
 
 				const existingTop10 = {
 					userId: "test-discord-id",
@@ -320,9 +308,7 @@ describe("evaluation-actions", () => {
 			});
 
 			it("removes 11th work when adding to full list", async () => {
-				mockAuth.mockResolvedValueOnce({
-					user: { discordId: "test-discord-id" },
-				} as any);
+				mockAuth.mockResolvedValueOnce({ discordId: "test-discord-id" } as any);
 
 				const fullTop10: any = {
 					userId: "test-discord-id",
@@ -384,9 +370,7 @@ describe("evaluation-actions", () => {
 			});
 
 			it("removes work from top10 when deleting evaluation", async () => {
-				mockAuth.mockResolvedValueOnce({
-					user: { discordId: "test-discord-id" },
-				} as any);
+				mockAuth.mockResolvedValueOnce({ discordId: "test-discord-id" } as any);
 
 				const existingTop10 = {
 					rankings: {
@@ -451,9 +435,7 @@ describe("evaluation-actions", () => {
 		});
 
 		it("returns evaluation when it exists", async () => {
-			mockAuth.mockResolvedValueOnce({
-				user: { discordId: "test-discord-id" },
-			} as any);
+			mockAuth.mockResolvedValueOnce({ discordId: "test-discord-id" } as any);
 
 			const mockFirestore = {
 				collection: vi.fn(() => ({
@@ -499,9 +481,7 @@ describe("evaluation-actions", () => {
 		});
 
 		it("returns top10 list when it exists", async () => {
-			mockAuth.mockResolvedValueOnce({
-				user: { discordId: "test-discord-id" },
-			} as any);
+			mockAuth.mockResolvedValueOnce({ discordId: "test-discord-id" } as any);
 
 			const mockFirestore = {
 				collection: vi.fn(() => ({
@@ -549,9 +529,7 @@ describe("evaluation-actions", () => {
 
 	describe("removeWorkEvaluation", () => {
 		it("calls updateWorkEvaluation with remove type", async () => {
-			mockAuth.mockResolvedValueOnce({
-				user: { discordId: "test-discord-id" },
-			} as any);
+			mockAuth.mockResolvedValueOnce({ discordId: "test-discord-id" } as any);
 
 			const existingEval = {
 				id: "test-discord-id_RJ12345678",

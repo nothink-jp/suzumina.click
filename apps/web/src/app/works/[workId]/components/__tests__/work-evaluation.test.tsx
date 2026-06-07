@@ -1,7 +1,22 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { SessionProvider } from "next-auth/react";
 import { vi } from "vitest";
 import { WorkEvaluation } from "../work-evaluation";
+
+// useSession（認証抽象）をモック。session prop 付き素通しラッパーで値を切替える。
+const mockUseSession = vi.fn();
+vi.mock("@/lib/auth/client", () => ({ useSession: () => mockUseSession() }));
+
+// 旧 next-auth SessionProvider の置換: render 時に session prop から useSession の戻りを設定する。
+function SessionProvider({
+	children,
+	session,
+}: {
+	children: React.ReactNode;
+	session: { user?: unknown } | null;
+}) {
+	mockUseSession.mockReturnValue({ data: session?.user ? { user: session.user } : null });
+	return <>{children}</>;
+}
 
 // Mock the evaluation actions module
 vi.mock("../../evaluation-actions", () => ({

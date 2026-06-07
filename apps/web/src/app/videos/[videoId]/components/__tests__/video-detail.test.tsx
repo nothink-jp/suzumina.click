@@ -19,29 +19,6 @@ vi.mock("@/lib/auth/client", () => ({
 	})),
 }));
 
-// NextAuthサーバーサイドのモック
-vi.mock("next-auth", () => ({
-	default: vi.fn(),
-}));
-
-// NextAuth providersのモック
-vi.mock("next-auth/providers/discord", () => ({
-	default: vi.fn(),
-}));
-
-// auth.tsのモック
-vi.mock("@/auth", () => ({
-	auth: vi.fn().mockResolvedValue({
-		user: {
-			id: "test-user",
-			name: "Test User",
-			email: "test@example.com",
-			role: "member",
-			isActive: true,
-		},
-	}),
-}));
-
 // Next.js routerのモック
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({

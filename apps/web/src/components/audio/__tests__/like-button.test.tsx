@@ -1,14 +1,13 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { SessionProvider } from "next-auth/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { LikeButton } from "../like-button";
 
-// Mock next-auth（SessionProvider はテスト本体のラッパーで使用）
-const mockUseSession = vi.fn();
-vi.mock("next-auth/react", () => ({
-	SessionProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-}));
+// 旧 next-auth SessionProvider の素通し置換（テストのラッパー用・session prop は無視）
+function SessionProvider({ children }: { children: React.ReactNode; session?: unknown }) {
+	return <>{children}</>;
+}
 // useSession は認証抽象から取得するためそちらをモックする
+const mockUseSession = vi.fn();
 vi.mock("@/lib/auth/client", () => ({
 	useSession: () => mockUseSession(),
 }));

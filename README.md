@@ -28,7 +28,7 @@
 
 - **Frontend**: Next.js App Router + TypeScript + Tailwind CSS
 - **Backend**: Cloud Functions + Firestore
-- **Auth**: NextAuth.js + Discord OAuth
+- **Auth**: better-auth + Discord OAuth
 - **Infrastructure**: Terraform + Google Cloud Platform
 
 ## 開発環境セットアップ

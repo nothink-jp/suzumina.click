@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { AudioButtonsCarouselDeferred } from "../audio-buttons-carousel-deferred";
 
 // FeaturedAudioButtonsCarousel をモック化して lazy() の resolve 内容を制御する。
-// 実コンポーネントは next-auth/react や Firestore action を含むため、
+// 実コンポーネントは better-auth client や Firestore action を含むため、
 // 本テストでは defer ロジック (skeleton → lazy mount) のみを検証する。
 vi.mock("@/components/audio/featured-audio-buttons-carousel", () => ({
 	FeaturedAudioButtonsCarousel: ({ audioButtons }: { audioButtons: AudioButtonPlainObject[] }) => (

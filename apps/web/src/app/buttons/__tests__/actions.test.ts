@@ -76,15 +76,13 @@ vi.mock("next/cache", () => ({
 }));
 
 // Mock auth
-vi.mock("@/auth", () => ({
-	auth: vi.fn().mockResolvedValue({
-		user: {
-			discordId: "123456789012345678",
-			username: "testuser",
-			displayName: "Test User",
-			role: "member",
-			isActive: true,
-		},
+vi.mock("@/lib/auth/server", () => ({
+	getCurrentUser: vi.fn().mockResolvedValue({
+		discordId: "123456789012345678",
+		username: "testuser",
+		displayName: "Test User",
+		role: "member",
+		isActive: true,
 	}),
 }));
 

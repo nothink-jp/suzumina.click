@@ -11,8 +11,8 @@ import {
 } from "../audio-button-actions";
 
 // モジュールのモック
-vi.mock("@/auth", () => ({
-	auth: vi.fn(),
+vi.mock("@/lib/auth/server", () => ({
+	getCurrentUser: vi.fn(),
 }));
 
 vi.mock("@/lib/firestore", () => ({
@@ -20,7 +20,7 @@ vi.mock("@/lib/firestore", () => ({
 }));
 
 // モックのインポート
-import { auth } from "@/auth";
+import { getCurrentUser } from "@/lib/auth/server";
 import { getFirestore } from "@/lib/firestore";
 
 // テスト用データ
@@ -297,7 +297,7 @@ describe("audio-button-actions", () => {
 	describe("updateAudioButtonAction", () => {
 		it("認証されていない場合エラーを返す", async () => {
 			const { updateAudioButtonAction } = await import("../audio-button-actions");
-			vi.mocked(auth).mockResolvedValue(null);
+			vi.mocked(getCurrentUser).mockResolvedValue(null);
 
 			const result = await updateAudioButtonAction("button-123", {});
 
@@ -307,12 +307,10 @@ describe("audio-button-actions", () => {
 
 		it("管理者でない場合エラーを返す", async () => {
 			const { updateAudioButtonAction } = await import("../audio-button-actions");
-			vi.mocked(auth).mockResolvedValue({
-				user: {
-					id: "user-123",
-					discordId: "discord-123",
-					role: "user",
-				},
+			vi.mocked(getCurrentUser).mockResolvedValue({
+				id: "user-123",
+				discordId: "discord-123",
+				role: "user",
 			} as any);
 
 			const result = await updateAudioButtonAction("button-123", {});
@@ -323,12 +321,10 @@ describe("audio-button-actions", () => {
 
 		it("管理者の場合成功を返す", async () => {
 			const { updateAudioButtonAction } = await import("../audio-button-actions");
-			vi.mocked(auth).mockResolvedValue({
-				user: {
-					id: "user-123",
-					discordId: "discord-123",
-					role: "admin",
-				},
+			vi.mocked(getCurrentUser).mockResolvedValue({
+				id: "user-123",
+				discordId: "discord-123",
+				role: "admin",
 			} as any);
 
 			const result = await updateAudioButtonAction("button-123", {});

@@ -7,7 +7,7 @@ import {
 	toggleFavoriteAction,
 } from "../favorites";
 
-vi.mock("@/auth", () => ({ auth: vi.fn() }));
+vi.mock("@/lib/auth/server", () => ({ getCurrentUser: vi.fn() }));
 vi.mock("@/lib/favorites-firestore", () => ({
 	addFavorite: vi.fn(),
 	removeFavorite: vi.fn(),
@@ -16,11 +16,11 @@ vi.mock("@/lib/favorites-firestore", () => ({
 	getFavoritesStatus: vi.fn(),
 }));
 
-const auth = vi.mocked(await import("@/auth")).auth;
+const getCurrentUser = vi.mocked(await import("@/lib/auth/server")).getCurrentUser;
 const fs = vi.mocked(await import("@/lib/favorites-firestore"));
 
-const login = () => auth.mockResolvedValue({ user: { discordId: "u1" } } as never);
-const logout = () => auth.mockResolvedValue(null as never);
+const login = () => getCurrentUser.mockResolvedValue({ discordId: "u1" } as never);
+const logout = () => getCurrentUser.mockResolvedValue(null as never);
 
 beforeEach(() => {
 	vi.clearAllMocks();

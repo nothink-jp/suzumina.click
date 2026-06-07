@@ -35,9 +35,9 @@ vi.mock("next/link", () => ({
 	),
 }));
 
-// Mock NextAuth
-vi.mock("@/auth", () => ({
-	auth: vi.fn(),
+// Mock 認証抽象
+vi.mock("@/lib/auth/server", () => ({
+	getCurrentUser: vi.fn(),
 }));
 
 // Mock AuthButton
