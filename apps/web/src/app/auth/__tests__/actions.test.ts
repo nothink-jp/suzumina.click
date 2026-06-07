@@ -1,10 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { signInAction, signOutAction } from "../actions";
 
-vi.mock("@/lib/auth/server", () => ({
-	signInWithDiscord: vi.fn(),
-	signOutCurrent: vi.fn(),
-}));
+vi.mock("@/lib/auth/server");
 vi.mock("@/lib/logger", () => ({ info: vi.fn(), error: vi.fn(), warn: vi.fn() }));
 
 const { signInWithDiscord, signOutCurrent } = vi.mocked(await import("@/lib/auth/server"));

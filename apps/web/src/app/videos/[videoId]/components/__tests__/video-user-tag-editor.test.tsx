@@ -2,13 +2,11 @@ import type { VideoPlainObject } from "@suzumina.click/shared-types";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { updateUserTagsAction } from "@/actions/user-tags";
-import { useSession } from "@/lib/auth/client";
 import { buildTagSearchHref } from "@/lib/tag-search";
+import { mockUseSession } from "@/test-utils/auth";
 import { VideoUserTagEditor } from "../video-user-tag-editor";
 
-vi.mock("@/lib/auth/client", () => ({
-	useSession: vi.fn(),
-}));
+vi.mock("@/lib/auth/client");
 
 vi.mock("@/actions/user-tags", () => ({
 	updateUserTagsAction: vi.fn(),
@@ -88,7 +86,7 @@ describe("VideoUserTagEditor", () => {
 	});
 
 	it("未ログイン時は編集セクションを出さずログイン誘導を表示する", () => {
-		(useSession as any).mockReturnValue(loggedOut);
+		mockUseSession(loggedOut);
 		render(<VideoUserTagEditor video={createVideo()} />);
 
 		expect(screen.getByText(/ログインしてください/)).toBeInTheDocument();
@@ -96,7 +94,7 @@ describe("VideoUserTagEditor", () => {
 	});
 
 	it("ログイン時は編集セクションと編集ボタンを表示する", () => {
-		(useSession as any).mockReturnValue(loggedIn);
+		mockUseSession(loggedIn);
 		render(<VideoUserTagEditor video={createVideo()} />);
 
 		expect(screen.getByText("みんなのタグ編集")).toBeInTheDocument();
@@ -106,7 +104,7 @@ describe("VideoUserTagEditor", () => {
 	});
 
 	it("編集ボタンでエディタを開き、保存成功でエディタを閉じる", async () => {
-		(useSession as any).mockReturnValue(loggedIn);
+		mockUseSession(loggedIn);
 		(updateUserTagsAction as any).mockResolvedValue({ success: true });
 		render(<VideoUserTagEditor video={createVideo()} />);
 
@@ -131,7 +129,7 @@ describe("VideoUserTagEditor", () => {
 	});
 
 	it("保存失敗（error あり）はそのエラーメッセージを返す", async () => {
-		(useSession as any).mockReturnValue(loggedIn);
+		mockUseSession(loggedIn);
 		(updateUserTagsAction as any).mockResolvedValue({ success: false, error: "権限がありません" });
 		render(<VideoUserTagEditor video={createVideo()} />);
 
@@ -144,7 +142,7 @@ describe("VideoUserTagEditor", () => {
 	});
 
 	it("保存失敗（error なし）は既定メッセージを返す", async () => {
-		(useSession as any).mockReturnValue(loggedIn);
+		mockUseSession(loggedIn);
 		(updateUserTagsAction as any).mockResolvedValue({ success: false });
 		render(<VideoUserTagEditor video={createVideo()} />);
 
@@ -160,7 +158,7 @@ describe("VideoUserTagEditor", () => {
 	});
 
 	it("アクションが Error を throw した場合はその message を返す", async () => {
-		(useSession as any).mockReturnValue(loggedIn);
+		mockUseSession(loggedIn);
 		(updateUserTagsAction as any).mockRejectedValue(new Error("ネットワークエラー"));
 		render(<VideoUserTagEditor video={createVideo()} />);
 
@@ -173,7 +171,7 @@ describe("VideoUserTagEditor", () => {
 	});
 
 	it("アクションが Error 以外を throw した場合は既定メッセージを返す", async () => {
-		(useSession as any).mockReturnValue(loggedIn);
+		mockUseSession(loggedIn);
 		(updateUserTagsAction as any).mockRejectedValue("文字列エラー");
 		render(<VideoUserTagEditor video={createVideo()} />);
 
@@ -189,13 +187,13 @@ describe("VideoUserTagEditor", () => {
 	});
 
 	it("tags / categoryId が無くてもフォールバックして描画できる", () => {
-		(useSession as any).mockReturnValue(loggedOut);
+		mockUseSession(loggedOut);
 		expect(() => render(<VideoUserTagEditor video={createVideoWithoutTags()} />)).not.toThrow();
 		expect(screen.getByText("tag-display")).toBeInTheDocument();
 	});
 
 	it("tags が無い状態でも編集エディタを開ける（プロップのフォールバック）", () => {
-		(useSession as any).mockReturnValue(loggedIn);
+		mockUseSession(loggedIn);
 		render(<VideoUserTagEditor video={createVideoWithoutTags()} />);
 
 		fireEvent.click(screen.getByRole("button", { name: /編集/ }));
@@ -203,7 +201,7 @@ describe("VideoUserTagEditor", () => {
 	});
 
 	it("タグクリックで buildTagSearchHref の URL に router.push する", () => {
-		(useSession as any).mockReturnValue(loggedIn);
+		mockUseSession(loggedIn);
 		render(<VideoUserTagEditor video={createVideo()} />);
 
 		// ThreeLayerTagDisplay スタブが onTagClick("ASMR", "user") を発火する

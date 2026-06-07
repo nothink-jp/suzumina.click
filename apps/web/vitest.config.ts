@@ -32,6 +32,8 @@ export default defineConfig({
 				"**/*.config.{js,ts,mjs,cjs,mts,cts}",
 				"**/*.stories.{ts,tsx}",
 				"**/__tests__/**",
+				"**/__mocks__/**", // Vitest 手動 mock（テスト基盤・SPR-170）
+				"src/test-utils/**", // テスト共通ヘルパ（SPR-170）
 				"**/e2e/**",
 				"src/**/layout.tsx", // App Router boilerplate
 				// 認証フレームワークの glue（インスタンス生成 / クライアント / ルートハンドラ）はロジックを持たない（SPR-156）

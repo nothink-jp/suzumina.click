@@ -1,5 +1,6 @@
 import type { CreateAudioButtonInput } from "@suzumina.click/shared-types";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { mockCurrentUser } from "@/test-utils/auth-server";
 import {
 	createAudioButton,
 	decrementDislikeCount,
@@ -75,16 +76,8 @@ vi.mock("next/cache", () => ({
 	unstable_cache: (fn: (...args: unknown[]) => unknown) => fn,
 }));
 
-// Mock auth
-vi.mock("@/lib/auth/server", () => ({
-	getCurrentUser: vi.fn().mockResolvedValue({
-		discordId: "123456789012345678",
-		username: "testuser",
-		displayName: "Test User",
-		role: "member",
-		isActive: true,
-	}),
-}));
+// Mock auth（既定ログイン済みは beforeEach で設定）
+vi.mock("@/lib/auth/server");
 
 // Mock protected route
 vi.mock("@/components/system/protected-route", () => ({
@@ -99,6 +92,12 @@ vi.mock("@/components/system/protected-route", () => ({
 describe("Audio Button Server Actions", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		mockCurrentUser({
+			discordId: "123456789012345678",
+			username: "testuser",
+			displayName: "Test User",
+			isActive: true,
+		});
 
 		// Mock YouTube API key
 		process.env.YOUTUBE_API_KEY = "test-api-key";

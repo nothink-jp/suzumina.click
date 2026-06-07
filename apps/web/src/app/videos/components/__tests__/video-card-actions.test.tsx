@@ -1,12 +1,10 @@
 import type { VideoPlainObject } from "@suzumina.click/shared-types";
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { useSession } from "@/lib/auth/client";
+import { mockUseSession } from "@/test-utils/auth";
 import VideoCardActions from "../video-card-actions";
 
-vi.mock("@/lib/auth/client", () => ({
-	useSession: vi.fn(),
-}));
+vi.mock("@/lib/auth/client");
 
 function createMockVideo(overrides?: Partial<any>): VideoPlainObject {
 	const base = {
@@ -37,7 +35,7 @@ function createMockVideo(overrides?: Partial<any>): VideoPlainObject {
 	return { ...base, ...overrides } as VideoPlainObject;
 }
 
-const loggedIn = { id: "user123", name: "テストユーザー" };
+const loggedIn = { discordId: "user123", displayName: "テストユーザー" };
 const loggedOut = null;
 
 describe("VideoCardActions", () => {
@@ -46,7 +44,7 @@ describe("VideoCardActions", () => {
 	});
 
 	it("sidebar variant では『動画を見る』リンクのみ表示する", () => {
-		(useSession as any).mockReturnValue(loggedOut);
+		mockUseSession(loggedOut);
 		render(<VideoCardActions video={createMockVideo()} variant="sidebar" />);
 
 		const link = screen.getByText("動画を見る").closest("a");
@@ -55,7 +53,7 @@ describe("VideoCardActions", () => {
 	});
 
 	it("ログイン済み・作成可能ならボタン作成リンクを表示する", () => {
-		(useSession as any).mockReturnValue(loggedIn);
+		mockUseSession(loggedIn);
 		render(<VideoCardActions video={createMockVideo()} variant="grid" />);
 
 		const createLink = screen.getByText("ボタン作成").closest("a");
@@ -64,7 +62,7 @@ describe("VideoCardActions", () => {
 	});
 
 	it("未ログインならログイン導線を表示する（callbackUrl 付き）", () => {
-		(useSession as any).mockReturnValue(loggedOut);
+		mockUseSession(loggedOut);
 		render(<VideoCardActions video={createMockVideo()} variant="grid" />);
 
 		const loginLink = screen.getByText("ログイン").closest("a");
@@ -76,7 +74,7 @@ describe("VideoCardActions", () => {
 	});
 
 	it("ログイン済みでも作成不可なら理由を tooltip に持つ aria-disabled ボタンを表示する", () => {
-		(useSession as any).mockReturnValue(loggedIn);
+		mockUseSession(loggedIn);
 		const video = createMockVideo({
 			liveBroadcastContent: "live",
 			_computed: {
@@ -99,7 +97,7 @@ describe("VideoCardActions", () => {
 	});
 
 	it("埋め込み制限がある場合は理由として埋め込み制限を表示する", () => {
-		(useSession as any).mockReturnValue(loggedIn);
+		mockUseSession(loggedIn);
 		const video = createMockVideo({ status: { embeddable: false } });
 		render(<VideoCardActions video={video} variant="grid" />);
 

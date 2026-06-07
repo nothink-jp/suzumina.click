@@ -1,16 +1,13 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { mockUseSession } from "@/test-utils/auth";
 import { LikeButton } from "../like-button";
 
 // 旧 SessionProvider の素通し置換（テストのラッパー用・session prop は無視）
 function SessionProvider({ children }: { children: React.ReactNode; session?: unknown }) {
 	return <>{children}</>;
 }
-// useSession は認証抽象から取得するためそちらをモックする
-const mockUseSession = vi.fn();
-vi.mock("@/lib/auth/client", () => ({
-	useSession: () => mockUseSession(),
-}));
+vi.mock("@/lib/auth/client");
 
 // Mock actions
 const mockToggleLikeAction = vi.fn();
@@ -50,7 +47,7 @@ describe("LikeButton", () => {
 	});
 
 	it("renders with initial like count", () => {
-		mockUseSession.mockReturnValue(null);
+		mockUseSession(null);
 
 		render(
 			<SessionProvider session={null}>
@@ -63,7 +60,7 @@ describe("LikeButton", () => {
 	});
 
 	it("disables button for unauthenticated users", () => {
-		mockUseSession.mockReturnValue(null);
+		mockUseSession(null);
 
 		render(
 			<SessionProvider session={null}>
@@ -82,7 +79,7 @@ describe("LikeButton", () => {
 			expires: "2024-01-01",
 		};
 
-		mockUseSession.mockReturnValue(mockSession.user);
+		mockUseSession(mockSession.user);
 
 		const mockStatusMap = new Map([["test-id", { isLiked: true, isDisliked: false }]]);
 		mockGetLikeDislikeStatusAction.mockResolvedValue(mockStatusMap);
@@ -104,7 +101,7 @@ describe("LikeButton", () => {
 			expires: "2024-01-01",
 		};
 
-		mockUseSession.mockReturnValue(mockSession.user);
+		mockUseSession(mockSession.user);
 
 		mockGetLikeDislikeStatusAction.mockResolvedValue(
 			new Map([["test-id", { isLiked: false, isDisliked: false }]]),
@@ -138,7 +135,7 @@ describe("LikeButton", () => {
 			expires: "2024-01-01",
 		};
 
-		mockUseSession.mockReturnValue(mockSession.user);
+		mockUseSession(mockSession.user);
 
 		mockGetLikeDislikeStatusAction.mockResolvedValue(
 			new Map([["test-id", { isLiked: false, isDisliked: false }]]),
@@ -172,7 +169,7 @@ describe("LikeButton", () => {
 			expires: "2024-01-01",
 		};
 
-		mockUseSession.mockReturnValue(mockSession.user);
+		mockUseSession(mockSession.user);
 
 		mockGetLikeDislikeStatusAction.mockResolvedValue(
 			new Map([["test-id", { isLiked: true, isDisliked: false }]]),
@@ -195,7 +192,7 @@ describe("LikeButton", () => {
 	});
 
 	it("displays like count in correct format", () => {
-		mockUseSession.mockReturnValue(null);
+		mockUseSession(null);
 
 		render(
 			<SessionProvider session={null}>

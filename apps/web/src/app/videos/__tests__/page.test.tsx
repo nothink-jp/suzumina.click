@@ -11,10 +11,8 @@ vi.mock("next/server", () => ({
 	headers: vi.fn(() => new Map()),
 }));
 
-// Mock 認証抽象
-vi.mock("@/lib/auth/server", () => ({
-	getCurrentUser: () => Promise.resolve(null),
-}));
+// Mock 認証抽象（既定は未ログイン）
+vi.mock("@/lib/auth/server");
 
 // Mock the server actions
 vi.mock("../actions", () => ({

@@ -6,7 +6,7 @@ import {
 import { render, screen } from "@testing-library/react";
 import { useRouter } from "next/navigation";
 import { describe, expect, it, vi } from "vitest";
-import { useSession } from "@/lib/auth/client";
+import { mockUseSession } from "@/test-utils/auth";
 import { AudioButtonList } from "../audio-button-list";
 
 // モックの設定
@@ -14,9 +14,7 @@ vi.mock("next/navigation", () => ({
 	useRouter: vi.fn(),
 }));
 
-vi.mock("@/lib/auth/client", () => ({
-	useSession: vi.fn(),
-}));
+vi.mock("@/lib/auth/client");
 
 // lucide-reactアイコンのモック
 vi.mock("lucide-react", () => ({
@@ -95,7 +93,7 @@ describe("AudioButtonList", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		(useRouter as any).mockReturnValue(mockRouter);
-		(useSession as any).mockReturnValue(null);
+		mockUseSession(null);
 	});
 
 	it("音声ボタンリストが正しく表示される", () => {

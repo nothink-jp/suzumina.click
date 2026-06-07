@@ -35,10 +35,8 @@ vi.mock("next/link", () => ({
 	),
 }));
 
-// Mock 認証抽象
-vi.mock("@/lib/auth/server", () => ({
-	getCurrentUser: vi.fn(),
-}));
+// Mock 認証抽象（既定は未ログイン）
+vi.mock("@/lib/auth/server");
 
 // Mock AuthButton
 vi.mock("./AuthButton", () => ({
