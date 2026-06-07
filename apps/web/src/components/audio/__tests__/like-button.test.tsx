@@ -3,10 +3,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { mockUseSession } from "@/test-utils/auth";
 import { LikeButton } from "../like-button";
 
-// 旧 SessionProvider の素通し置換（テストのラッパー用・session prop は無視）
-function SessionProvider({ children }: { children: React.ReactNode; session?: unknown }) {
-	return <>{children}</>;
-}
 vi.mock("@/lib/auth/client");
 
 // Mock actions
@@ -49,11 +45,7 @@ describe("LikeButton", () => {
 	it("renders with initial like count", () => {
 		mockUseSession(null);
 
-		render(
-			<SessionProvider session={null}>
-				<LikeButton audioButtonId="test-id" initialLikeCount={5} />
-			</SessionProvider>,
-		);
+		render(<LikeButton audioButtonId="test-id" initialLikeCount={5} />);
 
 		expect(screen.getByText("5")).toBeInTheDocument();
 		expect(screen.getByRole("button")).toBeInTheDocument();
@@ -62,11 +54,7 @@ describe("LikeButton", () => {
 	it("disables button for unauthenticated users", () => {
 		mockUseSession(null);
 
-		render(
-			<SessionProvider session={null}>
-				<LikeButton audioButtonId="test-id" initialLikeCount={5} />
-			</SessionProvider>,
-		);
+		render(<LikeButton audioButtonId="test-id" initialLikeCount={5} />);
 
 		const button = screen.getByRole("button");
 		expect(button).toBeDisabled();
@@ -84,11 +72,7 @@ describe("LikeButton", () => {
 		const mockStatusMap = new Map([["test-id", { isLiked: true, isDisliked: false }]]);
 		mockGetLikeDislikeStatusAction.mockResolvedValue(mockStatusMap);
 
-		render(
-			<SessionProvider session={mockSession}>
-				<LikeButton audioButtonId="test-id" initialLikeCount={5} />
-			</SessionProvider>,
-		);
+		render(<LikeButton audioButtonId="test-id" initialLikeCount={5} />);
 
 		await waitFor(() => {
 			expect(mockGetLikeDislikeStatusAction).toHaveBeenCalledWith(["test-id"]);
@@ -111,11 +95,7 @@ describe("LikeButton", () => {
 			isLiked: true,
 		});
 
-		render(
-			<SessionProvider session={mockSession}>
-				<LikeButton audioButtonId="test-id" initialLikeCount={5} />
-			</SessionProvider>,
-		);
+		render(<LikeButton audioButtonId="test-id" initialLikeCount={5} />);
 
 		const button = screen.getByRole("button");
 		fireEvent.click(button);
@@ -145,11 +125,7 @@ describe("LikeButton", () => {
 			error: "Network error",
 		});
 
-		render(
-			<SessionProvider session={mockSession}>
-				<LikeButton audioButtonId="test-id" initialLikeCount={5} />
-			</SessionProvider>,
-		);
+		render(<LikeButton audioButtonId="test-id" initialLikeCount={5} />);
 
 		const button = screen.getByRole("button");
 		fireEvent.click(button);
@@ -175,11 +151,7 @@ describe("LikeButton", () => {
 			new Map([["test-id", { isLiked: true, isDisliked: false }]]),
 		);
 
-		render(
-			<SessionProvider session={mockSession}>
-				<LikeButton audioButtonId="test-id" initialLikeCount={5} initialIsLiked={true} />
-			</SessionProvider>,
-		);
+		render(<LikeButton audioButtonId="test-id" initialLikeCount={5} initialIsLiked={true} />);
 
 		// Check if button has correct styling for liked state
 		const button = screen.getByRole("button");
@@ -194,11 +166,7 @@ describe("LikeButton", () => {
 	it("displays like count in correct format", () => {
 		mockUseSession(null);
 
-		render(
-			<SessionProvider session={null}>
-				<LikeButton audioButtonId="test-id" initialLikeCount={1234} />
-			</SessionProvider>,
-		);
+		render(<LikeButton audioButtonId="test-id" initialLikeCount={1234} />);
 
 		// Should format numbers with locale
 		expect(screen.getByText("1,234")).toBeInTheDocument();
