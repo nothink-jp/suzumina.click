@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// Mock dependencies first to avoid NextAuth issues
+// Mock dependencies first to avoid auth/Firestore side effects on import
 const mockRequireAuth = vi.fn();
 const mockGetFirestore = vi.fn();
 const mockIncrementLikeCount = vi.fn();

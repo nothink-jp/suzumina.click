@@ -35,8 +35,8 @@ locals {
       description = "Discord OAuth Client Secret"
     },
     {
-      id          = "NEXTAUTH_SECRET"
-      description = "NextAuth.js encryption secret"
+      id          = "BETTER_AUTH_SECRET"
+      description = "better-auth session/cookie signing secret"
     }
   ]
 
@@ -101,7 +101,7 @@ resource "google_secret_manager_secret_version" "secret_versions" {
   for_each = {
     "DISCORD_CLIENT_ID"        = var.discord_client_id
     "DISCORD_CLIENT_SECRET"    = var.discord_client_secret
-    "NEXTAUTH_SECRET"          = var.nextauth_secret
+    "BETTER_AUTH_SECRET"       = var.better_auth_secret
     "YOUTUBE_API_KEY"          = var.youtube_api_key
     "RESEND_API_KEY"           = var.resend_api_key
     "CONTACT_EMAIL_RECIPIENTS" = var.contact_email_recipients

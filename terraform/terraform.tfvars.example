@@ -37,9 +37,9 @@ discord_client_id = "1234567890123456789"      # Discord Application Client ID
 discord_client_secret = "your-discord-client-secret-here"  # Discord Application Client Secret
 
 
-# NextAuth Secret（JWT暗号化用）
+# better-auth Secret（session/cookie 署名用）
 # 生成方法: openssl rand -base64 32
-nextauth_secret = "your-nextauth-secret-base64-encoded"
+better_auth_secret = "your-better-auth-secret-base64-encoded"
 
 # すずみなふぁみりー Discord Guild ID
 # デフォルト値が設定されているため、通常は変更不要

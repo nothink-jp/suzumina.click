@@ -3,7 +3,7 @@
  *
  * better-auth の user/session は認証アイデンティティのみを持ち、role/displayName/isFamilyMember 等の
  * 正本は従来どおりアプリの `users` コレクション（FirestoreUserData）。ここはその変換層。
- * NextAuth 側 `buildUserSession` と同じ形を返す（Phase 2 で getCurrentUser 抽象に集約するため形を一致させる）。
+ * getCurrentUser 抽象（`src/lib/auth/server.ts`）が載せる UserSession の形に合わせる。
  */
 import {
 	type FirestoreUserData,

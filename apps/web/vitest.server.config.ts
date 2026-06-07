@@ -15,8 +15,7 @@ export default defineConfig({
 		},
 	},
 	define: {
-		// Fix for NextAuth module resolution issues
-		"process.env.NEXTAUTH_SECRET": '"test"',
-		"process.env.NEXTAUTH_URL": '"http://localhost:3000"',
+		"process.env.BETTER_AUTH_SECRET": '"test"',
+		"process.env.BETTER_AUTH_URL": '"http://localhost:3000"',
 	},
 });

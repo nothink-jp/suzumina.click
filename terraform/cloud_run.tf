@@ -129,12 +129,12 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
       }
 
 
-      # better-auth Secret（SPR-158: 既存の NEXTAUTH_SECRET の値を流用し env 名のみ変更）
+      # better-auth Secret（SPR-159: Secret 名も BETTER_AUTH_SECRET に統一）
       env {
         name = "BETTER_AUTH_SECRET"
         value_source {
           secret_key_ref {
-            secret  = google_secret_manager_secret.secrets["NEXTAUTH_SECRET"].secret_id
+            secret  = google_secret_manager_secret.secrets["BETTER_AUTH_SECRET"].secret_id
             version = "latest"
           }
         }

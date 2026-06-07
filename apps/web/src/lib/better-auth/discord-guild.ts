@@ -1,8 +1,5 @@
 /**
- * Discord Guild / プロフィール関連ヘルパー（better-auth 用 / SPR-156 Phase 1）
- *
- * NextAuth 側（`apps/web/src/auth.ts`）に同等処理があるが、Phase 1 は NextAuth を無改変で並存させる方針のため、
- * 重複を承知でここに最小実装を置く（NextAuth 撤去時 = Phase 4 で一本化する）。
+ * Discord Guild / プロフィール関連ヘルパー（better-auth 用）
  */
 import { type GuildMembership, SUZUMINA_GUILD_ID } from "@suzumina.click/shared-types";
 
@@ -15,7 +12,7 @@ export function extractAvatarHash(imageUrl: string | null | undefined): string |
 
 /**
  * Discord API でユーザーの Guild メンバーシップを取得。
- * Bot Token を使わないため roles / nickname は取得しない（NextAuth 側と同じ制約）。
+ * Bot Token を使わないため roles / nickname は取得しない。
  */
 export async function fetchDiscordGuildMembership(
 	accessToken: string,

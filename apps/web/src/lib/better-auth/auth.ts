@@ -69,7 +69,7 @@ async function refreshGuildStatusIfNeeded(
 		const isFamilyMember = guildMembership ? isValidGuildMember(guildMembership) : false;
 		const today = getJSTDateString();
 		const newLimit = calculateDailyLimit({ isFamilyMember });
-		// 日付が変わっていればカウントをリセット（NextAuth 側 apps/web/src/auth.ts と同一挙動）
+		// 日付が変わっていればカウントをリセット
 		const dateChanged = userData.dailyButtonLimit?.date !== today;
 		await getFirestore()
 			.collection("users")
@@ -102,10 +102,9 @@ async function refreshGuildStatusIfNeeded(
 
 export const auth = betterAuth({
 	appName: "suzumina.click",
-	// 本番は BETTER_AUTH_*。移行直後の安全網として NEXTAUTH_* もフォールバックに残す
-	// （ソーク後に NEXTAUTH_* env/secret を撤去可能）。
-	secret: process.env.BETTER_AUTH_SECRET || process.env.NEXTAUTH_SECRET,
-	baseURL: process.env.BETTER_AUTH_URL || process.env.NEXTAUTH_URL,
+	// env は BETTER_AUTH_*（Cloud Run が Secret Manager の BETTER_AUTH_SECRET から注入）。
+	secret: process.env.BETTER_AUTH_SECRET,
+	baseURL: process.env.BETTER_AUTH_URL,
 	// NextAuth 撤去後は標準の /api/auth を使用（Discord の既存 redirect URI をそのまま流用）。
 	basePath: "/api/auth",
 	database: firestoreAdapter({ debugLogs: false }),

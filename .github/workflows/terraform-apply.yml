@@ -36,7 +36,7 @@ env:
   TF_VAR_youtube_api_key: 'ci-placeholder'
   TF_VAR_discord_client_id: 'ci-placeholder'
   TF_VAR_discord_client_secret: 'ci-placeholder'
-  TF_VAR_nextauth_secret: 'ci-placeholder'
+  TF_VAR_better_auth_secret: 'ci-placeholder'
   TF_VAR_resend_api_key: 'ci-placeholder'
   TF_VAR_contact_email_recipients: 'ci-placeholder@example.com'
 

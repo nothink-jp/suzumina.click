@@ -6,7 +6,7 @@ import { WorkEvaluation } from "../work-evaluation";
 const mockUseSession = vi.fn();
 vi.mock("@/lib/auth/client", () => ({ useSession: () => mockUseSession() }));
 
-// 旧 next-auth SessionProvider の置換: render 時に session prop から useSession の戻りを設定する。
+// 旧 SessionProvider の置換: render 時に session prop から useSession の戻りを設定する。
 function SessionProvider({
 	children,
 	session,

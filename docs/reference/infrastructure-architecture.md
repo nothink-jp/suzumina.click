@@ -405,8 +405,8 @@ https://suzumina.click/api/auth/callback/discord
 openssl rand -base64 32
 ```
 
-> **Note**: SPR-158 で NextAuth から better-auth へ移行したが、Secret Manager のリソース名（`NEXTAUTH_SECRET`）と
-> terraform 変数名（`nextauth_secret`）は値を流用したまま保持している。Cloud Run へ注入する **env 名のみ `BETTER_AUTH_SECRET`** に変更（`terraform/cloud_run.tf`）。
+> **Note**: SPR-158 で NextAuth から better-auth へ移行（当初は Secret 名 `NEXTAUTH_SECRET` を値ごと流用）。
+> SPR-159 で Secret Manager のリソース名・terraform 変数名・Cloud Run の env 名をすべて **`BETTER_AUTH_SECRET` / `better_auth_secret`** に統一した（値は流用し out-of-band で移行）。
 
 ### **terraform.tfvars設定**
 
@@ -426,7 +426,7 @@ echo 'environment = "staging"' >> terraform.tfvars
 # Discord OAuth設定（必須）
 echo 'discord_client_id = "1357640432196255874"' >> terraform.tfvars      # あなたのClient ID
 echo 'discord_client_secret = "your-secret-here"' >> terraform.tfvars     # あなたのClient Secret
-echo 'nextauth_secret = "your-generated-secret"' >> terraform.tfvars      # 上記で生成したシークレット（変数名は流用。env は BETTER_AUTH_SECRET）
+echo 'better_auth_secret = "your-generated-secret"' >> terraform.tfvars    # 上記で生成したシークレット（env / Secret 名も BETTER_AUTH_SECRET）
 
 # オプション設定
 echo 'discord_bot_token = "MTxxxxx.xxxxx.xxxxxxxxxxxx"' >> terraform.tfvars  # Bot Token（オプション）
@@ -485,7 +485,7 @@ service cloud.firestore {
 # 認証関連の確認
 # Secret Manager確認
 gcloud secrets versions access latest --secret="DISCORD_CLIENT_ID"
-gcloud secrets versions access latest --secret="NEXTAUTH_SECRET" | head -c 20  # 一部のみ表示（リソース名は流用。better-auth が BETTER_AUTH_SECRET として参照）
+gcloud secrets versions access latest --secret="BETTER_AUTH_SECRET" | head -c 20  # 一部のみ表示（better-auth の署名鍵）
 
 # Cloud Runログ確認
 gcloud logging read "resource.type=cloud_run_revision" --limit=50
