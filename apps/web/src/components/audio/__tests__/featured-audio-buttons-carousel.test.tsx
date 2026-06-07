@@ -4,11 +4,6 @@ import { describe, expect, it, vi } from "vitest";
 import { UI_MESSAGES } from "@/constants/ui-messages";
 import { FeaturedAudioButtonsCarousel } from "../featured-audio-buttons-carousel";
 
-// 旧 SessionProvider の素通し置換（テストのラッパー用）
-function SessionProvider({ children }: { children: React.ReactNode; session?: unknown }) {
-	return <>{children}</>;
-}
-
 // AudioButtonWithPlayCount のモック
 vi.mock("../AudioButtonWithPlayCount", () => ({
 	AudioButtonWithPlayCount: ({ audioButton }: { audioButton: AudioButtonPlainObject }) => (
@@ -123,11 +118,7 @@ describe("FeaturedAudioButtonsCarousel", () => {
 	});
 
 	it("音声ボタンが空の場合にローディング状態を表示する", () => {
-		render(
-			<SessionProvider session={null}>
-				<FeaturedAudioButtonsCarousel audioButtons={[]} />
-			</SessionProvider>,
-		);
+		render(<FeaturedAudioButtonsCarousel audioButtons={[]} />);
 
 		expect(screen.getByText(UI_MESSAGES.LOADING.GENERAL)).toBeInTheDocument();
 		expect(screen.queryByTestId("audio-button-with-favorite")).not.toBeInTheDocument();
@@ -135,11 +126,7 @@ describe("FeaturedAudioButtonsCarousel", () => {
 
 	it("単一の音声ボタンも正しく表示される", () => {
 		const singleAudioButton = [mockAudioButtons[0]];
-		render(
-			<SessionProvider session={null}>
-				<FeaturedAudioButtonsCarousel audioButtons={singleAudioButton} />
-			</SessionProvider>,
-		);
+		render(<FeaturedAudioButtonsCarousel audioButtons={singleAudioButton} />);
 
 		expect(screen.getByTestId("audio-button-with-favorite")).toBeInTheDocument();
 		expect(screen.getByTestId("audio-button-title")).toHaveTextContent("テスト音声ボタン1");
