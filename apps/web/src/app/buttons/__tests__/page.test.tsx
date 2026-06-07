@@ -12,9 +12,7 @@ vi.mock("next/server", () => ({
 }));
 
 // Mock 認証抽象（未ログイン）
-vi.mock("@/lib/auth/server", () => ({
-	getCurrentUser: () => Promise.resolve(null),
-}));
+vi.mock("@/lib/auth/server");
 
 // Mock the server actions
 vi.mock("../actions", () => ({
@@ -82,10 +80,8 @@ vi.mock("@suzumina.click/ui/components/custom/audio-button", () => ({
 	),
 }));
 
-// Mock 認証クライアント（未ログイン）
-vi.mock("@/lib/auth/client", () => ({
-	useSession: vi.fn(() => null),
-}));
+// Mock 認証クライアント（未ログイン・__mocks__ の既定が null を返す）
+vi.mock("@/lib/auth/client");
 
 // Mock AudioButtonsList component
 vi.mock("../components/audio-buttons-list", () => ({

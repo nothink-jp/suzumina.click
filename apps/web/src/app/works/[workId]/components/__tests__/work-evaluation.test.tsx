@@ -1,10 +1,11 @@
+import type { UserSession } from "@suzumina.click/shared-types";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { vi } from "vitest";
+import { mockUseSession } from "@/test-utils/auth";
 import { WorkEvaluation } from "../work-evaluation";
 
 // useSession（認証抽象）をモック。session prop 付き素通しラッパーで値を切替える。
-const mockUseSession = vi.fn();
-vi.mock("@/lib/auth/client", () => ({ useSession: () => mockUseSession() }));
+vi.mock("@/lib/auth/client");
 
 // 旧 SessionProvider の置換: render 時に session prop から useSession の戻りを設定する。
 function SessionProvider({
@@ -12,9 +13,9 @@ function SessionProvider({
 	session,
 }: {
 	children: React.ReactNode;
-	session: { user?: unknown } | null;
+	session: { user?: Partial<UserSession> } | null;
 }) {
-	mockUseSession.mockReturnValue(session?.user ?? null);
+	mockUseSession(session?.user ?? null);
 	return <>{children}</>;
 }
 

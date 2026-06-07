@@ -2,17 +2,11 @@ import type { VideoPlainObject } from "@suzumina.click/shared-types";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { useSession } from "@/lib/auth/client";
+import { mockUseSession } from "@/test-utils/auth";
 import VideoDetail from "../video-detail";
 
-// 認証抽象のモック
-vi.mock("@/lib/auth/client", () => ({
-	useSession: vi.fn(() => ({
-		id: "test-user",
-		name: "Test User",
-		email: "test@example.com",
-	})),
-}));
+// 認証抽象のモック（既定はログイン済み。未ログインは各テストで mockUseSession(null)）
+vi.mock("@/lib/auth/client");
 
 // Next.js routerのモック
 vi.mock("next/navigation", () => ({
@@ -117,6 +111,7 @@ function createMockVideo(overrides?: Partial<any>): VideoPlainObject {
 describe("VideoDetail", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		mockUseSession({ discordId: "test-user", displayName: "Test User" });
 	});
 
 	describe("動画時間フォーマット境界テスト", () => {
@@ -382,7 +377,7 @@ describe("VideoDetail", () => {
 
 	describe("音声ボタン作成可否（getCanCreateButtonData）", () => {
 		it("未ログインは作成ボタンが無効でログイン理由が title に出る", () => {
-			(useSession as any).mockReturnValue(null);
+			mockUseSession(null);
 			render(<VideoDetail video={createMockVideo()} />);
 
 			const createButton = screen.getByText("ボタンを作成").closest("button");
@@ -391,7 +386,7 @@ describe("VideoDetail", () => {
 		});
 
 		it("埋め込み制限（embeddable=false）は作成不可で理由が title に出る", () => {
-			(useSession as any).mockReturnValue({ discordId: "1" });
+			mockUseSession({ discordId: "1" });
 			// embeddable=false は canCreateAudioButton より先に判定されるため _computed は不要
 			render(<VideoDetail video={createMockVideo({ status: { embeddable: false } })} />);
 
@@ -401,7 +396,7 @@ describe("VideoDetail", () => {
 		});
 
 		it("作成可能な動画はボタンが Link になり、サイドバーに新規作成リンクが出る", () => {
-			(useSession as any).mockReturnValue({ discordId: "1" });
+			mockUseSession({ discordId: "1" });
 			render(<VideoDetail video={createMockVideo({ _computed: { canCreateButton: true } })} />);
 
 			const createLink = screen.getByText("ボタンを作成").closest("a");

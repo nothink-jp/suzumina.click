@@ -1,11 +1,9 @@
 import { render } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { getCurrentUser } from "@/lib/auth/server";
+import { mockCurrentUser } from "@/test-utils/auth-server";
 import ProtectedRoute, { requireAuth } from "../protected-route";
 
-vi.mock("@/lib/auth/server", () => ({
-	getCurrentUser: vi.fn(),
-}));
+vi.mock("@/lib/auth/server");
 
 // next/headers の headers() を制御する
 const { headersStore } = vi.hoisted(() => ({
@@ -39,7 +37,7 @@ describe("ProtectedRoute", () => {
 	});
 
 	it("認証済み・アクティブ・権限十分なら children を描画する", async () => {
-		(getCurrentUser as any).mockResolvedValue(makeUser());
+		mockCurrentUser(makeUser());
 
 		const element = await ProtectedRoute({ children: <div>secret</div> });
 		const { getByText } = render(element);
@@ -49,7 +47,7 @@ describe("ProtectedRoute", () => {
 	});
 
 	it("未認証なら fallback へ x-url を callbackUrl 付きでリダイレクトする", async () => {
-		(getCurrentUser as any).mockResolvedValue(null);
+		mockCurrentUser(null);
 		headersStore.xUrl = "/works/RJ123456";
 
 		await expect(ProtectedRoute({ children: <div>secret</div> })).rejects.toThrow("REDIRECT:");
@@ -57,7 +55,7 @@ describe("ProtectedRoute", () => {
 	});
 
 	it("未認証かつ x-url ヘッダが無い場合は /buttons/create を callbackUrl に使う", async () => {
-		(getCurrentUser as any).mockResolvedValue(null);
+		mockCurrentUser(null);
 		headersStore.xUrl = null;
 
 		await expect(ProtectedRoute({ children: <div>x</div> })).rejects.toThrow("REDIRECT:");
@@ -65,7 +63,7 @@ describe("ProtectedRoute", () => {
 	});
 
 	it("fallbackUrl を指定するとその URL にリダイレクトする", async () => {
-		(getCurrentUser as any).mockResolvedValue(null);
+		mockCurrentUser(null);
 
 		await expect(ProtectedRoute({ children: <div>x</div>, fallbackUrl: "/login" })).rejects.toThrow(
 			"REDIRECT:",
@@ -74,7 +72,7 @@ describe("ProtectedRoute", () => {
 	});
 
 	it("非アクティブユーザーは AccessDenied にリダイレクトする", async () => {
-		(getCurrentUser as any).mockResolvedValue(makeUser({ isActive: false }));
+		mockCurrentUser(makeUser({ isActive: false }));
 
 		await expect(ProtectedRoute({ children: <div>x</div> })).rejects.toThrow("REDIRECT:");
 		expect(redirect).toHaveBeenCalledWith("/auth/error?error=AccessDenied");
@@ -88,21 +86,21 @@ describe("requireAuth", () => {
 
 	it("アクティブユーザーなら user を返す", async () => {
 		const user = makeUser();
-		(getCurrentUser as any).mockResolvedValue(user);
+		mockCurrentUser(user);
 
 		await expect(requireAuth()).resolves.toEqual(user);
 		expect(redirect).not.toHaveBeenCalled();
 	});
 
 	it("セッションが無ければ signin にリダイレクトする", async () => {
-		(getCurrentUser as any).mockResolvedValue(null);
+		mockCurrentUser(null);
 
 		await expect(requireAuth()).rejects.toThrow("REDIRECT:/auth/signin");
 		expect(redirect).toHaveBeenCalledWith("/auth/signin");
 	});
 
 	it("非アクティブユーザーは signin にリダイレクトする", async () => {
-		(getCurrentUser as any).mockResolvedValue(makeUser({ isActive: false }));
+		mockCurrentUser(makeUser({ isActive: false }));
 
 		await expect(requireAuth()).rejects.toThrow("REDIRECT:/auth/signin");
 		expect(redirect).toHaveBeenCalledWith("/auth/signin");

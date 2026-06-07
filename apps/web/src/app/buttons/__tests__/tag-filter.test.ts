@@ -1,10 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { getPopularAudioButtonTags } from "../lib/audio-button-stats";
 
-// Mock auth
-vi.mock("@/lib/auth/server", () => ({
-	getCurrentUser: vi.fn(),
-}));
+// Mock auth（既定は未ログイン）
+vi.mock("@/lib/auth/server");
 
 // getPopularAudioButtonTags が unstable_cache 経由になったため、Next ランタイム外では
 // ラップ対象の関数をそのまま返すパススルーにする。

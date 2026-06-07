@@ -6,9 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getVideoAction, getVideosAction } from "../video-actions";
 
 // モジュールのモック
-vi.mock("@/lib/auth/server", () => ({
-	getCurrentUser: vi.fn(),
-}));
+vi.mock("@/lib/auth/server");
 
 vi.mock("@/lib/video-firestore", () => ({
 	getVideoByIdFromFirestore: vi.fn(),
@@ -16,8 +14,8 @@ vi.mock("@/lib/video-firestore", () => ({
 }));
 
 // モックのインポート
-import { getCurrentUser } from "@/lib/auth/server";
 import { getVideoByIdFromFirestore, getVideosByIdsFromFirestore } from "@/lib/video-firestore";
+import { mockCurrentUser } from "@/test-utils/auth-server";
 
 describe("video-actions", () => {
 	beforeEach(() => {
@@ -134,7 +132,7 @@ describe("video-actions", () => {
 	describe("updateVideoAction", () => {
 		it("認証されていない場合エラーを返す", async () => {
 			const { updateVideoAction } = await import("../video-actions");
-			vi.mocked(getCurrentUser).mockResolvedValue(null);
+			mockCurrentUser(null);
 
 			const result = await updateVideoAction("video-123", {});
 
@@ -144,11 +142,7 @@ describe("video-actions", () => {
 
 		it("認証されている場合成功を返す", async () => {
 			const { updateVideoAction } = await import("../video-actions");
-			vi.mocked(getCurrentUser).mockResolvedValue({
-				id: "user-123",
-				discordId: "discord-123",
-				role: "user",
-			} as any);
+			mockCurrentUser({ discordId: "discord-123" });
 
 			const result = await updateVideoAction("video-123", {});
 

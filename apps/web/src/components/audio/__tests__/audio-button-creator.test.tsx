@@ -2,6 +2,7 @@ import "@testing-library/jest-dom";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { mockUseSession } from "@/test-utils/auth";
 import { AudioButtonCreator } from "../audio-button-creator";
 
 // Mock the actions
@@ -33,14 +34,8 @@ vi.mock("next/navigation", () => ({
 	}),
 }));
 
-// Mock 認証抽象
-vi.mock("@/lib/auth/client", () => ({
-	useSession: () => ({
-		discordId: "test-user-id",
-		username: "Test User",
-		displayName: "Test User",
-	}),
-}));
+// Mock 認証抽象（既定はログイン済み。beforeEach で設定）
+vi.mock("@/lib/auth/client");
 
 // Mock YouTubePlayer with player methods
 const mockYouTubePlayer = {
@@ -92,6 +87,7 @@ describe("AudioButtonCreator - Refactored Architecture", () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks();
+		mockUseSession({ discordId: "test-user-id", username: "Test User", displayName: "Test User" });
 		mockYouTubePlayer.seekTo.mockClear();
 		mockYouTubePlayer.playVideo.mockClear();
 		mockYouTubePlayer.pauseVideo.mockClear();

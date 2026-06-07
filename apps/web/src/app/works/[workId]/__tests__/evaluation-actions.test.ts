@@ -7,9 +7,7 @@ import {
 } from "../evaluation-actions";
 
 // Mock dependencies
-vi.mock("@/lib/auth/server", () => ({
-	getCurrentUser: vi.fn(),
-}));
+vi.mock("@/lib/auth/server");
 
 vi.mock("@/lib/firestore", () => ({
 	getFirestore: vi.fn(),

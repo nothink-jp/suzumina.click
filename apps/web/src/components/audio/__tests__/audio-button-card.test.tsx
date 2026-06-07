@@ -7,7 +7,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useRouter } from "next/navigation";
 import { describe, expect, it, vi } from "vitest";
-import { useSession } from "@/lib/auth/client";
+import { mockUseSession } from "@/test-utils/auth";
 import AudioButtonCard from "../audio-button-card";
 
 // モックの設定
@@ -15,9 +15,7 @@ vi.mock("next/navigation", () => ({
 	useRouter: vi.fn(),
 }));
 
-vi.mock("@/lib/auth/client", () => ({
-	useSession: vi.fn(),
-}));
+vi.mock("@/lib/auth/client");
 
 // lucide-reactアイコンのモック
 vi.mock("lucide-react", () => ({
@@ -128,7 +126,7 @@ describe("AudioButtonCard", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		(useRouter as any).mockReturnValue(mockRouter);
-		(useSession as any).mockReturnValue(null);
+		mockUseSession(null);
 	});
 
 	it("音声ボタンの基本情報が表示される", () => {
@@ -234,7 +232,7 @@ describe("AudioButtonCard", () => {
 	});
 
 	it("ログインしている場合、アクションボタンが有効になる", () => {
-		(useSession as any).mockReturnValue({ id: "user123", name: "テストユーザー" });
+		mockUseSession({ discordId: "user123", displayName: "テストユーザー" });
 
 		const audioButton = createMockAudioButton();
 		render(<AudioButtonCard audioButton={audioButton} />);
@@ -245,7 +243,7 @@ describe("AudioButtonCard", () => {
 	});
 
 	it("お気に入りボタンのトグル状態が正しく表示される", () => {
-		(useSession as any).mockReturnValue({ id: "user123", name: "テストユーザー" });
+		mockUseSession({ discordId: "user123", displayName: "テストユーザー" });
 
 		const audioButton = createMockAudioButton();
 		const { rerender } = render(<AudioButtonCard audioButton={audioButton} isFavorited={false} />);
@@ -258,7 +256,7 @@ describe("AudioButtonCard", () => {
 
 	it("アクションボタンのコールバックが呼ばれる", async () => {
 		const user = userEvent.setup();
-		(useSession as any).mockReturnValue({ id: "user123", name: "テストユーザー" });
+		mockUseSession({ discordId: "user123", displayName: "テストユーザー" });
 
 		const handleFavorite = vi.fn();
 		const handleLike = vi.fn();

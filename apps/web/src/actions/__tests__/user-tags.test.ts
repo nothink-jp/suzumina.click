@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { mockCurrentUser } from "@/test-utils/auth-server";
 import { updateUserTagsAction } from "../user-tags";
 
-vi.mock("@/lib/auth/server", () => ({ getCurrentUser: vi.fn() }));
+vi.mock("@/lib/auth/server");
 vi.mock("@/lib/video-firestore", () => ({ updateVideoUserTags: vi.fn() }));
 
-const getCurrentUser = vi.mocked(await import("@/lib/auth/server")).getCurrentUser;
 const { updateVideoUserTags } = vi.mocked(await import("@/lib/video-firestore"));
 
-const login = () => getCurrentUser.mockResolvedValue({ discordId: "u1" } as never);
+const login = () => mockCurrentUser({ discordId: "u1" });
 
 beforeEach(() => {
 	vi.clearAllMocks();
@@ -16,7 +16,7 @@ beforeEach(() => {
 
 describe("updateUserTagsAction: 検証分岐", () => {
 	it("未ログインはエラー", async () => {
-		getCurrentUser.mockResolvedValue(null as never);
+		mockCurrentUser(null);
 		expect(await updateUserTagsAction({ videoId: "v", userTags: [] })).toEqual({
 			success: false,
 			error: "ログインが必要です",

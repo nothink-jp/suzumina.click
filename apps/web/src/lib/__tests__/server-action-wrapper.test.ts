@@ -1,14 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { mockCurrentUser } from "@/test-utils/auth-server";
 import {
 	withAuthenticatedAction,
 	withErrorHandling,
 	withValidation,
 } from "../server-action-wrapper";
 
-vi.mock("@/lib/auth/server", () => ({ getCurrentUser: vi.fn() }));
+vi.mock("@/lib/auth/server");
 vi.mock("@/lib/logger", () => ({ error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() }));
-
-const getCurrentUser = vi.mocked(await import("@/lib/auth/server")).getCurrentUser;
 const opts = { action: "testAction", errorMessage: "失敗しました" };
 
 beforeEach(() => {
@@ -38,13 +37,13 @@ describe("withErrorHandling", () => {
 
 describe("withAuthenticatedAction", () => {
 	it("未認証は authErrorMessage（既定文言）", async () => {
-		getCurrentUser.mockResolvedValue(null as never);
+		mockCurrentUser(null);
 		const r = await withAuthenticatedAction(async () => "x", opts);
 		expect(r).toEqual({ success: false, error: "ログインが必要です" });
 	});
 
 	it("authErrorMessage 指定時はそれを使う", async () => {
-		getCurrentUser.mockResolvedValue(null as never);
+		mockCurrentUser(null);
 		const r = await withAuthenticatedAction(async () => "x", {
 			...opts,
 			authErrorMessage: "要ログイン",
@@ -54,13 +53,13 @@ describe("withAuthenticatedAction", () => {
 	});
 
 	it("認証済みは user を渡して実行", async () => {
-		getCurrentUser.mockResolvedValue({ discordId: "u1" } as never);
+		mockCurrentUser({ discordId: "u1" });
 		const r = await withAuthenticatedAction(async (user) => `hi ${user.discordId}`, opts);
 		expect(r).toEqual({ success: true, data: "hi u1" });
 	});
 
 	it("本処理の例外は catch する", async () => {
-		getCurrentUser.mockResolvedValue({ discordId: "u1" } as never);
+		mockCurrentUser({ discordId: "u1" });
 		const r = await withAuthenticatedAction(async () => {
 			throw new Error("boom");
 		}, opts);
