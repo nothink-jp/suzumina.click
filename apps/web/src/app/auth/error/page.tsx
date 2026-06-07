@@ -1,5 +1,15 @@
+import { Badge } from "@suzumina.click/ui/components/ui/badge";
+import { Button } from "@suzumina.click/ui/components/ui/button";
+import { Card, CardContent } from "@suzumina.click/ui/components/ui/card";
+import { AlertTriangle, Home, RotateCw } from "lucide-react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+
+export const metadata: Metadata = {
+	title: "エラー | すずみなくりっく！",
+	description: "認証中にエラーが発生しました。",
+};
 
 interface AuthErrorPageProps {
 	searchParams: Promise<{ error?: string }>;
@@ -24,6 +34,13 @@ function getErrorMessage(error: string | undefined): {
 					"このサイトは「すずみなふぁみりー」Discordサーバーのメンバー限定です。先にDiscordサーバーにご参加してからお試しください。",
 				showRetry: true,
 			};
+		case "AccountDisabled":
+			return {
+				title: "アカウントが無効です",
+				description:
+					"このアカウントは現在ご利用いただけません。心当たりがない場合はお問い合わせください。",
+				showRetry: false,
+			};
 		case "Verification":
 			return {
 				title: "認証エラー",
@@ -44,79 +61,72 @@ async function ErrorContent({ searchParams }: AuthErrorPageProps) {
 	const errorInfo = getErrorMessage(error);
 
 	return (
-		<div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-pink-50">
-			<div className="max-w-md w-full space-y-8 p-8 bg-white rounded-xl shadow-lg text-center">
-				<div>
-					<div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-						<svg
-							className="w-8 h-8 text-red-600"
-							fill="none"
-							viewBox="0 0 24 24"
-							stroke="currentColor"
-						>
-							<title>エラー警告アイコン</title>
-							<path
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								strokeWidth={2}
-								d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-							/>
-						</svg>
+		<div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-suzuka-50 to-minase-50 px-4">
+			<Card className="max-w-md w-full shadow-xl animate-in fade-in-0 zoom-in-95 duration-500">
+				<CardContent className="p-8 text-center space-y-6">
+					{/* エラーアイコン */}
+					<div className="mx-auto w-16 h-16 bg-gradient-to-br from-suzuka-100 to-minase-100 rounded-full flex items-center justify-center">
+						<AlertTriangle className="w-8 h-8 text-suzuka-600" />
 					</div>
 
-					<h2 className="text-2xl font-bold text-gray-900 mb-2">{errorInfo.title}</h2>
+					{/* エラーメッセージ */}
+					<div className="space-y-2">
+						<h1 className="text-2xl font-bold text-foreground">{errorInfo.title}</h1>
+						<p className="text-muted-foreground">{errorInfo.description}</p>
+					</div>
 
-					<p className="text-gray-600 mb-6">{errorInfo.description}</p>
-				</div>
-
-				<div className="space-y-4">
-					{errorInfo.showRetry && (
-						<Link
-							href="/auth/signin"
-							className="w-full inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200"
-						>
-							<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-								<title>リトライアイコン</title>
-								<path
-									strokeLinecap="round"
-									strokeLinejoin="round"
-									strokeWidth={2}
-									d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-								/>
-							</svg>
-							再度ログインを試す
-						</Link>
+					{/* AccessDenied のみ: Discord サーバー案内 */}
+					{error === "AccessDenied" && (
+						<div className="p-4 bg-minase-50 border border-minase-200 rounded-lg text-left">
+							<p className="text-sm font-medium text-foreground mb-1">
+								すずみなふぁみりー Discord サーバーについて
+							</p>
+							<p className="text-sm text-muted-foreground">
+								涼花みなせさんのファンコミュニティサーバーです。参加方法は涼花みなせさんの配信やSNSでご確認ください。
+							</p>
+						</div>
 					)}
 
-					<Link
-						href="/"
-						className="w-full inline-flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-4 rounded-lg transition-colors duration-200"
-					>
-						<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-							<title>ホームアイコン</title>
-							<path
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								strokeWidth={2}
-								d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-							/>
-						</svg>
-						ホームに戻る
-					</Link>
-				</div>
+					{/* アクションボタン */}
+					<div className="space-y-3">
+						{errorInfo.showRetry && (
+							<Button asChild className="w-full group">
+								<Link href="/auth/signin" className="flex items-center gap-2">
+									<RotateCw className="h-4 w-4 group-hover:rotate-180 transition-transform duration-500" />
+									再度ログインを試す
+								</Link>
+							</Button>
+						)}
 
-				{error === "AccessDenied" && (
-					<div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-						<p className="text-blue-800 text-sm font-medium mb-2">
-							すずみなふぁみりーDiscordサーバーについて
-						</p>
-						<p className="text-blue-700 text-sm">
-							涼花みなせさんのファンコミュニティサーバーです。
-							参加方法については、涼花みなせさんの配信やSNSでご確認ください。
-						</p>
+						<Button variant="outline" asChild className="w-full group">
+							<Link href="/" className="flex items-center gap-2">
+								<Home className="h-4 w-4 group-hover:scale-110 transition-transform" />
+								ホームに戻る
+							</Link>
+						</Button>
 					</div>
-				)}
-			</div>
+
+					{/* 追加のヘルプ */}
+					<div className="space-y-2 pt-4 border-t">
+						<p className="text-sm text-muted-foreground">解決しない場合は</p>
+						<Button variant="link" size="sm" asChild>
+							<Link href="/contact">お問い合わせページ</Link>
+						</Button>
+					</div>
+
+					{/* 追加情報 */}
+					<div className="pt-4 border-t">
+						<div className="flex items-center justify-center gap-2">
+							<Badge variant="outline" className="text-xs">
+								涼花みなせ
+							</Badge>
+							<Badge variant="outline" className="text-xs">
+								非公式ファンサイト
+							</Badge>
+						</div>
+					</div>
+				</CardContent>
+			</Card>
 		</div>
 	);
 }
@@ -125,10 +135,10 @@ export default function AuthErrorPage({ searchParams }: AuthErrorPageProps) {
 	return (
 		<Suspense
 			fallback={
-				<div className="min-h-screen flex items-center justify-center">
+				<div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-suzuka-50 to-minase-50">
 					<div className="text-center">
-						<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto" />
-						<p className="mt-4 text-gray-600">読み込み中...</p>
+						<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-suzuka-600 mx-auto" />
+						<p className="mt-4 text-muted-foreground">読み込み中...</p>
 					</div>
 				</div>
 			}

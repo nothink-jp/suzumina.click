@@ -163,6 +163,22 @@ Firestore
 - サーバーサイドセッション管理
 - Guild所属による認可
 
+### エラーページ / アクセス制御の応答方針（SPR-169）
+ロールベース認可は廃止済み（admin/moderator なし。ユーザーは認証 + `isActive` のみで区別）。
+そのため「認証済みだが権限不足」の典型 403 シナリオが存在せず、**専用の 403 ページは設けない**。
+
+| 状況 | 応答 | 実装 |
+|---|---|---|
+| 未認証で要認証ページ | サインインへ誘導（callbackUrl 付き） | `ProtectedRoute` が `/auth/signin` へ redirect |
+| 認証済みだが無効アカウント（`isActive=false`、防御的・通常到達せず） | 汎用エラーページで理由を説明 | `/auth/error?error=AccountDisabled` |
+| 認証フロー上のエラー（OAuth 拒否・設定不備など） | 汎用エラーページ | `/auth/error?error=...`（AccessDenied / Configuration / Verification） |
+| リソース不在・閲覧者に出してはいけない非公開ルート（例: 他人の編集ページ） | 404 | `notFound()` → `not-found.tsx` |
+| 取得時の予期せぬ例外 | 500 相当 | 各 `error.tsx`（reset 付き） |
+
+- 専用の 403/`forbidden()`（Next の `authInterrupts` 実験 API）は採用しない（本番安定性優先・該当シナリオ不在）。
+- エラー画面のデザインは全て同一系統（`Card` + suzuka/minase グラデーション + lucide）。`/auth/error` も `not-found.tsx`・各 `error.tsx` に揃える。
+- 「閲覧は可能だが編集は不可」のような非作成者アクセスは 403 ではなく `notFound()`（編集ルートを露出しない／作品自体は詳細ページで閲覧可）。
+
 ### データ保護
 - Firestore Security Rules
 - Server Actions経由のデータアクセス
