@@ -25,6 +25,5 @@ const authClient = createAuthClient({
  */
 export function useBetterAuthAppUser(): UserSession | null {
 	const { data } = authClient.useSession();
-	const appUser = (data as { appUser?: UserSession | null } | null)?.appUser;
-	return appUser ?? null;
+	return data?.appUser ?? null;
 }

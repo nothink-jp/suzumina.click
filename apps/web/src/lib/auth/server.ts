@@ -15,9 +15,7 @@ export async function getCurrentUser(): Promise<UserSession | null> {
 		import("@/lib/better-auth/auth"),
 		import("next/headers"),
 	]);
-	const result = (await auth.api.getSession({ headers: await headers() })) as {
-		appUser?: UserSession | null;
-	} | null;
+	const result = await auth.api.getSession({ headers: await headers() });
 	return result?.appUser ?? null;
 }
 
