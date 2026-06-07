@@ -35,9 +35,14 @@ export default defineConfig({
 				"**/e2e/**",
 				"src/**/layout.tsx", // App Router boilerplate
 				// 認証フレームワークの glue（インスタンス生成 / クライアント / ルートハンドラ）はロジックを持たない（SPR-156）
+				"src/auth.ts", // NextAuth インスタンス（better-auth/auth.ts と同じ glue。Phase 2 で動的 import 経由で計上され始めた）
 				"src/lib/better-auth/auth.ts",
 				"src/app/api/auth/**",
 				"src/app/api/ba-auth/**",
+				// 認証プロバイダ切替の glue（動的 import / better-auth client / hooks 分岐で単体テスト困難）(SPR-157)
+				"src/lib/auth/server.ts",
+				"src/lib/auth/client.ts",
+				"src/lib/auth/better-auth-client.ts",
 			],
 			// 実測フロアに合わせたラチェット閾値（回帰ガード / SPR-152, SPR-155）
 			thresholds: {
