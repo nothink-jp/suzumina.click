@@ -23,23 +23,18 @@ resource "google_firestore_document" "firestore_rules" {
               return request.auth != null;
             }
             
-            // リクエスト元のユーザーとリソース所有者が一致するか確認
-            function isOwner(userId) {
-              return isAuthenticated() && request.auth.uid == userId;
-            }
-            
             // 動画コレクション
             match /videos/{videoId} {
-              // 誰でも読み取り可能、書き込みは管理者のみ
+              // 誰でも読み取り可能、書き込みは Cloud Functions（Admin SDK）のみ
               allow read;
-              allow write: if false; // 管理者APIのみ書き込み可能
+              allow write: if false; // Admin SDK のみ書き込み可能
             }
             
             // DLsite作品コレクション
             match /works/{workId} {
-              // 誰でも読み取り可能、書き込みは管理者のみ
+              // 誰でも読み取り可能、書き込みは Cloud Functions（Admin SDK）のみ
               allow read;
-              allow write: if false; // 管理者APIのみ書き込み可能
+              allow write: if false; // Admin SDK のみ書き込み可能
             }
             
             // 音声ボタンコレクション（統一システム）
@@ -47,24 +42,6 @@ resource "google_firestore_document" "firestore_rules" {
               // 公開音声ボタンは誰でも読み取り可能、非公開は作成者のみ読み取り可能
               allow read: if resource.data.isPublic == true || 
                            (isAuthenticated() && resource.data.createdBy == request.auth.uid);
-              
-              // データ検証関数（Discord ID対応）
-              function isValidAudioButton() {
-                return request.resource.data.keys().hasAll(['title', 'startTime', 'endTime', 'sourceVideoId', 'isPublic', 'createdBy', 'createdByName', 'createdAt']) &&
-                       request.resource.data.title is string &&
-                       request.resource.data.title.size() > 0 &&
-                       request.resource.data.title.size() <= 100 &&
-                       request.resource.data.startTime is number &&
-                       request.resource.data.endTime is number &&
-                       request.resource.data.startTime >= 0 &&
-                       request.resource.data.endTime > request.resource.data.startTime &&
-                       request.resource.data.sourceVideoId is string &&
-                       request.resource.data.sourceVideoId.size() > 0 &&
-                       request.resource.data.isPublic is bool &&
-                       request.resource.data.createdBy is string &&
-                       request.resource.data.createdByName is string &&
-                       request.resource.data.createdAt is string;
-              }
               
               // 作成・更新・削除はServer Actionsのみで操作
               allow create, update, delete: if false; // Server Actionsのみで操作
@@ -75,16 +52,6 @@ resource "google_firestore_document" "firestore_rules" {
               // 公開プロフィールは誰でも読み取り可能、プライベートは所有者のみ
               allow read: if resource.data.isPublicProfile == true || 
                            (isAuthenticated() && request.auth.token.discord_id == discordId);
-              
-              // ユーザーデータ検証関数
-              function isValidUserData() {
-                return request.resource.data.keys().hasAll(['discordId', 'username', 'displayName', 'isActive', 'createdAt']) &&
-                       request.resource.data.discordId is string &&
-                       request.resource.data.username is string &&
-                       request.resource.data.displayName is string &&
-                       request.resource.data.isActive is bool &&
-                       request.resource.data.createdAt is string;
-              }
               
               // 作成・更新はServer Actionsのみ
               allow create, update: if false; // Server Actionsのみで操作
