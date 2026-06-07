@@ -11,6 +11,9 @@ overrides:
   "@tootallnate/once": ">=2.0.1"
   postcss: ">=8.5.10"
   qs: ">=6.15.2"
+  # better-auth(@better-auth/kysely-adapter) は kysely 0.28 系の DEFAULT_MIGRATION_LOCK_TABLE を要求するが
+  # 0.29.x で削除されており、0.29.2 が解決されると認証ルートが ESM import で 500 になる。0.28 系にピン（SPR-156）。
+  kysely: "0.28.17"
 
 allowBuilds:
   esbuild: true
