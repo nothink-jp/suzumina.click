@@ -71,7 +71,7 @@ jobs:
             # セルフマージ・ポリシー判定（このリポジトリ用）
             レビュー冒頭に必ず「Door 判定」を 1 行で出す。基準は「容易にやり直せるか」。
             - **One-Way Door（人間レビュー必須・自己マージ非推奨）**: Firestore スキーマ/非正規化, 整合性 cron,
-              NextAuth/Discord 認証・認可, Terraform/GCP インフラ, .github/workflows（CI/CD）, packages/shared-types
+              better-auth/Discord 認証・認可, Terraform/GCP インフラ, .github/workflows（CI/CD）, packages/shared-types
               の破壊的変更, 新規 Entity 追加。これらを含むなら「⚠️ One-Way Door: 人間レビュー必須」と明示。
             - **Two-Way Door（AI レビューのみで自己マージ可の候補）**: 上記に該当せず、戻せる UI/表示/軽微なロジック変更。
               「✅ Two-Way Door: 重大所見が無ければ自己マージ可」と明示。

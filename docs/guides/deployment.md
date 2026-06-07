@@ -98,7 +98,7 @@ GOOGLE_CLOUD_PROJECT
 GCP_SA_KEY
 DISCORD_CLIENT_ID
 DISCORD_CLIENT_SECRET
-NEXTAUTH_SECRET  # SPR-158 で better-auth へ移行後も Secret 名は流用。Cloud Run の env は BETTER_AUTH_SECRET
+BETTER_AUTH_SECRET  # better-auth の session/cookie 署名鍵。Cloud Run の env も同名（SPR-159 で NEXTAUTH_SECRET から改名）
 YOUTUBE_API_KEY
 ```
 
@@ -246,7 +246,7 @@ echo -n "new-secret-value" | gcloud secrets create discord-client-secret --data-
 
 - `discord-client-id`
 - `discord-client-secret`  
-- `nextauth-secret`（Secret 名は流用。better-auth が env `BETTER_AUTH_SECRET` として参照）
+- `better-auth-secret`（better-auth が env `BETTER_AUTH_SECRET` として参照。SPR-159 で `nextauth-secret` から改名）
 - `youtube-api-key`
 - `dlsite-api-key` (if applicable)
 

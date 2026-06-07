@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { LikeButton } from "../like-button";
 
-// 旧 next-auth SessionProvider の素通し置換（テストのラッパー用・session prop は無視）
+// 旧 SessionProvider の素通し置換（テストのラッパー用・session prop は無視）
 function SessionProvider({ children }: { children: React.ReactNode; session?: unknown }) {
 	return <>{children}</>;
 }

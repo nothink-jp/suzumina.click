@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { UI_MESSAGES } from "@/constants/ui-messages";
 import { FeaturedAudioButtonsCarousel } from "../featured-audio-buttons-carousel";
 
-// 旧 next-auth SessionProvider の素通し置換（テストのラッパー用）
+// 旧 SessionProvider の素通し置換（テストのラッパー用）
 function SessionProvider({ children }: { children: React.ReactNode; session?: unknown }) {
 	return <>{children}</>;
 }

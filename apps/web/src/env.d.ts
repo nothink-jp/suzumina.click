@@ -6,9 +6,9 @@ declare namespace NodeJS {
 		readonly DISCORD_CLIENT_ID: string;
 		readonly DISCORD_CLIENT_SECRET: string;
 
-		// NextAuth
-		readonly NEXTAUTH_SECRET: string;
-		readonly NEXTAUTH_URL: string;
+		// better-auth
+		readonly BETTER_AUTH_SECRET: string;
+		readonly BETTER_AUTH_URL: string;
 
 		// Google Cloud
 		readonly GOOGLE_CLOUD_PROJECT: string;

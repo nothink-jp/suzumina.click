@@ -4,11 +4,12 @@ suzumina.clickプロジェクトの変更履歴
 
 ## [Unreleased]
 
-### 🔐 認証基盤の刷新（NextAuth → better-auth, SPR-156〜158）
+### 🔐 認証基盤の刷新（NextAuth → better-auth, SPR-156〜159）
 
 - **better-auth 単独へ移行（#564 / #566 / #567）**: NextAuth.js を撤去し better-auth に一本化。Phase 1 で並存導入、Phase 2 で認証抽象に集約、Phase 3+4 で NextAuth を完全撤去。
 - **マウント先は `/api/auth`**（NextAuth のパスを流用）。Discord redirect URI も `<origin>/api/auth/callback/discord` を継続利用。
-- **env は `BETTER_AUTH_URL` / `BETTER_AUTH_SECRET`**。Secret Manager のリソース名（`NEXTAUTH_SECRET`）と terraform 変数名（`nextauth_secret`）は値を流用したまま保持し、Cloud Run へ注入する env 名のみ変更。
+- **env は `BETTER_AUTH_URL` / `BETTER_AUTH_SECRET`**。SPR-158 では Secret Manager のリソース名（`NEXTAUTH_SECRET`）と terraform 変数名（`nextauth_secret`）を値ごと流用していた。
+- **NextAuth 残骸の整理（SPR-159）**: 死にコードとなった `NEXTAUTH_*` フォールバック（`auth.ts`）・型定義（`env.d.ts`）・vitest モックを除去。Secret Manager リソース名／terraform 変数名も `BETTER_AUTH_SECRET` / `better_auth_secret` に統一（値は流用、out-of-band で移行）。
 - DB 戦略は Firestore アダプタで据え置き（コスト実測で Firestore が要因でないと確認・SPR-160）。
 
 ## [v0.3.13] - 2026-06-01
