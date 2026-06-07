@@ -62,8 +62,8 @@ vi.mock("@/components/video/video-tag-editor", () => ({
 	),
 }));
 
-const loggedIn = { data: { user: { discordId: "123" } } };
-const loggedOut = { data: null };
+const loggedIn = { discordId: "123" };
+const loggedOut = null;
 
 const createVideo = (): VideoPlainObject =>
 	({

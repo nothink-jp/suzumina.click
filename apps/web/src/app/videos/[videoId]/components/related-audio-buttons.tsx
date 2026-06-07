@@ -28,9 +28,8 @@ export function RelatedAudioButtons({
 	initialLikeDislikeStatuses = {},
 	initialFavoriteStatuses = {},
 }: RelatedAudioButtonsProps) {
-	const { data: session } = useSession();
-	const canCreateButton =
-		session?.user && canCreateAudioButton(video) && video.status?.embeddable !== false;
+	const user = useSession();
+	const canCreateButton = user && canCreateAudioButton(video) && video.status?.embeddable !== false;
 	if (loading) {
 		return <LoadingSkeleton count={3} height={60} />;
 	}

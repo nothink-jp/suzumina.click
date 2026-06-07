@@ -28,7 +28,7 @@ export function AudioButtonCreator({
 	initialStartTime = 0,
 }: AudioButtonCreatorProps) {
 	const router = useRouter();
-	const { data: session } = useSession();
+	const user = useSession();
 
 	// 共通の音声ボタン編集ロジック
 	const editor = useAudioButtonEditor({
@@ -103,9 +103,9 @@ export function AudioButtonCreator({
 							<h1 className="text-2xl font-bold mb-2">音声ボタンを作成</h1>
 							<p className="text-muted-foreground text-sm">動画: {videoTitle}</p>
 						</div>
-						{session?.user?.discordId && (
+						{user?.discordId && (
 							<div className="sm:min-w-[280px]">
-								<CreateButtonLimit userId={session.user.discordId} />
+								<CreateButtonLimit userId={user.discordId} />
 							</div>
 						)}
 					</div>

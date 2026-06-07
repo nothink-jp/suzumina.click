@@ -8,14 +8,9 @@ import VideoDetail from "../video-detail";
 // 認証抽象のモック
 vi.mock("@/lib/auth/client", () => ({
 	useSession: vi.fn(() => ({
-		data: {
-			user: {
-				id: "test-user",
-				name: "Test User",
-				email: "test@example.com",
-			},
-		},
-		status: "authenticated",
+		id: "test-user",
+		name: "Test User",
+		email: "test@example.com",
 	})),
 }));
 
@@ -387,7 +382,7 @@ describe("VideoDetail", () => {
 
 	describe("音声ボタン作成可否（getCanCreateButtonData）", () => {
 		it("未ログインは作成ボタンが無効でログイン理由が title に出る", () => {
-			(useSession as any).mockReturnValue({ data: null });
+			(useSession as any).mockReturnValue(null);
 			render(<VideoDetail video={createMockVideo()} />);
 
 			const createButton = screen.getByText("ボタンを作成").closest("button");
@@ -396,7 +391,7 @@ describe("VideoDetail", () => {
 		});
 
 		it("埋め込み制限（embeddable=false）は作成不可で理由が title に出る", () => {
-			(useSession as any).mockReturnValue({ data: { user: { discordId: "1" } } });
+			(useSession as any).mockReturnValue({ discordId: "1" });
 			// embeddable=false は canCreateAudioButton より先に判定されるため _computed は不要
 			render(<VideoDetail video={createMockVideo({ status: { embeddable: false } })} />);
 
@@ -406,7 +401,7 @@ describe("VideoDetail", () => {
 		});
 
 		it("作成可能な動画はボタンが Link になり、サイドバーに新規作成リンクが出る", () => {
-			(useSession as any).mockReturnValue({ data: { user: { discordId: "1" } } });
+			(useSession as any).mockReturnValue({ discordId: "1" });
 			render(<VideoDetail video={createMockVideo({ _computed: { canCreateButton: true } })} />);
 
 			const createLink = screen.getByText("ボタンを作成").closest("a");

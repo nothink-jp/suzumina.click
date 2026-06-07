@@ -16,7 +16,7 @@ interface WorkEvaluationProps {
 }
 
 export function WorkEvaluation({ workId, workTitle, initialEvaluation }: WorkEvaluationProps) {
-	const { data: session } = useSession();
+	const user = useSession();
 	const [evaluation, setEvaluation] = useState(initialEvaluation);
 	const [error, setError] = useState<string | null>(null);
 	const [isPending, startTransition] = useTransition();
@@ -87,7 +87,7 @@ export function WorkEvaluation({ workId, workTitle, initialEvaluation }: WorkEva
 		});
 	};
 
-	if (!session) {
+	if (!user) {
 		return (
 			<div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
 				<p className="text-sm text-gray-600">

@@ -95,7 +95,7 @@ describe("AudioButtonList", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		(useRouter as any).mockReturnValue(mockRouter);
-		(useSession as any).mockReturnValue({ data: null });
+		(useSession as any).mockReturnValue(null);
 	});
 
 	it("音声ボタンリストが正しく表示される", () => {

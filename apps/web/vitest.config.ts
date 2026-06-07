@@ -35,7 +35,12 @@ export default defineConfig({
 				"**/e2e/**",
 				"src/**/layout.tsx", // App Router boilerplate
 				// 認証フレームワークの glue（インスタンス生成 / クライアント / ルートハンドラ）はロジックを持たない（SPR-156）
+				// auth.ts から分離した betterAuth コールバック実体（guild 同期 / 初回作成 / session enrich）も
+				// Firestore 副作用が主で従来 auth.ts に同居・除外済みだったため、計上は中立に保つ（SPR-168）。
 				"src/lib/better-auth/auth.ts",
+				"src/lib/better-auth/guild-sync.ts",
+				"src/lib/better-auth/enrich-session.ts",
+				"src/lib/better-auth/on-first-signup.ts",
 				"src/app/api/auth/**",
 				// 認証プロバイダ切替の glue（動的 import / better-auth client / hooks 分岐で単体テスト困難）(SPR-157)
 				"src/lib/auth/server.ts",

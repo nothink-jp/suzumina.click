@@ -35,7 +35,7 @@ export function AudioButtonWithFavoriteClient({
 	searchQuery,
 	highlightClassName,
 }: AudioButtonWithFavoriteClientProps) {
-	const { data: session } = useSession();
+	const user = useSession();
 	const router = useRouter();
 	const [isFavorited, setIsFavorited] = useState(initialIsFavorited);
 	const [isLiked, setIsLiked] = useState(initialIsLiked);
@@ -43,7 +43,7 @@ export function AudioButtonWithFavoriteClient({
 	const [likeCount, setLikeCount] = useState(audioButton.stats.likeCount);
 	const [dislikeCount, setDislikeCount] = useState(audioButton.stats.dislikeCount || 0);
 	const [_isPending, startTransition] = useTransition();
-	const isAuthenticated = !!session?.user;
+	const isAuthenticated = !!user;
 
 	useEffect(() => {
 		// initialIsFavoritedが提供されている場合はそれを使用（一括取得済み）

@@ -6,6 +6,7 @@
 		"build": "pnpm -r build",
 		"emulator": "bash scripts/firestore-emulator.sh",
 		"dev:local": "bash scripts/dev-local.sh",
+		"dev:clean": "rimraf apps/web/.next && bash scripts/dev-local.sh",
 		"seed": "pnpm --filter @suzumina.click/functions seed:load",
 		"seed:dump": "pnpm --filter @suzumina.click/functions seed:dump",
 		"lint": "pnpm -r lint",

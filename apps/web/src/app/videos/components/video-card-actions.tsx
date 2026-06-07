@@ -49,7 +49,7 @@ function evaluateButtonGate(video: VideoPlainObject, isLoggedIn: boolean): Butto
  * 認証ゲート（useSession）をカード本体から隔離するための最小 client コンポーネント。
  */
 export default function VideoCardActions({ video, variant }: VideoCardActionsProps) {
-	const { data: session } = useSession();
+	const user = useSession();
 
 	const detailLink = (
 		<Button
@@ -81,7 +81,7 @@ export default function VideoCardActions({ video, variant }: VideoCardActionsPro
 		);
 	}
 
-	const gate = evaluateButtonGate(video, Boolean(session?.user));
+	const gate = evaluateButtonGate(video, Boolean(user));
 
 	let createAction: ReactNode;
 	if (gate.canCreate) {

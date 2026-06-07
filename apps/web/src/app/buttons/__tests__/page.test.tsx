@@ -84,7 +84,7 @@ vi.mock("@suzumina.click/ui/components/custom/audio-button", () => ({
 
 // Mock 認証クライアント（未ログイン）
 vi.mock("@/lib/auth/client", () => ({
-	useSession: vi.fn(() => ({ data: null })),
+	useSession: vi.fn(() => null),
 }));
 
 // Mock AudioButtonsList component

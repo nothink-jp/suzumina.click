@@ -40,10 +40,10 @@ export const AudioButtonCard = memo(function AudioButtonCard({
 	className = "",
 	showStats = true,
 }: AudioButtonCardProps) {
-	const { data: session } = useSession();
+	const user = useSession();
 	const router = useRouter();
 	const [isPlaying, setIsPlaying] = useState(false);
-	const isAuthenticated = !!session?.user;
+	const isAuthenticated = !!user;
 
 	const {
 		buttonText,
