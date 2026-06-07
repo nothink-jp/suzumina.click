@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { auth } from "@/auth";
+import { getCurrentUser } from "@/lib/auth/server";
 import { updateUser } from "@/lib/user-firestore";
 
 interface UpdateProfileData {
@@ -10,19 +10,19 @@ interface UpdateProfileData {
 
 export async function updateUserProfile(data: UpdateProfileData) {
 	try {
-		const session = await auth();
-		if (!session?.user?.discordId) {
+		const user = await getCurrentUser();
+		if (!user?.discordId) {
 			return { success: false, error: "認証が必要です" };
 		}
 
 		// Firestoreのユーザー情報を更新
 		await updateUser({
-			discordId: session.user.discordId,
+			discordId: user.discordId,
 			isPublicProfile: data.isPublicProfile,
 		});
 
 		// キャッシュを再検証
-		revalidatePath(`/users/${session.user.discordId}`);
+		revalidatePath(`/users/${user.discordId}`);
 		revalidatePath("/settings");
 
 		return { success: true };

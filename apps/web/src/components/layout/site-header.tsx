@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { auth } from "@/auth";
+import { getCurrentUser } from "@/lib/auth/server";
 import AuthButton from "../user/auth-button";
 import { DesktopNav } from "./desktop-nav";
 import MobileMenu from "./mobile-menu";
@@ -45,16 +45,16 @@ export default function SiteHeader() {
 }
 
 async function SessionAwareControls() {
-	const session = await auth();
+	const user = await getCurrentUser();
 	return (
 		<>
 			{/* 認証ボタン */}
 			<div className="hidden md:flex">
-				<AuthButton user={session?.user} />
+				<AuthButton user={user} />
 			</div>
 
 			{/* モバイルメニュー */}
-			<MobileMenu user={session?.user} />
+			<MobileMenu user={user} />
 		</>
 	);
 }

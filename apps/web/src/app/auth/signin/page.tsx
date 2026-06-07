@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { signIn } from "@/auth";
+import { signInWithDiscord } from "@/lib/auth/server";
 
 interface SignInPageProps {
 	searchParams: Promise<{ callbackUrl?: string; error?: string }>;
@@ -30,9 +30,7 @@ async function SignInForm({ searchParams }: SignInPageProps) {
 				<form
 					action={async () => {
 						"use server";
-						await signIn("discord", {
-							redirectTo: callbackUrl || "/",
-						});
+						await signInWithDiscord(callbackUrl || "/");
 					}}
 					className="space-y-4"
 				>

@@ -8,7 +8,7 @@
 "use server";
 
 import type { VideoPlainObject } from "@suzumina.click/shared-types";
-import { auth } from "@/auth";
+import { getCurrentUser } from "@/lib/auth/server";
 import { getVideoByIdFromFirestore, getVideosByIdsFromFirestore } from "@/lib/video-firestore";
 
 /**
@@ -121,13 +121,13 @@ export async function updateVideoAction(
 ): Promise<{ success: boolean; error?: string }> {
 	try {
 		// 認証チェック
-		const session = await auth();
-		if (!session?.user?.discordId) {
+		const user = await getCurrentUser();
+		if (!user?.discordId) {
 			return { success: false, error: "ログインが必要です" };
 		}
 
 		// 管理者権限チェック（必要に応じて）
-		// if (session.user.role !== "admin") {
+		// if (user.role !== "admin") {
 		//   return { success: false, error: "この操作には管理者権限が必要です" };
 		// }
 

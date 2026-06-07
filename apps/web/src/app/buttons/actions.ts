@@ -6,7 +6,7 @@ import type {
 	UpdateAudioButtonInput,
 } from "@suzumina.click/shared-types";
 import { checkRateLimit, incrementButtonCount } from "@/actions/rate-limit-actions";
-import { auth } from "@/auth";
+import { getCurrentUser } from "@/lib/auth/server";
 import { getFirestore } from "@/lib/firestore";
 import { updateCounter } from "@/lib/firestore-helpers";
 import * as logger from "@/lib/logger";
@@ -263,13 +263,13 @@ export async function createAudioButton(
 			return null;
 		},
 		async (validatedInput) => {
-			const session = await auth();
-			if (!session?.user) {
+			const user = await getCurrentUser();
+			if (!user) {
 				throw new Error("ログインが必要です");
 			}
 
 			// レート制限チェック
-			const rateLimit = await checkRateLimit(session.user.discordId);
+			const rateLimit = await checkRateLimit(user.discordId);
 			if (!rateLimit.canCreate) {
 				throw new Error(
 					`本日の作成上限（${rateLimit.limit}個）に達しています。明日また作成できます。`,
@@ -294,8 +294,8 @@ export async function createAudioButton(
 				endTime: validatedInput.endTime,
 				duration,
 				tags: validatedInput.tags || [],
-				creatorId: session.user.discordId,
-				creatorName: session.user.displayName || session.user.username || "Unknown",
+				creatorId: user.discordId,
+				creatorName: user.displayName || user.username || "Unknown",
 				isPublic: validatedInput.isPublic ?? true,
 				stats: {
 					playCount: 0,
@@ -311,9 +311,9 @@ export async function createAudioButton(
 			await docRef.update({ id: docRef.id });
 
 			// レート制限カウントを増やす
-			const incremented = await incrementButtonCount(session.user.discordId);
+			const incremented = await incrementButtonCount(user.discordId);
 			if (!incremented) {
-				logger.warn("レート制限に達した後のボタン作成", { userId: session.user.discordId });
+				logger.warn("レート制限に達した後のボタン作成", { userId: user.discordId });
 			}
 
 			// 動画カウント更新（非同期）

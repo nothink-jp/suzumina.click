@@ -13,7 +13,7 @@ import {
 	type UserTop10List,
 } from "@suzumina.click/shared-types";
 import { revalidatePath } from "next/cache";
-import { auth } from "@/auth";
+import { getCurrentUser } from "@/lib/auth/server";
 import { getFirestore } from "@/lib/firestore";
 
 /**
@@ -25,8 +25,8 @@ export async function updateWorkEvaluation(
 ): Promise<EvaluationResult> {
 	try {
 		// 認証チェック
-		const session = await auth();
-		if (!session?.user?.discordId) {
+		const user = await getCurrentUser();
+		if (!user?.discordId) {
 			return { success: false, error: "認証が必要です" };
 		}
 
@@ -40,7 +40,7 @@ export async function updateWorkEvaluation(
 		}
 
 		// トランザクション処理（スタック型10選処理含む）
-		const result = await performEvaluationUpdate(workId, validation.data, session.user.discordId);
+		const result = await performEvaluationUpdate(workId, validation.data, user.discordId);
 
 		if (result.success) {
 			// キャッシュ無効化（重要データ操作）
@@ -406,11 +406,11 @@ async function performEvaluationUpdate(
  */
 export async function getWorkEvaluation(workId: string): Promise<FrontendWorkEvaluation | null> {
 	try {
-		const session = await auth();
-		if (!session?.user?.discordId) return null;
+		const user = await getCurrentUser();
+		if (!user?.discordId) return null;
 
 		const firestore = getFirestore();
-		const evaluationId = `${session.user.discordId}_${workId}`;
+		const evaluationId = `${user.discordId}_${workId}`;
 		const doc = await firestore.collection("evaluations").doc(evaluationId).get();
 
 		if (!doc.exists) return null;
@@ -427,13 +427,13 @@ export async function getWorkEvaluation(workId: string): Promise<FrontendWorkEva
  */
 export async function getUserTop10List(): Promise<FrontendUserTop10List | null> {
 	try {
-		const session = await auth();
-		if (!session?.user?.discordId) return null;
+		const user = await getCurrentUser();
+		if (!user?.discordId) return null;
 
 		const firestore = getFirestore();
 		const doc = await firestore
 			.collection("users")
-			.doc(session.user.discordId)
+			.doc(user.discordId)
 			.collection("top10")
 			.doc("ranking")
 			.get();
@@ -459,13 +459,13 @@ export async function removeWorkEvaluation(workId: string): Promise<EvaluationRe
  */
 export async function getUserEvaluations(): Promise<FrontendWorkEvaluation[]> {
 	try {
-		const session = await auth();
-		if (!session?.user?.discordId) return [];
+		const user = await getCurrentUser();
+		if (!user?.discordId) return [];
 
 		const firestore = getFirestore();
 		const snapshot = await firestore
 			.collection("evaluations")
-			.where("userId", "==", session.user.discordId)
+			.where("userId", "==", user.discordId)
 			.orderBy("updatedAt", "desc")
 			.get();
 

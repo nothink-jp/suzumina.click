@@ -2,7 +2,7 @@ import type { UserSession } from "@suzumina.click/shared-types";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
-import { auth } from "@/auth";
+import { getCurrentUser } from "@/lib/auth/server";
 
 interface ProtectedRouteProps {
 	children: ReactNode;
@@ -20,17 +20,15 @@ export default async function ProtectedRoute({
 	requireRole = "member",
 	fallbackUrl = "/auth/signin",
 }: ProtectedRouteProps) {
-	const session = await auth();
+	const user = await getCurrentUser();
 
 	// 未認証の場合
-	if (!session?.user) {
+	if (!user) {
 		// 現在のURLをコールバックURLとして保存
 		const headersList = await headers();
 		const currentUrl = headersList.get("x-url") || "/buttons/create";
 		redirect(`${fallbackUrl}?callbackUrl=${encodeURIComponent(currentUrl)}`);
 	}
-
-	const user = session.user;
 
 	// 非アクティブユーザーの場合
 	if (!user.isActive) {
@@ -58,11 +56,11 @@ export default async function ProtectedRoute({
  * 認証ステータスチェック用のユーティリティ関数
  */
 export async function requireAuth(): Promise<UserSession> {
-	const session = await auth();
+	const user = await getCurrentUser();
 
-	if (!session?.user?.isActive) {
+	if (!user?.isActive) {
 		redirect("/auth/signin");
 	}
 
-	return session.user;
+	return user;
 }

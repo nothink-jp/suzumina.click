@@ -5,9 +5,9 @@ import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Clock, Heart, Pause, Play, ThumbsDown, ThumbsUp } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
 import { memo, useCallback, useRef, useState } from "react";
 import { useAudioButton } from "@/hooks/use-audio-button";
+import { useSession } from "@/lib/auth/client";
 
 interface AudioButtonCardProps {
 	audioButton: AudioButton;

@@ -5,7 +5,7 @@
 
 "use server";
 
-import { auth } from "@/auth";
+import { getCurrentUser } from "@/lib/auth/server";
 import { updateVideoUserTags } from "@/lib/video-firestore";
 
 /**
@@ -37,8 +37,8 @@ export async function updateUserTagsAction(
 ): Promise<UpdateUserTagsResponse> {
 	try {
 		// 認証チェック
-		const session = await auth();
-		if (!session?.user?.discordId) {
+		const user = await getCurrentUser();
+		if (!user?.discordId) {
 			return { success: false, error: "ログインが必要です" };
 		}
 

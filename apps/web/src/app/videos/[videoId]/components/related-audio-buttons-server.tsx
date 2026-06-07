@@ -1,7 +1,7 @@
 import type { AudioButton, VideoPlainObject } from "@suzumina.click/shared-types";
 import { getLikeDislikeStatusAction } from "@/actions/dislikes";
 import { getFavoritesStatusAction } from "@/actions/favorites";
-import { auth } from "@/auth";
+import { getCurrentUser } from "@/lib/auth/server";
 import { RelatedAudioButtons } from "./related-audio-buttons";
 
 interface RelatedAudioButtonsServerProps {
@@ -20,8 +20,8 @@ export async function RelatedAudioButtonsServer({
 	loading = false,
 }: RelatedAudioButtonsServerProps) {
 	// 認証情報を取得
-	const session = await auth();
-	const userId = session?.user?.discordId;
+	const user = await getCurrentUser();
+	const userId = user?.discordId;
 
 	// ユーザーがログインしている場合のみ、いいね・低評価・お気に入り状態を一括取得
 	let likeDislikeStatuses: Record<string, { isLiked: boolean; isDisliked: boolean }> = {};

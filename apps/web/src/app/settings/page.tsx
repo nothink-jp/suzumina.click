@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { auth } from "@/auth";
+import { getCurrentUser } from "@/lib/auth/server";
 import { getUserByDiscordId } from "@/lib/user-firestore";
 import { UnifiedSettingsContent } from "./components/unified-settings-content";
 
@@ -18,13 +18,13 @@ export const metadata = {
 };
 
 export default async function SettingsPage() {
-	const session = await auth();
+	const currentUser = await getCurrentUser();
 
-	if (!session?.user?.discordId) {
+	if (!currentUser?.discordId) {
 		redirect("/auth/signin");
 	}
 
-	const user = await getUserByDiscordId(session.user.discordId);
+	const user = await getUserByDiscordId(currentUser.discordId);
 	if (!user) {
 		redirect("/auth/signin");
 	}

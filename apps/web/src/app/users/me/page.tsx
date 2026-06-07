@@ -1,14 +1,14 @@
 import { redirect } from "next/navigation";
-import { auth } from "@/auth";
+import { getCurrentUser } from "@/lib/auth/server";
 
 export default async function MyProfilePage() {
-	const session = await auth();
+	const user = await getCurrentUser();
 
-	if (!session?.user) {
+	if (!user) {
 		// 未認証の場合はサインインページへ
 		redirect("/auth/signin");
 	}
 
 	// 認証済みの場合は自分のプロフィールページへリダイレクト
-	redirect(`/users/${session.user.discordId}`);
+	redirect(`/users/${user.discordId}`);
 }

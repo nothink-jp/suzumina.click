@@ -1,8 +1,8 @@
 "use client";
 
-import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { getLikeDislikeStatusAction } from "@/actions/dislikes";
+import { useSession } from "@/lib/auth/client";
 
 /**
  * 複数の音声ボタンのいいね・低評価状態を一括で取得するフック

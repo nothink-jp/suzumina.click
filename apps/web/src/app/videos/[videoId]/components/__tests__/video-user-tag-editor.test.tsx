@@ -1,12 +1,12 @@
 import type { VideoPlainObject } from "@suzumina.click/shared-types";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { useSession } from "next-auth/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { updateUserTagsAction } from "@/actions/user-tags";
+import { useSession } from "@/lib/auth/client";
 import { buildTagSearchHref } from "@/lib/tag-search";
 import { VideoUserTagEditor } from "../video-user-tag-editor";
 
-vi.mock("next-auth/react", () => ({
+vi.mock("@/lib/auth/client", () => ({
 	useSession: vi.fn(),
 }));
 

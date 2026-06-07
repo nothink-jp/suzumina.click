@@ -1,11 +1,11 @@
 import type { VideoPlainObject } from "@suzumina.click/shared-types";
 import { render, screen } from "@testing-library/react";
-import { useSession } from "next-auth/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { useSession } from "@/lib/auth/client";
 import VideoCard from "../video-card";
 
 // モックの設定（認証ゲートは VideoCardActions client island が useSession を使う）
-vi.mock("next-auth/react", () => ({
+vi.mock("@/lib/auth/client", () => ({
 	useSession: vi.fn(),
 }));
 

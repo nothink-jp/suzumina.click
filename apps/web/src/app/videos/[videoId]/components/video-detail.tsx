@@ -18,9 +18,9 @@ import {
 	Video,
 } from "lucide-react";
 import Link from "next/link";
-import { useSession } from "next-auth/react";
 import React, { type ReactNode, useMemo } from "react";
 import { ThumbnailImage } from "@/components/ui";
+import { useSession } from "@/lib/auth/client";
 import { formatDescriptionText } from "@/lib/text-utils";
 import { VideoUserTagEditor } from "./video-user-tag-editor";
 

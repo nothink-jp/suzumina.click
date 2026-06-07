@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { auth } from "@/auth";
+import { getCurrentUser } from "@/lib/auth/server";
 import { getFavoritesList } from "./actions";
 import FavoritesList from "./components/favorites-list";
 
@@ -17,8 +17,8 @@ interface FavoritesPageProps {
 }
 
 export default async function FavoritesPage({ searchParams }: FavoritesPageProps) {
-	const session = await auth();
-	if (!session?.user?.discordId) {
+	const user = await getCurrentUser();
+	if (!user?.discordId) {
 		redirect("/auth/signin");
 	}
 
@@ -31,13 +31,13 @@ export default async function FavoritesPage({ searchParams }: FavoritesPageProps
 		page,
 		limit: 20,
 		sort,
-		userId: session.user.discordId,
+		userId: user.discordId,
 	});
 
 	return (
 		<div className="container mx-auto px-4 py-8">
 			<h1 className="text-3xl font-bold mb-8">お気に入り</h1>
-			<FavoritesList initialData={initialData} userId={session.user.discordId} />
+			<FavoritesList initialData={initialData} userId={user.discordId} />
 		</div>
 	);
 }

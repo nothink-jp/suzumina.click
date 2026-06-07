@@ -2,8 +2,8 @@ import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getLikeDislikeStatusAction } from "@/actions/dislikes";
-import { auth } from "@/auth";
 import { getAudioButtonsByUser } from "@/lib/audio-buttons-firestore";
+import { getCurrentUser } from "@/lib/auth/server";
 import { getUserFavoritesCount } from "@/lib/favorites-firestore";
 import { getUserByDiscordId } from "@/lib/user-firestore";
 import { UserProfileContent } from "./components/user-profile-content";
@@ -43,7 +43,7 @@ export async function generateMetadata({ params }: UserProfilePageProps): Promis
 }
 
 export default async function UserProfilePage({ params }: UserProfilePageProps) {
-	const session = await auth();
+	const currentUser = await getCurrentUser();
 	const resolvedParams = await params;
 
 	// ユーザー情報を取得
@@ -53,7 +53,7 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
 	}
 
 	// プライベートプロフィールのチェック
-	const isOwnProfile = session?.user?.discordId === resolvedParams.userId;
+	const isOwnProfile = currentUser?.discordId === resolvedParams.userId;
 	if (!user.isPublicProfile && !isOwnProfile) {
 		notFound();
 	}
@@ -81,7 +81,7 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
 
 	// いいね・低評価状態を一括取得（ログインユーザーのみ）
 	let likeDislikeStatuses: Record<string, { isLiked: boolean; isDisliked: boolean }> = {};
-	if (session?.user && audioButtons.length > 0) {
+	if (currentUser && audioButtons.length > 0) {
 		const audioButtonIds = audioButtons.map((button) => button.id);
 		const likeDislikeData = await getLikeDislikeStatusAction(audioButtonIds);
 		likeDislikeStatuses = Object.fromEntries(likeDislikeData);

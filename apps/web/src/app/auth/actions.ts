@@ -1,13 +1,13 @@
 "use server";
 
-import { signIn, signOut } from "@/auth";
+import { signInWithDiscord, signOutCurrent } from "@/lib/auth/server";
 import * as logger from "@/lib/logger";
 
 export async function signInAction() {
 	logger.info("Discordサインイン開始", { action: "signInAction" });
 
 	try {
-		await signIn("discord", { redirectTo: "/" });
+		await signInWithDiscord("/");
 		logger.info("Discordサインイン成功", { action: "signInAction" });
 	} catch (error) {
 		logger.error("Discordサインインでエラーが発生", {
@@ -23,7 +23,7 @@ export async function signOutAction() {
 	logger.info("サインアウト開始", { action: "signOutAction" });
 
 	try {
-		await signOut({ redirectTo: "/" });
+		await signOutCurrent("/");
 		logger.info("サインアウト成功", { action: "signOutAction" });
 	} catch (error) {
 		logger.error("サインアウトでエラーが発生", {

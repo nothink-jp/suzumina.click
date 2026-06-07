@@ -6,8 +6,8 @@ import { LoadingSkeleton } from "@suzumina.click/ui/components/custom/loading-sk
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { ArrowRight, Plus } from "lucide-react";
 import Link from "next/link";
-import { useSession } from "next-auth/react";
 import { AudioButtonWithPlayCount } from "@/components/audio";
+import { useSession } from "@/lib/auth/client";
 
 interface RelatedAudioButtonsProps {
 	audioButtons: AudioButton[];
