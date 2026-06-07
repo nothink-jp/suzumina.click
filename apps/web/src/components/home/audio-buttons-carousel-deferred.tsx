@@ -8,7 +8,7 @@ import { lazy, Suspense, useEffect, useState } from "react";
  * Featured AudioButtons Carousel を初期 bundle から完全に除外する client wrapper。
  *
  * 子の AudioButtonWithFavoriteClient が `useSession()` を呼ぶため、
- * 通常 import すると next-auth/react が `/` の初期 JS bundle に流入する。
+ * 通常 import すると better-auth client が `/` の初期 JS bundle に流入する。
  * `React.lazy` + `useEffect` で hydration 後にのみ chunk import を開始し、
  * 初期 bundle から完全に除外する (SPR-71 Workstream C 検証)。
  *

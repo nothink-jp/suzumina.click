@@ -1,9 +1,13 @@
 import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
 import { render, screen } from "@testing-library/react";
-import { SessionProvider } from "next-auth/react";
 import { describe, expect, it, vi } from "vitest";
 import { UI_MESSAGES } from "@/constants/ui-messages";
 import { FeaturedAudioButtonsCarousel } from "../featured-audio-buttons-carousel";
+
+// 旧 next-auth SessionProvider の素通し置換（テストのラッパー用）
+function SessionProvider({ children }: { children: React.ReactNode; session?: unknown }) {
+	return <>{children}</>;
+}
 
 // AudioButtonWithPlayCount のモック
 vi.mock("../AudioButtonWithPlayCount", () => ({
@@ -23,11 +27,6 @@ vi.mock("../audio-button-with-favorite-client", () => ({
 			<span data-testid="audio-button-id">{audioButton.id}</span>
 		</div>
 	),
-}));
-
-// Mock auth.ts to avoid NextAuth module resolution issues
-vi.mock("@/auth", () => ({
-	auth: () => Promise.resolve(null),
 }));
 
 describe("FeaturedAudioButtonsCarousel", () => {

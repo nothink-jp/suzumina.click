@@ -11,9 +11,9 @@ vi.mock("next/server", () => ({
 	headers: vi.fn(() => new Map()),
 }));
 
-// Mock auth.ts to avoid NextAuth module resolution issues
-vi.mock("@/auth", () => ({
-	auth: () => Promise.resolve(null),
+// Mock 認証抽象
+vi.mock("@/lib/auth/server", () => ({
+	getCurrentUser: () => Promise.resolve(null),
 }));
 
 // Mock the server actions

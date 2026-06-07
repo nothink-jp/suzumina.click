@@ -11,9 +11,9 @@ vi.mock("next/server", () => ({
 	headers: vi.fn(() => new Map()),
 }));
 
-// Mock auth.ts to avoid NextAuth module resolution issues
-vi.mock("@/auth", () => ({
-	auth: () => Promise.resolve(null),
+// Mock 認証抽象（未ログイン）
+vi.mock("@/lib/auth/server", () => ({
+	getCurrentUser: () => Promise.resolve(null),
 }));
 
 // Mock the server actions
@@ -82,10 +82,9 @@ vi.mock("@suzumina.click/ui/components/custom/audio-button", () => ({
 	),
 }));
 
-// Mock next-auth to avoid import errors
-vi.mock("next-auth/react", () => ({
-	useSession: vi.fn(() => ({ data: null, status: "unauthenticated" })),
-	SessionProvider: ({ children }: any) => children,
+// Mock 認証クライアント（未ログイン）
+vi.mock("@/lib/auth/client", () => ({
+	useSession: vi.fn(() => ({ data: null })),
 }));
 
 // Mock AudioButtonsList component

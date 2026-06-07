@@ -1,37 +1,40 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { signInAction, signOutAction } from "../actions";
 
-vi.mock("@/auth", () => ({ signIn: vi.fn(), signOut: vi.fn() }));
+vi.mock("@/lib/auth/server", () => ({
+	signInWithDiscord: vi.fn(),
+	signOutCurrent: vi.fn(),
+}));
 vi.mock("@/lib/logger", () => ({ info: vi.fn(), error: vi.fn(), warn: vi.fn() }));
 
-const { signIn, signOut } = vi.mocked(await import("@/auth"));
+const { signInWithDiscord, signOutCurrent } = vi.mocked(await import("@/lib/auth/server"));
 
 beforeEach(() => {
 	vi.clearAllMocks();
 });
 
 describe("signInAction", () => {
-	it("Discord で signIn を呼ぶ", async () => {
-		signIn.mockResolvedValue(undefined as never);
+	it("Discord で signInWithDiscord を呼ぶ", async () => {
+		signInWithDiscord.mockResolvedValue(undefined);
 		await signInAction();
-		expect(signIn).toHaveBeenCalledWith("discord", { redirectTo: "/" });
+		expect(signInWithDiscord).toHaveBeenCalledWith("/");
 	});
 
 	it("エラーは再 throw する", async () => {
-		signIn.mockRejectedValue(new Error("auth fail"));
+		signInWithDiscord.mockRejectedValue(new Error("auth fail"));
 		await expect(signInAction()).rejects.toThrow("auth fail");
 	});
 });
 
 describe("signOutAction", () => {
-	it("signOut を呼ぶ", async () => {
-		signOut.mockResolvedValue(undefined as never);
+	it("signOutCurrent を呼ぶ", async () => {
+		signOutCurrent.mockResolvedValue(undefined);
 		await signOutAction();
-		expect(signOut).toHaveBeenCalledWith({ redirectTo: "/" });
+		expect(signOutCurrent).toHaveBeenCalledWith("/");
 	});
 
 	it("エラーは再 throw する", async () => {
-		signOut.mockRejectedValue(new Error("signout fail"));
+		signOutCurrent.mockRejectedValue(new Error("signout fail"));
 		await expect(signOutAction()).rejects.toThrow("signout fail");
 	});
 });

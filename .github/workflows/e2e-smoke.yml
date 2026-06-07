@@ -45,10 +45,8 @@ jobs:
     timeout-minutes: 15
     env:
       # ブート用のダミー値（実認証は行わない。/ は header を含む layout が描画されれば十分）
-      NEXTAUTH_URL: http://127.0.0.1:3000
-      AUTH_TRUST_HOST: "true"
-      AUTH_SECRET: ci-smoke-dummy-not-a-real-secret
-      NEXTAUTH_SECRET: ci-smoke-dummy-not-a-real-secret
+      BETTER_AUTH_URL: http://127.0.0.1:3000
+      BETTER_AUTH_SECRET: ci-smoke-dummy-not-a-real-secret
       DISCORD_CLIENT_ID: dummy
       DISCORD_CLIENT_SECRET: dummy
       NEXT_PUBLIC_GA_MEASUREMENT_ID: ""

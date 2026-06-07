@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 import { getPopularAudioButtonTags } from "../lib/audio-button-stats";
 
 // Mock auth
-vi.mock("@/auth", () => ({
-	auth: vi.fn(),
+vi.mock("@/lib/auth/server", () => ({
+	getCurrentUser: vi.fn(),
 }));
 
 // getPopularAudioButtonTags が unstable_cache 経由になったため、Next ランタイム外では

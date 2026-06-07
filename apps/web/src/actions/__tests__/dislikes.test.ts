@@ -1,11 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getLikeDislikeStatusAction, toggleDislikeAction } from "../dislikes";
 
-// モックの設定
-vi.mock("@/auth", () => ({
-	auth: vi.fn(),
-}));
-
+// モックの設定（認証は @/components/system/protected-route の requireAuth をモックして制御）
 vi.mock("@/lib/firestore", () => ({
 	getFirestore: vi.fn(() => ({
 		collection: vi.fn(() => ({

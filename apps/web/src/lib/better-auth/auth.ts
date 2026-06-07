@@ -1,10 +1,10 @@
 /**
- * better-auth インスタンス（SPR-156 Phase 1 / 隔離・本番未配線）
+ * better-auth インスタンス（SPR-158 Phase 3 / 本番唯一の認証）
  *
- * NextAuth（`apps/web/src/auth.ts`）と**並存**させるための別実装。既存の認証は無改変。
+ * NextAuth を撤去し、本アプリ唯一の認証実装。`/api/auth/*` にマウント。
  * - データ層: Firestore カスタムアダプタ（better-auth 標準モデルを `ba_*` コレクションに保存）
- * - アイデンティティと業務データの分離: role/displayName/isFamilyMember の正本は従来どおり `users` コレクション。
- *   customSession でそれを読み、セッションへ載せる（NextAuth の session callback と等価）。
+ * - アイデンティティと業務データの分離: role/displayName/isFamilyMember の正本は `users` コレクション。
+ *   customSession でそれを読み、セッションへ載せる。
  */
 import {
 	type FirestoreUserData,
@@ -102,11 +102,12 @@ async function refreshGuildStatusIfNeeded(
 
 export const auth = betterAuth({
 	appName: "suzumina.click",
-	// Phase 1 は NEXTAUTH_* をフォールバックに使い、別 secret/URL も受け付ける
+	// 本番は BETTER_AUTH_*。移行直後の安全網として NEXTAUTH_* もフォールバックに残す
+	// （ソーク後に NEXTAUTH_* env/secret を撤去可能）。
 	secret: process.env.BETTER_AUTH_SECRET || process.env.NEXTAUTH_SECRET,
 	baseURL: process.env.BETTER_AUTH_URL || process.env.NEXTAUTH_URL,
-	// NextAuth の /api/auth/[...nextauth] と同一階層で catch-all が衝突しないよう別 basePath にする
-	basePath: "/api/ba-auth",
+	// NextAuth 撤去後は標準の /api/auth を使用（Discord の既存 redirect URI をそのまま流用）。
+	basePath: "/api/auth",
 	database: firestoreAdapter({ debugLogs: false }),
 
 	user: {
