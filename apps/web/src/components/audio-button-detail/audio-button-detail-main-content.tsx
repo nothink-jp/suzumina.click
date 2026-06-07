@@ -1,11 +1,10 @@
-import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
+import type { AudioButtonPlainObject, UserSession } from "@suzumina.click/shared-types";
 import { TimeDisplay } from "@suzumina.click/ui/components/custom/time-display";
 import { YoutubeIcon } from "@suzumina.click/ui/components/custom/youtube-icon";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent } from "@suzumina.click/ui/components/ui/card";
 import { Calendar, Clock, Pencil } from "lucide-react";
 import Link from "next/link";
-import type { Session } from "next-auth";
 import { AudioButtonDeleteButton } from "@/components/audio/audio-button-delete-button";
 import { AudioButtonTagEditorDetail } from "@/components/audio/audio-button-tag-editor-detail";
 import { AudioButtonWithPlayCount } from "@/components/audio/audio-button-with-play-count";
@@ -37,7 +36,7 @@ function formatRelativeTime(dateString: string): string {
 
 interface AudioButtonDetailMainContentProps {
 	audioButton: AudioButtonPlainObject;
-	session: Session | null;
+	user: UserSession | null;
 	isAuthenticated: boolean;
 	isFavorited: boolean;
 	isLiked: boolean;
@@ -46,7 +45,7 @@ interface AudioButtonDetailMainContentProps {
 
 export function AudioButtonDetailMainContent({
 	audioButton,
-	session,
+	user,
 	isAuthenticated,
 	isFavorited,
 	isLiked,
@@ -79,7 +78,7 @@ export function AudioButtonDetailMainContent({
 						{/* 編集・削除ボタン */}
 						<div className="flex items-center gap-2">
 							{/* 編集ボタン */}
-							{session?.user && audioButton.creatorId === session.user.discordId && (
+							{user && audioButton.creatorId === user.discordId && (
 								<Button variant="outline" size="sm" asChild className="flex items-center gap-1">
 									<Link href={`/buttons/${audioButton.id}/edit`}>
 										<Pencil className="h-4 w-4" />
@@ -122,7 +121,7 @@ export function AudioButtonDetailMainContent({
 						<AudioButtonTagEditorDetail
 							audioButtonId={audioButton.id}
 							tags={audioButton.tags || []}
-							currentUserId={session?.user?.discordId}
+							currentUserId={user?.discordId}
 						/>
 					</div>
 

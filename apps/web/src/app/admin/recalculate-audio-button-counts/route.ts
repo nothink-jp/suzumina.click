@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { recalculateAllVideosAudioButtonCount } from "@/app/buttons/lib/audio-button-stats";
-import { auth } from "@/auth";
+import { getCurrentUser } from "@/lib/auth/server";
 import * as logger from "@/lib/logger";
 
 /**
@@ -12,14 +12,14 @@ import * as logger from "@/lib/logger";
 export async function POST() {
 	try {
 		// 認証チェック
-		const session = await auth();
-		if (!session?.user) {
+		const user = await getCurrentUser();
+		if (!user) {
 			return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
 		}
 
 		logger.info("audioButtonCount再計算開始", {
-			userId: session.user.discordId,
-			userName: session.user.displayName || session.user.username,
+			userId: user.discordId,
+			userName: user.displayName || user.username,
 		});
 
 		// 再計算実行
@@ -58,8 +58,8 @@ export async function POST() {
  * 再計算用のシンプルなUIを表示
  */
 export async function GET() {
-	const session = await auth();
-	if (!session?.user) {
+	const user = await getCurrentUser();
+	if (!user) {
 		return new Response("認証が必要です", { status: 401 });
 	}
 

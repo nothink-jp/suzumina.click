@@ -2,8 +2,8 @@ import { parseDurationToSeconds } from "@suzumina.click/shared-types";
 import { notFound, redirect } from "next/navigation";
 import { getAudioButtonById } from "@/app/buttons/actions";
 import { getVideoById } from "@/app/videos/actions";
-import { auth } from "@/auth";
 import { AudioButtonEditor } from "@/components/audio/audio-button-editor";
+import { getCurrentUser } from "@/lib/auth/server";
 
 interface AudioButtonEditPageProps {
 	params: Promise<{
@@ -24,13 +24,13 @@ export default async function AudioButtonEditPage({ params }: AudioButtonEditPag
 	const audioButton = result.data;
 
 	// 認証チェック
-	const session = await auth();
-	if (!session?.user) {
+	const user = await getCurrentUser();
+	if (!user) {
 		redirect(`/auth/signin?callbackUrl=${encodeURIComponent(`/buttons/${id}/edit`)}`);
 	}
 
 	// 権限チェック：作成者本人または管理者のみ編集可能
-	const canEdit = audioButton.creatorId === session.user.discordId || session.user.role === "admin";
+	const canEdit = audioButton.creatorId === user.discordId || user.role === "admin";
 	if (!canEdit) {
 		redirect(`/buttons/${id}`);
 	}

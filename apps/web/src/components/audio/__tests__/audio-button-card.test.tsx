@@ -6,8 +6,8 @@ import {
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
 import { describe, expect, it, vi } from "vitest";
+import { useSession } from "@/lib/auth/client";
 import AudioButtonCard from "../audio-button-card";
 
 // モックの設定
@@ -15,7 +15,7 @@ vi.mock("next/navigation", () => ({
 	useRouter: vi.fn(),
 }));
 
-vi.mock("next-auth/react", () => ({
+vi.mock("@/lib/auth/client", () => ({
 	useSession: vi.fn(),
 }));
 

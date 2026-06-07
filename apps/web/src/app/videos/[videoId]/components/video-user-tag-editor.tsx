@@ -11,10 +11,10 @@ import { Button } from "@suzumina.click/ui/components/ui/button";
 import { getYouTubeCategoryName } from "@suzumina.click/ui/lib/youtube-category-utils";
 import { Edit } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
 import { useCallback, useState } from "react";
 import { updateUserTagsAction } from "@/actions/user-tags";
 import { VideoTagEditor } from "@/components/video/video-tag-editor";
+import { useSession } from "@/lib/auth/client";
 import { buildTagSearchHref } from "@/lib/tag-search";
 
 interface VideoUserTagEditorProps {

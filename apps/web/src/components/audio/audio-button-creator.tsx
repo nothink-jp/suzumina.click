@@ -5,10 +5,10 @@ import { YouTubePlayer } from "@suzumina.click/ui/components/custom/youtube-play
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Loader2, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
 import { useCallback } from "react";
 import { createAudioButton } from "@/app/buttons/actions";
 import { useAudioButtonEditor } from "@/hooks/use-audio-button-editor";
+import { useSession } from "@/lib/auth/client";
 import { BasicInfoPanel } from "./basic-info-panel";
 import { CreateButtonLimit } from "./create-button-limit";
 import { TimeControlPanel } from "./time-control-panel";

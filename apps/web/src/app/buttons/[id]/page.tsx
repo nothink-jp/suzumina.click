@@ -5,13 +5,13 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { getFavoritesStatusAction } from "@/actions/favorites";
 import { getAudioButtonById } from "@/app/buttons/actions";
-import { auth } from "@/auth";
 import {
 	AudioButtonDetailHeader,
 	AudioButtonDetailMainContent,
 	AudioButtonDetailSidebar,
 	RelatedAudioButtons,
 } from "@/components/audio-button-detail";
+import { getCurrentUser } from "@/lib/auth/server";
 
 interface AudioButtonDetailPageProps {
 	params: Promise<{
@@ -102,15 +102,15 @@ export default async function AudioButtonDetailPage({ params }: AudioButtonDetai
 	const audioButton = result.data;
 
 	// ユーザーのセッションを取得
-	const session = await auth();
-	const isAuthenticated = !!session?.user;
+	const user = await getCurrentUser();
+	const isAuthenticated = !!user;
 
 	// お気に入り状態を取得（認証済みの場合のみ）
 	let isFavorited = false;
 	let isLiked = false;
 	let isDisliked = false;
 
-	if (isAuthenticated && session?.user?.discordId) {
+	if (isAuthenticated && user?.discordId) {
 		try {
 			const favoritesStatusMap = await getFavoritesStatusAction([audioButton.id]);
 			isFavorited = favoritesStatusMap.get(audioButton.id) || false;
@@ -147,7 +147,7 @@ export default async function AudioButtonDetailPage({ params }: AudioButtonDetai
 					{/* 左側: 音声ボタン詳細 */}
 					<AudioButtonDetailMainContent
 						audioButton={audioButton}
-						session={session}
+						user={user}
 						isAuthenticated={isAuthenticated}
 						isFavorited={isFavorited}
 						isLiked={isLiked}

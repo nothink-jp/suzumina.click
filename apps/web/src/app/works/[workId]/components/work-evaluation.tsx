@@ -3,8 +3,8 @@
 import type { EvaluationInput, FrontendWorkEvaluation } from "@suzumina.click/shared-types";
 import { cn } from "@suzumina.click/ui/lib/utils";
 import { AlertCircle, Loader2, Star } from "lucide-react";
-import { useSession } from "next-auth/react";
 import { useState, useTransition } from "react";
+import { useSession } from "@/lib/auth/client";
 import { removeWorkEvaluation, updateWorkEvaluation } from "../evaluation-actions";
 import { EvaluationRadioGroup } from "./evaluation-radio-group";
 import { Top10RankModal } from "./top10-rank-modal";

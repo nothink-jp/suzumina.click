@@ -12,6 +12,7 @@ import {
 	SUZUMINA_GUILD_ID,
 } from "@suzumina.click/shared-types";
 import { betterAuth } from "better-auth";
+import { nextCookies } from "better-auth/next-js";
 import { customSession } from "better-auth/plugins";
 import { getFirestore } from "@/lib/firestore";
 import { error as logError } from "@/lib/logger";
@@ -193,6 +194,10 @@ export const auth = betterAuth({
 				return { user, session, appUser: null };
 			}
 		}),
+		// `auth.api.*`（server action / RSC からの直接呼び出し）が設定する Set-Cookie を
+		// Next の cookies() に書き戻す。これが無いと signInSocial の OAuth state cookie が
+		// ブラウザに届かず、コールバックで state_mismatch になる。**必ず最後のプラグイン**。
+		nextCookies(),
 	],
 });
 

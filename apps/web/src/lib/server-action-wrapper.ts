@@ -94,11 +94,11 @@ export async function withAuthenticatedAction<T>(
 	},
 ): Promise<{ success: true; data: T } | { success: false; error: string }> {
 	try {
-		// 認証チェック（authモジュールは後で適切にインポート）
-		const { auth } = await import("@/auth");
-		const session = await auth();
+		// 認証チェック（プロバイダ非依存の抽象経由）
+		const { getCurrentUser } = await import("@/lib/auth/server");
+		const user = await getCurrentUser();
 
-		if (!session?.user) {
+		if (!user) {
 			logger.warn(`${options.action}: 未認証のアクセス`, options.logContext);
 			return {
 				success: false,
@@ -107,7 +107,7 @@ export async function withAuthenticatedAction<T>(
 		}
 
 		// 認証済みの場合、本処理を実行
-		const result = await fn(session.user);
+		const result = await fn(user);
 		return { success: true, data: result };
 	} catch (error) {
 		logger.error(`${options.action}でエラーが発生`, {

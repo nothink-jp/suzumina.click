@@ -9,7 +9,7 @@ import type {
 	FavoriteStatus,
 	RemoveFavoriteInput,
 } from "@suzumina.click/shared-types";
-import { auth } from "@/auth";
+import { getCurrentUser } from "@/lib/auth/server";
 import {
 	addFavorite,
 	getFavoriteStatus,
@@ -25,12 +25,12 @@ export async function addFavoriteAction(
 	input: AddFavoriteInput,
 ): Promise<{ success: boolean; error?: string }> {
 	try {
-		const session = await auth();
-		if (!session?.user?.discordId) {
+		const user = await getCurrentUser();
+		if (!user?.discordId) {
 			return { success: false, error: "ログインが必要です" };
 		}
 
-		const result = await addFavorite(session.user.discordId, input);
+		const result = await addFavorite(user.discordId, input);
 		return result;
 	} catch (error) {
 		return {
@@ -47,12 +47,12 @@ export async function removeFavoriteAction(
 	input: RemoveFavoriteInput,
 ): Promise<{ success: boolean; error?: string }> {
 	try {
-		const session = await auth();
-		if (!session?.user?.discordId) {
+		const user = await getCurrentUser();
+		if (!user?.discordId) {
 			return { success: false, error: "ログインが必要です" };
 		}
 
-		const result = await removeFavorite(session.user.discordId, input);
+		const result = await removeFavorite(user.discordId, input);
 		return result;
 	} catch (error) {
 		return {
@@ -69,12 +69,12 @@ export async function toggleFavoriteAction(
 	audioButtonId: string,
 ): Promise<{ success: boolean; isFavorited?: boolean; error?: string }> {
 	try {
-		const session = await auth();
-		if (!session?.user?.discordId) {
+		const user = await getCurrentUser();
+		if (!user?.discordId) {
 			return { success: false, error: "ログインが必要です" };
 		}
 
-		const result = await toggleFavorite(session.user.discordId, audioButtonId);
+		const result = await toggleFavorite(user.discordId, audioButtonId);
 		return { success: true, isFavorited: result.isFavorited };
 	} catch (error) {
 		return {
@@ -89,12 +89,12 @@ export async function toggleFavoriteAction(
  */
 export async function getFavoriteStatusAction(audioButtonId: string): Promise<FavoriteStatus> {
 	try {
-		const session = await auth();
-		if (!session?.user?.discordId) {
+		const user = await getCurrentUser();
+		if (!user?.discordId) {
 			return { isFavorited: false };
 		}
 
-		return await getFavoriteStatus(session.user.discordId, audioButtonId);
+		return await getFavoriteStatus(user.discordId, audioButtonId);
 	} catch (_error) {
 		return { isFavorited: false };
 	}
@@ -107,8 +107,8 @@ export async function getFavoritesStatusAction(
 	audioButtonIds: string[],
 ): Promise<Map<string, boolean>> {
 	try {
-		const session = await auth();
-		if (!session?.user?.discordId) {
+		const user = await getCurrentUser();
+		if (!user?.discordId) {
 			// 未ログイン時は全てfalseを返す
 			const statusMap = new Map<string, boolean>();
 			audioButtonIds.forEach((id) => {
@@ -117,7 +117,7 @@ export async function getFavoritesStatusAction(
 			return statusMap;
 		}
 
-		return await getFavoritesStatus(session.user.discordId, audioButtonIds);
+		return await getFavoritesStatus(user.discordId, audioButtonIds);
 	} catch (_error) {
 		// エラー時は全てfalseを返す
 		const statusMap = new Map<string, boolean>();

@@ -33,8 +33,8 @@ vi.mock("next/navigation", () => ({
 	}),
 }));
 
-// Mock next-auth
-vi.mock("next-auth/react", () => ({
+// Mock 認証抽象
+vi.mock("@/lib/auth/client", () => ({
 	useSession: () => ({
 		data: {
 			user: {
@@ -46,7 +46,6 @@ vi.mock("next-auth/react", () => ({
 		},
 		status: "authenticated",
 	}),
-	SessionProvider: ({ children }: any) => <div>{children}</div>,
 }));
 
 // Mock YouTubePlayer with player methods

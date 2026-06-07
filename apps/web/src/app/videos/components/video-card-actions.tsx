@@ -8,8 +8,8 @@ import {
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { ExternalLink, Eye, LogIn, Plus } from "lucide-react";
 import Link from "next/link";
-import { useSession } from "next-auth/react";
 import type { ReactNode } from "react";
+import { useSession } from "@/lib/auth/client";
 
 interface VideoCardActionsProps {
 	video: VideoPlainObject;

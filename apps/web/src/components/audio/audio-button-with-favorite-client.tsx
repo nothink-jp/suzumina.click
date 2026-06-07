@@ -3,12 +3,12 @@
 import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
 import { AudioButton } from "@suzumina.click/ui/components/custom/audio-button";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { getLikeDislikeStatusAction, toggleDislikeAction } from "@/actions/dislikes";
 import { toggleFavoriteAction } from "@/actions/favorites";
 import { toggleLikeAction } from "@/actions/likes";
+import { useSession } from "@/lib/auth/client";
 
 interface AudioButtonWithFavoriteClientProps {
 	audioButton: AudioButtonPlainObject;

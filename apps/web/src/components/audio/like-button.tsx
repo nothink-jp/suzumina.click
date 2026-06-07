@@ -2,11 +2,11 @@
 
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { ThumbsUp } from "lucide-react";
-import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { getLikeDislikeStatusAction } from "@/actions/dislikes";
 import { toggleLikeAction } from "@/actions/likes";
+import { useSession } from "@/lib/auth/client";
 
 interface LikeButtonProps {
 	audioButtonId: string;

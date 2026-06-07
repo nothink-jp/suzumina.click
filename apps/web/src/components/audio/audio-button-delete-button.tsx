@@ -3,11 +3,11 @@
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { deleteAudioButton } from "@/app/buttons/actions";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
+import { useSession } from "@/lib/auth/client";
 
 interface AudioButtonDeleteButtonProps {
 	audioButtonId: string;
