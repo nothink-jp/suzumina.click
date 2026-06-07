@@ -6,12 +6,15 @@
  * better-auth の databaseHooks.account.create.after（auth.ts）から呼ばれる。
  */
 import { SUZUMINA_GUILD_ID } from "@suzumina.click/shared-types";
-import { getFirestore } from "@/lib/firestore";
 import { error as logError } from "@/lib/logger";
 import { createUser, userExists } from "@/lib/user-firestore";
 import { extractAvatarHash, fetchDiscordGuildMembership } from "./discord-guild";
+import { firestoreOps } from "./firestore-adapter";
 
 const isDev = process.env.NODE_ENV !== "production";
+
+// better-auth 標準モデル(user 等)へのアクセスはアダプタ境界(firestoreOps)を共有する。
+const ops = firestoreOps();
 
 /** better-auth の account.create フックが渡す account のうち本処理で参照するフィールド。 */
 interface FirstSignupAccount {
@@ -26,9 +29,12 @@ export async function createAppUserOnFirstSignup(account: FirstSignupAccount): P
 	const discordId = account.accountId;
 	try {
 		if (await userExists(discordId)) return;
-		// プロフィール（name/email/image）は better-auth user 側にあるため読み出す
-		const baUserSnap = await getFirestore().collection("ba_user").doc(account.userId).get();
-		const bu = (baUserSnap.data() ?? {}) as {
+		// プロフィール（name/email/image）は better-auth user 側にあるため読み出す（アダプタ経由）
+		const baUser = await ops.findOne({
+			model: "user",
+			where: [{ field: "id", value: account.userId, operator: "eq", connector: "AND" }],
+		});
+		const bu = (baUser ?? {}) as {
 			name?: string;
 			email?: string;
 			image?: string;

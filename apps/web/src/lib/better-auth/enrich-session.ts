@@ -28,7 +28,8 @@ function getDiscordId(user: unknown): string | undefined {
 export async function buildAppUserForSession(user: unknown): Promise<UserSession | null> {
 	const discordId = getDiscordId(user);
 	if (!discordId) return null;
-	const betterAuthUserId = (user as { id?: string }).id ?? "";
+	const rawId = (user as { id?: unknown }).id;
+	const betterAuthUserId = typeof rawId === "string" ? rawId : "";
 	try {
 		const snap = await getFirestore().collection("users").doc(discordId).get();
 		if (!snap.exists) return null;
