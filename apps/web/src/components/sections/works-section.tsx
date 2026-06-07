@@ -4,6 +4,7 @@ import type { WorkPlainObject } from "@suzumina.click/shared-types";
 import { LoadingSkeleton } from "@suzumina.click/ui/components/custom/loading-skeleton";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { LazyFeaturedWorksCarousel } from "@/components/optimization/lazy-components";
 import { useAgeVerification } from "@/contexts/age-verification-context";
 
@@ -21,6 +22,15 @@ export function WorksSection({
 	error = null,
 }: WorksSectionProps) {
 	const { showR18Content } = useAgeVerification();
+
+	// 年齢確認状態はクライアントの localStorage から決まる。SSR（およびストリーミングされた
+	// 動的セクションのサーバ HTML）は常に未確認＝全年齢ビューを描画するため、マウント完了まで
+	// 同じ値に揃えてハイドレーション不一致を防ぐ（確定後に再描画される）。
+	const [mounted, setMounted] = useState(false);
+	useEffect(() => {
+		setMounted(true);
+	}, []);
+	const effectiveShowR18 = mounted && showR18Content;
 
 	if (loading) {
 		return (
@@ -60,7 +70,7 @@ export function WorksSection({
 		);
 	}
 
-	const worksToShow = showR18Content ? works : allAgesWorks;
+	const worksToShow = effectiveShowR18 ? works : allAgesWorks;
 
 	return (
 		<section className="py-8 sm:py-12 bg-background">
@@ -69,14 +79,14 @@ export function WorksSection({
 					<div>
 						<h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-2 flex items-center gap-2">
 							🎭 新着作品
-							{!showR18Content && (
+							{!effectiveShowR18 && (
 								<span className="ml-2 text-sm text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
 									全年齢対象
 								</span>
 							)}
 						</h2>
 						<p className="text-sm sm:text-base text-muted-foreground">
-							{showR18Content
+							{effectiveShowR18
 								? "涼花みなせさんの最新作品をチェック！"
 								: "年齢制限のない作品をお楽しみください"}
 						</p>
