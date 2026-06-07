@@ -56,7 +56,7 @@
 `next experimental-analyze`（Turbopack 用）で代表 list ページの共有チャンク（約 756KB）を分解した結果:
 
 - **約 52%（~395KB）が削減不可能なフレームワーク**: react-dom 226KB + Next.js App Router client runtime 105KB + next/navigation 64KB。
-- 残りも **常時表示の global UI（@radix-ui primitives, next-auth/SessionProvider, sonner/Toaster, AgeVerification）に紐づく**ため easy cut なし。
+- 残りも **常時表示の global UI（@radix-ui primitives, better-auth client, sonner/Toaster, AgeVerification）に紐づく**ため easy cut なし。
 
 → **共有チャンク削減では list ページの LCP（~4.5s）を 2.5s まで closing できない**。要因は「framework hydration の床」＋「per-page の `ConfigurableList` 項目の client-side 描画」。
 

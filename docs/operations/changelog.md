@@ -2,6 +2,15 @@
 
 suzumina.clickプロジェクトの変更履歴
 
+## [Unreleased]
+
+### 🔐 認証基盤の刷新（NextAuth → better-auth, SPR-156〜158）
+
+- **better-auth 単独へ移行（#564 / #566 / #567）**: NextAuth.js を撤去し better-auth に一本化。Phase 1 で並存導入、Phase 2 で認証抽象に集約、Phase 3+4 で NextAuth を完全撤去。
+- **マウント先は `/api/auth`**（NextAuth のパスを流用）。Discord redirect URI も `<origin>/api/auth/callback/discord` を継続利用。
+- **env は `BETTER_AUTH_URL` / `BETTER_AUTH_SECRET`**。Secret Manager のリソース名（`NEXTAUTH_SECRET`）と terraform 変数名（`nextauth_secret`）は値を流用したまま保持し、Cloud Run へ注入する env 名のみ変更。
+- DB 戦略は Firestore アダプタで据え置き（コスト実測で Firestore が要因でないと確認・SPR-160）。
+
 ## [v0.3.13] - 2026-06-01
 
 v0.3.12 以降に積み上がった改善のまとめ（カテゴリ要約）。詳細は各 PR / Linear SPR を参照。
