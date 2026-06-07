@@ -21,6 +21,7 @@ export async function getCurrentUser(): Promise<UserSession | null> {
 
 /**
  * Discord でサインイン。成功時は OAuth へリダイレクトする（redirect は例外として送出される）。
+ * @throws OAuth URL が得られなかった場合（無言 return せず明示的にエラー化し、呼び出し側でログ/通知できるようにする）
  */
 export async function signInWithDiscord(callbackURL = "/"): Promise<void> {
 	const [{ auth }, { redirect }] = await Promise.all([
@@ -28,7 +29,10 @@ export async function signInWithDiscord(callbackURL = "/"): Promise<void> {
 		import("next/navigation"),
 	]);
 	const res = await auth.api.signInSocial({ body: { provider: "discord", callbackURL } });
-	if (res?.url) redirect(res.url);
+	if (!res?.url) {
+		throw new Error("Discord サインインの OAuth URL を取得できませんでした");
+	}
+	redirect(res.url);
 }
 
 /**
