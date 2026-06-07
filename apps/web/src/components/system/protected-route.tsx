@@ -40,13 +40,18 @@ export default async function ProtectedRoute({
 }
 
 /**
- * 認証ステータスチェック用のユーティリティ関数
+ * Server Action 等で認証必須を担保するユーティリティ。誘導先は ProtectedRoute と統一。
+ * - 未認証: `/auth/signin` へ
+ * - 無効アカウント（`isActive=false`、防御的・通常到達せず）: `/auth/error?error=AccountDisabled` へ
  */
 export async function requireAuth(): Promise<UserSession> {
 	const user = await getCurrentUser();
 
-	if (!user?.isActive) {
+	if (!user) {
 		redirect("/auth/signin");
+	}
+	if (!user.isActive) {
+		redirect("/auth/error?error=AccountDisabled");
 	}
 
 	return user;

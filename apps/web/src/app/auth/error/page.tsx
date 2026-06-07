@@ -15,17 +15,21 @@ interface AuthErrorPageProps {
 	searchParams: Promise<{ error?: string }>;
 }
 
-function getErrorMessage(error: string | undefined): {
+interface ErrorInfo {
 	title: string;
 	description: string;
 	showRetry: boolean;
-} {
+	showDiscordInfo: boolean;
+}
+
+function getErrorMessage(error: string | undefined): ErrorInfo {
 	switch (error) {
 		case "Configuration":
 			return {
 				title: "設定エラー",
 				description: "認証設定に問題があります。管理者にお問い合わせください。",
 				showRetry: false,
+				showDiscordInfo: false,
 			};
 		case "AccessDenied":
 			return {
@@ -33,6 +37,7 @@ function getErrorMessage(error: string | undefined): {
 				description:
 					"このサイトは「すずみなふぁみりー」Discordサーバーのメンバー限定です。先にDiscordサーバーにご参加してからお試しください。",
 				showRetry: true,
+				showDiscordInfo: true,
 			};
 		case "AccountDisabled":
 			return {
@@ -40,18 +45,21 @@ function getErrorMessage(error: string | undefined): {
 				description:
 					"このアカウントは現在ご利用いただけません。心当たりがない場合はお問い合わせください。",
 				showRetry: false,
+				showDiscordInfo: false,
 			};
 		case "Verification":
 			return {
 				title: "認証エラー",
 				description: "認証プロセスでエラーが発生しました。時間をおいてから再度お試しください。",
 				showRetry: true,
+				showDiscordInfo: false,
 			};
 		default:
 			return {
 				title: "ログインエラー",
 				description: "ログイン中にエラーが発生しました。もう一度お試しください。",
 				showRetry: true,
+				showDiscordInfo: false,
 			};
 	}
 }
@@ -64,19 +72,16 @@ async function ErrorContent({ searchParams }: AuthErrorPageProps) {
 		<div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-suzuka-50 to-minase-50 px-4">
 			<Card className="max-w-md w-full shadow-xl animate-in fade-in-0 zoom-in-95 duration-500">
 				<CardContent className="p-8 text-center space-y-6">
-					{/* エラーアイコン */}
 					<div className="mx-auto w-16 h-16 bg-gradient-to-br from-suzuka-100 to-minase-100 rounded-full flex items-center justify-center">
 						<AlertTriangle className="w-8 h-8 text-suzuka-600" />
 					</div>
 
-					{/* エラーメッセージ */}
 					<div className="space-y-2">
 						<h1 className="text-2xl font-bold text-foreground">{errorInfo.title}</h1>
 						<p className="text-muted-foreground">{errorInfo.description}</p>
 					</div>
 
-					{/* AccessDenied のみ: Discord サーバー案内 */}
-					{error === "AccessDenied" && (
+					{errorInfo.showDiscordInfo && (
 						<div className="p-4 bg-minase-50 border border-minase-200 rounded-lg text-left">
 							<p className="text-sm font-medium text-foreground mb-1">
 								すずみなふぁみりー Discord サーバーについて
@@ -87,7 +92,6 @@ async function ErrorContent({ searchParams }: AuthErrorPageProps) {
 						</div>
 					)}
 
-					{/* アクションボタン */}
 					<div className="space-y-3">
 						{errorInfo.showRetry && (
 							<Button asChild className="w-full group">
@@ -106,7 +110,6 @@ async function ErrorContent({ searchParams }: AuthErrorPageProps) {
 						</Button>
 					</div>
 
-					{/* 追加のヘルプ */}
 					<div className="space-y-2 pt-4 border-t">
 						<p className="text-sm text-muted-foreground">解決しない場合は</p>
 						<Button variant="link" size="sm" asChild>
@@ -114,7 +117,6 @@ async function ErrorContent({ searchParams }: AuthErrorPageProps) {
 						</Button>
 					</div>
 
-					{/* 追加情報 */}
 					<div className="pt-4 border-t">
 						<div className="flex items-center justify-center gap-2">
 							<Badge variant="outline" className="text-xs">

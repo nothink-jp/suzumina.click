@@ -99,10 +99,10 @@ describe("requireAuth", () => {
 		expect(redirect).toHaveBeenCalledWith("/auth/signin");
 	});
 
-	it("非アクティブユーザーは signin にリダイレクトする", async () => {
+	it("無効アカウントは AccountDisabled エラーページにリダイレクトする", async () => {
 		mockCurrentUser(makeUser({ isActive: false }));
 
-		await expect(requireAuth()).rejects.toThrow("REDIRECT:/auth/signin");
-		expect(redirect).toHaveBeenCalledWith("/auth/signin");
+		await expect(requireAuth()).rejects.toThrow("REDIRECT:");
+		expect(redirect).toHaveBeenCalledWith("/auth/error?error=AccountDisabled");
 	});
 });
