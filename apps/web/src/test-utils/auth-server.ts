@@ -2,6 +2,7 @@
  * サーバ認証 mock の共通ヘルパ（SPR-168/170）。
  *
  * テスト側で `vi.mock("@/lib/auth/server")`（bare）を宣言した上で、本ヘルパで戻り値を設定する。
+ * 宣言を忘れると getCurrentUser が mock 化されず `mockResolvedValue is not a function` で落ちる（silently wrong にはならない）。
  * 認証抽象（`@/lib/auth/server`）だけを mock し、プロバイダ（better-auth）を直接 mock しないことで、
  * 認証実装の差し替えでテストを触らずに済む。client 側は `@/test-utils/auth` を使う。
  */
