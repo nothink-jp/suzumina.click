@@ -58,6 +58,7 @@ export async function signOutCurrent(callbackURL = "/"): Promise<void> {
 		]);
 		await auth.api.signOut({ headers: await headers() });
 		redirect(callbackURL);
+		return;
 	}
 	const { signOut } = await import("@/auth");
 	await signOut({ redirectTo: callbackURL });
