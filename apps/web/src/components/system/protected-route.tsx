@@ -6,18 +6,16 @@ import { getCurrentUser } from "@/lib/auth/server";
 
 interface ProtectedRouteProps {
 	children: ReactNode;
-	requireRole?: "admin" | "moderator" | "member";
 	fallbackUrl?: string;
 }
 
 /**
  * 認証が必要なページ用のコンポーネント
  * 未認証ユーザーはサインインページにリダイレクト
- * 権限不足ユーザーは403エラーページにリダイレクト
+ * 非アクティブユーザーは403エラーページにリダイレクト
  */
 export default async function ProtectedRoute({
 	children,
-	requireRole = "member",
 	fallbackUrl = "/auth/signin",
 }: ProtectedRouteProps) {
 	const user = await getCurrentUser();
@@ -32,20 +30,6 @@ export default async function ProtectedRoute({
 
 	// 非アクティブユーザーの場合
 	if (!user.isActive) {
-		redirect("/auth/error?error=AccessDenied");
-	}
-
-	// 権限チェック
-	const roleHierarchy = {
-		member: 0,
-		moderator: 1,
-		admin: 2,
-	};
-
-	const userLevel = roleHierarchy[user.role];
-	const requiredLevel = roleHierarchy[requireRole];
-
-	if (userLevel < requiredLevel) {
 		redirect("/auth/error?error=AccessDenied");
 	}
 

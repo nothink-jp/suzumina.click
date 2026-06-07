@@ -63,9 +63,6 @@ export const FirestoreUserSchema = z.object({
 	}),
 	isActive: z.boolean().default(true),
 
-	// 権限・ロール
-	role: z.enum(["member", "moderator", "admin"]).default("member"),
-
 	// ユーザーフラグ（権限管理用）
 	flags: z
 		.object({
@@ -109,7 +106,6 @@ export const FrontendUserSchema = z.object({
 	globalName: z.string().optional(),
 	avatar: z.string().nullable().optional(),
 	displayName: z.string(),
-	role: z.enum(["member", "moderator", "admin"]),
 
 	// 表示用日時
 	createdAt: z.string().datetime(),
@@ -138,7 +134,6 @@ export const UserSessionSchema = z.object({
 	globalName: z.string().optional(),
 	avatar: z.string().nullable().optional(),
 	displayName: z.string(),
-	role: z.enum(["member", "moderator", "admin"]),
 	guildMembership: GuildMembershipSchema.optional(), // 一般ユーザーはGuildメンバーでない可能性
 	isActive: z.boolean(),
 	isFamilyMember: z.boolean().optional(), // セッションにフラグ情報を追加
@@ -166,7 +161,6 @@ export const UpdateUserInputSchema = z.object({
 export const UserQuerySchema = z.object({
 	limit: z.number().int().positive().max(50).default(20),
 	startAfter: z.string().optional(),
-	role: z.enum(["member", "moderator", "admin"]).optional(),
 	searchText: z.string().max(50).optional(), // username, globalName, displayNameで検索
 	sortBy: z.enum(["newest", "oldest", "mostActive", "alphabetical"]).default("newest"),
 	onlyPublic: z.boolean().default(true),
@@ -212,5 +206,4 @@ export type DailyButtonLimit = {
 // bundles Zod-free: createDiscordAvatarUrl → ../utilities/discord/avatar,
 // (SUZUMINA_GUILD_ID, isValidGuildMember) → ../utilities/discord/guild-membership,
 // resolveDisplayName → ../utilities/user/display-name,
-// getUserRoleLabel → ../utilities/user/role-label,
 // (formatRelativeTime, formatMemberSince) → ../utilities/formatters/relative-time.

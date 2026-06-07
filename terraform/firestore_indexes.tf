@@ -240,27 +240,6 @@ resource "google_firestore_index" "users_ispublicprofile_createdat_desc" {
   }
 }
 
-# users コレクションのインデックス - isPublicProfile（昇順）、role（昇順）、lastLoginAt（降順）
-resource "google_firestore_index" "users_ispublicprofile_role_lastloginat_desc" {
-  project    = var.gcp_project_id
-  collection = "users"
-
-  fields {
-    field_path = "isPublicProfile"
-    order      = "ASCENDING"
-  }
-
-  fields {
-    field_path = "role"
-    order      = "ASCENDING"
-  }
-
-  fields {
-    field_path = "lastLoginAt"
-    order      = "DESCENDING"
-  }
-}
-
 # ===================================================================
 # 🔶 FALLBACK INDEXES - フォールバック機能で利用 (無効化中)
 # ===================================================================

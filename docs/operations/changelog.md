@@ -4,6 +4,14 @@ suzumina.clickプロジェクトの変更履歴
 
 ## [Unreleased]
 
+### 🧹 admin ロール／管理画面の撤去（SPR-164）
+
+- **admin / moderator ロールを撤去**し、ユーザー区分を実質 member 一本へ集約。`role` フィールドを `shared-types` の各スキーマ（Firestore/Frontend/UserSession/UserQuery）と UserSession から削除（zod は未知キーを strip するため既存ドキュメントは無害）。
+- **`/admin` 配下を削除**（音声ボタン数 再計算ツールおよび未使用の admin 専用スタブ `updateAudioButtonAction`・`recalculateAllVideosAudioButtonCount` を含む）。
+- role 表示 UI（user-menu / プロフィール / user-card のバッジ・ラベル）と `ProtectedRoute` の role 階層を撤去し、`ProtectedRoute` は認証 + isActive ゲートに簡素化。音声ボタン編集権限は **作成者本人のみ**に。
+- Firestore セキュリティルールの role 検証、`users` の `isPublicProfile + role + lastLoginAt` 複合インデックスを撤去。
+- owner の既存 `role:"admin"` は zod strip で無害化（out-of-band で unset 可）。
+
 ### 🔐 認証基盤の刷新（NextAuth → better-auth, SPR-156〜159）
 
 - **better-auth 単独へ移行（#564 / #566 / #567）**: NextAuth.js を撤去し better-auth に一本化。Phase 1 で並存導入、Phase 2 で認証抽象に集約、Phase 3+4 で NextAuth を完全撤去。

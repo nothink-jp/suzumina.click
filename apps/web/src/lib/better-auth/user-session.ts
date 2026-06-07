@@ -1,7 +1,7 @@
 /**
  * better-auth セッションへ載せるアプリ固有 UserSession の組み立て（純粋関数 / SPR-156 Phase 1）
  *
- * better-auth の user/session は認証アイデンティティのみを持ち、role/displayName/isFamilyMember 等の
+ * better-auth の user/session は認証アイデンティティのみを持ち、displayName/isFamilyMember 等の
  * 正本は従来どおりアプリの `users` コレクション（FirestoreUserData）。ここはその変換層。
  * getCurrentUser 抽象（`src/lib/auth/server.ts`）が載せる UserSession の形に合わせる。
  */
@@ -26,7 +26,6 @@ export function buildUserSessionFromFirestore(
 		globalName: userData.globalName,
 		avatar: userData.avatar || undefined,
 		displayName: userData.displayName,
-		role: userData.role,
 		guildMembership,
 		isActive: userData.isActive,
 		isFamilyMember: userData.flags?.isFamilyMember || false,

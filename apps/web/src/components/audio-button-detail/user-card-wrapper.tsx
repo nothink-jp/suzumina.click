@@ -1,4 +1,3 @@
-import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/ui/card";
 import { User } from "lucide-react";
@@ -77,15 +76,6 @@ export async function UserCardWrapper({ createdBy, createdByName }: UserCardWrap
 							<div className="space-y-1 flex-1">
 								<h3 className="font-medium text-foreground">{user.displayName}</h3>
 								<p className="text-xs text-muted-foreground">{user.memberSince}</p>
-								{user.role && user.role !== "member" && (
-									<Badge variant="secondary" className="text-xs">
-										{user.role === "admin"
-											? "管理者"
-											: user.role === "moderator"
-												? "モデレーター"
-												: user.role}
-									</Badge>
-								)}
 							</div>
 						</div>
 

@@ -153,7 +153,7 @@ export default async function CreateAudioButtonPage({ searchParams }: CreateAudi
 	const videoDuration = videoDurationSeconds > 0 ? videoDurationSeconds : 600;
 
 	return (
-		<ProtectedRoute requireRole="member">
+		<ProtectedRoute>
 			<AudioButtonCreator
 				videoId={videoId}
 				videoTitle={videoResult.title}

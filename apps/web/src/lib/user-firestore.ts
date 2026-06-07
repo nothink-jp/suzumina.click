@@ -29,7 +29,6 @@ export function convertToFrontendUser(data: FirestoreUserData): FrontendUserData
 		globalName: data.globalName,
 		avatar: data.avatar,
 		displayName: data.displayName,
-		role: data.role,
 		createdAt: data.createdAt,
 		lastLoginAt: data.lastLoginAt,
 		isPublicProfile: data.isPublicProfile,
@@ -103,7 +102,6 @@ export async function createUser(input: CreateUserInput): Promise<FrontendUserDa
 			guildMembership: input.guildMembership,
 			displayName,
 			isActive: true,
-			role: "member", // 新規ユーザーは全てmember権限から開始
 			flags: {
 				isFamilyMember,
 				lastGuildCheckDate: today,
