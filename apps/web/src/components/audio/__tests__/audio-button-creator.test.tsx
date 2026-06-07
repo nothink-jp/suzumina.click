@@ -36,15 +36,9 @@ vi.mock("next/navigation", () => ({
 // Mock 認証抽象
 vi.mock("@/lib/auth/client", () => ({
 	useSession: () => ({
-		data: {
-			user: {
-				discordId: "test-user-id",
-				username: "Test User",
-				displayName: "Test User",
-				role: "member",
-			},
-		},
-		status: "authenticated",
+		discordId: "test-user-id",
+		username: "Test User",
+		displayName: "Test User",
 	}),
 }));
 

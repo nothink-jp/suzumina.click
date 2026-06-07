@@ -14,7 +14,7 @@ function SessionProvider({
 	children: React.ReactNode;
 	session: { user?: unknown } | null;
 }) {
-	mockUseSession.mockReturnValue({ data: session?.user ? { user: session.user } : null });
+	mockUseSession.mockReturnValue(session?.user ?? null);
 	return <>{children}</>;
 }
 

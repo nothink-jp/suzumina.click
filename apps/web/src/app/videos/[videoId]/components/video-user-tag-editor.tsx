@@ -22,7 +22,7 @@ interface VideoUserTagEditorProps {
 }
 
 export function VideoUserTagEditor({ video }: VideoUserTagEditorProps) {
-	const { data: session } = useSession();
+	const user = useSession();
 	const router = useRouter();
 	const [isEditingUserTags, setIsEditingUserTags] = useState(false);
 
@@ -58,7 +58,7 @@ export function VideoUserTagEditor({ video }: VideoUserTagEditorProps) {
 	);
 
 	// 編集権限チェック: 認証済みユーザーのみ編集可能
-	const canEdit = !!session?.user?.discordId;
+	const canEdit = !!user?.discordId;
 
 	// カテゴリ名取得
 	const categoryName = getYouTubeCategoryName(video.categoryId);

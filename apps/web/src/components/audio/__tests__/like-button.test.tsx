@@ -50,11 +50,7 @@ describe("LikeButton", () => {
 	});
 
 	it("renders with initial like count", () => {
-		mockUseSession.mockReturnValue({
-			data: null,
-			status: "unauthenticated",
-			update: vi.fn(),
-		});
+		mockUseSession.mockReturnValue(null);
 
 		render(
 			<SessionProvider session={null}>
@@ -67,11 +63,7 @@ describe("LikeButton", () => {
 	});
 
 	it("disables button for unauthenticated users", () => {
-		mockUseSession.mockReturnValue({
-			data: null,
-			status: "unauthenticated",
-			update: vi.fn(),
-		});
+		mockUseSession.mockReturnValue(null);
 
 		render(
 			<SessionProvider session={null}>
@@ -90,11 +82,7 @@ describe("LikeButton", () => {
 			expires: "2024-01-01",
 		};
 
-		mockUseSession.mockReturnValue({
-			data: mockSession,
-			status: "authenticated",
-			update: vi.fn(),
-		});
+		mockUseSession.mockReturnValue(mockSession.user);
 
 		const mockStatusMap = new Map([["test-id", { isLiked: true, isDisliked: false }]]);
 		mockGetLikeDislikeStatusAction.mockResolvedValue(mockStatusMap);
@@ -116,11 +104,7 @@ describe("LikeButton", () => {
 			expires: "2024-01-01",
 		};
 
-		mockUseSession.mockReturnValue({
-			data: mockSession,
-			status: "authenticated",
-			update: vi.fn(),
-		});
+		mockUseSession.mockReturnValue(mockSession.user);
 
 		mockGetLikeDislikeStatusAction.mockResolvedValue(
 			new Map([["test-id", { isLiked: false, isDisliked: false }]]),
@@ -154,11 +138,7 @@ describe("LikeButton", () => {
 			expires: "2024-01-01",
 		};
 
-		mockUseSession.mockReturnValue({
-			data: mockSession,
-			status: "authenticated",
-			update: vi.fn(),
-		});
+		mockUseSession.mockReturnValue(mockSession.user);
 
 		mockGetLikeDislikeStatusAction.mockResolvedValue(
 			new Map([["test-id", { isLiked: false, isDisliked: false }]]),
@@ -192,11 +172,7 @@ describe("LikeButton", () => {
 			expires: "2024-01-01",
 		};
 
-		mockUseSession.mockReturnValue({
-			data: mockSession,
-			status: "authenticated",
-			update: vi.fn(),
-		});
+		mockUseSession.mockReturnValue(mockSession.user);
 
 		mockGetLikeDislikeStatusAction.mockResolvedValue(
 			new Map([["test-id", { isLiked: true, isDisliked: false }]]),
@@ -219,11 +195,7 @@ describe("LikeButton", () => {
 	});
 
 	it("displays like count in correct format", () => {
-		mockUseSession.mockReturnValue({
-			data: null,
-			status: "unauthenticated",
-			update: vi.fn(),
-		});
+		mockUseSession.mockReturnValue(null);
 
 		render(
 			<SessionProvider session={null}>

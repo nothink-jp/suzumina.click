@@ -1,6 +1,6 @@
 "use client";
 
-import type { VideoPlainObject } from "@suzumina.click/shared-types";
+import type { UserSession, VideoPlainObject } from "@suzumina.click/shared-types";
 import { canCreateAudioButton, getVideoAllTags } from "@suzumina.click/shared-types";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
@@ -146,9 +146,9 @@ function getVideoBadgeInfo(video: VideoPlainObject) {
 }
 
 // 音声ボタン作成可能判定
-function getCanCreateButtonData(video: VideoPlainObject, session: { user?: unknown } | null) {
+function getCanCreateButtonData(video: VideoPlainObject, user: UserSession | null) {
 	// ログインしていない場合
-	if (!session?.user) {
+	if (!user) {
 		return {
 			canCreate: false,
 			reason: "音声ボタンを作成するにはすずみなふぁみりーメンバーとしてログインが必要です",
@@ -184,7 +184,7 @@ export default function VideoDetail({
 	initialTotalAudioCount = 0,
 	relatedAudioButtonsSlot,
 }: VideoDetailProps) {
-	const { data: session } = useSession();
+	const user = useSession();
 
 	// YouTube動画URLを生成
 	const youtubeUrl = `https://youtube.com/watch?v=${video.videoId}`;
@@ -193,10 +193,7 @@ export default function VideoDetail({
 	const videoBadgeInfo = useMemo(() => getVideoBadgeInfo(video), [video]);
 
 	// メモ化: 音声ボタン作成可能判定（認証状態も考慮）
-	const canCreateButtonData = useMemo(
-		() => getCanCreateButtonData(video, session),
-		[video, session],
-	);
+	const canCreateButtonData = useMemo(() => getCanCreateButtonData(video, user), [video, user]);
 
 	const canCreateButton = canCreateButtonData.canCreate;
 

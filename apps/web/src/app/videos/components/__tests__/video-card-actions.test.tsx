@@ -37,8 +37,8 @@ function createMockVideo(overrides?: Partial<any>): VideoPlainObject {
 	return { ...base, ...overrides } as VideoPlainObject;
 }
 
-const loggedIn = { data: { user: { id: "user123", name: "テストユーザー" } } };
-const loggedOut = { data: null };
+const loggedIn = { id: "user123", name: "テストユーザー" };
+const loggedOut = null;
 
 describe("VideoCardActions", () => {
 	beforeEach(() => {

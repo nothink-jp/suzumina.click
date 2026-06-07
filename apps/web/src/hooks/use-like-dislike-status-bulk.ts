@@ -8,7 +8,7 @@ import { useSession } from "@/lib/auth/client";
  * 複数の音声ボタンのいいね・低評価状態を一括で取得するフック
  */
 export function useLikeDislikeStatusBulk(audioButtonIds: string[]) {
-	const { data: session } = useSession();
+	const user = useSession();
 	const [likeDislikeStates, setLikeDislikeStates] = useState<
 		Map<string, { isLiked: boolean; isDisliked: boolean }>
 	>(new Map());
@@ -16,7 +16,7 @@ export function useLikeDislikeStatusBulk(audioButtonIds: string[]) {
 
 	useEffect(() => {
 		// ユーザーがログインしていない場合は何もしない
-		if (!session?.user || audioButtonIds.length === 0) {
+		if (!user || audioButtonIds.length === 0) {
 			setLikeDislikeStates(new Map());
 			return;
 		}
@@ -34,7 +34,7 @@ export function useLikeDislikeStatusBulk(audioButtonIds: string[]) {
 			.finally(() => {
 				setIsLoading(false);
 			});
-	}, [session?.user, audioButtonIds]); // audioButtonIdsの内容が変わったら再取得
+	}, [user, audioButtonIds]); // audioButtonIdsの内容が変わったら再取得
 
 	return { likeDislikeStates, isLoading };
 }

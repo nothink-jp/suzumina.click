@@ -28,13 +28,13 @@ export function AudioButtonDeleteButton({
 	showLabel = false,
 	onDeleted,
 }: AudioButtonDeleteButtonProps) {
-	const { data: session } = useSession();
+	const user = useSession();
 	const router = useRouter();
 	const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 	const [isPending, startTransition] = useTransition();
 
 	// 削除権限チェック
-	const canDelete = session?.user?.discordId && session.user.discordId === createdBy;
+	const canDelete = user?.discordId && user.discordId === createdBy;
 
 	if (!canDelete) {
 		return null;

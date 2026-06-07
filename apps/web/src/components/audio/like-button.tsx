@@ -25,11 +25,11 @@ export function LikeButton({
 	size = "sm",
 	className,
 }: LikeButtonProps) {
-	const { data: session } = useSession();
+	const user = useSession();
 	const [isLiked, setIsLiked] = useState(initialIsLiked);
 	const [likeCount, setLikeCount] = useState(initialLikeCount);
 	const [isPending, startTransition] = useTransition();
-	const isAuthenticated = !!session?.user;
+	const isAuthenticated = !!user;
 
 	// ユーザーの高評価・低評価状態を取得
 	useEffect(() => {
