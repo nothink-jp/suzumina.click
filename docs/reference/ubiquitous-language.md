@@ -213,7 +213,7 @@
 
 | 用語 | 定義 | 英語表記 | 実装方式 |
 |------|------|----------|----------|
-| **Discord認証** | Discordアカウントによるユーザー認証 | Discord Authentication | NextAuth.js + Discord OAuth |
+| **Discord認証** | Discordアカウントによるユーザー認証 | Discord Authentication | better-auth + Discord OAuth |
 | **ギルドメンバーシップ** | 特定Discordサーバーのメンバー資格確認 | Guild Membership | Discord Bot Token認証 |
 | **ユーザーロール** | システム内でのユーザー権限レベル | User Role | member, moderator, admin |
 | **レート制限** | ユーザーの操作頻度制限 | Rate Limiting | 24時間20回作成制限等 |
