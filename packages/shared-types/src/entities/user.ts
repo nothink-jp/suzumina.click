@@ -63,7 +63,7 @@ export const FirestoreUserSchema = z.object({
 	}),
 	isActive: z.boolean().default(true),
 
-	// ユーザーフラグ（権限管理用）
+	// ユーザーフラグ（ファミリーメンバーシップ・ギルド確認用）
 	flags: z
 		.object({
 			isFamilyMember: z.boolean().default(false),
