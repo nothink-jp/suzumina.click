@@ -19,7 +19,7 @@ export const auth = betterAuth({
 	// env は BETTER_AUTH_*（Cloud Run が Secret Manager の BETTER_AUTH_SECRET から注入）。
 	secret: process.env.BETTER_AUTH_SECRET,
 	baseURL: process.env.BETTER_AUTH_URL,
-	// NextAuth 撤去後は標準の /api/auth を使用（Discord の既存 redirect URI をそのまま流用）。
+	// 標準の /api/auth にマウント（Discord の既存 redirect URI をそのまま流用）。
 	basePath: "/api/auth",
 	database: firestoreAdapter({ debugLogs: false }),
 

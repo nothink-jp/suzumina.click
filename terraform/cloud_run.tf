@@ -99,7 +99,7 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
         value = "1"
       }
 
-      # better-auth のベース URL（SPR-158 で NextAuth から移行）
+      # better-auth のベース URL（SPR-158 で移行）
       # 注: env は lifecycle.ignore_changes 対象で、実値は GitHub Actions の gcloud deploy が管理する。
       env {
         name  = "BETTER_AUTH_URL"
