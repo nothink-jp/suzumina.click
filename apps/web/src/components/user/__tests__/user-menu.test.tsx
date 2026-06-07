@@ -37,7 +37,6 @@ describe("UserMenu", () => {
 		username: "testuser",
 		displayName: "テストユーザー",
 		avatar: "avatar-hash",
-		role: "member",
 		guildMembership: {
 			guildId: "test-guild",
 			userId: "123456789",
@@ -52,23 +51,8 @@ describe("UserMenu", () => {
 		// トリガーボタンにユーザー名が表示されている（複数の要素に同じテキストがあるためAllByを使用）
 		const userNameElements = screen.getAllByText("テストユーザー");
 		expect(userNameElements.length).toBeGreaterThan(0);
-		expect(screen.getByText("メンバー")).toBeInTheDocument();
 		// Check for user avatar image instead of data-testid
 		expect(screen.getByAltText("テストユーザーのアバター")).toBeInTheDocument();
-	});
-
-	it("管理者ロールが正しく表示される", () => {
-		const adminUser = { ...mockUser, role: "admin" as const };
-		render(<UserMenu user={adminUser} />);
-
-		expect(screen.getByText("管理者")).toBeInTheDocument();
-	});
-
-	it("モデレーターロールが正しく表示される", () => {
-		const moderatorUser = { ...mockUser, role: "moderator" as const };
-		render(<UserMenu user={moderatorUser} />);
-
-		expect(screen.getByText("モデレーター")).toBeInTheDocument();
 	});
 
 	it("ドロップダウンメニューを開くことができる", async () => {

@@ -29,7 +29,6 @@ import { redirect } from "next/navigation";
 const makeUser = (overrides: Record<string, unknown> = {}) => ({
 	discordId: "user-1",
 	isActive: true,
-	role: "member" as const,
 	...overrides,
 });
 
@@ -79,28 +78,6 @@ describe("ProtectedRoute", () => {
 
 		await expect(ProtectedRoute({ children: <div>x</div> })).rejects.toThrow("REDIRECT:");
 		expect(redirect).toHaveBeenCalledWith("/auth/error?error=AccessDenied");
-	});
-
-	it("権限不足（member が admin ページ）は AccessDenied にリダイレクトする", async () => {
-		(getCurrentUser as any).mockResolvedValue(makeUser({ role: "member" }));
-
-		await expect(ProtectedRoute({ children: <div>x</div>, requireRole: "admin" })).rejects.toThrow(
-			"REDIRECT:",
-		);
-		expect(redirect).toHaveBeenCalledWith("/auth/error?error=AccessDenied");
-	});
-
-	it("上位権限（admin が moderator ページ）は許可され children を描画する", async () => {
-		(getCurrentUser as any).mockResolvedValue(makeUser({ role: "admin" }));
-
-		const element = await ProtectedRoute({
-			children: <div>mod-area</div>,
-			requireRole: "moderator",
-		});
-		const { getByText } = render(element);
-
-		expect(getByText("mod-area")).toBeInTheDocument();
-		expect(redirect).not.toHaveBeenCalled();
 	});
 });
 

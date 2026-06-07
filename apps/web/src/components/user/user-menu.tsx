@@ -35,13 +35,6 @@ export default function UserMenu({ user }: UserMenuProps) {
 					/>
 					<div className="hidden sm:block text-left">
 						<p className="text-sm font-medium text-foreground">{user.displayName}</p>
-						<p className="text-xs text-muted-foreground">
-							{user.role === "admin"
-								? "管理者"
-								: user.role === "moderator"
-									? "モデレーター"
-									: "メンバー"}
-						</p>
 					</div>
 				</Button>
 			</DropdownMenuTrigger>
@@ -49,13 +42,6 @@ export default function UserMenu({ user }: UserMenuProps) {
 				<DropdownMenuLabel className="font-normal">
 					<div className="flex flex-col space-y-1">
 						<p className="text-sm font-medium leading-none">{user.displayName}</p>
-						<p className="text-xs leading-none text-muted-foreground">
-							{user.role === "admin"
-								? "管理者"
-								: user.role === "moderator"
-									? "モデレーター"
-									: "メンバー"}
-						</p>
 					</div>
 				</DropdownMenuLabel>
 				<DropdownMenuSeparator />

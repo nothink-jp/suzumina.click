@@ -11,16 +11,11 @@ import {
 } from "../audio-button-actions";
 
 // モジュールのモック
-vi.mock("@/lib/auth/server", () => ({
-	getCurrentUser: vi.fn(),
-}));
-
 vi.mock("@/lib/firestore", () => ({
 	getFirestore: vi.fn(),
 }));
 
 // モックのインポート
-import { getCurrentUser } from "@/lib/auth/server";
 import { getFirestore } from "@/lib/firestore";
 
 // テスト用データ
@@ -291,45 +286,6 @@ describe("audio-button-actions", () => {
 
 			expect(result.success).toBe(false);
 			expect(result.error).toBe("音声ボタンが見つかりません");
-		});
-	});
-
-	describe("updateAudioButtonAction", () => {
-		it("認証されていない場合エラーを返す", async () => {
-			const { updateAudioButtonAction } = await import("../audio-button-actions");
-			vi.mocked(getCurrentUser).mockResolvedValue(null);
-
-			const result = await updateAudioButtonAction("button-123", {});
-
-			expect(result.success).toBe(false);
-			expect(result.error).toBe("ログインが必要です");
-		});
-
-		it("管理者でない場合エラーを返す", async () => {
-			const { updateAudioButtonAction } = await import("../audio-button-actions");
-			vi.mocked(getCurrentUser).mockResolvedValue({
-				id: "user-123",
-				discordId: "discord-123",
-				role: "user",
-			} as any);
-
-			const result = await updateAudioButtonAction("button-123", {});
-
-			expect(result.success).toBe(false);
-			expect(result.error).toBe("この操作には管理者権限が必要です");
-		});
-
-		it("管理者の場合成功を返す", async () => {
-			const { updateAudioButtonAction } = await import("../audio-button-actions");
-			vi.mocked(getCurrentUser).mockResolvedValue({
-				id: "user-123",
-				discordId: "discord-123",
-				role: "admin",
-			} as any);
-
-			const result = await updateAudioButtonAction("button-123", {});
-
-			expect(result.success).toBe(true);
 		});
 	});
 });

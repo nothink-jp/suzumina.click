@@ -29,8 +29,8 @@ export default async function AudioButtonEditPage({ params }: AudioButtonEditPag
 		redirect(`/auth/signin?callbackUrl=${encodeURIComponent(`/buttons/${id}/edit`)}`);
 	}
 
-	// 権限チェック：作成者本人または管理者のみ編集可能
-	const canEdit = audioButton.creatorId === user.discordId || user.role === "admin";
+	// 権限チェック：作成者本人のみ編集可能
+	const canEdit = audioButton.creatorId === user.discordId;
 	if (!canEdit) {
 		redirect(`/buttons/${id}`);
 	}

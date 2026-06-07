@@ -46,7 +46,6 @@ Discord認証されたユーザー情報
 - `discordId`: Discord ユーザーID（17桁以上）
 - `username`: Discord ユーザー名
 - `displayName`: 表示名
-- `role`: ユーザー権限（member / moderator / admin）
 - `guildMembership`: Suzumina Guildメンバーシップ情報
 - `createdAt/updatedAt/lastLoginAt`: タイムスタンプ
 

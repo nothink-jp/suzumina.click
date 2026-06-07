@@ -78,11 +78,10 @@ resource "google_firestore_document" "firestore_rules" {
               
               // ユーザーデータ検証関数
               function isValidUserData() {
-                return request.resource.data.keys().hasAll(['discordId', 'username', 'displayName', 'role', 'isActive', 'createdAt']) &&
+                return request.resource.data.keys().hasAll(['discordId', 'username', 'displayName', 'isActive', 'createdAt']) &&
                        request.resource.data.discordId is string &&
                        request.resource.data.username is string &&
                        request.resource.data.displayName is string &&
-                       request.resource.data.role in ['member', 'moderator', 'admin'] &&
                        request.resource.data.isActive is bool &&
                        request.resource.data.createdAt is string;
               }
@@ -90,8 +89,8 @@ resource "google_firestore_document" "firestore_rules" {
               // 作成・更新はServer Actionsのみ
               allow create, update: if false; // Server Actionsのみで操作
               
-              // 削除は管理者のみ
-              allow delete: if false; // 管理者APIのみ
+              // 削除は不可（Server Actions のみで操作）
+              allow delete: if false;
             }
           }
         }

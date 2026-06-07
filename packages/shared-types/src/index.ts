@@ -143,8 +143,6 @@ export * from "./utilities/formatters/relative-time";
 export * from "./utilities/price-history";
 // User display name resolution (extracted from entities/user)
 export * from "./utilities/user/display-name";
-// User role label (extracted from entities/user)
-export * from "./utilities/user/role-label";
 // DLsite ID validators (extracted from entities/circle-creator)
 export * from "./utilities/validators/dlsite-ids";
 // Work変換ユーティリティのエクスポート

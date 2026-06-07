@@ -174,7 +174,7 @@ export const auth = betterAuth({
 	},
 
 	plugins: [
-		// クライアントへ返すセッションに role/displayName/isFamilyMember 等のアプリ情報を付与
+		// クライアントへ返すセッションに displayName/isFamilyMember 等のアプリ情報を付与
 		customSession(async ({ user, session }) => {
 			const discordId = getDiscordId(user);
 			if (!discordId) return { user, session, appUser: null };

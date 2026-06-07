@@ -12,7 +12,6 @@ import {
 	Music,
 	Play,
 	Settings,
-	Shield,
 	TrendingUp,
 	User,
 	Users,
@@ -74,12 +73,6 @@ function UserHeader({ user, isOwnProfile }: { user: FrontendUserData; isOwnProfi
 						>
 							<span className="mr-1">👨‍👩‍👧‍👦</span>
 							すずみなふぁみりー
-						</Badge>
-					)}
-					{user.role === "admin" && (
-						<Badge variant="secondary" className="text-xs">
-							<Shield className="w-3 h-3 mr-1" />
-							管理者
 						</Badge>
 					)}
 				</h1>

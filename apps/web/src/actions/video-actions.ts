@@ -126,11 +126,6 @@ export async function updateVideoAction(
 			return { success: false, error: "ログインが必要です" };
 		}
 
-		// 管理者権限チェック（必要に応じて）
-		// if (user.role !== "admin") {
-		//   return { success: false, error: "この操作には管理者権限が必要です" };
-		// }
-
 		// TODO: 実際の更新処理は後のPRで実装
 		// 現時点では枠組みのみ
 

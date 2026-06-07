@@ -9,7 +9,6 @@
 
 import type { QueryDocumentSnapshot, Transaction } from "@google-cloud/firestore";
 import { type AudioButton, audioButtonTransformers } from "@suzumina.click/shared-types";
-import { getCurrentUser } from "@/lib/auth/server";
 import { getFirestore } from "@/lib/firestore";
 
 /**
@@ -221,40 +220,6 @@ export async function recordAudioButtonPlayAction(
 		return {
 			success: false,
 			error: error instanceof Error ? error.message : "再生回数の記録に失敗しました",
-		};
-	}
-}
-
-/**
- * 認証が必要なAudioButton操作の例
- * 作成・更新・削除などの機能は管理画面で実装済みのため、
- * ここでは将来的な拡張のための枠組みのみ提供
- */
-export async function updateAudioButtonAction(
-	_audioButtonId: string,
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	_updates: Partial<AudioButton>,
-): Promise<{ success: boolean; error?: string }> {
-	try {
-		// 認証チェック
-		const user = await getCurrentUser();
-		if (!user?.discordId) {
-			return { success: false, error: "ログインが必要です" };
-		}
-
-		// 管理者権限チェック
-		if (user.role !== "admin") {
-			return { success: false, error: "この操作には管理者権限が必要です" };
-		}
-
-		// TODO: 実際の更新処理は後のPRで実装
-		// 現時点では枠組みのみ
-
-		return { success: true };
-	} catch (error) {
-		return {
-			success: false,
-			error: error instanceof Error ? error.message : "音声ボタンの更新に失敗しました",
 		};
 	}
 }

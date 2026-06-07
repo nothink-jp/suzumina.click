@@ -13,7 +13,6 @@ function makeUser(overrides: Partial<FirestoreUserData> = {}): FirestoreUserData
 		guildMembership: { guildId: "g", userId: "123", isMember: true },
 		displayName: "Alice",
 		isActive: true,
-		role: "member",
 		flags: { isFamilyMember: true, lastGuildCheckDate: "2026-06-01" },
 		dailyButtonLimit: { date: "2026-06-01", count: 0, limit: 10, guildChecked: true },
 		createdAt: iso,
@@ -32,7 +31,6 @@ describe("buildUserSessionFromFirestore", () => {
 			discordId: "123",
 			username: "alice",
 			displayName: "Alice",
-			role: "member",
 			isActive: true,
 			isFamilyMember: true,
 		});
@@ -50,20 +48,8 @@ describe("buildUserSessionFromFirestore", () => {
 		expect(buildUserSessionFromFirestore(makeUser({ isActive: false })).isActive).toBe(false);
 	});
 
-	it("role を保持する", () => {
-		expect(buildUserSessionFromFirestore(makeUser({ role: "admin" })).role).toBe("admin");
-	});
-
 	it("guildMembership 引数をそのまま載せる", () => {
 		const gm: GuildMembership = { guildId: "g", userId: "123", isMember: true, roles: ["x"] };
 		expect(buildUserSessionFromFirestore(makeUser(), gm).guildMembership).toEqual(gm);
-	});
-
-	it("不正なデータ（role が enum 外）は例外", () => {
-		expect(() =>
-			buildUserSessionFromFirestore(
-				makeUser({ role: "ghost" as unknown as FirestoreUserData["role"] }),
-			),
-		).toThrow();
 	});
 });

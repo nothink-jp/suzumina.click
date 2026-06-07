@@ -422,7 +422,6 @@
   avatar?: string,                    // アバターURL
   
   // 権限情報
-  role: "member" | "moderator" | "admin", // ユーザーロール
   guildMember: boolean,               // ギルドメンバーシップ状態
   isPublicProfile: boolean,           // プロファイル公開設定
   
@@ -818,8 +817,7 @@ type CreatorType = "voice" | "illustration" | "scenario" | "music" | "other";
 
 | インデックス | フィールド | 使用状況 | 使用箇所 |
 |-------------|------------|----------|----------|
-| `isPublicProfile + createdAt (DESC)` | [`isPublicProfile`, `createdAt`, `__name__`] | ✅ **使用中** | 管理者ユーザー一覧 |
-| `isPublicProfile + role + lastLoginAt (DESC)` | [`isPublicProfile`, `role`, `lastLoginAt`, `__name__`] | ✅ **使用中** | 管理者フィルター機能 |
+| `isPublicProfile + createdAt (DESC)` | [`isPublicProfile`, `createdAt`, `__name__`] | ✅ **使用中** | 公開ユーザー一覧 |
 
 #### ⚠️ **works コレクション** (0個 - 全件取得方式)
 
@@ -902,8 +900,7 @@ const allSnapshot = await firestore.collection("works").get();
 
 | 優先度 | インデックス構成 | 現在の状況 | 使用箇所 |
 |-------|----------------|-----------|----------|
-| 🔴 **高** | `isPublicProfile + createdAt (DESC)` | ✅ **設定済み** | 管理者ユーザー一覧 |
-| 🟡 **中** | `isPublicProfile + role + lastLoginAt (DESC)` | ✅ **設定済み** | 管理者フィルター機能 |
+| 🔴 **高** | `isPublicProfile + createdAt (DESC)` | ✅ **設定済み** | 公開ユーザー一覧 |
 
 ##### **favorites サブコレクション** (1個の要件) - Collection Group
 
@@ -1099,14 +1096,13 @@ try {
 .where("createdBy", "==", discordId).where("createdAt", ">", timestamp)
 ```
 
-#### **users コレクション** - 管理者機能
+#### **users コレクション**
 ```typescript
-// ✅ 管理者画面
+// ✅ 公開ユーザー一覧
 .where("isPublicProfile", "==", true).orderBy("createdAt", "desc")
-.where("isPublicProfile", "==", true).where("role", "==", role).orderBy("lastLoginAt", "desc")
 
-// ✅ 統計再計算対象ユーザー特定
-.doc(discordId).get()  // 個別ユーザー情報取得
+// ✅ 個別ユーザー情報取得
+.doc(discordId).get()
 ```
 
 #### **favorites サブコレクション** - Collection Group
