@@ -29,10 +29,11 @@ export default async function AudioButtonEditPage({ params }: AudioButtonEditPag
 		redirect(`/auth/signin?callbackUrl=${encodeURIComponent(`/buttons/${id}/edit`)}`);
 	}
 
-	// 権限チェック：作成者本人のみ編集可能
+	// 権限チェック：作成者本人のみ編集可能。非作成者には編集ルートを露出せず 404 を返す
+	// （作品自体は詳細ページで閲覧可能。「閲覧も不可」ではないため専用 403 は設けない）。
 	const canEdit = audioButton.creatorId === user.discordId;
 	if (!canEdit) {
-		redirect(`/buttons/${id}`);
+		notFound();
 	}
 
 	// 動画情報を取得して実際の動画長を取得
