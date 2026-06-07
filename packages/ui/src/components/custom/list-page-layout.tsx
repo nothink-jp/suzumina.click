@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { gridColsClass } from "../../lib/grid-cols";
 import { cn } from "../../lib/utils";
 
 interface ListPageLayoutProps {
@@ -72,7 +73,10 @@ interface ListPageGridProps {
 /**
  * リストページ用のグリッドレイアウト
  * - レスポンシブなグリッド表示
- * - カラム数をカスタマイズ可能
+ * - カラム数をカスタマイズ可能（1〜12。範囲外は無視）
+ *
+ * Tailwind クラスは静的マップ（lib/grid-cols）経由で生成し、動的補間による
+ * 非決定的なクラス生成を避ける。
  */
 export function ListPageGrid({
 	children,
@@ -85,13 +89,11 @@ export function ListPageGrid({
 }: ListPageGridProps) {
 	const gridClasses = cn(
 		"grid gap-6",
-		{
-			[`grid-cols-${columns.default || 1}`]: true,
-			[`sm:grid-cols-${columns.sm}`]: columns.sm,
-			[`md:grid-cols-${columns.md}`]: columns.md,
-			[`lg:grid-cols-${columns.lg}`]: columns.lg,
-			[`xl:grid-cols-${columns.xl}`]: columns.xl,
-		},
+		gridColsClass("default", columns.default ?? 1),
+		gridColsClass("sm", columns.sm),
+		gridColsClass("md", columns.md),
+		gridColsClass("lg", columns.lg),
+		gridColsClass("xl", columns.xl),
 		className,
 	);
 

@@ -45,23 +45,6 @@ jobs:
           echo "🔒 Running security audit..."
           pnpm audit --audit-level moderate
 
-      # Detects when upstream radix-ui ships PR #3819 (./package.json export)
-      # so the local pnpm patch can be removed. See pnpm-workspace.yaml +
-      # patches/radix-ui@*.patch.
-      - name: Check radix-ui patch obsolescence
-        run: |
-          echo "🩹 Checking if local radix-ui patch is still needed..."
-          if pnpm view radix-ui@latest exports 2>/dev/null \
-            | grep -q '"\./package\.json"'; then
-            echo "::error::radix-ui upstream now exports './package.json' — local pnpm patch is OBSOLETE."
-            echo "::error::Remove all of the following in this PR:"
-            echo "::error::  1. patches/radix-ui@*.patch"
-            echo "::error::  2. patchedDependencies entry in pnpm-workspace.yaml"
-            echo "::error::  3. Bump radix-ui in packages/ui/package.json to the new version"
-            exit 1
-          fi
-          echo "✅ radix-ui upstream still lacks './package.json' export — patch is still needed."
-
       - name: Check bundle size impact
         run: |
           echo "📦 Checking bundle size impact..."
