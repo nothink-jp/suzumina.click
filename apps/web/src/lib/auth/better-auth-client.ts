@@ -12,7 +12,22 @@ import { customSessionClient, inferAdditionalFields } from "better-auth/client/p
 import { createAuthClient } from "better-auth/react";
 import type { Auth } from "@/lib/better-auth/auth";
 
+/**
+ * better-auth サーバは basePath `/api/ba-auth`（NextAuth の catch-all `/api/auth/*` と衝突しないため）。
+ * クライアントの baseURL を明示しないと既定 `/api/auth` を叩き NextAuth と衝突して 400 になる
+ * （basePath オプションだけではブラウザ側のフォールバックが `/api/auth` 固定で効かない）。
+ * サーバ設定（`BETTER_AUTH_URL || NEXTAUTH_URL`）と整合する同一オリジンの絶対 URL を渡す。
+ */
+export function resolveAuthBaseURL(): string | undefined {
+	const origin =
+		typeof window !== "undefined"
+			? window.location.origin
+			: (process.env.NEXT_PUBLIC_BETTER_AUTH_URL ?? process.env.NEXTAUTH_URL);
+	return origin ? `${origin}/api/ba-auth` : undefined;
+}
+
 const authClient = createAuthClient({
+	baseURL: resolveAuthBaseURL(),
 	plugins: [inferAdditionalFields<Auth>(), customSessionClient<Auth>()],
 });
 
