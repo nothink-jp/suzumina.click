@@ -6,18 +6,21 @@
  * next/headers・better-auth を動的 import するため実質サーバ専用。
  */
 import type { UserSession } from "@suzumina.click/shared-types";
+import { cache } from "react";
 
 /**
  * 現在のログインユーザー（アプリの UserSession）を返す。未認証/無効ユーザーは null。
+ * React `cache()` でリクエスト内メモ化する（site-header + ページ等で複数回呼んでも
+ * better-auth の getSession＝Firestore read は 1 リクエスト 1 回に集約）（SPR-161）。
  */
-export async function getCurrentUser(): Promise<UserSession | null> {
+export const getCurrentUser = cache(async (): Promise<UserSession | null> => {
 	const [{ auth }, { headers }] = await Promise.all([
 		import("@/lib/better-auth/auth"),
 		import("next/headers"),
 	]);
 	const result = await auth.api.getSession({ headers: await headers() });
 	return result?.appUser ?? null;
-}
+});
 
 /**
  * Discord でサインイン。成功時は OAuth へリダイレクトする（redirect は例外として送出される）。

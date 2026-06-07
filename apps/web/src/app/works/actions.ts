@@ -2,6 +2,7 @@
 
 import type { WorkListResultPlain, WorkPlainObject } from "@suzumina.click/shared-types";
 import { workTransformers } from "@suzumina.click/shared-types";
+import { unstable_cache } from "next/cache";
 import { getFirestore } from "@/lib/firestore";
 import { withErrorHandling } from "@/lib/server-action-wrapper";
 
@@ -483,12 +484,9 @@ export async function getPopularVoiceActors(limit = 20): Promise<
 /**
  * 人気ジャンルリストを取得するServer Action
  */
-export async function getPopularGenres(limit = 30): Promise<
-	Array<{
-		genre: string;
-		count: number;
-	}>
-> {
+type PopularGenre = { genre: string; count: number };
+
+async function fetchPopularGenres(limit: number): Promise<PopularGenre[]> {
 	return withErrorHandling(
 		async () => {
 			const firestore = getFirestore();
@@ -521,12 +519,18 @@ export async function getPopularGenres(limit = 30): Promise<
 			errorMessage: "人気ジャンルの取得に失敗しました",
 			logContext: { limit },
 		},
-	).then((result) => {
-		if (result.success) {
-			return result.data;
-		}
-		return [];
-	});
+	).then((result) => (result.success ? result.data : []));
+}
+
+// 全 works を読むためコスト大。ジャンルは works 追加（2h DLsite 同期）時のみ変化する低頻度データのため
+// 10 分キャッシュで /works 表示ごとの全件 read を抑える（SPR-161）。
+const getPopularGenresCached = unstable_cache(fetchPopularGenres, ["popular-genres"], {
+	revalidate: 600,
+	tags: ["works-list"],
+});
+
+export async function getPopularGenres(limit = 30): Promise<PopularGenre[]> {
+	return getPopularGenresCached(limit);
 }
 
 /**

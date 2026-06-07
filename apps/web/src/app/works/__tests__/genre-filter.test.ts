@@ -48,6 +48,11 @@ vi.mock("@/lib/firestore", () => ({
 	})),
 }));
 
+// getPopularGenres が unstable_cache 経由になったため、Next ランタイム外ではパススルーにする。
+vi.mock("next/cache", () => ({
+	unstable_cache: (fn: (...args: unknown[]) => unknown) => fn,
+}));
+
 vi.mock("@/lib/logger", () => ({
 	error: vi.fn(),
 	warn: vi.fn(),
