@@ -51,6 +51,9 @@ const nextConfig = {
 	images: {
 		// 画像形式の最適化（AVIF優先でWebPフォールバック）
 		formats: ["image/avif", "image/webp"],
+		// 許可する quality 値（Next.js 16 以降は既定 [75] のみ。未設定値は警告になる）
+		// アプリで使用する値: avatar 75 / card 通常 80 / thumbnail 85 / card priority 90
+		qualities: [75, 80, 85, 90],
 		// 画像サイズの最適化
 		deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
 		imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
