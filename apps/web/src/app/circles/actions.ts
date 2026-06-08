@@ -2,19 +2,24 @@
 
 import type { CircleDocument, CirclePlainObject } from "@suzumina.click/shared-types";
 import { convertToCirclePlainObject } from "@suzumina.click/shared-types";
+import { unstable_cache } from "next/cache";
 import { getFirestore } from "@/lib/firestore";
 
-/**
- * サークル一覧を取得（ConfigurableList用）
- * @param params パラメータ
- * @returns サークル一覧と総件数
- */
-export async function getCircles(params: {
+type GetCirclesParams = {
 	page?: number;
 	limit?: number;
 	sort?: string;
 	search?: string;
-}): Promise<{ circles: CirclePlainObject[]; totalCount: number }> {
+};
+
+/**
+ * circles 全件を読み込む内部フェッチ。表示ごとの全件 read を避けるため下の `getCircles` で
+ * 60s revalidate キャッシュする（SPR-161）。writes は 2h DLsite 同期と整合 cron のみで低頻度の
+ * ため鮮度問題なし。params は unstable_cache が自動でキー化する。
+ */
+async function fetchCircles(
+	params: GetCirclesParams,
+): Promise<{ circles: CirclePlainObject[]; totalCount: number }> {
 	const { page = 1, limit = 12, sort = "name", search } = params;
 
 	try {
@@ -76,4 +81,20 @@ export async function getCircles(params: {
 		// エラー発生時は空配列を返す
 		return { circles: [], totalCount: 0 };
 	}
+}
+
+const getCirclesCached = unstable_cache(fetchCircles, ["circles-list"], {
+	revalidate: 60,
+	tags: ["circles-list"],
+});
+
+/**
+ * サークル一覧を取得（ConfigurableList用）
+ * @param params パラメータ
+ * @returns サークル一覧と総件数
+ */
+export async function getCircles(
+	params: GetCirclesParams,
+): Promise<{ circles: CirclePlainObject[]; totalCount: number }> {
+	return getCirclesCached(params);
 }
