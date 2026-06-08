@@ -5,12 +5,6 @@ import { convertToCirclePlainObject } from "@suzumina.click/shared-types";
 import { unstable_cache } from "next/cache";
 import { getFirestore } from "@/lib/firestore";
 
-/**
- * /circles の Firestore 読み込みを 60s revalidate でキャッシュ（SPR-161）。
- * 全 circles を読むため、未キャッシュだと表示ごとに全件 read していた。
- * writes は 2h ごとの DLsite 同期と整合 cron のみで低頻度のため鮮度問題なし。
- * params は unstable_cache が自動でキー化する。
- */
 type GetCirclesParams = {
 	page?: number;
 	limit?: number;
@@ -18,6 +12,11 @@ type GetCirclesParams = {
 	search?: string;
 };
 
+/**
+ * circles 全件を読み込む内部フェッチ。表示ごとの全件 read を避けるため下の `getCircles` で
+ * 60s revalidate キャッシュする（SPR-161）。writes は 2h DLsite 同期と整合 cron のみで低頻度の
+ * ため鮮度問題なし。params は unstable_cache が自動でキー化する。
+ */
 async function fetchCircles(
 	params: GetCirclesParams,
 ): Promise<{ circles: CirclePlainObject[]; totalCount: number }> {
