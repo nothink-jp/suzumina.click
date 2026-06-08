@@ -29,7 +29,7 @@
 		"@secretlint/secretlint-formatter-sarif": "^13.0.2",
 		"@secretlint/secretlint-rule-pattern": "^13.0.2",
 		"@secretlint/secretlint-rule-preset-recommend": "^13.0.2",
-		"@typescript/native-preview": "7.0.0-dev.20260527.2",
+		"@typescript/native-preview": "7.0.0-dev.20260607.1",
 		"@vitest/coverage-v8": "^4.1.8",
 		"knip": "^6.15.0",
 		"lefthook": "^2.1.8",
