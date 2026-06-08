@@ -50,11 +50,12 @@ export default defineConfig({
 				"src/lib/auth/better-auth-client.ts",
 			],
 			// 実測フロアに合わせたラチェット閾値（回帰ガード / SPR-152, SPR-155）
+			// SPR-161: works/actions.ts の全件スキャン系デッドコード（テスト込み）撤去でフロアが微低下し再ピン
 			thresholds: {
 				statements: 81,
 				branches: 74,
-				functions: 83,
-				lines: 82,
+				functions: 82,
+				lines: 81,
 			},
 		},
 		exclude: [
