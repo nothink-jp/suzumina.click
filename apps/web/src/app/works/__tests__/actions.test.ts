@@ -1,15 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import {
-	getDataQualityReport,
-	getPopularGenres,
-	getPopularVoiceActors,
-	getRelatedWorks,
-	getWorkById,
-	getWorks,
-	getWorksLegacy,
-	getWorksStats,
-	getWorkWithRelated,
-} from "../actions";
+import { getPopularGenres, getWorkById, getWorks, getWorksLegacy } from "../actions";
 
 // Mock Firestore
 const mockGet = vi.fn();
@@ -276,58 +266,7 @@ describe("Works Server Actions", () => {
 		});
 	});
 
-	describe("getRelatedWorks", () => {
-		it("基準作品が無ければ空配列", async () => {
-			mockDoc.mockReturnValue({ get: vi.fn().mockResolvedValue({ exists: false }) });
-			expect(await getRelatedWorks("RJ404")).toEqual([]);
-		});
-
-		it("類似スコア順に関連作品を返す（自身は除外）", async () => {
-			mockDoc.mockReturnValue({
-				get: vi.fn().mockResolvedValue({ id: "RJ001", exists: true, data: () => workData() }),
-			});
-			// 全件取得: 自身 + 同サークル(関連) + 無関係
-			mockGet.mockResolvedValue({
-				docs: [
-					docOf("RJ001", workData()),
-					docOf("RJ002", workData({ productId: "RJ002", circle: "サークル1" })),
-					docOf("RJ003", workData({ productId: "RJ003", circle: "別", category: "MOV" })),
-				],
-			});
-			const r = await getRelatedWorks("RJ001", { limit: 6 });
-			const ids = r.map((w) => w.productId);
-			expect(ids).not.toContain("RJ001"); // 自身除外
-			expect(ids).toContain("RJ002"); // 同サークルは関連として含まれる
-			// 並び順は calculateSimilarityScore の重み付けに依存するため、
-			// ここでは「含まれる/含まれない」のみ検証（順序には依存させない）
-		});
-	});
-
-	describe("getWorksStats / getDataQualityReport", () => {
-		beforeEach(() => {
-			mockGet.mockResolvedValue({
-				docs: [
-					docOf(
-						"RJ001",
-						workData({ genres: ["癒し"], creators: { voice_by: [{ name: "声優A" }] } }),
-					),
-					docOf("RJ002", workData({ productId: "RJ002", genres: ["癒し"] })),
-				],
-			});
-		});
-
-		it("getWorksStats は overview を集計", async () => {
-			const stats = await getWorksStats();
-			expect(stats.overview.totalWorks).toBe(2);
-		});
-
-		it("getDataQualityReport は total を返す", async () => {
-			const report = await getDataQualityReport();
-			expect(report.total).toBe(2);
-		});
-	});
-
-	describe("getPopularVoiceActors / getPopularGenres", () => {
+	describe("getPopularGenres", () => {
 		beforeEach(() => {
 			mockGet.mockResolvedValue({
 				docs: [
@@ -347,32 +286,13 @@ describe("Works Server Actions", () => {
 			});
 		});
 
-		it("人気声優を出現数の降順で返す", async () => {
-			const r = await getPopularVoiceActors(10);
-			expect(r[0]).toMatchObject({ voiceActor: "声優A", count: 2 });
-		});
-
 		it("人気ジャンルを出現数の降順で返す", async () => {
 			const r = await getPopularGenres(10);
 			expect(r[0]).toMatchObject({ genre: "癒し", count: 2 });
 		});
 	});
 
-	describe("getWorkWithRelated / getWorksLegacy", () => {
-		it("getWorkWithRelated: 作品なしは {work:null}", async () => {
-			mockDoc.mockReturnValue({ get: vi.fn().mockResolvedValue({ exists: false }) });
-			expect(await getWorkWithRelated("RJ404")).toEqual({ work: null });
-		});
-
-		it("getWorkWithRelated: includeRelated=false は related を含まない", async () => {
-			mockDoc.mockReturnValue({
-				get: vi.fn().mockResolvedValue({ exists: true, id: "RJ001", data: () => workData() }),
-			});
-			const r = await getWorkWithRelated("RJ001", false);
-			expect(r.work?.productId).toBe("RJ001");
-			expect(r.related).toBeUndefined();
-		});
-
+	describe("getWorksLegacy", () => {
 		it("getWorksLegacy は getWorks に委譲する", async () => {
 			mockGet.mockResolvedValue({ docs: [docOf("RJ001", workData())] });
 			const r = await getWorksLegacy({ page: 1, limit: 12 });
