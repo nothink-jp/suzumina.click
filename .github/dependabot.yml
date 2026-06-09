@@ -1,11 +1,55 @@
-# To get started with Dependabot version updates, you'll need to specify which
-# package ecosystems to update and where the package manifests are located.
-# Please see the documentation for all configuration options:
-# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+# 依存更新は Dependabot に一本化する（renovate.json は未稼働のため撤去＝SPR-173 系の整理）。
+# 方針: 低リスク（dev / minor / patch）はグルーピングして PR 乱発を抑え、破壊的更新（framework / auth）は
+# 個別 or 手動に寄せて人がレビューする（CLAUDE.md §1 One-Way Door: better-auth / 破壊的変更は人が判断）。
+# automerge は設定しない（採否の最終判断は唯一のレビュアー＝あなた）。
 
 version: 2
 updates:
-  - package-ecosystem: "npm" # See documentation for possible values
-    directory: "/" # Location of package manifests
+  # --- npm（pnpm monorepo。ルートからワークスペース全体を走査）---
+  - package-ecosystem: "npm"
+    directory: "/"
     schedule:
-      interval: "monthly"
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
+    groups:
+      # dev 依存（@types/* 含む）の minor/patch を 1 PR に集約
+      dev-dependencies:
+        dependency-type: "development"
+        update-types: ["minor", "patch"]
+      # production 依存の minor/patch を 1 PR に集約
+      production-minor:
+        dependency-type: "production"
+        update-types: ["minor", "patch"]
+    # 破壊的更新は手動レビューに回す（major はグルーピング対象外＝個別 PR で精査）
+    ignore:
+      # framework の major は四半期見直しで手動更新（CLAUDE.md 軸1: 破壊的変更は人がレビュー）
+      - dependency-name: "next"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+      # 認証コアは major/minor とも手動（One-Way Door: better-auth/Discord 認証・認可）
+      - dependency-name: "better-auth"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+
+  # --- GitHub Actions（SPR-173 のようなアクション版上げを自動化）---
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(ci)"
+    groups:
+      github-actions:
+        patterns: ["*"]
