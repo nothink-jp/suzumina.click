@@ -122,9 +122,7 @@ jobs:
           sarif_file: 'trivy-results.sarif'
         continue-on-error: true
       
-      # 脆弱性の確認は SARIF(GitHub Security タブ)が正本。
-      # 旧「Generate Trivy summary」は同一イメージを aquasec/trivy:latest で再スキャンする
-      # 冗長ステップ（未固定イメージ・二重スキャン）だったため撤去した（SARIF に一本化）。
+      # 脆弱性確認の正本は SARIF（GitHub Security タブ）。旧ステップは同一イメージの再スキャン＋未固定イメージ（aquasec/trivy:latest）だったため撤去。
 
       - name: Upload container scan results
         uses: actions/upload-artifact@v7
