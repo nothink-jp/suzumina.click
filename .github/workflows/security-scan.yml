@@ -107,7 +107,8 @@ jobs:
           docker build -f apps/web/Dockerfile -t suzumina-click:latest .
       
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+        # @master は未検証の最新 commit 追跡になるためタグ固定（Dependabot github-actions が自動更新する）
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: 'suzumina-click:latest'
           format: 'sarif'
