@@ -1,8 +1,9 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@source "../../../apps/**/*.{ts,tsx}";
-@source "../../../components/**/*.{ts,tsx}";
+/* ui は consumer から node_modules 経由（symlink）で読まれ、Tailwind v4 の自動コンテンツ
+   検出は node_modules を走査しないため、ここで自前のコンポーネントを明示的に source 登録する。
+   consumer 側（apps/web 等）のソースは各ビルドの cwd 起点で自動検出されるため指定不要。 */
 @source "../**/*.{ts,tsx}";
 
 @custom-variant dark (&:is(.dark *));
