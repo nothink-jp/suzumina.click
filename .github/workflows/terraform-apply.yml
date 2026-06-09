@@ -50,14 +50,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Authenticate (read-only plan SA)
         uses: google-github-actions/auth@v3
         with:
           workload_identity_provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
           service_account: 'terraform-plan-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com'
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: '1.13.5'
           terraform_wrapper: false
@@ -81,7 +81,7 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Upload plan artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: tfplan
           path: terraform/tfplan.bin
@@ -96,14 +96,14 @@ jobs:
     environment: production
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Authenticate (privileged apply SA / main 限定)
         uses: google-github-actions/auth@v3
         with:
           workload_identity_provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
           service_account: 'terraform-apply-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com'
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: '1.13.5'
           terraform_wrapper: false
@@ -112,7 +112,7 @@ jobs:
       - name: Select production workspace
         run: terraform workspace select production
       - name: Download plan artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: tfplan
           path: terraform
