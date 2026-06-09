@@ -122,22 +122,8 @@ jobs:
           sarif_file: 'trivy-results.sarif'
         continue-on-error: true
       
-      - name: Generate Trivy summary
-        run: |
-          echo "## Container Security Scan Results" > trivy-summary.md
-          echo "" >> trivy-summary.md
-          
-          # Run Trivy again for summary output
-          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-            aquasec/trivy:latest image --severity HIGH,CRITICAL --no-progress \
-            suzumina-click:latest > trivy-output.txt || true
-          
-          if [ -f trivy-output.txt ]; then
-            echo '```' >> trivy-summary.md
-            cat trivy-output.txt >> trivy-summary.md
-            echo '```' >> trivy-summary.md
-          fi
-      
+      # 脆弱性確認の正本は SARIF（GitHub Security タブ）。旧ステップは同一イメージの再スキャン＋未固定イメージ（aquasec/trivy:latest）だったため撤去。
+
       - name: Upload container scan results
         uses: actions/upload-artifact@v7
         if: always()
@@ -145,8 +131,6 @@ jobs:
           name: container-scan-results
           path: |
             trivy-results.sarif
-            trivy-summary.md
-            trivy-output.txt
           retention-days: 7
 
   secret-scan:
@@ -218,13 +202,10 @@ jobs:
             cat security-results/dependency-audit-results/audit-summary.md >> security-summary.md
             echo "" >> security-summary.md
           fi
-          
-          # Include container scan summary if available
-          if [ -f "security-results/container-scan-results/trivy-summary.md" ]; then
-            cat security-results/container-scan-results/trivy-summary.md >> security-summary.md
-            echo "" >> security-summary.md
-          fi
-          
+
+          # コンテナ脆弱性の詳細は SARIF(GitHub Security タブ)が正本。
+          # ステータスは上の「Container Scan」行で表示し、ここでは本文を二重掲載しない。
+
           echo "## Next Steps" >> security-summary.md
           echo "1. Review security alerts in the GitHub Security tab" >> security-summary.md
           echo "2. Update vulnerable dependencies" >> security-summary.md
