@@ -45,7 +45,9 @@ jobs:
     name: Visual regression (Chromatic)
     runs-on: ubuntu-latest
     needs: changes
-    if: needs.changes.outputs.ui == 'true'
+    # Dependabot run には Actions secrets（CHROMATIC_PROJECT_TOKEN）が注入されず必ず失敗するため除外する。
+    # 依存 bump は packages/ui の見た目に影響しない（lock 変更で発火するだけ）ので視覚回帰の対象外でよい。
+    if: needs.changes.outputs.ui == 'true' && github.actor != 'dependabot[bot]'
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
