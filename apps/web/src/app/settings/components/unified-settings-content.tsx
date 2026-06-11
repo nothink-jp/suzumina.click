@@ -103,9 +103,10 @@ export function UnifiedSettingsContent({ user }: UnifiedSettingsContentProps) {
 		});
 	};
 
-	// 全設定をリセット
+	// ブラウザに保存された設定（年齢確認・Cookie同意）をリセットする。
+	// プロフィール公開設定はサーバー永続のため対象外（別途プロフィールタブで変更する）。
 	const handleResetAll = () => {
-		if (confirm("全ての設定をリセットしますか？この操作は元に戻せません。")) {
+		if (confirm("このブラウザに保存された設定（年齢確認・Cookie同意）をリセットしますか？")) {
 			updateAgeVerification(false);
 			resetAllConsent();
 			setConsentState({
@@ -113,8 +114,7 @@ export function UnifiedSettingsContent({ user }: UnifiedSettingsContentProps) {
 				functional: true,
 				personalization: false,
 			});
-			setIsPublicProfile(true);
-			toast.success("全ての設定をリセットしました");
+			toast.success("ブラウザ設定をリセットしました");
 		}
 	};
 
@@ -291,13 +291,15 @@ export function UnifiedSettingsContent({ user }: UnifiedSettingsContentProps) {
 							{/* リセット */}
 							<Card className="border-destructive/20">
 								<CardHeader>
-									<CardTitle className="text-destructive">危険な操作</CardTitle>
-									<CardDescription>これらの操作は元に戻すことができません</CardDescription>
+									<CardTitle>ブラウザ設定のリセット</CardTitle>
+									<CardDescription>
+										このブラウザに保存された設定（年齢確認・Cookie同意）を初期化します。プロフィールの公開設定には影響しません。
+									</CardDescription>
 								</CardHeader>
 								<CardContent>
 									<Button variant="destructive" onClick={handleResetAll} className="w-full">
 										<RotateCcw className="h-4 w-4 mr-2" />
-										全ての設定をリセット
+										ブラウザ設定をリセット
 									</Button>
 								</CardContent>
 							</Card>
