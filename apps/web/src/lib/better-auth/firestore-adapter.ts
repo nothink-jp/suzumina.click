@@ -161,7 +161,12 @@ function compareBoolean(a: boolean, b: boolean): number {
 	return a ? 1 : -1;
 }
 
-/** null/undefined を含む比較。両者が非 null なら null を返し、型別比較へ委譲する */
+/**
+ * null/undefined を含む比較。
+ * both-null → 0、av のみ null → -1（先頭）、bv のみ null → 1。
+ * 両者が非 null のときだけ null を返し、型別比較（compareTyped）へ委譲する。
+ * （戻り 0 は falsy だが `??` は素通りするため、null 委譲とは区別される）
+ */
 function compareNullable(av: unknown, bv: unknown): number | null {
 	if (av == null && bv == null) return 0;
 	if (av == null) return -1;
