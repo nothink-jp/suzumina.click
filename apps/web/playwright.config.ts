@@ -31,7 +31,7 @@ export default defineConfig({
 	},
 
 	/* CI（e2e-smoke）が回すのは chromium のみ。firefox / webkit / Mobile project は
-	 * 削除した手動 spec 群の名残で実行経路ゼロだったため撤去（SPR-202）。
+	 * 削除した手動 spec 群の名残で実行経路ゼロだったため撤去した。
 	 * クロスブラウザ確認が必要になったら project を再追加する。 */
 	projects: [
 		{
@@ -45,7 +45,7 @@ export default defineConfig({
 	 * SPR-124 のような「本番ビルドでのみ顕在化する回帰」は dev では捕捉できないため、
 	 * スモーク(@smoke / e2e/smoke.spec.ts)はこのモードで回す（事前に `next build` 済みであること）。
 	 * 残った smoke はデータ非依存（layout/routing のみ・データ取得失敗は error 境界に落ちる）なので、
-	 * 既定の `pnpm dev` は ADC 無しでも成立する（本番データ前提だった手動 spec は SPR-202 で撤去済み）。 */
+	 * 既定の `pnpm dev` は ADC 無しでも成立する（本番データ前提だった手動 spec は撤去済み）。 */
 	webServer: {
 		command: process.env.PLAYWRIGHT_PROD ? "pnpm start" : "pnpm dev",
 		url: "http://127.0.0.1:3000",
