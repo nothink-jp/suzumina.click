@@ -86,6 +86,24 @@ describe("WorkCard", () => {
 		expect(screen.getByText("セール中")).toBeInTheDocument();
 	});
 
+	it("OFF 率は current/original から算出し、stale な price.discount は使わない（SPR-187）", () => {
+		// discount フィールドは古い 99 を持つが、表示は current/original 由来の 50% になる
+		const work = createWork({
+			price: {
+				current: 1100,
+				original: 2200,
+				currency: "JPY",
+				discount: 99,
+				isFree: false,
+				isDiscounted: true,
+				formattedPrice: "¥1,100",
+			},
+		});
+		render(<WorkCard work={work} />);
+		expect(screen.getByText("50% OFF")).toBeInTheDocument();
+		expect(screen.queryByText("99% OFF")).not.toBeInTheDocument();
+	});
+
 	it("非セール時は単一価格を表示し、セール中バッジ・OFF を出さない", () => {
 		const work = createWork({
 			price: {

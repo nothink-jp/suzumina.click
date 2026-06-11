@@ -6,6 +6,7 @@ import Link from "next/link";
 import React from "react";
 import ThumbnailImage from "@/components/ui/thumbnail-image";
 import { normalizeJstDateString } from "@/utils/date-format";
+import { calculatePriceInfo } from "../utils/price-info";
 
 interface WorkCardProps {
 	work: WorkPlainObject;
@@ -122,12 +123,9 @@ const PriceDisplay = ({
 export default function WorkCard({ work, variant = "default", priority = false }: WorkCardProps) {
 	const isCompact = variant === "compact";
 
-	// 価格表示の計算
-	const currentPrice = work.price?.current ?? 0;
-	const originalPrice = work.price?.original ?? 0;
-	// セール判定は「実割引（current < original）」を正本とする。
-	// discount フィールドはセール終了後も古い値が残りうるため判定に使わない（軸3: 正本の整合性）。
-	const isOnSale = work.price?.isDiscounted ?? false;
+	// 価格表示の計算（正本は works/utils/price-info の calculatePriceInfo）。
+	// 割引率は current/original から算出し、stale になりうる price.discount は使わない。
+	const { currentPrice, originalPrice, isOnSale, discountRate } = calculatePriceInfo(work.price);
 
 	// ランキング情報は現在利用できません
 	const latestRank = undefined;
@@ -239,9 +237,9 @@ export default function WorkCard({ work, variant = "default", priority = false }
 								<div>
 									<PriceDisplay
 										currentPrice={currentPrice}
-										originalPrice={originalPrice}
+										originalPrice={originalPrice ?? 0}
 										isOnSale={isOnSale}
-										discount={work.price?.discount}
+										discount={discountRate}
 									/>
 								</div>
 							</div>
