@@ -127,7 +127,7 @@ export interface ConfigurableListProps<T> {
 
 	// データアダプター（既存APIとの接続用）
 	dataAdapter?: DataAdapter<T>;
-	fetchFn?: (params: unknown) => Promise<unknown>;
+	fetchFn: (params: unknown) => Promise<unknown>;
 
 	// カスタマイズ
 	onError?: (error: Error) => void;

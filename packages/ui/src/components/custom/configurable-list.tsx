@@ -36,9 +36,6 @@ import {
 	hasActiveFilters,
 	normalizeOptions,
 } from "./configurable-list/utils/filter-helpers";
-import { applyCustomFilters, applySearchFilter } from "./configurable-list/utils/filtering";
-import { sortItems } from "./configurable-list/utils/sorting";
-import { getFilterableValue } from "./configurable-list/utils/type-safe-access";
 
 // Filter component helpers to reduce complexity
 function SelectFilter({
@@ -425,7 +422,6 @@ export function ConfigurableList<T>({
 		loading: dataLoading,
 		isRefreshing,
 		error: dataError,
-		isServerSide,
 	} = useConfigurableListData(fetchParams, {
 		initialItems,
 		initialTotal,
@@ -438,50 +434,20 @@ export function ConfigurableList<T>({
 	const loading = externalLoading || dataLoading;
 	const error = externalError || dataError;
 
-	// クライアントサイドのフィルタリング（サーバーサイドでない場合）
-	const processedItems = useMemo(() => {
-		if (isServerSide) return actualData.items;
+	// ページネーション情報（サーバーが filter/sort/paginate 済みの total を返す）
+	const pagination = useMemo(
+		() => calculatePagination(actualData.total, fetchParams.itemsPerPage, fetchParams.page),
+		[actualData.total, fetchParams.itemsPerPage, fetchParams.page],
+	);
 
-		let result = [...actualData.items];
-
-		// 検索フィルタリング
-		result = applySearchFilter(result, fetchParams.search, searchable);
-
-		// カスタムフィルターの適用
-		result = applyCustomFilters(result, fetchParams.filters, filters);
-
-		// ソート
-		result = sortItems(result, fetchParams.sort, getFilterableValue);
-
-		return result;
-	}, [actualData.items, fetchParams, isServerSide, searchable, filters]);
-
-	// ページネーション情報
-	const pagination = useMemo(() => {
-		const total = isServerSide ? actualData.total : processedItems.length;
-		return calculatePagination(total, fetchParams.itemsPerPage, fetchParams.page);
-	}, [
-		actualData.total,
-		processedItems.length,
-		fetchParams.itemsPerPage,
-		fetchParams.page,
-		isServerSide,
-	]);
-
-	// 現在のページのアイテム
+	// 現在のページのアイテム（サーバーが返したページをそのまま使う。
+	// サーバーが異なるページサイズを返した場合に備えて念のためスライス）
 	const currentItems = useMemo(() => {
-		if (isServerSide) {
-			// サーバーサイドの場合でも、念のためページサイズに合わせてスライス
-			// サーバーが異なるページサイズのデータを返した場合の対応
-			const itemsPerPage = fetchParams.itemsPerPage;
-			if (actualData.items.length > itemsPerPage) {
-				// ページサイズより多いデータが返された場合はスライス
-				return actualData.items.slice(0, itemsPerPage);
-			}
-			return actualData.items;
-		}
-		return processedItems.slice(pagination.startIndex, pagination.endIndex);
-	}, [processedItems, pagination, isServerSide, actualData.items, fetchParams.itemsPerPage]);
+		const itemsPerPage = fetchParams.itemsPerPage;
+		return actualData.items.length > itemsPerPage
+			? actualData.items.slice(0, itemsPerPage)
+			: actualData.items;
+	}, [actualData.items, fetchParams.itemsPerPage]);
 
 	// イベントハンドラー
 	const {

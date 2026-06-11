@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Badge } from "../ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { ConfigurableList } from "./configurable-list";
-import type { FilterConfig, SortConfig } from "./configurable-list/types";
+import type { FilterConfig, SortConfig, StandardListParams } from "./configurable-list/types";
 import { generateYearOptions } from "./configurable-list/utils/filter-helpers";
 
 // サンプルデータの型
@@ -38,6 +38,52 @@ const generateProducts = (count: number): Product[] => {
 		createdAt: new Date(FIXTURE_BASE_MS - i * 86400000).toISOString(),
 	}));
 };
+
+// fetchFn は必須。ストーリー用の擬似サーバー: params（検索/フィルタ/ソート/ページ）に応じて
+// 絞り込み・並べ替え・ページングを行い、UI 操作に追従する（旧 client-side パイプラインの再現）。
+const compareValues = (a: unknown, b: unknown): number => {
+	if (a === undefined && b === undefined) return 0;
+	if (a === undefined) return 1;
+	if (b === undefined) return -1;
+	if (typeof a === "string" && typeof b === "string") return a.localeCompare(b);
+	if (typeof a === "number" && typeof b === "number") return a - b;
+	return String(a).localeCompare(String(b));
+};
+
+const makeFetch =
+	<T,>(data: T[]) =>
+	async (rawParams: unknown): Promise<{ items: T[]; total: number }> => {
+		const params = rawParams as StandardListParams;
+		const get = (item: T, key: string) => (item as Record<string, unknown>)[key];
+		let result = [...data];
+		// 検索（title/name/label/description/text のいずれかの文字列）
+		if (params.search) {
+			const q = params.search.toLowerCase();
+			result = result.filter((item) => {
+				const text = ["title", "name", "label", "description", "text"]
+					.map((k) => get(item, k))
+					.find((v) => typeof v === "string") as string | undefined;
+				return text?.toLowerCase().includes(q) ?? false;
+			});
+		}
+		// フィルタ（boolean は true のみ抽出、その他は等値）
+		for (const [key, value] of Object.entries(params.filters ?? {})) {
+			if (value === undefined || value === "" || value === "all") continue;
+			if (typeof value === "boolean") {
+				if (value) result = result.filter((item) => Boolean(get(item, key)));
+			} else {
+				result = result.filter((item) => String(get(item, key)) === String(value));
+			}
+		}
+		// ソート（昇順）
+		if (params.sort) {
+			const key = params.sort;
+			result = [...result].sort((a, b) => compareValues(get(a, key), get(b, key)));
+		}
+		const total = result.length;
+		const start = (params.page - 1) * params.itemsPerPage;
+		return { items: result.slice(start, start + params.itemsPerPage), total };
+	};
 
 const meta = {
 	title: "Custom/List/ConfigurableList",
@@ -104,6 +150,7 @@ const sortOptions: SortConfig[] = [
 export const Basic: Story = {
 	args: {
 		items: generateProducts(50),
+		fetchFn: makeFetch(generateProducts(50)),
 		renderItem: renderProduct,
 		filters: basicFilters,
 		sorts: sortOptions,
@@ -115,6 +162,7 @@ export const Basic: Story = {
 export const WithYearFilter: Story = {
 	args: {
 		items: generateProducts(50),
+		fetchFn: makeFetch(generateProducts(50)),
 		renderItem: renderProduct,
 		filters: {
 			...basicFilters,
@@ -132,6 +180,7 @@ export const WithYearFilter: Story = {
 export const NoUrlSync: Story = {
 	args: {
 		items: generateProducts(30),
+		fetchFn: makeFetch(generateProducts(30)),
 		renderItem: renderProduct,
 		filters: basicFilters,
 		sorts: sortOptions,
@@ -142,6 +191,7 @@ export const NoUrlSync: Story = {
 export const CustomEmptyMessage: Story = {
 	args: {
 		items: [],
+		fetchFn: makeFetch([]),
 		renderItem: renderProduct,
 		filters: basicFilters,
 		emptyMessage: "商品が見つかりませんでした。条件を変更してお試しください。",
@@ -151,6 +201,7 @@ export const CustomEmptyMessage: Story = {
 export const WithoutSearch: Story = {
 	args: {
 		items: generateProducts(20),
+		fetchFn: makeFetch(generateProducts(20)),
 		renderItem: renderProduct,
 		filters: basicFilters,
 		sorts: sortOptions,
@@ -161,6 +212,7 @@ export const WithoutSearch: Story = {
 export const FiltersOnly: Story = {
 	args: {
 		items: generateProducts(30),
+		fetchFn: makeFetch(generateProducts(30)),
 		renderItem: renderProduct,
 		filters: basicFilters,
 		searchable: false,
@@ -232,6 +284,7 @@ export const ServerSideData: Story = {
 export const WithError: Story = {
 	args: {
 		items: [],
+		fetchFn: makeFetch([]),
 		renderItem: renderProduct,
 		error: {
 			type: "fetch",
@@ -245,6 +298,7 @@ export const WithError: Story = {
 export const CustomLoading: Story = {
 	args: {
 		items: [],
+		fetchFn: makeFetch([]),
 		renderItem: renderProduct,
 		loading: true,
 		loadingComponent: (
@@ -303,6 +357,7 @@ const renderTag = (tag: Tag) => (
 export const FlexLayout: Story = {
 	args: {
 		items: generateTags(50),
+		fetchFn: makeFetch(generateTags(50)),
 		renderItem: renderTag,
 		layout: "flex",
 		searchable: true,
@@ -353,6 +408,7 @@ const renderActionButton = (button: ActionButton) => (
 export const FlexLayoutWithButtons: Story = {
 	args: {
 		items: generateActionButtons(30),
+		fetchFn: makeFetch(generateActionButtons(30)),
 		renderItem: renderActionButton,
 		layout: "flex",
 		searchable: false,

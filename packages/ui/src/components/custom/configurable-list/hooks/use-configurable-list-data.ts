@@ -9,7 +9,7 @@ import { useListData } from "./use-list-data";
 interface UseConfigurableListDataOptions<T> {
 	initialItems: T[];
 	initialTotal?: number;
-	fetchFn?: (params: unknown) => Promise<unknown>;
+	fetchFn: (params: unknown) => Promise<unknown>;
 	dataAdapter?: DataAdapter<T, unknown>;
 	onError?: (error: Error) => void;
 	searchable?: boolean;
@@ -21,18 +21,9 @@ export function useConfigurableListData<T>(
 ) {
 	const { initialItems, initialTotal, fetchFn, dataAdapter, onError, searchable = true } = options;
 
-	const isServerSide = !!fetchFn;
-
-	// fetchFnをメモ化
+	// fetchFn は必須＝常にサーバーフェッチ。fetchFn をメモ化
 	const memoizedFetchFn = useMemo(() => {
-		if (!isServerSide) {
-			return async () => ({ items: initialItems, total: initialTotal ?? initialItems.length });
-		}
 		return async (params: StandardListParams) => {
-			if (!fetchFn) {
-				throw new Error("fetchFn is required when using server-side data fetching");
-			}
-
 			// デフォルトアダプター: 結果がすでにListDataSource形式であることを想定
 			const defaultAdapter: DataAdapter<T, unknown> = {
 				toParams: (params) => params,
@@ -55,7 +46,7 @@ export function useConfigurableListData<T>(
 			const result = await fetchFn(apiParams);
 			return actualAdapter.fromResult(result);
 		};
-	}, [isServerSide, dataAdapter, fetchFn, initialItems, initialTotal]);
+	}, [dataAdapter, fetchFn]);
 
 	// サーバーサイドデータ取得
 	const initialDataForHook = {
@@ -70,20 +61,16 @@ export function useConfigurableListData<T>(
 		debounceMs: searchable ? 300 : 0, // 検索時のみデバウンス
 	});
 
-	// 使用するデータソース
-	const data = serverData.data || {
+	// 使用するデータソース（フェッチ前は initialItems / initialTotal にフォールバック）
+	const actualData = serverData.data ?? {
 		items: initialItems,
-		total: initialTotal || initialItems.length,
+		total: initialTotal ?? initialItems.length,
 	};
-
-	// データソースの決定
-	const actualData = serverData.data || data;
 
 	return {
 		actualData,
 		loading: serverData.loading,
 		isRefreshing: serverData.isRefreshing || false,
 		error: serverData.error,
-		isServerSide,
 	};
 }
