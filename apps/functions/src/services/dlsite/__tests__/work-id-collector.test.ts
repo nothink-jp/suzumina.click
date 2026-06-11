@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("../../../infrastructure/management/config-manager", () => ({
 	getDLsiteConfig: vi.fn().mockReturnValue({
 		requestDelay: 100,
-		maxRetries: 3,
+		timeoutMs: 30000,
 	}),
 }));
 

@@ -1,177 +1,43 @@
-/**
- * Config Manager のテスト
- */
+import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { beforeEach, describe, expect, it } from "vitest";
-import { ConfigManager, getDLsiteConfig, getYouTubeConfig } from "../config-manager";
+// isProduction はモジュール読み込み時に確定するため、env を差し替えて再 import する
+async function loadConfig(env: { NODE_ENV?: string; DLSITE_REQUEST_DELAY?: string }) {
+	vi.resetModules();
+	if (env.NODE_ENV !== undefined) {
+		vi.stubEnv("NODE_ENV", env.NODE_ENV);
+	}
+	if (env.DLSITE_REQUEST_DELAY !== undefined) {
+		vi.stubEnv("DLSITE_REQUEST_DELAY", env.DLSITE_REQUEST_DELAY);
+	}
+	return import("../config-manager");
+}
 
-// 環境変数のモック
-const originalEnv = process.env;
-
-describe("ConfigManager", () => {
-	let configManager: ConfigManager;
-
-	beforeEach(() => {
-		// 環境変数をリセット
-		process.env = { ...originalEnv };
-		// シングルトンインスタンスをリセット
-		(ConfigManager as any).instance = undefined;
-		configManager = ConfigManager.getInstance();
-	});
-
-	afterEach(() => {
-		process.env = originalEnv;
-	});
-
-	describe("シングルトンパターン", () => {
-		it("同一インスタンスを返す", () => {
-			const instance1 = ConfigManager.getInstance();
-			const instance2 = ConfigManager.getInstance();
-			expect(instance1).toBe(instance2);
-		});
-	});
-
-	describe("DLsite設定", () => {
-		it("デフォルト設定を返す", () => {
-			const config = configManager.getDLsiteConfig();
-
-			expect(config.maxPagesPerExecution).toBe(1);
-			expect(config.itemsPerPage).toBe(100);
-			expect(config.requestDelay).toBe(1000);
-			expect(config.timeoutMs).toBe(30000);
-		});
-
-		it("環境変数で設定をオーバーライドする", () => {
-			process.env.DLSITE_MAX_PAGES = "5";
-			process.env.DLSITE_REQUEST_DELAY = "2000";
-
-			// 新しいインスタンスを作成
-			(ConfigManager as any).instance = undefined;
-			const newConfigManager = ConfigManager.getInstance();
-			const config = newConfigManager.getDLsiteConfig();
-
-			expect(config.maxPagesPerExecution).toBe(5);
-			expect(config.requestDelay).toBe(2000);
-			expect(config.timeoutMs).toBe(30000); // デフォルト値
-		});
-
-		it("無効な環境変数値の場合はNaNになる（実装の現状）", () => {
-			process.env.DLSITE_MAX_PAGES = "invalid";
-			process.env.DLSITE_REQUEST_DELAY = "not-a-number";
-
-			(ConfigManager as any).instance = undefined;
-			const newConfigManager = ConfigManager.getInstance();
-			const config = newConfigManager.getDLsiteConfig();
-
-			expect(config.maxPagesPerExecution).toBeNaN();
-			expect(config.requestDelay).toBeNaN();
-		});
-	});
-
-	describe("YouTube設定", () => {
-		it("デフォルト設定を返す", () => {
-			const config = configManager.getYouTubeConfig();
-
-			expect(config.maxBatchSize).toBe(50);
-			expect(config.dailyQuotaLimit).toBe(10000);
-			expect(config.timeoutMs).toBe(30000);
-		});
-
-		it("環境変数で設定をオーバーライドする", () => {
-			process.env.YOUTUBE_MAX_PAGES = "3";
-			process.env.YOUTUBE_QUOTA_LIMIT = "5000";
-
-			(ConfigManager as any).instance = undefined;
-			const newConfigManager = ConfigManager.getInstance();
-			const config = newConfigManager.getYouTubeConfig();
-
-			expect(config.maxPagesPerExecution).toBe(3);
-			expect(config.dailyQuotaLimit).toBe(5000);
-			expect(config.timeoutMs).toBe(30000); // デフォルト値
-		});
-
-		it("クォータ監視が正しく設定される", () => {
-			process.env.DISABLE_QUOTA_MONITORING = "true";
-
-			(ConfigManager as any).instance = undefined;
-			const newConfigManager = ConfigManager.getInstance();
-
-			// 機能フラグで確認
-			expect(newConfigManager.isFeatureEnabled("youtubeQuotaMonitoring")).toBe(false);
-		});
-	});
-
-	describe("エラーハンドリング設定", () => {
-		it("本番環境では適切なログレベルを設定する", () => {
-			process.env.NODE_ENV = "production";
-
-			(ConfigManager as any).instance = undefined;
-			const newConfigManager = ConfigManager.getInstance();
-			const config = newConfigManager.getErrorHandlingConfig();
-
-			expect(config.logLevel).toBe("WARN");
-			expect(config.debugMode).toBe(false);
-		});
-
-		it("開発環境では詳細ログを有効にする", () => {
-			process.env.NODE_ENV = "development";
-
-			(ConfigManager as any).instance = undefined;
-			const newConfigManager = ConfigManager.getInstance();
-			const config = newConfigManager.getErrorHandlingConfig();
-
-			expect(config.logLevel).toBe("DEBUG");
-			expect(config.debugMode).toBe(true);
-		});
-	});
-
-	describe("設定の取得", () => {
-		it("設定概要を取得できる", () => {
-			const summary = configManager.getConfigSummary();
-
-			expect(summary.environment).toBeDefined();
-			expect(summary.version).toBeDefined();
-			expect(summary.dlsite).toBeDefined();
-			expect(summary.youtube).toBeDefined();
-		});
-
-		it("環境変数の影響を確認できる", () => {
-			process.env.NODE_ENV = "test";
-
-			(ConfigManager as any).instance = undefined;
-			const newConfigManager = ConfigManager.getInstance();
-			const summary = newConfigManager.getConfigSummary();
-
-			expect(summary.environment).toBe("test");
-		});
-	});
+afterEach(() => {
+	vi.unstubAllEnvs();
+	vi.resetModules();
 });
 
-describe("ヘルパー関数", () => {
-	beforeEach(() => {
-		process.env = { ...originalEnv };
-		(ConfigManager as any).instance = undefined;
+describe("config-manager の実効値（SPR-189）", () => {
+	it("production: requestDelay=500 / timeoutMs=30000（本番実効値を正とする）", async () => {
+		const { getDLsiteConfig } = await loadConfig({ NODE_ENV: "production" });
+		expect(getDLsiteConfig()).toEqual({ requestDelay: 500, timeoutMs: 30000 });
 	});
 
-	afterEach(() => {
-		process.env = originalEnv;
+	it("production 以外(dev): requestDelay=2000", async () => {
+		const { getDLsiteConfig } = await loadConfig({ NODE_ENV: "development" });
+		expect(getDLsiteConfig().requestDelay).toBe(2000);
 	});
 
-	describe("getDLsiteConfig", () => {
-		it("DLsite設定を正しく取得する", () => {
-			const config = getDLsiteConfig();
-			expect(config.maxPagesPerExecution).toBeDefined();
-			expect(config.itemsPerPage).toBeDefined();
-			expect(config.requestDelay).toBeDefined();
+	it("DLSITE_REQUEST_DELAY env で上書きできる", async () => {
+		const { getDLsiteConfig } = await loadConfig({
+			NODE_ENV: "production",
+			DLSITE_REQUEST_DELAY: "777",
 		});
+		expect(getDLsiteConfig().requestDelay).toBe(777);
 	});
 
-	describe("getYouTubeConfig", () => {
-		it("YouTube設定を正しく取得する", () => {
-			const config = getYouTubeConfig();
-			expect(config.maxBatchSize).toBeDefined();
-			expect(config.dailyQuotaLimit).toBeDefined();
-			expect(config.timeoutMs).toBeDefined();
-		});
+	it("getYouTubeConfig: maxBatchSize=50（API 上限）", async () => {
+		const { getYouTubeConfig } = await loadConfig({ NODE_ENV: "production" });
+		expect(getYouTubeConfig()).toEqual({ maxBatchSize: 50 });
 	});
 });
