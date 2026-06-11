@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { loadYouTubeIframeAPI } from "../../lib/youtube-api-loader";
 import type { YTPlayer } from "./youtube-types";
 
 // 外部で使用するための型をエクスポート
@@ -24,8 +25,6 @@ export interface YouTubePlayerProps {
 	startTime?: number;
 	/** End time in seconds */
 	endTime?: number;
-	/** Loop the video */
-	loop?: boolean;
 	/** Modest branding */
 	modestBranding?: boolean;
 	/** Related videos */
@@ -55,7 +54,6 @@ export function YouTubePlayer({
 	controls = true,
 	startTime,
 	endTime,
-	loop: _loop = false,
 	modestBranding = true,
 	rel = false,
 	className = "",
@@ -67,7 +65,6 @@ export function YouTubePlayer({
 	const playerRef = useRef<YTPlayer | null>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
 	const [isAPIReady, setIsAPIReady] = useState(false);
-	const [playerReady, setPlayerReady] = useState(false);
 	const timeUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
 	// Store callback refs to avoid re-initialization
@@ -80,39 +77,17 @@ export function YouTubePlayer({
 	onStateChangeRef.current = onStateChange;
 	onErrorRef.current = onError;
 
-	// YouTube API の読み込み
+	// YouTube API の読み込み（共通ローダー経由・script 除去はしない）。
+	// unmount 後の setState を避けるため mounted フラグで握る。
 	useEffect(() => {
-		// すでにAPIが読み込まれている場合
-		if (window.YT?.Player) {
-			setIsAPIReady(true);
-			return;
-		}
-
-		// API読み込み中の場合は待機
-		if (window.onYouTubeIframeAPIReady) {
-			const originalCallback = window.onYouTubeIframeAPIReady;
-			window.onYouTubeIframeAPIReady = () => {
-				originalCallback();
+		let mounted = true;
+		loadYouTubeIframeAPI(() => {
+			if (mounted) {
 				setIsAPIReady(true);
-			};
-			return;
-		}
-
-		// APIスクリプトの読み込み
-		const script = document.createElement("script");
-		script.src = "https://www.youtube.com/iframe_api";
-		script.async = true;
-
-		window.onYouTubeIframeAPIReady = () => {
-			setIsAPIReady(true);
-		};
-
-		document.body.appendChild(script);
-
-		return () => {
-			if (script.parentNode) {
-				script.parentNode.removeChild(script);
 			}
+		});
+		return () => {
+			mounted = false;
 		};
 	}, []);
 
@@ -156,25 +131,6 @@ export function YouTubePlayer({
 		}
 	}, []);
 
-	// プレイヤー制御メソッドの公開
-	const playerControls = useMemo(
-		() => ({
-			play: () => playerRef.current?.playVideo(),
-			pause: () => playerRef.current?.pauseVideo(),
-			stop: () => playerRef.current?.stopVideo(),
-			seekTo: (seconds: number) => playerRef.current?.seekTo(seconds, true),
-			getCurrentTime: () => playerRef.current?.getCurrentTime() || 0,
-			getDuration: () => playerRef.current?.getDuration() || 0,
-			getPlayerState: () => playerRef.current?.getPlayerState() || -1,
-			setVolume: (volume: number) => playerRef.current?.setVolume(volume),
-			getVolume: () => playerRef.current?.getVolume() || 50,
-			mute: () => playerRef.current?.mute(),
-			unmute: () => playerRef.current?.unMute(),
-			isMuted: () => playerRef.current?.isMuted() || false,
-		}),
-		[],
-	);
-
 	// プレイヤーの初期化
 	useEffect(() => {
 		if (!isAPIReady || !containerRef.current || !videoId) {
@@ -215,7 +171,6 @@ export function YouTubePlayer({
 			events: {
 				onReady: (event) => {
 					playerRef.current = event.target;
-					setPlayerReady(true);
 					onReadyRef.current?.(event.target);
 				},
 				onStateChange: (event) => {
@@ -239,7 +194,6 @@ export function YouTubePlayer({
 			if (player && typeof player.destroy === "function") {
 				player.destroy();
 			}
-			setPlayerReady(false);
 		};
 	}, [
 		isAPIReady,
@@ -254,22 +208,6 @@ export function YouTubePlayer({
 		stopTimeUpdateInterval,
 		// Note: onReady, onStateChange, onError are not included in deps to prevent re-initialization
 	]);
-
-	// 親コンポーネントに制御メソッドを公開
-	useEffect(() => {
-		if (playerReady && onReady && playerRef.current) {
-			// プレイヤーインスタンスに追加のメソッドのみ追加（既存メソッドは上書きしない）
-			const additionalMethods = {
-				play: playerControls.play,
-				pause: playerControls.pause,
-				stop: playerControls.stop,
-				// getCurrentTime は既存のメソッドを保持
-				// getDuration は既存のメソッドを保持
-				// seekTo は既存のメソッドを保持
-			};
-			Object.assign(playerRef.current, additionalMethods);
-		}
-	}, [playerReady, onReady, playerControls]);
 
 	if (!videoId) {
 		return (
