@@ -38,16 +38,16 @@ describe("WorkMapper", () => {
 		work_type_string: "音声作品",
 
 		genres: [
-			{ id: "1", name: "ASMR", search_val: "asmr" },
-			{ id: "2", name: "バイノーラル", search_val: "binaural" },
+			{ id: 1, name: "ASMR", search_val: "asmr", name_base: "asmr" },
+			{ id: 2, name: "バイノーラル", search_val: "binaural", name_base: "binaural" },
 		],
 
 		creaters: {
 			voice_by: [
-				{ id: "cv001", name: "声優A" },
-				{ id: "cv002", name: "声優B" },
+				{ id: "cv001", name: "声優A", type: "voice" },
+				{ id: "cv002", name: "声優B", type: "voice" },
 			],
-			scenario_by: [{ id: "sc001", name: "シナリオライター" }],
+			scenario_by: [{ id: "sc001", name: "シナリオライター", type: "scenario" }],
 		},
 
 		image_thum: "//img.dlsite.jp/modpub/images2/work/doujin/RJ12345678_img_thum.jpg",
@@ -184,15 +184,17 @@ describe("WorkMapper", () => {
 			const work = WorkMapper.toWork(mockRawApiData);
 
 			expect(work.creators?.voice_by).toEqual([
-				{ id: "cv001", name: "声優A" },
-				{ id: "cv002", name: "声優B" },
+				{ id: "cv001", name: "声優A", type: "voice" },
+				{ id: "cv002", name: "声優B", type: "voice" },
 			]);
 		});
 
 		it("シナリオライター情報を正しく抽出できる", () => {
 			const work = WorkMapper.toWork(mockRawApiData);
 
-			expect(work.creators?.scenario_by).toEqual([{ id: "sc001", name: "シナリオライター" }]);
+			expect(work.creators?.scenario_by).toEqual([
+				{ id: "sc001", name: "シナリオライター", type: "scenario" },
+			]);
 		});
 
 		it("creatersフィールドがない場合はundefinedを返す", () => {
@@ -220,9 +222,9 @@ describe("WorkMapper", () => {
 			const dataWithPromo: DLsiteApiResponse = {
 				...mockRawApiData,
 				genres: [
-					{ id: "1", name: "ASMR", search_val: "asmr" },
-					{ id: "2", name: "30%OFFキャンペーン", search_val: "campaign" },
-					{ id: "3", name: "新作ピックアップ", search_val: "pickup" },
+					{ id: 1, name: "ASMR", search_val: "asmr", name_base: "asmr" },
+					{ id: 2, name: "30%OFFキャンペーン", search_val: "campaign", name_base: "campaign" },
+					{ id: 3, name: "新作ピックアップ", search_val: "pickup", name_base: "pickup" },
 				],
 			};
 

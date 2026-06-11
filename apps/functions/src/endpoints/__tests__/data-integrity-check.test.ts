@@ -3,7 +3,7 @@
  */
 
 import type { CloudEvent } from "@google-cloud/functions-framework";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
 
 // Firestoreモック
 vi.mock("../../infrastructure/database/firestore", () => {
@@ -35,8 +35,8 @@ import firestore from "../../infrastructure/database/firestore";
 import { checkDataIntegrity, runIntegrityCheck } from "../data-integrity-check";
 
 // モック関数をvitestから取得
-const mockCollection = vi.mocked(firestore.collection);
-const mockBatch = vi.mocked(firestore.batch);
+const mockCollection = vi.mocked(firestore.collection) as unknown as Mock;
+const mockBatch = vi.mocked(firestore.batch) as unknown as Mock;
 
 // その他のモック関数
 const mockDoc = vi.fn();
@@ -388,7 +388,7 @@ describe("checkDataIntegrity", () => {
 		expect(mockCommit).toHaveBeenCalled();
 
 		// 結果に復元情報が含まれることを確認
-		const lastSetCall = mockSet.mock.calls[mockSet.mock.calls.length - 2]; // 最後から2番目が結果保存
+		const lastSetCall = mockSet.mock.calls[mockSet.mock.calls.length - 2]!; // 最後から2番目が結果保存
 		expect(lastSetCall[0]).toMatchObject({
 			latest: expect.objectContaining({
 				checks: expect.objectContaining({

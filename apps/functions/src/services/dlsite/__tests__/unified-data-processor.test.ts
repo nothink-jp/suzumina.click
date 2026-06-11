@@ -247,9 +247,9 @@ describe("unified-data-processor", () => {
 
 			expect(results).toHaveLength(3);
 			expect(results.every((r) => r.success)).toBe(true);
-			expect(results[0].workId).toBe("RJ111111");
-			expect(results[1].workId).toBe("RJ222222");
-			expect(results[2].workId).toBe("RJ333333");
+			expect(results[0]!.workId).toBe("RJ111111");
+			expect(results[1]!.workId).toBe("RJ222222");
+			expect(results[2]!.workId).toBe("RJ333333");
 		});
 
 		it("大量のデータを適切なバッチサイズで処理する", async () => {
@@ -282,10 +282,10 @@ describe("unified-data-processor", () => {
 			const results = await processBatchUnifiedDLsiteData(apiDataList);
 
 			expect(results).toHaveLength(2);
-			expect(results[0].success).toBe(true);
-			expect(results[1].success).toBe(false);
-			expect(results[1].workId).toBe("RJ222222");
-			expect(results[1].errors[0]).toContain("統合処理エラー: Mapping error");
+			expect(results[0]!.success).toBe(true);
+			expect(results[1]!.success).toBe(false);
+			expect(results[1]!.workId).toBe("RJ222222");
+			expect(results[1]!.errors[0]).toContain("統合処理エラー: Mapping error");
 		});
 	});
 

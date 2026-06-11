@@ -9,7 +9,7 @@ import { WorkMapper } from "../../mappers/work-mapper";
 
 describe("URL正規化機能", () => {
 	it("プロトコル相対URLを正しく正規化する", () => {
-		const mockApiData: DLsiteApiResponse = {
+		const mockApiData = {
 			workno: "RJ01037463",
 			product_id: "RJ01037463",
 			work_name: "テスト作品",
@@ -41,7 +41,7 @@ describe("URL正規化機能", () => {
 			],
 		};
 
-		const result = WorkMapper.toWork(mockApiData);
+		const result = WorkMapper.toWork(mockApiData as DLsiteApiResponse);
 
 		// メイン画像URLの正規化確認
 		expect(result.thumbnailUrl).toBe(
@@ -53,16 +53,16 @@ describe("URL正規化機能", () => {
 
 		// サンプル画像URLの正規化確認
 		expect(result.sampleImages).toHaveLength(2);
-		expect(result.sampleImages[0].thumb).toBe(
+		expect(result.sampleImages[0]!.thumb).toBe(
 			"https://img.dlsite.jp/modpub/images2/work/doujin/RJ01038000/RJ01037463_sample1.jpg",
 		);
-		expect(result.sampleImages[1].thumb).toBe(
+		expect(result.sampleImages[1]!.thumb).toBe(
 			"https://img.dlsite.jp/modpub/images2/work/doujin/RJ01038000/RJ01037463_sample2.jpg",
 		);
 	});
 
 	it("既に正しい形式のURLはそのまま維持する", () => {
-		const mockApiData: DLsiteApiResponse = {
+		const mockApiData = {
 			workno: "RJ01037463",
 			product_id: "RJ01037463",
 			work_name: "テスト作品",
@@ -92,7 +92,7 @@ describe("URL正規化機能", () => {
 				"https://img.dlsite.jp/modpub/images2/work/doujin/RJ01038000/RJ01037463_img_main.jpg",
 		};
 
-		const result = WorkMapper.toWork(mockApiData);
+		const result = WorkMapper.toWork(mockApiData as DLsiteApiResponse);
 
 		// 正しい形式のURLは変更されないことを確認
 		expect(result.thumbnailUrl).toBe(
@@ -104,7 +104,7 @@ describe("URL正規化機能", () => {
 	});
 
 	it("srcsetから抽出した高解像度URLも正規化される", () => {
-		const mockApiData: DLsiteApiResponse = {
+		const mockApiData = {
 			workno: "RJ01037463",
 			product_id: "RJ01037463",
 			work_name: "テスト作品",
@@ -132,7 +132,7 @@ describe("URL正規化機能", () => {
 				"//img.dlsite.jp/modpub/images2/work/doujin/RJ01038000/RJ01037463_img_main.jpg 1x, //img.dlsite.jp/modpub/images2/work/doujin/RJ01038000/RJ01037463_img_main_2x.jpg 2x",
 		};
 
-		const result = WorkMapper.toWork(mockApiData);
+		const result = WorkMapper.toWork(mockApiData as DLsiteApiResponse);
 
 		// srcsetから抽出した高解像度URLの正規化確認
 		expect(result.highResImageUrl).toBe(
@@ -141,7 +141,7 @@ describe("URL正規化機能", () => {
 	});
 
 	it("undefinedやnullのURLは適切に処理される", () => {
-		const mockApiData: DLsiteApiResponse = {
+		const mockApiData = {
 			workno: "RJ01037463",
 			product_id: "RJ01037463",
 			work_name: "テスト作品",
@@ -169,7 +169,7 @@ describe("URL正規化機能", () => {
 			image_main: undefined,
 		};
 
-		const result = WorkMapper.toWork(mockApiData);
+		const result = WorkMapper.toWork(mockApiData as DLsiteApiResponse);
 
 		// デフォルトURLが設定されることを確認
 		expect(result.thumbnailUrl).toBe(
@@ -179,13 +179,13 @@ describe("URL正規化機能", () => {
 	});
 
 	it("必須フィールドが欠損していても処理される", () => {
-		const mockApiData: DLsiteApiResponse = {
+		const mockApiData = {
 			workno: "RJ01037463",
 			// work_name と maker_name が欠損
 			// price 情報も欠損
 		};
 
-		const result = WorkMapper.toWork(mockApiData);
+		const result = WorkMapper.toWork(mockApiData as DLsiteApiResponse);
 
 		// フォールバック値が設定されることを確認
 		expect(result.id).toBe("RJ01037463");
@@ -196,7 +196,7 @@ describe("URL正規化機能", () => {
 	});
 
 	it("画像URLが数値型でも正しく処理される", () => {
-		const mockApiData: DLsiteApiResponse = {
+		const mockApiData = {
 			workno: "RJ01037463",
 			work_name: "テスト作品",
 			maker_name: "テストサークル",
@@ -209,19 +209,19 @@ describe("URL正規化機能", () => {
 			image_samples: [111, 222, 333] as any,
 		};
 
-		const result = WorkMapper.toWork(mockApiData);
+		const result = WorkMapper.toWork(mockApiData as DLsiteApiResponse);
 
 		// 数値が文字列に変換されて処理されることを確認
 		expect(result.thumbnailUrl).toBe("123456");
 		expect(result.highResImageUrl).toBe("789012");
 		expect(result.sampleImages).toHaveLength(3);
-		expect(result.sampleImages[0].thumb).toBe("111");
-		expect(result.sampleImages[1].thumb).toBe("222");
-		expect(result.sampleImages[2].thumb).toBe("333");
+		expect(result.sampleImages[0]!.thumb).toBe("111");
+		expect(result.sampleImages[1]!.thumb).toBe("222");
+		expect(result.sampleImages[2]!.thumb).toBe("333");
 	});
 
 	it("画像URLがオブジェクト型でも正しく処理される", () => {
-		const mockApiData: DLsiteApiResponse = {
+		const mockApiData = {
 			workno: "RJ01037463",
 			work_name: "テスト作品",
 			maker_name: "テストサークル",
@@ -238,13 +238,13 @@ describe("URL正規化機能", () => {
 			] as any,
 		};
 
-		const result = WorkMapper.toWork(mockApiData);
+		const result = WorkMapper.toWork(mockApiData as DLsiteApiResponse);
 
 		// オブジェクトから適切なプロパティが抽出されて正規化されることを確認
 		expect(result.thumbnailUrl).toBe("https://img.dlsite.jp/test_thumb.jpg");
 		expect(result.highResImageUrl).toBe("https://img.dlsite.jp/test_main.jpg");
 		expect(result.sampleImages).toHaveLength(2); // 無効なオブジェクトはフィルタされる
-		expect(result.sampleImages[0].thumb).toBe("https://img.dlsite.jp/sample1.jpg");
-		expect(result.sampleImages[1].thumb).toBe("https://img.dlsite.jp/sample3.jpg");
+		expect(result.sampleImages[0]!.thumb).toBe("https://img.dlsite.jp/sample1.jpg");
+		expect(result.sampleImages[1]!.thumb).toBe("https://img.dlsite.jp/sample3.jpg");
 	});
 });

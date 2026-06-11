@@ -211,7 +211,7 @@ describe("generateDLsiteHeaders", () => {
 
 	it("ブラウザ固有のヘッダーが一貫している", () => {
 		const headers = generateDLsiteHeaders();
-		const userAgent = headers["User-Agent"];
+		const userAgent = headers["User-Agent"]!;
 
 		// ChromeベースのUser-Agentの場合
 		if (userAgent.includes("Chrome/")) {

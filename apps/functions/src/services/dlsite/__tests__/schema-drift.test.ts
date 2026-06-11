@@ -73,7 +73,7 @@ describe("recordSchemaDriftForBatch", () => {
 	it("新フィールド出現で alert マーカー付き WARN を出す", () => {
 		recordSchemaDriftForBatch([{ workno: "RJ001", totally_new_field: 1 }], { batchSize: 1 });
 		expect(mockWarn).toHaveBeenCalledTimes(1);
-		const [, payload] = mockWarn.mock.calls[0];
+		const [, payload] = mockWarn.mock.calls[0]!;
 		expect(payload).toMatchObject({
 			alert: SCHEMA_DRIFT_ALERT,
 			newFields: ["totally_new_field"],

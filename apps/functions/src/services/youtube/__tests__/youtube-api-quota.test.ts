@@ -1,7 +1,8 @@
+import type { youtube_v3 } from "googleapis";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // quota monitor をモックして quota 充足/不足の両分岐を検証する
-const canExecuteOperation = vi.fn(() => true);
+const canExecuteOperation = vi.fn((..._a: unknown[]) => true);
 const recordQuotaUsage = vi.fn();
 const logQuotaUsage = vi.fn();
 const suggestOptimalOperations = vi.fn(() => ({ feasible: true, alternatives: [] as string[] }));
@@ -31,8 +32,7 @@ const makeClient = () => ({
 	playlists: { list: vi.fn() },
 	playlistItems: { list: vi.fn() },
 });
-// biome-ignore lint/suspicious/noExplicitAny: フェイククライアントを型に流し込む
-const asYoutube = (c: ReturnType<typeof makeClient>) => c as any;
+const asYoutube = (c: ReturnType<typeof makeClient>) => c as unknown as youtube_v3.Youtube;
 
 beforeEach(() => {
 	canExecuteOperation.mockReturnValue(true);

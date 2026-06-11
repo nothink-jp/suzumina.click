@@ -7,8 +7,14 @@
 		"rootDir": "./src",
 		"sourceMap": true,
 		"lib": ["ES2022"],
-		"allowSyntheticDefaultImports": true
+		"allowSyntheticDefaultImports": true,
+		// テストも typecheck 対象に含める（include の test 除外を撤去）。
+		// テストは vitest が ESM/Bundler 解決で実行し、本番ビルドは esbuild（scripts/build.mjs）なので
+		// tsc 専用にここで base の NodeNext を上書きする（NodeNext だとテストの top-level await import が
+		// CJS 扱いになり TS2835/TS1309 を量産するため）。
+		"module": "ESNext",
+		"moduleResolution": "Bundler"
 	},
 	"include": ["src"],
-	"exclude": ["src/**/*.test.ts", "src/development/**/*"]
+	"exclude": ["src/development/**/*"]
 }

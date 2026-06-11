@@ -107,8 +107,8 @@ describe("analyzeFields", () => {
 	it("presence は出現数の多い順に並ぶ", () => {
 		const responses = [{ workno: "1", price: 1 }, { workno: "2" }, { workno: "3" }];
 		const r = analyzeFields(responses, known);
-		expect(r.presence[0].field).toBe("workno");
-		expect(r.presence[0].count).toBe(3);
+		expect(r.presence[0]!.field).toBe("workno");
+		expect(r.presence[0]!.count).toBe(3);
 	});
 });
 

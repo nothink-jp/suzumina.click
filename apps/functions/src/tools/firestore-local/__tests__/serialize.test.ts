@@ -83,8 +83,8 @@ describe("serialize: encodeValue/decodeValue round-trip", () => {
 		expect(result.liveStreamingDetails.actualStartTime.seconds).toBe(1700000000);
 		expect(result.liveStreamingDetails.scheduledStartTime.nanoseconds).toBe(500);
 		expect(result.tags).toEqual(["a", "b"]);
-		expect(result.snapshots[0].at).toBeInstanceOf(Timestamp);
-		expect(result.snapshots[0].value).toBe(10);
+		expect(result.snapshots[0]!.at).toBeInstanceOf(Timestamp);
+		expect(result.snapshots[0]!.value).toBe(10);
 	});
 
 	it("CollectionFixture 全体（複数ドキュメント）を往復しても整合する", () => {
@@ -98,7 +98,7 @@ describe("serialize: encodeValue/decodeValue round-trip", () => {
 		};
 
 		const encoded = JSON.parse(JSON.stringify(fixture)) as CollectionFixture;
-		const decodedFirst = decodeValue(encoded.docs[0].data, firestoreStub) as {
+		const decodedFirst = decodeValue(encoded.docs[0]!.data, firestoreStub) as {
 			publishedAt: Timestamp;
 			title: string;
 		};

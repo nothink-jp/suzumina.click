@@ -89,7 +89,6 @@ const firestoreMock = vi.mocked(await import("../../../infrastructure/database/f
 const mockQuery = (firestoreMock as any).__mockQuery;
 const mockDoc = (firestoreMock as any).__mockDoc;
 const mockBatch = (firestoreMock as any).__mockBatch;
-const _mockCollection = (firestoreMock as any).__mockCollection;
 
 describe("failure-tracker", () => {
 	beforeEach(() => {
@@ -171,10 +170,10 @@ describe("failure-tracker", () => {
 	describe("trackMultipleFailedWorks", () => {
 		it("複数の失敗作品を一括記録できる", async () => {
 			const failures = [
-				{ workId: "RJ12345", reason: FAILURE_REASONS.TIMEOUT as const },
+				{ workId: "RJ12345", reason: FAILURE_REASONS.TIMEOUT },
 				{
 					workId: "RJ54321",
-					reason: FAILURE_REASONS.API_ERROR as const,
+					reason: FAILURE_REASONS.API_ERROR,
 					errorDetails: "404 Not Found",
 				},
 			];
@@ -204,7 +203,7 @@ describe("failure-tracker", () => {
 		it("バッチコミットでエラーが発生した場合は例外を投げる", async () => {
 			mockBatch.commit.mockRejectedValue(new Error("Batch commit failed"));
 
-			const failures = [{ workId: "RJ12345", reason: FAILURE_REASONS.TIMEOUT as const }];
+			const failures = [{ workId: "RJ12345", reason: FAILURE_REASONS.TIMEOUT }];
 
 			await expect(trackMultipleFailedWorks(failures)).rejects.toThrow("Batch commit failed");
 		});

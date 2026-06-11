@@ -73,19 +73,13 @@ const sampleWork: WorkDocument = {
 	workUrl: "https://www.dlsite.com/maniax/work/=/product_id/RJ12345.html",
 	thumbnailUrl: "https://img.dlsite.jp/thumbnail.jpg",
 	sampleImages: [],
-	tags: ["ASMR", "癒し"],
 	description: "テスト用の作品説明",
 	releaseDate: "2024-01-01",
 	releaseDateISO: "2024-01-01",
 	releaseDateDisplay: "2024年01月01日",
 	ageRating: "全年齢",
-	voiceActors: ["涼花みなせ"],
-	scenario: [],
-	illustration: [],
-	music: [],
-	author: [],
 	genres: ["ASMR", "癒し"],
-	isExclusive: false,
+	customGenres: [],
 	dataSources: {
 		searchResult: {
 			lastFetched: "2024-01-01T00:00:00Z",
@@ -122,7 +116,7 @@ describe("dlsite-firestore", () => {
 
 			await saveWorksToFirestore([workAfterSale]);
 
-			const payload = mockBatch.set.mock.calls[0][1] as { price: Record<string, unknown> };
+			const payload = mockBatch.set.mock.calls[0]![1] as { price: Record<string, unknown> };
 			expect((payload.price.discount as any).isEqual(FieldValue.delete())).toBe(true);
 			expect((payload.price.original as any).isEqual(FieldValue.delete())).toBe(true);
 			expect((payload.price.point as any).isEqual(FieldValue.delete())).toBe(true);
@@ -138,7 +132,7 @@ describe("dlsite-firestore", () => {
 
 			await saveWorksToFirestore([workOnSale]);
 
-			const payload = mockBatch.set.mock.calls[0][1] as { price: Record<string, unknown> };
+			const payload = mockBatch.set.mock.calls[0]![1] as { price: Record<string, unknown> };
 			expect(payload.price.discount).toBe(20);
 			expect(payload.price.original).toBe(1650);
 			expect(payload.price.current).toBe(1320);
@@ -169,7 +163,7 @@ describe("dlsite-firestore", () => {
 
 			const result = await getWorkFromFirestore("RJ12345");
 
-			expect(result).toEqual({ id: "RJ12345", ...sampleWork });
+			expect(result).toEqual({ ...sampleWork });
 		});
 
 		it("存在しない作品の場合はnullを返す", async () => {
