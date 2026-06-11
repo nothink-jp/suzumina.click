@@ -1,15 +1,14 @@
 /**
- * Shared utility functions for the application
+ * 時間フォーマット系ユーティリティ。
+ *
+ * 旧 `utils/` から移設（SPR-198）。`utils/` は生存2関数のみの併存ディレクトリだったため
+ * `utilities/formatters/` に統合し、命名から配置を予測できる構造に揃えた。
  */
 
-// Re-export utilities
-export * from "./date-parser";
-export * from "./number-parser";
-
 /**
- * Format timestamp to mm:ss or hh:mm:ss format with tenths of a second
- * @param seconds Timestamp in seconds
- * @returns Formatted time string
+ * 秒数を mm:ss / hh:mm:ss（小数第1位まで）にフォーマットする。
+ * @param seconds 秒数
+ * @returns フォーマット済み時間文字列
  */
 export function formatTimestamp(seconds: number): string {
 	const hours = Math.floor(seconds / 3600);
@@ -24,9 +23,9 @@ export function formatTimestamp(seconds: number): string {
 }
 
 /**
- * Parse ISO 8601 duration to seconds
- * @param duration ISO 8601 duration string (e.g., "PT1H23M45S")
- * @returns Duration in seconds
+ * ISO 8601 duration を秒数にパースする。
+ * @param duration ISO 8601 duration 文字列（例: "PT1H23M45S"）
+ * @returns 秒数
  */
 export function parseDurationToSeconds(duration?: string): number {
 	if (!duration) return 0;

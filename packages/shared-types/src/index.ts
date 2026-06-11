@@ -89,7 +89,7 @@ export { workTransformers } from "./transformers/work-firestore-final";
 export type {
 	AudioButton,
 	AudioButtonDocument,
-	AudioButtonPlainObject, // Deprecated alias
+	AudioButtonPlainObject, // AudioButton の別名（コンポーネントとの衝突回避用・SPR-198）
 	AudioButtonQuery,
 	CreateAudioButtonInput,
 	FirestoreServerAudioButtonData, // Deprecated alias
@@ -141,6 +141,7 @@ export * from "./utilities/firestore-utils";
 export * from "./utilities/formatters/date-optimizer";
 // Relative time / member-since formatters (extracted from entities/user)
 export * from "./utilities/formatters/relative-time";
+export { formatTimestamp, parseDurationToSeconds } from "./utilities/formatters/time-format";
 // 価格履歴関連の型とスキーマのエクスポート
 export * from "./utilities/price-history";
 // User display name resolution (extracted from entities/user)
@@ -149,7 +150,3 @@ export * from "./utilities/user/display-name";
 export * from "./utilities/validators/dlsite-ids";
 // Work変換ユーティリティのエクスポート
 export * from "./utilities/work-conversions";
-export { formatTimestamp, parseDurationToSeconds } from "./utils";
-// ユーティリティ関数 (from subdirectories)
-export * from "./utils/date-parser";
-export * from "./utils/number-parser";

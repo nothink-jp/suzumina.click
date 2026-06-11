@@ -108,7 +108,11 @@ export interface AudioButtonQuery {
 }
 
 /**
- * Legacy type alias for backward compatibility
- * @deprecated Use AudioButton instead
+ * `AudioButton`（プレーンオブジェクト型）の別名。
+ *
+ * @deprecated は付けない（SPR-198）。UI には同名の `AudioButton` **コンポーネント** があり、
+ * 両方を import するファイル（例: audio-button-with-favorite-client.tsx）では型とコンポーネントが
+ * 衝突する。この別名は「型」を明示して衝突を避けるために現役で使われており、注記と実態が逆転していた。
+ * 正本の型は `AudioButton`。コンポーネントと同居する文脈ではこの別名を使ってよい。
  */
 export type AudioButtonPlainObject = AudioButton;
