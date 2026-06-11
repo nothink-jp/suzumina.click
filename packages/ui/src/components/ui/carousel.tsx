@@ -114,6 +114,7 @@ function Carousel({
 				canScrollNext,
 			}}
 		>
+			{/* biome-ignore lint/a11y/useSemanticElements: aria-roledescription="carousel" を伴う shadcn/ui 標準パターン（div+role）。section 化は upstream と乖離するため踏襲 */}
 			<div
 				onKeyDownCapture={handleKeyDown}
 				className={cn("relative", className)}
@@ -145,6 +146,7 @@ function CarouselItem({ className, ...props }: React.ComponentProps<"div">) {
 	const { orientation } = useCarousel();
 
 	return (
+		// biome-ignore lint/a11y/useSemanticElements: aria-roledescription="slide" を伴う shadcn/ui 標準パターン（div+role）。踏襲して upstream との乖離を避ける
 		<div
 			role="group"
 			aria-roledescription="slide"

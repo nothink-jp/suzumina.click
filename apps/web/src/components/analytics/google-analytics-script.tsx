@@ -27,6 +27,7 @@ export function GoogleAnalyticsScript() {
 			<Script
 				id="google-analytics"
 				strategy="lazyOnload"
+				// biome-ignore lint/security/noDangerouslySetInnerHtml: env 由来の measurementId を埋め込む標準の GA ブートストラップ（ユーザー入力なし）
 				dangerouslySetInnerHTML={{
 					__html: `
 						window.dataLayer = window.dataLayer || [];

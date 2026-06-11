@@ -6,6 +6,7 @@ import { GoogleTagManager, GoogleTagManagerNoscript } from "../google-tag-manage
 vi.mock("next/script", () => ({
 	default: ({ children, dangerouslySetInnerHTML, ...props }: any) => {
 		if (dangerouslySetInnerHTML) {
+			// biome-ignore lint/security/noDangerouslySetInnerHtml: next/script のモックで受け取った prop をそのまま透過するテスト専用コード
 			return <script {...props} dangerouslySetInnerHTML={dangerouslySetInnerHTML} />;
 		}
 		return <script {...props}>{children}</script>;
