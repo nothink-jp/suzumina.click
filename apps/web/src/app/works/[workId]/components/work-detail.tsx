@@ -2,9 +2,7 @@
 
 import type { WorkPlainObject } from "@suzumina.click/shared-types";
 import {
-	checkAgeRating,
 	type FrontendWorkEvaluation,
-	getAgeRatingDisplayName,
 	getWorkCategoryDisplayText,
 	getWorkLanguageDisplayName,
 } from "@suzumina.click/shared-types";
@@ -38,7 +36,9 @@ import { PriceHistory } from "@/components/price-history/price-history";
 import ThumbnailImage from "@/components/ui/thumbnail-image";
 import { formatJSTDateTime } from "@/utils/date-format";
 import { generateMockCharacteristicData } from "@/utils/mock-evaluation-data";
+import { AgeRatingBadge } from "./age-rating-badge";
 import SampleImageGallery from "./sample-image-gallery";
+import { CreatorBadges, CreatorList } from "./work-creators";
 import WorkDescription from "./work-description";
 import { WorkEvaluation } from "./work-evaluation";
 
@@ -101,11 +101,6 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 		() => generateMockCharacteristicData(work.productId),
 		[work.productId],
 	);
-
-	// 年齢制限の判定
-	const ageRatingCheck = useMemo(() => {
-		return checkAgeRating(work.ageRating);
-	}, [work.ageRating]);
 
 	// 価格情報の計算
 	const { currentPrice, originalPrice, isOnSale, discountRate } = useMemo(
@@ -229,28 +224,7 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 								<div className="text-sm font-medium text-gray-700">年齢指定</div>
 								<div className="flex items-center gap-2">
 									<Shield className="h-4 w-4 text-muted-foreground" />
-									{ageRatingCheck.isR18 ? (
-										<Badge
-											variant="destructive"
-											className="bg-red-600 text-white font-bold text-base px-4 py-2"
-										>
-											{getAgeRatingDisplayName(work.ageRating)}
-										</Badge>
-									) : ageRatingCheck.isAllAges ? (
-										<Badge
-											variant="outline"
-											className="border-green-500 text-green-700 bg-green-50 font-medium text-base px-4 py-2"
-										>
-											{getAgeRatingDisplayName(work.ageRating)}
-										</Badge>
-									) : (
-										<Badge
-											variant="secondary"
-											className="text-gray-700 bg-gray-100 font-medium text-base px-4 py-2"
-										>
-											{getAgeRatingDisplayName(work.ageRating)}
-										</Badge>
-									)}
+									<AgeRatingBadge ageRating={work.ageRating} size="base" />
 								</div>
 							</div>
 						)}
@@ -420,28 +394,7 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 													<div>
 														<div className="text-sm text-gray-700">年齢指定</div>
 														<div className="flex items-center gap-2">
-															{ageRatingCheck.isR18 ? (
-																<Badge
-																	variant="destructive"
-																	className="bg-red-600 text-white font-bold text-sm px-3 py-1"
-																>
-																	{getAgeRatingDisplayName(work.ageRating)}
-																</Badge>
-															) : ageRatingCheck.isAllAges ? (
-																<Badge
-																	variant="outline"
-																	className="border-green-500 text-green-700 bg-green-50 font-medium text-sm px-3 py-1"
-																>
-																	{getAgeRatingDisplayName(work.ageRating)}
-																</Badge>
-															) : (
-																<Badge
-																	variant="secondary"
-																	className="text-gray-700 bg-gray-100 font-medium text-sm px-3 py-1"
-																>
-																	{getAgeRatingDisplayName(work.ageRating)}
-																</Badge>
-															)}
+															<AgeRatingBadge ageRating={work.ageRating} size="sm" />
 														</div>
 													</div>
 												</div>
@@ -550,143 +503,7 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 										</div>
 
 										{/* 制作陣情報（Individual Info API準拠・段階的活用） */}
-										<div className="space-y-4">
-											{/* 声優 */}
-											{(() => {
-												const displayVoiceActors = work.creators?.voiceActors || [];
-
-												if (displayVoiceActors.length === 0) return null;
-
-												return (
-													<div>
-														<div className="text-sm text-gray-700 mb-2">声優</div>
-														<div className="flex flex-wrap gap-2">
-															{displayVoiceActors.map((actor, index) =>
-																actor.id ? (
-																	<Link
-																		key={actor.id}
-																		href={`/creators/${actor.id}`}
-																		className="inline-block"
-																	>
-																		<Badge
-																			variant="secondary"
-																			className="text-xs hover:bg-secondary/80 cursor-pointer"
-																			title={`ID: ${actor.id}`}
-																		>
-																			{actor.name}
-																		</Badge>
-																	</Link>
-																) : (
-																	<Badge
-																		key={actor.name || index}
-																		variant="secondary"
-																		className="text-xs"
-																	>
-																		{actor.name}
-																	</Badge>
-																),
-															)}
-														</div>
-													</div>
-												);
-											})()}
-
-											{/* シナリオ */}
-											{(() => {
-												const displayScenarioWriters = work.creators?.scenario || [];
-
-												if (displayScenarioWriters.length === 0) return null;
-
-												return (
-													<div>
-														<div className="text-sm text-gray-700 mb-2">シナリオ</div>
-														<div className="flex flex-wrap gap-2">
-															{displayScenarioWriters.map((writer, index) => (
-																<Badge
-																	key={writer.id || writer.name || index}
-																	variant="secondary"
-																	className="text-xs"
-																	title={writer.id ? `ID: ${writer.id}` : undefined}
-																>
-																	{writer.name}
-																</Badge>
-															))}
-														</div>
-													</div>
-												);
-											})()}
-
-											{/* イラスト */}
-											{(() => {
-												const displayIllustrators = work.creators?.illustration || [];
-
-												if (displayIllustrators.length === 0) return null;
-
-												return (
-													<div>
-														<div className="text-sm text-gray-700 mb-2">イラスト</div>
-														<div className="flex flex-wrap gap-2">
-															{displayIllustrators.map((illustrator, index) => (
-																<Badge
-																	key={illustrator.id || illustrator.name || index}
-																	variant="secondary"
-																	className="text-xs"
-																	title={illustrator.id ? `ID: ${illustrator.id}` : undefined}
-																>
-																	{illustrator.name}
-																</Badge>
-															))}
-														</div>
-													</div>
-												);
-											})()}
-
-											{/* 音楽 */}
-											{(() => {
-												const displayMusicians = work.creators?.music || [];
-
-												if (displayMusicians.length === 0) return null;
-
-												return (
-													<div>
-														<div className="text-sm text-gray-700 mb-2">音楽</div>
-														<div className="flex flex-wrap gap-2">
-															{displayMusicians.map((musician, index) => (
-																<Badge
-																	key={musician.id || musician.name || index}
-																	variant="secondary"
-																	className="text-xs"
-																	title={musician.id ? `ID: ${musician.id}` : undefined}
-																>
-																	{musician.name}
-																</Badge>
-															))}
-														</div>
-													</div>
-												);
-											})()}
-
-											{/* その他制作者（Individual Info API専用） */}
-											{work.creators?.others && work.creators.others.length > 0 && (
-												<div>
-													<div className="text-sm text-gray-700 mb-2">その他</div>
-													<div className="flex flex-wrap gap-2">
-														{work.creators.others.map((creator, index) => (
-															<Badge
-																key={creator.id || creator.name || index}
-																variant="secondary"
-																className="text-xs"
-																title={creator.id ? `ID: ${creator.id}` : undefined}
-															>
-																{creator.name}
-															</Badge>
-														))}
-													</div>
-												</div>
-											)}
-
-											{/* created_byはcreators構造に含まれていないため削除 */}
-										</div>
+										<CreatorBadges creators={work.creators} />
 									</div>
 								</CardContent>
 							</Card>
@@ -796,191 +613,7 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 									</CardTitle>
 								</CardHeader>
 								<CardContent>
-									<div className="space-y-4">
-										{/* 声優（Individual Info API優先） */}
-										{(() => {
-											const displayVoiceActors = work.creators?.voiceActors || [];
-
-											if (displayVoiceActors.length === 0) return null;
-
-											return (
-												<div>
-													<h5 className="text-sm font-medium text-gray-700 mb-2">声優（CV）</h5>
-													<div className="space-y-2">
-														{displayVoiceActors.map((actor, index) => (
-															<div
-																key={actor.id || actor.name || index}
-																className="flex items-center gap-3"
-															>
-																<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
-																	<span className="text-foreground font-bold text-xs">
-																		{actor.name.charAt(0)}
-																	</span>
-																</div>
-																{actor.id ? (
-																	<Link
-																		href={`/creators/${actor.id}`}
-																		className="text-gray-900 text-sm hover:text-primary hover:underline"
-																		title={`ID: ${actor.id}`}
-																	>
-																		{actor.name}
-																	</Link>
-																) : (
-																	<span className="text-gray-900 text-sm">{actor.name}</span>
-																)}
-															</div>
-														))}
-													</div>
-												</div>
-											);
-										})()}
-
-										{/* シナリオ */}
-										{(() => {
-											const displayScenarioWriters = work.creators?.scenario || [];
-
-											if (displayScenarioWriters.length === 0) return null;
-
-											return (
-												<div>
-													<h5 className="text-sm font-medium text-gray-700 mb-2">シナリオ</h5>
-													<div className="space-y-2">
-														{displayScenarioWriters.map((writer, index) => (
-															<div
-																key={writer.id || writer.name || index}
-																className="flex items-center gap-3"
-															>
-																<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
-																	<span className="text-foreground font-bold text-xs">
-																		{writer.name.charAt(0)}
-																	</span>
-																</div>
-																{writer.id ? (
-																	<Link
-																		href={`/creators/${writer.id}`}
-																		className="text-gray-900 text-sm hover:text-primary hover:underline"
-																		title={`ID: ${writer.id}`}
-																	>
-																		{writer.name}
-																	</Link>
-																) : (
-																	<span className="text-gray-900 text-sm">{writer.name}</span>
-																)}
-															</div>
-														))}
-													</div>
-												</div>
-											);
-										})()}
-
-										{/* イラスト */}
-										{(() => {
-											const displayIllustrators = work.creators?.illustration || [];
-
-											if (displayIllustrators.length === 0) return null;
-
-											return (
-												<div>
-													<h5 className="text-sm font-medium text-gray-700 mb-2">イラスト</h5>
-													<div className="space-y-2">
-														{displayIllustrators.map((illustrator, index) => (
-															<div
-																key={illustrator.id || illustrator.name || index}
-																className="flex items-center gap-3"
-															>
-																<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
-																	<span className="text-foreground font-bold text-xs">
-																		{illustrator.name.charAt(0)}
-																	</span>
-																</div>
-																{illustrator.id ? (
-																	<Link
-																		href={`/creators/${illustrator.id}`}
-																		className="text-gray-900 text-sm hover:text-primary hover:underline"
-																		title={`ID: ${illustrator.id}`}
-																	>
-																		{illustrator.name}
-																	</Link>
-																) : (
-																	<span className="text-gray-900 text-sm">{illustrator.name}</span>
-																)}
-															</div>
-														))}
-													</div>
-												</div>
-											);
-										})()}
-
-										{/* 音楽 */}
-										{(() => {
-											const displayMusicians = work.creators?.music || [];
-
-											if (displayMusicians.length === 0) return null;
-
-											return (
-												<div>
-													<h5 className="text-sm font-medium text-gray-700 mb-2">音楽</h5>
-													<div className="space-y-2">
-														{displayMusicians.map((musician, index) => (
-															<div
-																key={musician.id || musician.name || index}
-																className="flex items-center gap-3"
-															>
-																<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
-																	<span className="text-foreground font-bold text-xs">
-																		{musician.name.charAt(0)}
-																	</span>
-																</div>
-																{musician.id ? (
-																	<Link
-																		href={`/creators/${musician.id}`}
-																		className="text-gray-900 text-sm hover:text-primary hover:underline"
-																		title={`ID: ${musician.id}`}
-																	>
-																		{musician.name}
-																	</Link>
-																) : (
-																	<span className="text-gray-900 text-sm">{musician.name}</span>
-																)}
-															</div>
-														))}
-													</div>
-												</div>
-											);
-										})()}
-
-										{/* その他制作者（Individual Info API専用） */}
-										{work.creators?.others && work.creators.others.length > 0 && (
-											<div>
-												<h5 className="text-sm font-medium text-gray-700 mb-2">その他</h5>
-												<div className="space-y-2">
-													{work.creators.others.map((creator, index) => (
-														<div
-															key={creator.id || creator.name || index}
-															className="flex items-center gap-3"
-														>
-															<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
-																<span className="text-foreground font-bold text-xs">
-																	{creator.name.charAt(0)}
-																</span>
-															</div>
-															{creator.id ? (
-																<Link
-																	href={`/creators/${creator.id}`}
-																	className="text-gray-900 text-sm hover:text-primary hover:underline"
-																	title={`ID: ${creator.id}`}
-																>
-																	{creator.name}
-																</Link>
-															) : (
-																<span className="text-gray-900 text-sm">{creator.name}</span>
-															)}
-														</div>
-													))}
-												</div>
-											</div>
-										)}
-									</div>
+									<CreatorList creators={work.creators} />
 								</CardContent>
 							</Card>
 						)}
