@@ -103,6 +103,56 @@ function extractCreatorMappings(apiData: DLsiteApiResponse): Map<string, Extract
 }
 
 /**
+ * WorkDocument.creators フィールド名 → CreatorType のマッピング。
+ *
+ * 注意: これは Firestore work doc に保存された `creators` フィールド用（`created_by` を含む）。
+ * DLsite API レスポンス用の CREATOR_TYPE_MAP（`directed_by` を含む）とは別物なので混同しない。
+ */
+const WORK_DOCUMENT_CREATOR_FIELD_MAP: ReadonlyArray<[string, CreatorType]> = [
+	["voice_by", "voice"],
+	["scenario_by", "scenario"],
+	["illust_by", "illustration"],
+	["music_by", "music"],
+	["others_by", "other"],
+	["created_by", "other"],
+];
+
+/**
+ * WorkDocument.creators（Firestore work doc の creators フィールド）から
+ * クリエイターごとに役割を集約する。
+ *
+ * 整合性 cron の Creator-Work 復元が正本スキーマ（CreatorWorkRelation の
+ * `roles: CreatorType[]`）に一致した文書を書くための共通関数。一作品で複数役割を
+ * 持つクリエイターは roles に集約される。API レスポンスではなく保存済み work doc が
+ * 入力源である点が extractCreatorMappings との違い。
+ *
+ * @param creators WorkDocument の creators フィールド
+ * @returns クリエイターIDをキーとした Map（roles を集約済み）
+ */
+export function extractCreatorMappingsFromWorkDocument(
+	creators: Record<string, { id?: string; name?: string }[] | undefined> | undefined,
+): Map<string, ExtractedCreator> {
+	const mappings = new Map<string, ExtractedCreator>();
+	if (!creators || typeof creators !== "object") {
+		return mappings;
+	}
+
+	for (const [field, role] of WORK_DOCUMENT_CREATOR_FIELD_MAP) {
+		const list = creators[field];
+		if (!Array.isArray(list)) {
+			continue;
+		}
+		for (const creator of list) {
+			if (creator?.id && isValidCreatorId(creator.id) && creator.name) {
+				addOrUpdateCreatorMapping(mappings, creator.id, creator.name, role);
+			}
+		}
+	}
+
+	return mappings;
+}
+
+/**
  * 作品の既存クリエイターマッピングを取得
  *
  * @param workId 作品ID

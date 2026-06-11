@@ -12,14 +12,14 @@
  *   本番データを汚さずに「整合性関数が何を直すか」を確認するための観測専用モード。
  */
 
-import type {
-	DocumentData,
-	DocumentReference,
-	QueryDocumentSnapshot,
-	WriteBatch,
-} from "@google-cloud/firestore";
+import type { DocumentReference, WriteBatch } from "@google-cloud/firestore";
 import type { CloudEvent } from "@google-cloud/functions-framework";
+import type { CreatorType, CreatorWorkRelation } from "@suzumina.click/shared-types";
 import firestore, { Timestamp } from "../infrastructure/database/firestore";
+import {
+	extractCreatorMappingsFromWorkDocument,
+	recomputeCreatorStats,
+} from "../services/dlsite/creator-firestore";
 import * as logger from "../shared/logger";
 
 // メタデータ保存用の定数
@@ -279,33 +279,34 @@ async function ensureCreatorExists(
  */
 async function restoreCreatorWorkMapping(
 	creatorRef: DocumentReference,
-	workDoc: QueryDocumentSnapshot,
-	workData: DocumentData,
-	creator: { id: string; name: string },
-	type: string,
+	workId: string,
+	roles: CreatorType[],
+	circleId: string,
 	batch: WriteBatch,
 	stats: RestoreStats,
-): Promise<void> {
-	const mappingRef = creatorRef.collection("works").doc(workDoc.id);
+): Promise<boolean> {
+	const mappingRef = creatorRef.collection("works").doc(workId);
 	const mappingDoc = await mappingRef.get();
 
-	if (!mappingDoc.exists) {
-		logger.info(`マッピング復元: Creator ${creator.id} - Work ${workDoc.id} (${type})`);
-
-		batch.set(mappingRef, {
-			workId: workDoc.id,
-			workTitle: workData.title,
-			circleId: workData.circleId,
-			circleName: workData.circle,
-			creatorName: creator.name,
-			creatorType: type,
-			createdAt: Timestamp.now(),
-			updatedAt: Timestamp.now(),
-		});
-
-		stats.restoredCount++;
-		stats.batchCount++;
+	if (mappingDoc.exists) {
+		return false;
 	}
+
+	logger.info(`マッピング復元: Creator ${creatorRef.id} - Work ${workId} (${roles.join(", ")})`);
+
+	// 正本スキーマ（CreatorWorkRelation）に一致させる: roles 配列を必ず含める。
+	// web の読み手は workRelation.roles を参照するため、旧フラット形式では役割ゼロ扱いになる。
+	const relation: CreatorWorkRelation = {
+		workId,
+		roles,
+		circleId: circleId || "UNKNOWN",
+		updatedAt: Timestamp.now(),
+	};
+	batch.set(mappingRef, relation);
+
+	stats.restoredCount++;
+	stats.batchCount++;
+	return true;
 }
 
 /**
@@ -343,6 +344,7 @@ async function restoreCreatorWorkRelations(
 	const worksSnapshot = await firestore.collection("works").get();
 	let batch = firestore.batch();
 	const processedCreators = new Set<string>();
+	const creatorsToRecompute = new Set<string>();
 
 	const stats: RestoreStats = {
 		restoredCount: 0,
@@ -350,51 +352,63 @@ async function restoreCreatorWorkRelations(
 		batchCount: 0,
 	};
 
-	// クリエイタータイプの定義
-	const creatorTypes = [
-		{ field: "voice_by", type: "voice" },
-		{ field: "scenario_by", type: "scenario" },
-		{ field: "illust_by", type: "illustration" },
-		{ field: "music_by", type: "music" },
-		{ field: "others_by", type: "other" },
-	];
-
 	for (const workDoc of worksSnapshot.docs) {
 		const workData = workDoc.data();
-		const creators = workData.creators;
 
-		if (!creators) continue;
+		// WorkDocument.creators からクリエイターごとに役割を集約（正本スキーマに一致させる）。
+		// フィールド表は creator-firestore に一本化（created_by 含む WorkDocument 用）。
+		const creatorMappings = extractCreatorMappingsFromWorkDocument(workData.creators);
+		if (creatorMappings.size === 0) {
+			continue;
+		}
 
-		for (const { field, type } of creatorTypes) {
-			const creatorList = creators[field] || [];
+		for (const [creatorId, mapping] of creatorMappings) {
+			// Creatorドキュメントの確認・作成
+			const creatorRef = await ensureCreatorExists(
+				creatorId,
+				mapping.name,
+				mapping.roles[0] ?? "other",
+				batch,
+				processedCreators,
+				stats,
+			);
 
-			for (const creator of creatorList) {
-				if (!creator.id || !creator.name) continue;
+			// バッチサイズチェック
+			batch = await commitBatchIfNeeded(batch, stats, false, dryRun);
 
-				// Creatorドキュメントの確認・作成
-				const creatorRef = await ensureCreatorExists(
-					creator.id,
-					creator.name,
-					type,
-					batch,
-					processedCreators,
-					stats,
-				);
-
-				// バッチサイズチェック
-				batch = await commitBatchIfNeeded(batch, stats, false, dryRun);
-
-				// Creator-Workマッピングの復元
-				await restoreCreatorWorkMapping(creatorRef, workDoc, workData, creator, type, batch, stats);
-
-				// バッチサイズチェック
-				batch = await commitBatchIfNeeded(batch, stats, false, dryRun);
+			// Creator-Workマッピングの復元（roles 配列を含む正本スキーマで書く）
+			const restored = await restoreCreatorWorkMapping(
+				creatorRef,
+				workDoc.id,
+				mapping.roles,
+				workData.circleId,
+				batch,
+				stats,
+			);
+			if (restored) {
+				creatorsToRecompute.add(creatorId);
 			}
+
+			// バッチサイズチェック
+			batch = await commitBatchIfNeeded(batch, stats, false, dryRun);
 		}
 	}
 
 	// 残りのバッチをコミット
 	batch = await commitBatchIfNeeded(batch, stats, true, dryRun);
+
+	// 復元したクリエイターの denormalized stats（workCount/types/primaryRole）を同期する。
+	// /creators の読み込みパスがこれらを使うため、復元時にも正本ライタと同様に再計算が必要。
+	// dryRun では書き込まないので再計算もしない（未コミットの relation を読んでしまうため）。
+	if (!dryRun && creatorsToRecompute.size > 0) {
+		const recomputeResults = await Promise.allSettled(
+			Array.from(creatorsToRecompute).map((creatorId) => recomputeCreatorStats(creatorId)),
+		);
+		const failed = recomputeResults.filter((r) => r.status === "rejected").length;
+		if (failed > 0) {
+			logger.warn(`クリエイター集計再計算で ${failed} 件失敗`);
+		}
+	}
 
 	// 結果に追加
 	result.checks.creatorWorkRestore = {

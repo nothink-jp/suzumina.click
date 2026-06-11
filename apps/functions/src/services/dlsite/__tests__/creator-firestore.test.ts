@@ -10,6 +10,7 @@ import type {
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as logger from "../../../shared/logger";
 import {
+	extractCreatorMappingsFromWorkDocument,
 	getCreatorWithWorks,
 	getCreatorWorkCount,
 	recomputeCreatorStats,
@@ -509,6 +510,49 @@ describe("creator-firestore", () => {
 			expect(updateArg.workCount).toBe(0);
 			expect(updateArg.types).toEqual([]);
 			expect(updateArg.primaryRole).toBeUndefined();
+		});
+	});
+
+	describe("extractCreatorMappingsFromWorkDocument", () => {
+		it("WorkDocument.creators の各フィールドを CreatorType にマッピングする（created_by を含む）", () => {
+			const mappings = extractCreatorMappingsFromWorkDocument({
+				voice_by: [{ id: "CR1", name: "声優" }],
+				scenario_by: [{ id: "CR2", name: "脚本" }],
+				illust_by: [{ id: "CR3", name: "絵" }],
+				music_by: [{ id: "CR4", name: "音楽" }],
+				others_by: [{ id: "CR5", name: "その他" }],
+				created_by: [{ id: "CR6", name: "制作" }],
+			});
+
+			expect(mappings.get("CR1")?.roles).toEqual(["voice"]);
+			expect(mappings.get("CR2")?.roles).toEqual(["scenario"]);
+			expect(mappings.get("CR3")?.roles).toEqual(["illustration"]);
+			expect(mappings.get("CR4")?.roles).toEqual(["music"]);
+			expect(mappings.get("CR5")?.roles).toEqual(["other"]);
+			// created_by を取りこぼさず other に集約する（旧 cron は未対応だった）
+			expect(mappings.get("CR6")?.roles).toEqual(["other"]);
+		});
+
+		it("同一クリエイターが複数役割を持つ場合は roles に集約する", () => {
+			const mappings = extractCreatorMappingsFromWorkDocument({
+				voice_by: [{ id: "CR1", name: "万能" }],
+				scenario_by: [{ id: "CR1", name: "万能" }],
+			});
+
+			expect(mappings.size).toBe(1);
+			expect(mappings.get("CR1")?.roles).toEqual(["voice", "scenario"]);
+		});
+
+		it("id または name 欠落のエントリはスキップする", () => {
+			const mappings = extractCreatorMappingsFromWorkDocument({
+				voice_by: [{ id: "CR1", name: "正常" }, { name: "id無し" }, { id: "CR3", name: "" }],
+			});
+
+			expect(Array.from(mappings.keys())).toEqual(["CR1"]);
+		});
+
+		it("creators が undefined のときは空の Map を返す", () => {
+			expect(extractCreatorMappingsFromWorkDocument(undefined).size).toBe(0);
 		});
 	});
 });
