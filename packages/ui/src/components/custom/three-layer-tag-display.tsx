@@ -94,7 +94,6 @@ export function VideoTagDisplay({
 	// コンパクト表示の場合
 	if (compact) {
 		const allTags = buildCompactTags({
-			order,
 			showCategory,
 			categoryId,
 			categoryName,

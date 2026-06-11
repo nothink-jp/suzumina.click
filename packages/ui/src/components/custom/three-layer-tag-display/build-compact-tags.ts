@@ -9,7 +9,6 @@ export interface TagData {
 }
 
 interface BuildCompactTagsOptions {
-	order: "default" | "detail";
 	showCategory: boolean;
 	categoryId?: string;
 	categoryName?: string;
@@ -19,7 +18,6 @@ interface BuildCompactTagsOptions {
 }
 
 export function buildCompactTags({
-	order,
 	showCategory,
 	categoryId,
 	categoryName,

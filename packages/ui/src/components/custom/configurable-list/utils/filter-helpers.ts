@@ -62,7 +62,7 @@ export function normalizeOptions(
  * フィルターが有効かチェック
  */
 export function isFilterEnabled(
-	filterKey: string,
+	_filterKey: string,
 	config: FilterConfig,
 	allFilters: Record<string, unknown>,
 ): boolean {

@@ -96,7 +96,7 @@ export const AudioPlayer = forwardRef<AudioControls, AudioPlayerProps>(
 					onEnd?.();
 				}
 			}
-		}, [audioButton, onPlay, onPause, onEnd, pool.playSegment]);
+		}, [audioButton, onPlay, onPause, onEnd]);
 
 		/**
 		 * 一時停止処理
@@ -107,7 +107,7 @@ export const AudioPlayer = forwardRef<AudioControls, AudioPlayerProps>(
 				setIsPlaying(false);
 				onPause?.();
 			}
-		}, [onPause, pool.stopCurrentSegment]);
+		}, [onPause]);
 
 		/**
 		 * 停止処理
@@ -118,7 +118,7 @@ export const AudioPlayer = forwardRef<AudioControls, AudioPlayerProps>(
 				setIsPlaying(false);
 				onEnd?.();
 			}
-		}, [onEnd, pool.stopCurrentSegment]);
+		}, [onEnd]);
 
 		/**
 		 * 音量設定
@@ -133,7 +133,7 @@ export const AudioPlayer = forwardRef<AudioControls, AudioPlayerProps>(
 					console.error("Failed to set volume:", error);
 				}
 			},
-			[audioButton.videoId, pool.getOrCreatePlayer],
+			[audioButton.videoId],
 		);
 
 		// YouTube API準備完了の監視
@@ -143,7 +143,7 @@ export const AudioPlayer = forwardRef<AudioControls, AudioPlayerProps>(
 					setIsReady(true);
 				}
 			});
-		}, [pool.onReady]);
+		}, []);
 
 		// 音量の初期設定
 		useEffect(() => {
@@ -169,7 +169,7 @@ export const AudioPlayer = forwardRef<AudioControls, AudioPlayerProps>(
 					pool.stopCurrentSegment();
 				}
 			};
-		}, [isPlaying, pool.stopCurrentSegment]);
+		}, [isPlaying]);
 
 		// 外部制御用のAPI公開
 		useImperativeHandle(

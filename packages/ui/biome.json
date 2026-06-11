@@ -12,9 +12,6 @@
 				"noConsole": "off",
 				"noArrayIndexKey": "off"
 			},
-			"correctness": {
-				"noUnusedFunctionParameters": "off"
-			},
 			"complexity": {
 				"noExcessiveCognitiveComplexity": "error"
 			},

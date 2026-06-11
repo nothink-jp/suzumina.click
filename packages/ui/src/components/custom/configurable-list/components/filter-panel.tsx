@@ -11,8 +11,8 @@ interface FilterPanelProps {
 	onChange: (filters: Record<string, unknown>) => void;
 }
 
-export function FilterPanel({ filters, values, onChange }: FilterPanelProps) {
-	// 簡易実装 - 実際の実装は既存のConfigurableListのフィルター部分を移植
+export function FilterPanel({ filters }: FilterPanelProps) {
+	// 簡易実装 - 実際の実装は既存のConfigurableListのフィルター部分を移植（values/onChange は実装時に再度 destructure する）
 	return (
 		<div className="space-y-4">
 			{Object.entries(filters).map(([key, config]) => (
