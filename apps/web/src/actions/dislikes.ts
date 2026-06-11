@@ -1,110 +1,19 @@
 "use server";
 
-import { decrementDislikeCount, incrementDislikeCount } from "@/app/buttons/actions";
 import { requireAuth } from "@/components/system/protected-route";
 import { getFirestore } from "@/lib/firestore";
-import * as logger from "@/lib/logger";
+import { toggleReaction } from "./reaction-toggle";
 
 /**
- * 音声ボタンの低評価状態を切り替え
+ * 音声ボタンの低評価状態を切り替え（正本は reaction-toggle の toggleReaction）
  */
 export async function toggleDislikeAction(audioButtonId: string): Promise<{
 	success: boolean;
 	isDisliked?: boolean;
 	error?: string;
 }> {
-	try {
-		const user = await requireAuth();
-		const firestore = getFirestore();
-
-		const userDislikeRef = firestore
-			.collection("users")
-			.doc(user.discordId)
-			.collection("dislikes")
-			.doc(audioButtonId);
-
-		const userLikeRef = firestore
-			.collection("users")
-			.doc(user.discordId)
-			.collection("likes")
-			.doc(audioButtonId);
-
-		const [dislikeDoc, likeDoc] = await Promise.all([userDislikeRef.get(), userLikeRef.get()]);
-
-		const isCurrentlyDisliked = dislikeDoc.exists;
-		const isCurrentlyLiked = likeDoc.exists;
-
-		// トランザクションで整合性を保つ
-		await firestore.runTransaction(async (transaction) => {
-			if (isCurrentlyDisliked) {
-				// 低評価を取り消す
-				transaction.delete(userDislikeRef);
-			} else {
-				// 低評価を追加
-				transaction.set(userDislikeRef, {
-					audioButtonId,
-					createdAt: new Date().toISOString(),
-				});
-
-				// 既にいいねが付いている場合は削除（相互排他）
-				if (isCurrentlyLiked) {
-					transaction.delete(userLikeRef);
-				}
-			}
-		});
-
-		// 音声ボタンの低評価数を更新
-		const dislikeUpdateResult = isCurrentlyDisliked
-			? await decrementDislikeCount(audioButtonId)
-			: await incrementDislikeCount(audioButtonId);
-
-		if (!dislikeUpdateResult.success) {
-			logger.warn("低評価数の更新に失敗", {
-				audioButtonId,
-				userId: user.discordId,
-				isCurrentlyDisliked,
-				error: dislikeUpdateResult.error,
-			});
-		}
-
-		// いいねが付いていた場合は、いいね数も減少
-		if (!isCurrentlyDisliked && isCurrentlyLiked) {
-			const { decrementLikeCount } = await import("@/app/buttons/actions");
-			const likeUpdateResult = await decrementLikeCount(audioButtonId);
-
-			if (!likeUpdateResult.success) {
-				logger.warn("いいね数の減少に失敗", {
-					audioButtonId,
-					userId: user.discordId,
-					error: likeUpdateResult.error,
-				});
-			}
-		}
-
-		logger.info("低評価状態を更新", {
-			audioButtonId,
-			userId: user.discordId,
-			wasDisliked: isCurrentlyDisliked,
-			nowDisliked: !isCurrentlyDisliked,
-			hadLike: isCurrentlyLiked,
-		});
-
-		return {
-			success: true,
-			isDisliked: !isCurrentlyDisliked,
-		};
-	} catch (error) {
-		logger.error("低評価状態の切り替えでエラーが発生", {
-			audioButtonId,
-			error: error instanceof Error ? error.message : String(error),
-			stack: error instanceof Error ? error.stack : undefined,
-		});
-
-		return {
-			success: false,
-			error: "低評価状態の更新に失敗しました",
-		};
-	}
+	const result = await toggleReaction(audioButtonId, "dislike");
+	return { success: result.success, isDisliked: result.active, error: result.error };
 }
 
 /**

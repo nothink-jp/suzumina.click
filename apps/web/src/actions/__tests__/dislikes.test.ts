@@ -1,37 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getLikeDislikeStatusAction, toggleDislikeAction } from "../dislikes";
 
-// モックの設定（認証は @/components/system/protected-route の requireAuth をモックして制御）
-vi.mock("@/lib/firestore", () => ({
-	getFirestore: vi.fn(() => ({
-		collection: vi.fn(() => ({
-			doc: vi.fn(() => ({
-				collection: vi.fn(() => ({
-					doc: vi.fn(() => ({
-						get: vi.fn(),
-						set: vi.fn(),
-						delete: vi.fn(),
-					})),
-				})),
-				get: vi.fn(),
-			})),
-		})),
-		runTransaction: vi.fn(),
-	})),
-}));
+// toggleDislikeAction は reaction-toggle の toggleReaction への薄い委譲（SPR-192）
+const { mockToggleReaction } = vi.hoisted(() => ({ mockToggleReaction: vi.fn() }));
+vi.mock("../reaction-toggle", () => ({ toggleReaction: mockToggleReaction }));
 
-vi.mock("@/app/buttons/actions", () => ({
-	incrementDislikeCount: vi.fn(),
-	decrementDislikeCount: vi.fn(),
-}));
+vi.mock("@/lib/firestore", () => ({ getFirestore: vi.fn() }));
 
-vi.mock("next/navigation", () => ({
-	redirect: vi.fn(),
-}));
-
-vi.mock("@/components/system/protected-route", () => ({
-	requireAuth: vi.fn(),
-}));
+vi.mock("@/components/system/protected-route", () => ({ requireAuth: vi.fn() }));
 
 vi.mock("@/lib/logger", () => ({
 	info: vi.fn(),
@@ -40,69 +16,35 @@ vi.mock("@/lib/logger", () => ({
 }));
 
 const mockRequireAuth = vi.mocked(await import("@/components/system/protected-route")).requireAuth;
-const mockIncrementDislikeCount = vi.mocked(
-	await import("@/app/buttons/actions"),
-).incrementDislikeCount;
-const _mockDecrementDislikeCount = vi.mocked(
-	await import("@/app/buttons/actions"),
-).decrementDislikeCount;
 
 describe("dislikes actions", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 	});
 
-	describe("toggleDislikeAction", () => {
-		it("認証されていない場合はエラーが返される", async () => {
-			mockRequireAuth.mockRejectedValue(new Error("認証が必要です"));
+	describe("toggleDislikeAction（reaction-toggle への委譲）", () => {
+		it("toggleReaction(id, 'dislike') に委譲し active を isDisliked にマップする", async () => {
+			mockToggleReaction.mockResolvedValue({ success: true, active: true });
+
+			const result = await toggleDislikeAction("test-id");
+
+			expect(mockToggleReaction).toHaveBeenCalledWith("test-id", "dislike");
+			expect(result).toEqual({ success: true, isDisliked: true, error: undefined });
+		});
+
+		it("失敗時は error を透過する", async () => {
+			mockToggleReaction.mockResolvedValue({
+				success: false,
+				error: "低評価状態の更新に失敗しました",
+			});
 
 			const result = await toggleDislikeAction("test-id");
 
 			expect(result).toEqual({
 				success: false,
+				isDisliked: undefined,
 				error: "低評価状態の更新に失敗しました",
 			});
-		});
-
-		it("有効なユーザーがトグルできる", async () => {
-			const mockUser = {
-				discordId: "123456789012345678",
-				name: "Test User",
-				email: "test@example.com",
-				image: null,
-			};
-
-			mockRequireAuth.mockResolvedValue(mockUser);
-			mockIncrementDislikeCount.mockResolvedValue({ success: true });
-
-			// Firestoreのモックを設定
-			const mockFirestore = await import("@/lib/firestore");
-			const getFirestore = vi.mocked(mockFirestore.getFirestore);
-			const mockDoc = {
-				get: vi.fn().mockResolvedValue({ exists: false }),
-				set: vi.fn(),
-				delete: vi.fn(),
-			};
-			const mockTransaction = {
-				set: vi.fn(),
-				delete: vi.fn(),
-			};
-
-			getFirestore.mockReturnValue({
-				collection: vi.fn(() => ({
-					doc: vi.fn(() => ({
-						collection: vi.fn(() => ({
-							doc: vi.fn(() => mockDoc),
-						})),
-					})),
-				})),
-				runTransaction: vi.fn((callback) => callback(mockTransaction)),
-			} as any);
-
-			const result = await toggleDislikeAction("test-id");
-
-			expect(result.success).toBe(true);
-			expect(result.isDisliked).toBe(true);
 		});
 	});
 
@@ -124,7 +66,7 @@ describe("dislikes actions", () => {
 				image: null,
 			};
 
-			mockRequireAuth.mockResolvedValue(mockUser);
+			mockRequireAuth.mockResolvedValue(mockUser as never);
 
 			// Firestoreのモックを設定
 			const mockFirestore = await import("@/lib/firestore");
@@ -142,7 +84,7 @@ describe("dislikes actions", () => {
 						})),
 					})),
 				})),
-			} as any);
+			} as never);
 
 			const result = await getLikeDislikeStatusAction(["test-id"]);
 
