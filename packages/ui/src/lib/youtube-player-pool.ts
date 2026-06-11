@@ -9,6 +9,7 @@
 
 // 既存のyoutube-typesを再利用
 import type { YTPlayer, YTPlayerConfig } from "../components/custom/youtube-types";
+import { loadYouTubeIframeAPI } from "./youtube-api-loader";
 
 interface PlayerData {
 	player: YTPlayer;
@@ -59,33 +60,13 @@ export class YouTubePlayerPool {
 	}
 
 	/**
-	 * YouTube IFrame APIの初期化
+	 * YouTube IFrame APIの初期化（共通ローダー経由・callback はチェーン）
 	 */
 	private initializeYouTubeAPI(): void {
-		if (typeof window === "undefined") return;
-
-		// 既にAPIが読み込まれている場合
-		if (window.YT?.Player) {
+		loadYouTubeIframeAPI(() => {
 			this.isAPIReady = true;
 			this.executeReadyCallbacks();
-			return;
-		}
-
-		// APIの読み込み
-		if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
-			const tag = document.createElement("script");
-			tag.src = "https://www.youtube.com/iframe_api";
-			const firstScriptTag = document.getElementsByTagName("script")[0];
-			if (firstScriptTag?.parentNode) {
-				firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-			}
-		}
-
-		// グローバルコールバックの設定
-		window.onYouTubeIframeAPIReady = () => {
-			this.isAPIReady = true;
-			this.executeReadyCallbacks();
-		};
+		});
 	}
 
 	/**
