@@ -19,7 +19,6 @@ interface BuildCompactTagsOptions {
 }
 
 export function buildCompactTags({
-	order,
 	showCategory,
 	categoryId,
 	categoryName,

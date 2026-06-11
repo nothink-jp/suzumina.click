@@ -47,7 +47,6 @@
 			"recommended": true,
 			"correctness": {
 				"noNodejsModules": "off",
-				"useExhaustiveDependencies": "warn",
 				"noUnusedPrivateClassMembers": "warn"
 			},
 			"suspicious": {
