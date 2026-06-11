@@ -53,6 +53,7 @@ export default function WorkDescription({ description, title }: WorkDescriptionP
 				) : (
 					<div>
 						<div
+							// biome-ignore lint/security/noDangerouslySetInnerHtml: formatWorkDescription がユーザー入力を escapeHtml 済みで、注入されるタグは自前の信頼できるマークアップのみ
 							dangerouslySetInnerHTML={{ __html: formattedDescription }}
 							className="prose prose-sm max-w-none prose-gray [&_a]:text-primary [&_a]:no-underline [&_a]:hover:underline [&_strong]:text-gray-900 [&_ul]:my-2 [&_li]:my-1"
 						/>

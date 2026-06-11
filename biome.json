@@ -79,9 +79,6 @@
 			},
 			"complexity": {
 				"noExcessiveCognitiveComplexity": "error"
-			},
-			"security": {
-				"noDangerouslySetInnerHtml": "off"
 			}
 		}
 	},

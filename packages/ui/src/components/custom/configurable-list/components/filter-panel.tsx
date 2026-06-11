@@ -17,7 +17,7 @@ export function FilterPanel({ filters, values, onChange }: FilterPanelProps) {
 		<div className="space-y-4">
 			{Object.entries(filters).map(([key, config]) => (
 				<div key={key}>
-					<label className="text-sm font-medium">{config.label || key}</label>
+					<span className="text-sm font-medium">{config.label || key}</span>
 					{/* フィルタータイプに応じたコンポーネントを表示 */}
 					<div className="mt-1 text-muted-foreground text-xs">Filter type: {config.type}</div>
 				</div>

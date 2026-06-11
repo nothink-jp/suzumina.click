@@ -21,6 +21,7 @@ export function GoogleTagManager() {
 			<Script
 				id="google-tag-manager"
 				strategy="lazyOnload"
+				// biome-ignore lint/security/noDangerouslySetInnerHtml: env 由来の gtmId を埋め込む標準の GTM ブートストラップ（ユーザー入力なし）
 				dangerouslySetInnerHTML={{
 					__html: `
 						(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
