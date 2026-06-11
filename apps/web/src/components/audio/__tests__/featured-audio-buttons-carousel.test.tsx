@@ -25,12 +25,12 @@ vi.mock("../audio-button-with-favorite-client", () => ({
 }));
 
 describe("FeaturedAudioButtonsCarousel", () => {
-	// レガシー入力を fromFirestore に通して正規の AudioButtonPlainObject（_computed 含む）を生成する
-	const mockAudioButtons = [
+	// レガシー入力を fromFirestore の引数型で型付けし（入力型変更を即検知）、通して正規の
+	// AudioButtonPlainObject（_computed 含む）を生成する。
+	const legacyInputs: Parameters<typeof audioButtonTransformers.fromFirestore>[0][] = [
 		{
 			id: "audio-1",
 			title: "テスト音声ボタン1",
-			description: "テスト用の音声ボタン",
 			tags: ["テスト"],
 			sourceVideoId: "video-1",
 			sourceVideoTitle: "テスト動画1",
@@ -50,7 +50,6 @@ describe("FeaturedAudioButtonsCarousel", () => {
 		{
 			id: "audio-2",
 			title: "テスト音声ボタン2",
-			description: "テスト用の音声ボタン2",
 			tags: ["音楽"],
 			sourceVideoId: "video-2",
 			sourceVideoTitle: "テスト動画2",
@@ -67,7 +66,8 @@ describe("FeaturedAudioButtonsCarousel", () => {
 			createdAt: "2023-01-02T00:00:00Z",
 			updatedAt: "2023-01-02T00:00:00Z",
 		},
-	]
+	];
+	const mockAudioButtons = legacyInputs
 		.map((d) => audioButtonTransformers.fromFirestore(d))
 		.filter((b): b is AudioButtonPlainObject => b !== null);
 
