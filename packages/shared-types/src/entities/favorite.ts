@@ -39,6 +39,9 @@ export type RemoveFavoriteInput = z.infer<typeof RemoveFavoriteInputSchema>;
 export const FavoriteQuerySchema = z.object({
 	limit: z.number().min(1).max(100).default(20),
 	orderBy: z.enum(["newest", "oldest"]).default("newest"),
+	/** ページ番号（1始まり）。指定時は offset エミュレーションでページ送りする */
+	page: z.number().min(1).optional(),
+	/** doc-ID カーソル（page 未指定時の後方互換） */
 	startAfter: z.string().optional(),
 });
 
