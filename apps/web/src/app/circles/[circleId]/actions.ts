@@ -6,65 +6,10 @@ import type {
 	WorkDocument,
 	WorkPlainObject,
 } from "@suzumina.click/shared-types";
-import {
-	convertToCirclePlainObject,
-	isValidCircleId,
-	workTransformers,
-} from "@suzumina.click/shared-types";
+import { convertToCirclePlainObject, isValidCircleId } from "@suzumina.click/shared-types";
+import { compareWorks, searchWorks } from "@/lib/circle-creator-works";
 import { getFirestore } from "@/lib/firestore";
-import { warn } from "@/lib/logger";
-
-/**
- * Compare works by date (newest or oldest)
- */
-function compareByDate(a: WorkPlainObject, b: WorkPlainObject, isOldest = false): number {
-	const dateA = a.releaseDateISO || "1900-01-01";
-	const dateB = b.releaseDateISO || "1900-01-01";
-	if (dateA === dateB) {
-		return isOldest
-			? a.productId.localeCompare(b.productId)
-			: b.productId.localeCompare(a.productId);
-	}
-	return isOldest ? dateA.localeCompare(dateB) : dateB.localeCompare(dateA);
-}
-
-/**
- * Compare works by rating (popular)
- */
-function compareByRating(a: WorkPlainObject, b: WorkPlainObject): number {
-	const ratingA = a.rating?.stars || 0;
-	const ratingB = b.rating?.stars || 0;
-	return ratingB - ratingA;
-}
-
-/**
- * Compare works by price
- */
-function compareByPrice(a: WorkPlainObject, b: WorkPlainObject, isHighToLow = false): number {
-	const priceA = a.price?.current || 0;
-	const priceB = b.price?.current || 0;
-	return isHighToLow ? priceB - priceA : priceA - priceB;
-}
-
-/**
- * Works sorting comparison function
- */
-function compareWorks(a: WorkPlainObject, b: WorkPlainObject, sort: string): number {
-	switch (sort) {
-		case "newest":
-			return compareByDate(a, b, false);
-		case "oldest":
-			return compareByDate(a, b, true);
-		case "popular":
-			return compareByRating(a, b);
-		case "price_low":
-			return compareByPrice(a, b, false);
-		case "price_high":
-			return compareByPrice(a, b, true);
-		default:
-			return compareByDate(a, b, false);
-	}
-}
+import { convertWorksToPlainObjects } from "../../works/utils/work-converters";
 
 /**
  * サークル情報を取得
@@ -140,38 +85,11 @@ export async function getCircleWorksList(params: {
 				return work.circleId === circleId || work.circle === circleName;
 			});
 
-		// WorkPlainObjectに変換
-		const convertedWorks: WorkPlainObject[] = [];
-		for (const work of allMatchingWorks) {
-			try {
-				const converted = workTransformers.fromFirestore(work);
-				convertedWorks.push(converted);
-			} catch (error) {
-				// Log warning but continue processing other items
-				warn(`Failed to convert work ${work.id}`, {
-					error: error instanceof Error ? error.message : String(error),
-				});
-			}
-		}
+		// WorkPlainObjectに変換（work-converters の正本を共用）
+		const convertedWorks = convertWorksToPlainObjects(allMatchingWorks);
 
-		// 検索フィルタリング
-		let filteredWorks = convertedWorks;
-		if (search) {
-			const searchLower = search.toLowerCase();
-			filteredWorks = convertedWorks.filter((work) => {
-				const searchableText = [
-					work.title,
-					work.description,
-					...(work.creators?.voiceActors?.map((actor) => actor.name) || []),
-					...(work.customGenres || []),
-					...(work.genres || []),
-				]
-					.filter(Boolean)
-					.join(" ")
-					.toLowerCase();
-				return searchableText.includes(searchLower);
-			});
-		}
+		// 検索フィルタリング（circle/creator 共通）
+		const { filtered: filteredWorks, count: filteredCount } = searchWorks(convertedWorks, search);
 
 		// ソート処理
 		filteredWorks.sort((a, b) => compareWorks(a, b, sort));
@@ -184,7 +102,7 @@ export async function getCircleWorksList(params: {
 		return {
 			works: paginatedWorks,
 			totalCount: convertedWorks.length,
-			filteredCount: search ? filteredWorks.length : undefined,
+			filteredCount,
 		};
 	} catch (_error) {
 		// エラー発生時は空配列を返す
