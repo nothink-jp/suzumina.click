@@ -38,6 +38,7 @@ import { PriceHistory } from "@/components/price-history/price-history";
 import ThumbnailImage from "@/components/ui/thumbnail-image";
 import { formatJSTDateTime } from "@/utils/date-format";
 import { generateMockCharacteristicData } from "@/utils/mock-evaluation-data";
+import { calculatePriceInfo } from "../../utils/price-info";
 import SampleImageGallery from "./sample-image-gallery";
 import WorkDescription from "./work-description";
 import { WorkEvaluation } from "./work-evaluation";
@@ -61,22 +62,6 @@ function StarRating({ rating }: { rating: number }) {
 			))}
 		</div>
 	);
-}
-
-// 価格情報を計算
-function calculatePriceInfo(work: WorkPlainObject) {
-	const currentPrice = work.price.current;
-	// セール判定は「実割引（current < original）」を正本とする。
-	// discount フィールドはセール終了後も古い値が残りうるため判定にも表示にも使わない（軸3: 正本の整合性）。
-	const isOnSale = work.price.isDiscounted;
-	const originalPrice = isOnSale ? work.price.original : undefined;
-	// 割引率も current/original から算出し、判定と表示の正本を揃える。
-	const discountRate =
-		isOnSale && originalPrice
-			? Math.round(((originalPrice - currentPrice) / originalPrice) * 100)
-			: undefined;
-
-	return { currentPrice, originalPrice, isOnSale, discountRate };
 }
 
 // シェア処理
@@ -109,7 +94,7 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 
 	// 価格情報の計算
 	const { currentPrice, originalPrice, isOnSale, discountRate } = useMemo(
-		() => calculatePriceInfo(work),
+		() => calculatePriceInfo(work.price),
 		[work],
 	);
 
