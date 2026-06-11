@@ -77,7 +77,7 @@ export * from "./plain-objects/work-plain";
 //   Work        → workTransformers.fromFirestore
 //   Video       → videoTransformers.fromFirestore（videoFromFirestore 別名）
 //   AudioButton → audioButtonTransformers.fromFirestore
-// 旧 utilities/work-conversions.ts（convertToWorkPlainObject 等）は呼び出しゼロの死蔵だったため削除（SPR-197）。
+// 旧 utilities/work-conversions.ts（convertToWorkPlainObject 等）は呼び出しゼロの死蔵だったため削除。
 export { audioButtonTransformers } from "./transformers/audio-button";
 export {
 	convertToFrontendVideo,

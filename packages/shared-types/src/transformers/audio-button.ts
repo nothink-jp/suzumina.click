@@ -126,8 +126,7 @@ function buildComputedProperties(
 	const isPopular = playCount >= 100;
 	const popularityScore = playCount + likeCount * 2 - dislikeCount;
 
-	// createAudioButton と同一の表記（0秒→"再生" / <60秒→"N秒" / それ以上→"m:ss"）に統一する。
-	// 生成経路（fromFirestore / createAudioButton）で durationText がズレないように formatDuration を正本とする。
+	// durationText の正本は formatDuration（0秒→"再生" / <60秒→"N秒" / それ以上→"m:ss"）。
 	const durationText = formatDuration(duration);
 
 	const searchableText = [

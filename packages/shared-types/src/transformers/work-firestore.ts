@@ -1,5 +1,5 @@
 /**
- * Work Firestore Transformer（旧 work-firestore-final.ts / SPR-197 で "final" を撤去して改名）
+ * Work Firestore Transformer（旧 work-firestore-final.ts。"final" が何を約束するか不明だったため改名）
  *
  * WorkDocument（Firestore）→ WorkPlainObject の読み取り変換。Document に存在するフィールドのみを写す。
  * 書き込み（Plain→Document）は持たない（収集パイプライン / Server Action が直接構築する）。
@@ -40,7 +40,7 @@ function getCategoryDisplay(category: string): string {
  *
  * Firestore 上では `string` と `{ name }` オブジェクトが混在しうる（旧データ）ため、両形を吸収する。
  * 以前は fromFirestore 内の genres / customGenres × 2箇所で同じ map が4重複し、各所で
- * `(g as any).name` の noExplicitAny biome-ignore を発生させていた（SPR-197 で集約）。
+ * `(g as any).name` の noExplicitAny biome-ignore を発生させていた（重複を1関数に集約）。
  */
 function normalizeGenres(raw: readonly unknown[] | undefined): string[] {
 	if (!raw) return [];
@@ -287,7 +287,7 @@ export function fromFirestore(doc: WorkDocument): WorkPlainObject {
  *
  * 読み取り（Document→Plain）の正本は fromFirestore。書き込み（Plain→Document）は
  * 各 Server Action / 収集パイプラインがドキュメントを直接構築するため、本 transformer は
- * 持たない（旧 toFirestore は `as any as WorkDocument` 付きの呼び出しゼロの死蔵だったため SPR-197 で削除）。
+ * 持たない（旧 toFirestore は `as any as WorkDocument` 付きの呼び出しゼロの死蔵だったため削除）。
  */
 export const workTransformers = {
 	fromFirestore,
