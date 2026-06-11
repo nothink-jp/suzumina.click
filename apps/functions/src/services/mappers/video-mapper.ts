@@ -192,29 +192,6 @@ function getBestThumbnail(thumbnails: youtube_v3.Schema$ThumbnailDetails | undef
 	return "";
 }
 
-/**
- * Batch mapping result
- */
-export interface BatchMappingResult {
-	videos: VideoPlainObject[];
-	errors: VideoMappingError[];
-	totalProcessed: number;
-	successCount: number;
-	failureCount: number;
-}
-
-/**
- * Video mapping error
- */
-export interface VideoMappingError {
-	videoId?: string;
-	field: string;
-	reason: string;
-}
-
-// Re-export the main function with the old name for backward compatibility
-export const mapYouTubeToVideoEntity = mapYouTubeToVideoPlainObject;
-
 // Backward compatibility exports (using object instead of class)
 export const VideoMapper = {
 	fromYouTubeAPI(video: youtube_v3.Schema$Video): VideoPlainObject | null {
