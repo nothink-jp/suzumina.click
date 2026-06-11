@@ -1,157 +1,37 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// Mock dependencies first to avoid auth/Firestore side effects on import
-const mockRequireAuth = vi.fn();
-const mockGetFirestore = vi.fn();
-const mockIncrementLikeCount = vi.fn();
-const mockDecrementLikeCount = vi.fn();
+// toggleLikeAction は reaction-toggle の toggleReaction への薄い委譲（SPR-192）
+const { mockToggleReaction } = vi.hoisted(() => ({ mockToggleReaction: vi.fn() }));
+vi.mock("../reaction-toggle", () => ({ toggleReaction: mockToggleReaction }));
 
-vi.mock("@/components/system/protected-route", () => ({
-	requireAuth: mockRequireAuth,
-}));
-
-vi.mock("@/lib/firestore", () => ({
-	getFirestore: mockGetFirestore,
-}));
-
-vi.mock("@/app/buttons/actions", () => ({
-	incrementLikeCount: mockIncrementLikeCount,
-	decrementLikeCount: mockDecrementLikeCount,
-}));
-
-vi.mock("@/lib/logger", () => ({
-	info: vi.fn(),
-	warn: vi.fn(),
-	error: vi.fn(),
-}));
-
-// Import after mocking
 const { toggleLikeAction } = await import("../likes");
 
-describe("likes actions", () => {
+describe("toggleLikeAction", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 	});
 
-	describe("toggleLikeAction", () => {
-		it("adds like when not currently liked", async () => {
-			const mockUser = { discordId: "user-1", displayName: "Test User", role: "member" };
-			mockRequireAuth.mockResolvedValue(mockUser);
+	it("toggleReaction(id, 'like') に委譲し active を isLiked にマップする", async () => {
+		mockToggleReaction.mockResolvedValue({ success: true, active: true });
 
-			const mockDoc = { exists: false };
-			const mockGet = vi.fn().mockResolvedValue(mockDoc);
-			const mockSet = vi.fn();
-			const mockDelete = vi.fn();
-			const mockUserLikeRef = { get: mockGet, set: mockSet, delete: mockDelete };
+		const result = await toggleLikeAction("audio-1");
 
-			const mockTransaction = vi.fn((callback) =>
-				callback({
-					set: mockSet,
-					delete: mockDelete,
-				}),
-			);
-			const mockRunTransaction = vi.fn().mockImplementation(mockTransaction);
+		expect(mockToggleReaction).toHaveBeenCalledWith("audio-1", "like");
+		expect(result).toEqual({ success: true, isLiked: true, error: undefined });
+	});
 
-			const mockCollection = vi.fn().mockReturnValue({
-				doc: vi.fn().mockReturnValue({
-					collection: vi.fn().mockReturnValue({
-						doc: vi.fn().mockReturnValue(mockUserLikeRef),
-					}),
-				}),
-			});
-			const mockFirestore = {
-				collection: mockCollection,
-				runTransaction: mockRunTransaction,
-			};
-			mockGetFirestore.mockReturnValue(mockFirestore as any);
-
-			mockIncrementLikeCount.mockResolvedValue({ success: true });
-
-			const result = await toggleLikeAction("audio-1");
-
-			expect(result.success).toBe(true);
-			expect(result.isLiked).toBe(true);
-			expect(mockSet).toHaveBeenCalled();
-			expect(mockIncrementLikeCount).toHaveBeenCalledWith("audio-1");
+	it("失敗時は error を透過する", async () => {
+		mockToggleReaction.mockResolvedValue({
+			success: false,
+			error: "いいね状態の更新に失敗しました",
 		});
 
-		it("removes like when currently liked", async () => {
-			const mockUser = { discordId: "user-1", displayName: "Test User", role: "member" };
-			mockRequireAuth.mockResolvedValue(mockUser);
+		const result = await toggleLikeAction("audio-1");
 
-			const mockDoc = { exists: true };
-			const mockGet = vi.fn().mockResolvedValue(mockDoc);
-			const mockSet = vi.fn();
-			const mockDelete = vi.fn();
-			const mockUserLikeRef = { get: mockGet, set: mockSet, delete: mockDelete };
-
-			const mockTransaction = vi.fn((callback) =>
-				callback({
-					set: mockSet,
-					delete: mockDelete,
-				}),
-			);
-			const mockRunTransaction = vi.fn().mockImplementation(mockTransaction);
-
-			const mockCollection = vi.fn().mockReturnValue({
-				doc: vi.fn().mockReturnValue({
-					collection: vi.fn().mockReturnValue({
-						doc: vi.fn().mockReturnValue(mockUserLikeRef),
-					}),
-				}),
-			});
-			const mockFirestore = {
-				collection: mockCollection,
-				runTransaction: mockRunTransaction,
-			};
-			mockGetFirestore.mockReturnValue(mockFirestore as any);
-
-			mockDecrementLikeCount.mockResolvedValue({ success: true });
-
-			const result = await toggleLikeAction("audio-1");
-
-			expect(result.success).toBe(true);
-			expect(result.isLiked).toBe(false);
-			expect(mockDelete).toHaveBeenCalled();
-			expect(mockDecrementLikeCount).toHaveBeenCalledWith("audio-1");
-		});
-
-		it("handles unauthenticated user", async () => {
-			mockRequireAuth.mockRejectedValue(new Error("Unauthorized"));
-
-			const result = await toggleLikeAction("audio-1");
-
-			expect(result.success).toBe(false);
-			expect(result.error).toBe("いいね状態の更新に失敗しました");
-		});
-
-		it("handles firestore transaction errors", async () => {
-			const mockUser = { discordId: "user-1", displayName: "Test User", role: "member" };
-			mockRequireAuth.mockResolvedValue(mockUser);
-
-			const mockDoc = { exists: false };
-			const mockGet = vi.fn().mockResolvedValue(mockDoc);
-			const mockUserLikeRef = { get: mockGet };
-
-			const mockRunTransaction = vi.fn().mockRejectedValue(new Error("Transaction failed"));
-
-			const mockCollection = vi.fn().mockReturnValue({
-				doc: vi.fn().mockReturnValue({
-					collection: vi.fn().mockReturnValue({
-						doc: vi.fn().mockReturnValue(mockUserLikeRef),
-					}),
-				}),
-			});
-			const mockFirestore = {
-				collection: mockCollection,
-				runTransaction: mockRunTransaction,
-			};
-			mockGetFirestore.mockReturnValue(mockFirestore as any);
-
-			const result = await toggleLikeAction("audio-1");
-
-			expect(result.success).toBe(false);
-			expect(result.error).toBe("いいね状態の更新に失敗しました");
+		expect(result).toEqual({
+			success: false,
+			isLiked: undefined,
+			error: "いいね状態の更新に失敗しました",
 		});
 	});
 });

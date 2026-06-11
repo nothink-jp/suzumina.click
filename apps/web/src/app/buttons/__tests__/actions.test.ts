@@ -3,14 +3,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { mockCurrentUser } from "@/test-utils/auth-server";
 import {
 	createAudioButton,
-	decrementDislikeCount,
-	decrementLikeCount,
 	deleteAudioButton,
 	getAudioButtonById,
 	getAudioButtonsList,
 	getRecentAudioButtons,
-	incrementDislikeCount,
-	incrementLikeCount,
 	incrementPlayCount,
 	updateAudioButton,
 	updateAudioButtonTags,
@@ -755,32 +751,8 @@ describe("Audio Button Server Actions", () => {
 	});
 
 	describe("カウンタ操作（updateCounter 委譲）", () => {
-		it("各 increment/decrement は updateCounter に正しい引数で委譲する", async () => {
+		it("incrementPlayCount は updateCounter に正しい引数で委譲する", async () => {
 			mockUpdateCounter.mockResolvedValue({ success: true });
-			await incrementLikeCount("ab1");
-			expect(mockUpdateCounter).toHaveBeenCalledWith("audioButtons", "ab1", "stats.likeCount", 1, {
-				min: 0,
-			});
-			await decrementLikeCount("ab1");
-			expect(mockUpdateCounter).toHaveBeenCalledWith("audioButtons", "ab1", "stats.likeCount", -1, {
-				min: 0,
-			});
-			await incrementDislikeCount("ab1");
-			expect(mockUpdateCounter).toHaveBeenCalledWith(
-				"audioButtons",
-				"ab1",
-				"stats.dislikeCount",
-				1,
-				{ min: 0 },
-			);
-			await decrementDislikeCount("ab1");
-			expect(mockUpdateCounter).toHaveBeenCalledWith(
-				"audioButtons",
-				"ab1",
-				"stats.dislikeCount",
-				-1,
-				{ min: 0 },
-			);
 			await incrementPlayCount("ab1");
 			expect(mockUpdateCounter).toHaveBeenCalledWith("audioButtons", "ab1", "stats.playCount", 1, {
 				min: 0,
@@ -789,7 +761,7 @@ describe("Audio Button Server Actions", () => {
 
 		it("updateCounter の結果をそのまま返す", async () => {
 			mockUpdateCounter.mockResolvedValue({ success: false, error: "x" });
-			expect(await incrementLikeCount("ab1")).toEqual({ success: false, error: "x" });
+			expect(await incrementPlayCount("ab1")).toEqual({ success: false, error: "x" });
 		});
 	});
 
