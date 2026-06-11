@@ -1,17 +1,16 @@
-import {
-	type AudioButtonPlainObject,
-	audioButtonTransformers,
-	type FirestoreServerAudioButtonData,
-} from "@suzumina.click/shared-types";
+import { type AudioButtonPlainObject, audioButtonTransformers } from "@suzumina.click/shared-types";
 import { renderHook } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { useAudioButton } from "../use-audio-button";
 
+// fromFirestore が受け取るレガシー入力形（title/sourceVideoId 等）。内部型を export せず引数型から取得。
+type LegacyAudioButtonInput = Parameters<typeof audioButtonTransformers.fromFirestore>[0];
+
 // テスト用のAudioButtonPlainObjectを作成するヘルパー
 function createMockAudioButton(
-	overrides?: Partial<FirestoreServerAudioButtonData>,
+	overrides?: Partial<LegacyAudioButtonInput>,
 ): AudioButtonPlainObject {
-	const defaultData: FirestoreServerAudioButtonData = {
+	const defaultData = {
 		id: "test-button-123",
 		title: "テスト音声ボタン",
 		description: "これはテスト用の音声ボタンです",
@@ -28,8 +27,8 @@ function createMockAudioButton(
 		likeCount: 100,
 		dislikeCount: 5,
 		favoriteCount: 50,
-		createdAt: new Date("2024-01-01T00:00:00Z"),
-		updatedAt: new Date("2024-01-01T00:00:00Z"),
+		createdAt: "2024-01-01T00:00:00Z",
+		updatedAt: "2024-01-01T00:00:00Z",
 		...overrides,
 	};
 

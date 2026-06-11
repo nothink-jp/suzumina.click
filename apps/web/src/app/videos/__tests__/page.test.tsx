@@ -81,7 +81,7 @@ vi.mock("next/navigation", () => ({
 
 describe("VideosPage", () => {
 	it("基本的なレンダリングが動作する", async () => {
-		const searchParams = { page: "1", q: "", category: "", sort: "newest" };
+		const searchParams = Promise.resolve({ page: "1", q: "", category: "", sort: "newest" });
 
 		render(await VideosPage({ searchParams }));
 
@@ -93,14 +93,14 @@ describe("VideosPage", () => {
 
 	it("検索パラメータがServer Actionに正しく渡される", async () => {
 		const { getVideosList } = await import("../actions");
-		const searchParams = {
+		const searchParams = Promise.resolve({
 			page: "2",
 			q: "テスト検索",
 			categoryNames: "音楽",
 			year: "2024",
 			videoType: "regular",
 			sort: "oldest",
-		};
+		});
 
 		render(await VideosPage({ searchParams }));
 
@@ -121,7 +121,7 @@ describe("VideosPage", () => {
 
 	it("qパラメータが正しく処理される", async () => {
 		const { getVideosList } = await import("../actions");
-		const searchParams = { q: "検索キーワード" };
+		const searchParams = Promise.resolve({ q: "検索キーワード" });
 
 		render(await VideosPage({ searchParams }));
 

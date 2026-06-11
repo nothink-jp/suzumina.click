@@ -1,8 +1,4 @@
-import {
-	type AudioButtonPlainObject,
-	audioButtonTransformers,
-	type FirestoreServerAudioButtonData,
-} from "@suzumina.click/shared-types";
+import { type AudioButtonPlainObject, audioButtonTransformers } from "@suzumina.click/shared-types";
 import { render, screen } from "@testing-library/react";
 import { useRouter } from "next/navigation";
 import { describe, expect, it, vi } from "vitest";
@@ -73,11 +69,11 @@ function createMockAudioButton(
 		...overrides,
 	};
 
-	const firestoreData: FirestoreServerAudioButtonData = {
+	const firestoreData: Parameters<typeof audioButtonTransformers.fromFirestore>[0] = {
 		...defaultData,
 		sourceVideoThumbnailUrl: "",
-		createdAt: new Date(defaultData.createdAt),
-		updatedAt: new Date(defaultData.updatedAt),
+		createdAt: defaultData.createdAt,
+		updatedAt: defaultData.updatedAt,
 	};
 	const plainObject = audioButtonTransformers.fromFirestore(firestoreData);
 	if (!plainObject) {

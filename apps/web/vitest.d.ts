@@ -1,5 +1,5 @@
-/// <reference types="vitest" />
+/// <reference types="vitest/globals" />
 /// <reference types="@testing-library/jest-dom" />
 
-// This file makes the types available globally
+// describe/it/expect/vi 等のグローバルとマッチャ拡張を typecheck に供給する（tsconfig の include 対象）。
 export {};

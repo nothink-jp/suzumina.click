@@ -1,3 +1,4 @@
+import type { YTPlayer } from "@suzumina.click/ui/components/custom/youtube-player";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useTimeAdjustment } from "../use-time-adjustment";
@@ -14,7 +15,8 @@ describe("useTimeAdjustment", () => {
 	const defaultProps = {
 		videoDuration: 300,
 		currentTime: 0,
-		youtubePlayerRef: { current: mockYouTubePlayer },
+		// テストダブルは hook が使う4メソッドのみ実装。YTPlayer 全体へキャスト
+		youtubePlayerRef: { current: mockYouTubePlayer as unknown as YTPlayer },
 	};
 
 	beforeEach(() => {

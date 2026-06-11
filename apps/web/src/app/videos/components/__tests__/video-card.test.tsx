@@ -61,7 +61,7 @@ function createMockVideo(overrides?: Partial<any>): VideoPlainObject {
 	}
 
 	// Plain Objectを直接返す
-	return firestoreData as VideoPlainObject;
+	return firestoreData as unknown as VideoPlainObject;
 }
 
 describe("VideoCard", () => {

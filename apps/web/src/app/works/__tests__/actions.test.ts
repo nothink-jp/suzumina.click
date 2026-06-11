@@ -102,7 +102,7 @@ describe("Works Server Actions", () => {
 			const result = await getWorks();
 
 			expect(result.works).toHaveLength(2);
-			expect(result.works[0].title).toBe("作品1");
+			expect(result.works[0]!.title).toBe("作品1");
 			expect(result.hasMore).toBe(false);
 			expect(mockOrderBy).toHaveBeenCalledWith("releaseDateISO", "desc");
 		});

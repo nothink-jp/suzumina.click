@@ -96,7 +96,7 @@ describe("Audio Button Server Actions", () => {
 		});
 
 		// Mock YouTube API key
-		process.env.YOUTUBE_API_KEY = "test-api-key";
+		(process.env as Record<string, string | undefined>).YOUTUBE_API_KEY = "test-api-key";
 
 		// Setup collection chain - collection should return a query that has all methods
 		const mockQuery = {
@@ -167,10 +167,6 @@ describe("Audio Button Server Actions", () => {
 			videoTitle: "テスト動画",
 			startTime: 30,
 			endTime: 45,
-			createdBy: {
-				id: "test-user-id",
-				name: "Test User",
-			},
 			isPublic: true,
 		};
 
@@ -450,7 +446,7 @@ describe("Audio Button Server Actions", () => {
 			expect(result.success).toBe(true);
 			if (result.success) {
 				expect(result.data.audioButtons).toHaveLength(2);
-				expect(result.data.audioButtons[0].buttonText).toBe("音声ボタン1");
+				expect(result.data.audioButtons[0]!.buttonText).toBe("音声ボタン1");
 				expect(result.data.hasMore).toBe(false);
 			}
 		});

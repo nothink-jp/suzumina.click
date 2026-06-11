@@ -224,7 +224,7 @@ describe("AudioButtonTagEditorDetail", () => {
 
 			// 保存が時間のかかる処理として設定
 			let resolvePromise: (value: any) => void;
-			const promise = new Promise((resolve) => {
+			const promise = new Promise<{ success: boolean; error?: string }>((resolve) => {
 				resolvePromise = resolve;
 			});
 			vi.mocked(updateAudioButtonTags).mockReturnValue(promise);

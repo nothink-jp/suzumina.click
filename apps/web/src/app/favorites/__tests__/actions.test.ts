@@ -1,3 +1,4 @@
+import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getFavoritesList } from "../actions";
 
@@ -49,10 +50,12 @@ describe("getFavoritesList", () => {
 		vi.mocked(getAudioButtonsFromFavorites).mockResolvedValue(
 			new Map([[mockAudioButtonId, { id: mockAudioButtonId }]]),
 		);
-		vi.mocked(audioButtonTransformers.fromFirestore).mockReturnValue(mockAudioButton);
-		vi.mocked(getLikeDislikeStatusAction).mockResolvedValue([
-			[mockAudioButtonId, { isLiked: true, isDisliked: false }],
-		]);
+		vi.mocked(audioButtonTransformers.fromFirestore).mockReturnValue(
+			mockAudioButton as unknown as AudioButtonPlainObject,
+		);
+		vi.mocked(getLikeDislikeStatusAction).mockResolvedValue(
+			new Map([[mockAudioButtonId, { isLiked: true, isDisliked: false }]]),
+		);
 
 		const result = await getFavoritesList({
 			userId: mockUserId,

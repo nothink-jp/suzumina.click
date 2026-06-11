@@ -55,13 +55,13 @@ describe("proxy", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		// 環境変数をリセット
-		delete process.env.NODE_ENV;
+		delete (process.env as Record<string, string | undefined>).NODE_ENV;
 		delete process.env.ALLOWED_HOSTS;
 	});
 
 	describe("Host validation", () => {
 		it("should allow all hosts in development", async () => {
-			process.env.NODE_ENV = "development";
+			(process.env as Record<string, string | undefined>).NODE_ENV = "development";
 
 			const request = createMockNextRequest("http://localhost:3000/test");
 			const response = await proxy(request);
@@ -70,7 +70,7 @@ describe("proxy", () => {
 		});
 
 		it("should allow all hosts when ALLOWED_HOSTS is not set", async () => {
-			process.env.NODE_ENV = "production";
+			(process.env as Record<string, string | undefined>).NODE_ENV = "production";
 
 			const request = createMockNextRequest("http://example.com/test");
 			const response = await proxy(request);
@@ -79,7 +79,7 @@ describe("proxy", () => {
 		});
 
 		it("should allow requests from allowed hosts", async () => {
-			process.env.NODE_ENV = "production";
+			(process.env as Record<string, string | undefined>).NODE_ENV = "production";
 			process.env.ALLOWED_HOSTS = "suzumina.click,www.suzumina.click";
 
 			const request = createMockNextRequest("http://suzumina.click/test", {
@@ -91,7 +91,7 @@ describe("proxy", () => {
 		});
 
 		it("should reject requests from non-allowed hosts", async () => {
-			process.env.NODE_ENV = "production";
+			(process.env as Record<string, string | undefined>).NODE_ENV = "production";
 			process.env.ALLOWED_HOSTS = "suzumina.click";
 
 			const request = createMockNextRequest("http://malicious.com/test", {
@@ -105,7 +105,7 @@ describe("proxy", () => {
 		});
 
 		it("should always allow health check endpoint", async () => {
-			process.env.NODE_ENV = "production";
+			(process.env as Record<string, string | undefined>).NODE_ENV = "production";
 			process.env.ALLOWED_HOSTS = "suzumina.click";
 
 			const request = createMockNextRequest("http://malicious.com/api/health", {
@@ -117,7 +117,7 @@ describe("proxy", () => {
 		});
 
 		it("should handle multiple allowed hosts", async () => {
-			process.env.NODE_ENV = "production";
+			(process.env as Record<string, string | undefined>).NODE_ENV = "production";
 			process.env.ALLOWED_HOSTS = "suzumina.click, admin.suzumina.click, api.suzumina.click";
 
 			const adminRequest = createMockNextRequest("http://admin.suzumina.click/admin", {
@@ -136,7 +136,7 @@ describe("proxy", () => {
 		});
 
 		it("should handle requests without host header", async () => {
-			process.env.NODE_ENV = "production";
+			(process.env as Record<string, string | undefined>).NODE_ENV = "production";
 			process.env.ALLOWED_HOSTS = "suzumina.click";
 
 			const request = createMockNextRequest("http://suzumina.click/test");
@@ -147,7 +147,7 @@ describe("proxy", () => {
 		});
 
 		it("should trim whitespace from allowed hosts configuration", async () => {
-			process.env.NODE_ENV = "production";
+			(process.env as Record<string, string | undefined>).NODE_ENV = "production";
 			process.env.ALLOWED_HOSTS = " suzumina.click , admin.suzumina.click ";
 
 			const request = createMockNextRequest("http://suzumina.click/test", {

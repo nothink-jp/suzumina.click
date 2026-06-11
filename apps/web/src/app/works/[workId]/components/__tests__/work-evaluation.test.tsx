@@ -141,7 +141,7 @@ describe("WorkEvaluation", () => {
 		expect(starButtons).toHaveLength(3);
 
 		// Click on 3rd star
-		fireEvent.click(starButtons[2]);
+		fireEvent.click(starButtons[2]!);
 
 		await waitFor(() => {
 			expect(mockUpdate).toHaveBeenCalledWith("RJ12345678", {
@@ -336,7 +336,7 @@ describe("WorkEvaluation", () => {
 
 			// Click the rank 5 button
 			if (rank5Button) {
-				fireEvent.click(rank5Button.closest("button")!);
+				fireEvent.click((rank5Button as HTMLElement).closest("button")!);
 			}
 
 			await waitFor(() => {

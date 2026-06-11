@@ -195,9 +195,9 @@ describe("firestore-adapter pure helpers", () => {
 				{ d: new Date(3), x: 2 },
 				{ d: new Date(1), x: 1 },
 			];
-			expect(applySort(rows, { field: "d", direction: "asc" })[0].x).toBe(1);
+			expect(applySort(rows, { field: "d", direction: "asc" })[0]!.x).toBe(1);
 			const nullRows = [{ x: 1 }, { x: null }];
-			expect(applySort(nullRows, { field: "x", direction: "asc" })[0].x).toBeNull();
+			expect(applySort(nullRows, { field: "x", direction: "asc" })[0]!.x).toBeNull();
 		});
 		it("sortBy 無しはそのまま", () => {
 			const rows = [{ n: 2 }, { n: 1 }];
@@ -303,7 +303,7 @@ describe("firestoreOps (fake Firestore)", () => {
 			where: [w("userId", "u1"), w("providerId", "discord")],
 		});
 		expect(r).toHaveLength(1);
-		expect(r[0].id).toBe("a1");
+		expect(r[0]!.id).toBe("a1");
 
 		const sorted = await ops.findMany({
 			model: "account",

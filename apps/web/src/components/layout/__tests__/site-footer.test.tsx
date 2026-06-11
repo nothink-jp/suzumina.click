@@ -21,7 +21,7 @@ describe("SiteFooter", () => {
 		const linkContainer = aboutLink.closest("div");
 
 		// grid-cols-2 md:grid-cols-4 クラスを持つ親要素を探す
-		let gridContainer = linkContainer;
+		let gridContainer: HTMLElement | null = linkContainer;
 		while (gridContainer && !gridContainer.className.includes("grid-cols-2")) {
 			gridContainer = gridContainer.parentElement;
 		}

@@ -133,7 +133,7 @@ describe("AudioButtonCreator - Refactored Architecture", () => {
 			const plus1Buttons = screen.getAllByRole("button").filter((btn) => btn.textContent === "+1");
 			expect(plus1Buttons.length).toBeGreaterThan(0);
 
-			await user.click(plus1Buttons[0]);
+			await user.click(plus1Buttons[0]!);
 
 			// Check if the time was adjusted (should show 0:01.0)
 			await waitFor(
@@ -169,7 +169,7 @@ describe("AudioButtonCreator - Refactored Architecture", () => {
 			render(<AudioButtonCreator {...defaultProps} />);
 
 			const timeInputs = screen.getAllByPlaceholderText("0:00.0");
-			const startTimeInput = timeInputs[0];
+			const startTimeInput = timeInputs[0]!;
 
 			await user.clear(startTimeInput);
 			await user.type(startTimeInput, "1:23.4");
@@ -197,8 +197,8 @@ describe("AudioButtonCreator - Refactored Architecture", () => {
 
 			// Set valid time range
 			const timeInputs = screen.getAllByPlaceholderText("0:00.0");
-			await user.clear(timeInputs[1]); // End time
-			await user.type(timeInputs[1], "0:05.0");
+			await user.clear(timeInputs[1]!); // End time
+			await user.type(timeInputs[1]!, "0:05.0");
 			await user.tab(); // Trigger blur
 
 			await waitFor(
@@ -216,10 +216,10 @@ describe("AudioButtonCreator - Refactored Architecture", () => {
 
 			// Set invalid range (start > end)
 			const timeInputs = screen.getAllByPlaceholderText("0:00.0");
-			await user.clear(timeInputs[0]);
-			await user.type(timeInputs[0], "0:10.0");
-			await user.clear(timeInputs[1]);
-			await user.type(timeInputs[1], "0:05.0");
+			await user.clear(timeInputs[0]!);
+			await user.type(timeInputs[0]!, "0:10.0");
+			await user.clear(timeInputs[1]!);
+			await user.type(timeInputs[1]!, "0:05.0");
 			await user.tab();
 
 			// 範囲の妥当性エラーメッセージを確認
@@ -244,8 +244,8 @@ describe("AudioButtonCreator - Refactored Architecture", () => {
 
 			// Set valid time range first
 			const timeInputs = screen.getAllByPlaceholderText("0:00.0");
-			await user.clear(timeInputs[1]);
-			await user.type(timeInputs[1], "0:05.0");
+			await user.clear(timeInputs[1]!);
+			await user.type(timeInputs[1]!, "0:05.0");
 			await user.tab();
 
 			await waitFor(() => {
@@ -269,10 +269,10 @@ describe("AudioButtonCreator - Refactored Architecture", () => {
 
 			// 無効な範囲を設定（開始時間 > 終了時間）
 			const timeInputs = screen.getAllByPlaceholderText("0:00.0");
-			await user.clear(timeInputs[0]);
-			await user.type(timeInputs[0], "0:10.0");
-			await user.clear(timeInputs[1]);
-			await user.type(timeInputs[1], "0:05.0");
+			await user.clear(timeInputs[0]!);
+			await user.type(timeInputs[0]!, "0:10.0");
+			await user.clear(timeInputs[1]!);
+			await user.type(timeInputs[1]!, "0:05.0");
 			await user.tab();
 
 			await waitFor(() => {
@@ -293,8 +293,8 @@ describe("AudioButtonCreator - Refactored Architecture", () => {
 				.filter((btn) => btn.textContent === "+10");
 
 			// Click multiple times to test clamping
-			await user.click(plus10Buttons[0]);
-			await user.click(plus10Buttons[0]);
+			await user.click(plus10Buttons[0]!);
+			await user.click(plus10Buttons[0]!);
 
 			// Should be clamped to video duration - use getAllByDisplayValue to handle multiple matches
 			await waitFor(() => {
@@ -311,8 +311,8 @@ describe("AudioButtonCreator - Refactored Architecture", () => {
 
 			// First set start time to 5
 			const timeInputs = screen.getAllByPlaceholderText("0:00.0");
-			await user.clear(timeInputs[0]);
-			await user.type(timeInputs[0], "0:05.0");
+			await user.clear(timeInputs[0]!);
+			await user.type(timeInputs[0]!, "0:05.0");
 			await user.tab();
 
 			// Verify initial state
@@ -324,7 +324,7 @@ describe("AudioButtonCreator - Refactored Architecture", () => {
 			const minus10Buttons = screen
 				.getAllByRole("button")
 				.filter((btn) => btn.textContent === "-10");
-			await user.click(minus10Buttons[0]);
+			await user.click(minus10Buttons[0]!);
 
 			// Should be clamped to 0 - check the start time input specifically
 			await waitFor(() => {
@@ -343,7 +343,7 @@ describe("AudioButtonCreator - Refactored Architecture", () => {
 				.filter((btn) => btn.textContent === "+0.1");
 
 			for (let i = 0; i < 10; i++) {
-				await user.click(plusPoint1Buttons[0]);
+				await user.click(plusPoint1Buttons[0]!);
 				// Wait for debounce to finish
 				await new Promise((resolve) => setTimeout(resolve, 120));
 			}
@@ -361,9 +361,9 @@ describe("AudioButtonCreator - Refactored Architecture", () => {
 			const plus1Buttons = screen.getAllByRole("button").filter((btn) => btn.textContent === "+1");
 
 			// Rapid clicks within debounce window
-			await user.click(plus1Buttons[0]);
-			await user.click(plus1Buttons[0]);
-			await user.click(plus1Buttons[0]);
+			await user.click(plus1Buttons[0]!);
+			await user.click(plus1Buttons[0]!);
+			await user.click(plus1Buttons[0]!);
 
 			// Should only register one click due to debounce
 			await waitFor(() => {
@@ -428,7 +428,7 @@ describe("AudioButtonCreator - Refactored Architecture", () => {
 
 			// Perform many adjustments with delays to avoid debounce
 			for (let i = 0; i < 10; i++) {
-				await user.click(plus1Buttons[0]);
+				await user.click(plus1Buttons[0]!);
 				await new Promise((resolve) => setTimeout(resolve, 150)); // Wait for debounce
 			}
 

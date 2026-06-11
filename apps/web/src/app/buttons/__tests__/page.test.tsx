@@ -136,7 +136,7 @@ describe("AudioButtonsPage", () => {
 	// ページネーションテストは統合テストに移行済み
 
 	it("基本的なレンダリングが動作する", async () => {
-		const searchParams = { page: "1", q: "", category: "", sort: "newest" };
+		const searchParams = Promise.resolve({ page: "1", q: "", category: "", sort: "newest" });
 
 		render(await AudioButtonsPage({ searchParams }));
 
@@ -146,7 +146,12 @@ describe("AudioButtonsPage", () => {
 
 	it("検索パラメータがServer Actionに正しく渡される", async () => {
 		const { getAudioButtonsList } = await import("../actions");
-		const searchParams = { page: "2", q: "テスト検索", category: "", sort: "newest" };
+		const searchParams = Promise.resolve({
+			page: "2",
+			q: "テスト検索",
+			category: "",
+			sort: "newest",
+		});
 
 		render(await AudioButtonsPage({ searchParams }));
 

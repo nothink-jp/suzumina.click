@@ -102,7 +102,7 @@ vi.mock("next/navigation", () => ({
 
 describe("WorksPage", () => {
 	it("基本的なレンダリングが動作する", async () => {
-		const searchParams = { page: "1", q: "", category: "", sort: "newest" };
+		const searchParams = Promise.resolve({ page: "1", q: "", category: "", sort: "newest" });
 
 		render(<AgeVerificationProvider>{await WorksPage({ searchParams })}</AgeVerificationProvider>);
 
@@ -114,14 +114,14 @@ describe("WorksPage", () => {
 
 	it("検索パラメータがServer Actionに正しく渡される", async () => {
 		const { getWorks } = await import("../actions");
-		const searchParams = {
+		const searchParams = Promise.resolve({
 			page: "2",
 			q: "テスト検索",
 			category: "SOU",
 			language: "ja",
 			showR18: "false",
 			sort: "price_low",
-		};
+		});
 
 		render(<AgeVerificationProvider>{await WorksPage({ searchParams })}</AgeVerificationProvider>);
 
@@ -141,7 +141,7 @@ describe("WorksPage", () => {
 		const { getWorks } = await import("../actions");
 
 		// showR18パラメータなしの場合
-		const searchParams = { page: "1", q: "宮村" };
+		const searchParams = Promise.resolve({ page: "1", q: "宮村" });
 
 		render(<AgeVerificationProvider>{await WorksPage({ searchParams })}</AgeVerificationProvider>);
 

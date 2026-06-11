@@ -26,7 +26,8 @@ describe("firestore module", () => {
 
 	describe("createFirestoreInstance", () => {
 		it("should create new Firestore instance with environment variable project ID", async () => {
-			process.env.GOOGLE_CLOUD_PROJECT = "suzumina-click-firebase";
+			(process.env as Record<string, string | undefined>).GOOGLE_CLOUD_PROJECT =
+				"suzumina-click-firebase";
 			vi.resetModules();
 
 			const { createFirestoreInstance } = await import("../firestore");
@@ -38,24 +39,24 @@ describe("firestore module", () => {
 			});
 			expect(instance).toBeInstanceOf(MockFirestore);
 
-			process.env.GOOGLE_CLOUD_PROJECT = undefined;
+			(process.env as Record<string, string | undefined>).GOOGLE_CLOUD_PROJECT = undefined;
 		});
 
 		it("should throw when FIRESTORE_EMULATOR_HOST is set in production", async () => {
 			const prevNodeEnv = process.env.NODE_ENV;
-			process.env.NODE_ENV = "production";
+			(process.env as Record<string, string | undefined>).NODE_ENV = "production";
 			process.env.FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080";
 			vi.resetModules();
 
 			const { createFirestoreInstance } = await import("../firestore");
 			expect(() => createFirestoreInstance()).toThrow(/FIRESTORE_EMULATOR_HOST/);
 
-			process.env.NODE_ENV = prevNodeEnv;
+			(process.env as Record<string, string | undefined>).NODE_ENV = prevNodeEnv;
 			delete process.env.FIRESTORE_EMULATOR_HOST;
 		});
 
 		it("should create new Firestore instance with fallback project ID when env var is not set", async () => {
-			delete process.env.GOOGLE_CLOUD_PROJECT;
+			delete (process.env as Record<string, string | undefined>).GOOGLE_CLOUD_PROJECT;
 			vi.resetModules();
 
 			const { createFirestoreInstance } = await import("../firestore");
@@ -82,7 +83,7 @@ describe("firestore module", () => {
 		});
 
 		it("should create instance with correct project configuration", async () => {
-			delete process.env.GOOGLE_CLOUD_PROJECT;
+			delete (process.env as Record<string, string | undefined>).GOOGLE_CLOUD_PROJECT;
 			vi.resetModules();
 			const { getFirestore } = await import("../firestore");
 
