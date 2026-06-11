@@ -114,6 +114,7 @@ export const LANGUAGE_CODE_MAPPING: Record<string, WorkLanguage> = {
 	"ja-jp": "ja",
 	japanese: "ja",
 	jpn: "ja",
+	jp: "ja", // SPR-184: transformer LANGUAGE_CODE_MAP から統合
 
 	// 英語
 	en: "en",
@@ -128,6 +129,11 @@ export const LANGUAGE_CODE_MAPPING: Record<string, WorkLanguage> = {
 	chinese_simplified: "zh-cn",
 	chs: "zh-cn",
 	chi_hans: "zh-cn",
+	// SPR-184: transformer LANGUAGE_CODE_MAP から統合
+	zho: "zh-cn",
+	zh: "zh-cn",
+	chi: "zh-cn",
+	chn: "zh-cn",
 
 	// 繁体中文
 	"zh-tw": "zh-tw",
@@ -135,6 +141,9 @@ export const LANGUAGE_CODE_MAPPING: Record<string, WorkLanguage> = {
 	chinese_traditional: "zh-tw",
 	cht: "zh-tw",
 	chi_hant: "zh-tw",
+	// SPR-184: transformer LANGUAGE_CODE_MAP から統合
+	zht: "zh-tw",
+	tw: "zh-tw",
 
 	// 韓国語
 	ko: "ko",
@@ -142,6 +151,7 @@ export const LANGUAGE_CODE_MAPPING: Record<string, WorkLanguage> = {
 	ko_kr: "ko",
 	korean: "ko",
 	kor: "ko",
+	kr: "ko", // SPR-184: transformer LANGUAGE_CODE_MAP から統合
 
 	// スペイン語
 	es: "es",
@@ -184,6 +194,7 @@ export const LANGUAGE_CODE_MAPPING: Record<string, WorkLanguage> = {
 	vi: "vi",
 	vietnamese: "vi",
 	vie: "vi",
+	vn: "vi", // SPR-184: transformer LANGUAGE_CODE_MAP から統合
 
 	// インドネシア語
 	id: "id",
