@@ -2,59 +2,12 @@
  * Circle page server actions のテストスイート
  */
 
-import { convertToWorkPlainObject } from "@suzumina.click/shared-types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock conversion helper function
-const mockConvertToWorkPlainObject = (data: any) => {
-	if (!data?.id || !data.productId) return null;
-	return {
-		...data,
-		price: data.price || {
-			current: 0,
-			currency: "JPY",
-			formattedPrice: "¥0",
-		},
-		rating: data.rating,
-		creators: data.creators || {
-			voiceActors: [],
-			scenario: [],
-			illustration: [],
-			music: [],
-			others: [],
-		},
-		salesStatus: data.salesStatus || {
-			isOnSale: true,
-			isDiscounted: false,
-			isFree: false,
-			isSoldOut: false,
-			isReserveWork: false,
-			dlsiteplaySupported: false,
-		},
-		sampleImages: data.sampleImages || [],
-		genres: data.genres || [],
-		customGenres: data.customGenres || [],
-		_computed: {
-			displayTitle: data.title,
-			isAdult: data.category === "adult",
-			thumbnailUrl: data.thumbnailUrl || "",
-			priceInYen: data.price?.amount || 0,
-			discountRate: 0,
-			hasDiscount: false,
-			creatorNames: "",
-			voiceActorNames: "",
-			genreNames: "",
-			releaseYear: 2024,
-			formattedReleaseDate: "2024年1月1日",
-			detailPageUrl: `/works/${data.productId}`,
-			purchasePageUrl: `https://www.dlsite.com/maniax/work/=/product_id/${data.productId}.html`,
-		},
-	};
-};
 
-// convertToWorkPlainObject, workTransformers, convertToCirclePlainObjectのモック
+// workTransformers, convertToCirclePlainObject のモック
 vi.mock("@suzumina.click/shared-types", () => ({
-	convertToWorkPlainObject: vi.fn(),
 	workTransformers: {
 		fromFirestore: vi.fn((data) => {
 			// Use the mock helper function to transform data
@@ -174,21 +127,6 @@ describe("Circle page server actions", () => {
 		mockWhere.mockReturnValue(mockQuery);
 		mockOrderBy.mockReturnValue(mockQuery);
 		mockLimit.mockReturnValue(mockQuery);
-
-		// Reset convertToWorkPlainObject mock to default implementation
-		vi.mocked(convertToWorkPlainObject).mockImplementation((data) => {
-			const result = mockConvertToWorkPlainObject(data);
-			if (result === null) {
-				return {
-					isOk: () => false,
-					error: { message: "Invalid data" },
-				};
-			}
-			return {
-				isOk: () => true,
-				value: result,
-			};
-		});
 	});
 
 	describe("getCircleInfo", () => {

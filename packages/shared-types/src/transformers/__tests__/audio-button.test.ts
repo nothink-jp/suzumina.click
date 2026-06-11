@@ -1,21 +1,10 @@
 import { describe, expect, it } from "vitest";
-import {
-	createAudioButton,
-	decrementDislikeCount,
-	decrementFavoriteCount,
-	decrementLikeCount,
-	fromFirestore,
-	generateId,
-	incrementDislikeCount,
-	incrementFavoriteCount,
-	incrementLikeCount,
-	incrementViewCount,
-	toFirestore,
-	updateAudioButton,
-} from "../audio-button";
+import { fromFirestore, toFirestore } from "../audio-button";
 
-const base = () =>
-	createAudioButton({
+// createAudioButton 操作は削除されたため fromFirestore で AudioButton fixture を作る（SPR-197）
+const base = () => {
+	const ab = fromFirestore({
+		id: "id1",
 		buttonText: "ボタン",
 		videoId: "vid1",
 		videoTitle: "動画",
@@ -25,6 +14,9 @@ const base = () =>
 		creatorId: "c1",
 		creatorName: "作者",
 	});
+	if (!ab) throw new Error("fixture 生成に失敗");
+	return ab;
+};
 
 describe("fromFirestore", () => {
 	it("buttonText / videoId が無ければ null", () => {
@@ -145,18 +137,8 @@ describe("fromFirestore", () => {
 		expect(r?._computed?.durationText).toBe(expected);
 	});
 
-	it("同一 duration で fromFirestore と createAudioButton の durationText が一致する", () => {
+	it("duration から durationText を算出する（formatDuration 正本）", () => {
 		const fromFs = fromFirestore({ buttonText: "a", videoId: "v", startTime: 0, endTime: 5 });
-		const created = createAudioButton({
-			buttonText: "a",
-			videoId: "v",
-			videoTitle: "t",
-			startTime: 0,
-			endTime: 5,
-			creatorId: "c",
-			creatorName: "n",
-		});
-		expect(fromFs?._computed?.durationText).toBe(created._computed?.durationText);
 		expect(fromFs?._computed?.durationText).toBe("5秒");
 	});
 });
@@ -167,107 +149,5 @@ describe("toFirestore", () => {
 		expect(doc.id).toBeUndefined();
 		expect(doc._computed).toBeUndefined();
 		expect(doc.buttonText).toBe("ボタン");
-	});
-});
-
-describe("createAudioButton", () => {
-	it("duration を計算し既定 stats を設定する", () => {
-		const ab = base();
-		expect(ab.duration).toBe(5);
-		expect(ab.stats.playCount).toBe(0);
-		expect(ab.isPublic).toBe(true);
-	});
-
-	it("durationText は formatDuration 経由（5秒 → '5秒'）", () => {
-		expect(base()._computed?.durationText).toBe("5秒");
-	});
-
-	it("durationText: 0秒は '再生'、60秒以上は m:ss", () => {
-		const zero = createAudioButton({
-			buttonText: "b",
-			videoId: "v",
-			videoTitle: "t",
-			startTime: 0,
-			endTime: 0,
-			creatorId: "c",
-			creatorName: "n",
-		});
-		expect(zero._computed?.durationText).toBe("再生");
-
-		const long = createAudioButton({
-			buttonText: "b",
-			videoId: "v",
-			videoTitle: "t",
-			startTime: 0,
-			endTime: 75,
-			creatorId: "c",
-			creatorName: "n",
-		});
-		expect(long._computed?.durationText).toBe("1:15");
-	});
-
-	it("searchableText は小文字結合", () => {
-		const ab = createAudioButton({
-			buttonText: "Hello",
-			videoId: "v",
-			videoTitle: "World",
-			startTime: 0,
-			endTime: 1,
-			tags: ["TagA"],
-			creatorId: "c",
-			creatorName: "Me",
-		});
-		expect(ab._computed?.searchableText).toBe("hello world me taga");
-	});
-});
-
-describe("updateAudioButton", () => {
-	it("指定フィールドのみ更新し updatedAt を更新する", () => {
-		const ab = base();
-		const updated = updateAudioButton(ab, { buttonText: "新ボタン", isPublic: false });
-		expect(updated.buttonText).toBe("新ボタン");
-		expect(updated.isPublic).toBe(false);
-		expect(updated.videoId).toBe(ab.videoId);
-	});
-});
-
-describe("stats の増減", () => {
-	it("incrementViewCount は playCount と engagementRate を更新", () => {
-		const ab = incrementLikeCount(base()); // likeCount=1
-		const viewed = incrementViewCount(ab);
-		expect(viewed.stats.playCount).toBe(1);
-		expect(viewed.stats.engagementRate).toBeCloseTo(1); // (1+0)/1
-	});
-
-	it("like の増減と engagementRate 再計算（0 未満にならない）", () => {
-		const ab = incrementViewCount(base()); // playCount=1
-		const liked = incrementLikeCount(ab);
-		expect(liked.stats.likeCount).toBe(1);
-		expect(liked.stats.engagementRate).toBeCloseTo(1);
-
-		const back = decrementLikeCount(liked);
-		expect(back.stats.likeCount).toBe(0);
-		// decrement を空状態に適用しても 0 未満にならない
-		expect(decrementLikeCount(base()).stats.likeCount).toBe(0);
-	});
-
-	it("dislike の増減（0 未満にならない）", () => {
-		const ab = incrementDislikeCount(base());
-		expect(ab.stats.dislikeCount).toBe(1);
-		expect(decrementDislikeCount(ab).stats.dislikeCount).toBe(0);
-		expect(decrementDislikeCount(base()).stats.dislikeCount).toBe(0);
-	});
-
-	it("favorite の増減（0 未満にならない）", () => {
-		const ab = incrementFavoriteCount(base());
-		expect(ab.stats.favoriteCount).toBe(1);
-		expect(decrementFavoriteCount(ab).stats.favoriteCount).toBe(0);
-		expect(decrementFavoriteCount(base()).stats.favoriteCount).toBe(0);
-	});
-});
-
-describe("generateId", () => {
-	it("空でない文字列を返す", () => {
-		expect(generateId().length).toBeGreaterThan(0);
 	});
 });
