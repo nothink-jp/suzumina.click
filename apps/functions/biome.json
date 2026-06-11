@@ -3,26 +3,8 @@
 	"root": false,
 	"linter": {
 		"rules": {
-			"suspicious": {
-				"noConsole": "warn"
-			},
 			"correctness": {
 				"noNodejsModules": "off"
-			},
-			"performance": {
-				"noDelete": "warn"
-			},
-			"style": {
-				"noParameterAssign": "error",
-				"useAsConstAssertion": "error",
-				"useDefaultParameterLast": "error",
-				"useEnumInitializers": "error",
-				"useSelfClosingElements": "error",
-				"useSingleVarDeclarator": "error",
-				"noUnusedTemplateLiteral": "error",
-				"useNumberNamespace": "error",
-				"noInferrableTypes": "error",
-				"noUselessElse": "error"
 			}
 		}
 	},
@@ -58,9 +40,6 @@
 			"includes": ["**/*.config.js", "**/*.config.ts"],
 			"linter": {
 				"rules": {
-					"style": {
-						"noDefaultExport": "off"
-					},
 					"suspicious": {
 						"noExplicitAny": "off"
 					}
@@ -68,14 +47,7 @@
 			}
 		},
 		{
-			"includes": [
-				"**/coverage/**",
-				"**/dist/**",
-				"**/build/**",
-				"**/.turbo/**",
-				"**/.cache/**",
-				"**/tools/firestore-local/fixtures/**"
-			],
+			"includes": ["**/tools/firestore-local/fixtures/**"],
 			"linter": {
 				"enabled": false
 			},
