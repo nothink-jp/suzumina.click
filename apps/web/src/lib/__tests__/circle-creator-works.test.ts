@@ -37,9 +37,10 @@ describe("circle-creator-works compareWorks", () => {
 		expect([a, b].sort((x, y) => compareWorks(x, y, "newest"))[0]).toBe(b);
 	});
 
-	it("popular: rating.stars 降順（count ではない）", () => {
-		const a = work({ productId: "RJ1", rating: { stars: 3, count: 999 } as never });
-		const b = work({ productId: "RJ2", rating: { stars: 5, count: 1 } as never });
+	it("popular: rating.count 降順（works 一覧と統一・stars ではない）", () => {
+		const a = work({ productId: "RJ1", rating: { stars: 5, count: 1 } as never });
+		const b = work({ productId: "RJ2", rating: { stars: 3, count: 999 } as never });
+		// count が多い b が先頭（stars 基準なら a が先頭になるはず）
 		expect([a, b].sort((x, y) => compareWorks(x, y, "popular"))[0]).toBe(b);
 	});
 

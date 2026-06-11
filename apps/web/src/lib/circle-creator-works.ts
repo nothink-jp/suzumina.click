@@ -4,8 +4,7 @@
  * works 一覧（`app/works/lib/`）のソート・フィルタは WorkDocument 対象で
  * レイヤーが異なるため共用しない。本モジュールは circle/creator 間の重複解消に限定する（SPR-185）。
  *
- * 「人気順(popular)」は rating.stars 基準。works 一覧（rating.count 基準）との
- * 意味統一は SPR-190 で別途扱う。
+ * 「人気順(popular)」は rating.count（評価数）基準で works 一覧と統一済み（SPR-190）。
  */
 
 import type { WorkPlainObject } from "@suzumina.click/shared-types";
@@ -24,7 +23,8 @@ function compareByDate(a: WorkPlainObject, b: WorkPlainObject, isOldest = false)
 }
 
 function compareByRating(a: WorkPlainObject, b: WorkPlainObject): number {
-	return (b.rating?.stars || 0) - (a.rating?.stars || 0);
+	// 「人気順」は rating.count（評価数）基準で works 一覧と統一（SPR-190）。
+	return (b.rating?.count || 0) - (a.rating?.count || 0);
 }
 
 function compareByPrice(a: WorkPlainObject, b: WorkPlainObject, isHighToLow = false): number {
