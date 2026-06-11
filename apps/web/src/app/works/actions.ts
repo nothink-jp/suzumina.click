@@ -44,10 +44,8 @@ async function getWorksWithSimpleQuery(
 	const snapshot = await query.get();
 	const works = await convertDocsToWorks(snapshot.docs);
 
-	// カテゴリフィルタを適用したクエリで全件数を取得
-	let countQuery = buildWorksQuery(firestore, { category, ageRating, sort });
-	// ソートを削除（countクエリでは不要）
-	countQuery = firestore.collection("works");
+	// 全件数取得用クエリ（ソート不要。category/ageRating フィルタのみ適用）
+	let countQuery: FirebaseFirestore.Query = firestore.collection("works");
 	if (category && category !== "all") {
 		countQuery = countQuery.where("category", "==", category);
 	}
@@ -273,24 +271,4 @@ const getPopularGenresCached = unstable_cache(fetchPopularGenres, ["popular-genr
 
 export async function getPopularGenres(limit = 30): Promise<PopularGenre[]> {
 	return getPopularGenresCached(limit);
-}
-
-/**
- * 後方互換性のための従来シグネチャサポート
- * @deprecated 新しいEnhancedSearchParamsを使用してください
- */
-export async function getWorksLegacy({
-	page = 1,
-	limit = 12,
-	sort = "newest",
-	search,
-	category,
-}: {
-	page?: number;
-	limit?: number;
-	sort?: string;
-	search?: string;
-	category?: string;
-} = {}): Promise<WorkListResultPlain> {
-	return getWorks({ page, limit, sort, search, category });
 }

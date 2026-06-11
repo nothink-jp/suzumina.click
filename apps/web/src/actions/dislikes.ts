@@ -6,46 +6,6 @@ import { getFirestore } from "@/lib/firestore";
 import * as logger from "@/lib/logger";
 
 /**
- * ユーザーの音声ボタンに対する低評価状態を取得
- */
-export async function getDislikesStatusAction(
-	audioButtonIds: string[],
-): Promise<Map<string, boolean>> {
-	try {
-		const user = await requireAuth();
-		const firestore = getFirestore();
-
-		const statusMap = new Map<string, boolean>();
-
-		// 各音声ボタンIDに対して低評価状態を確認
-		const dislikeChecks = audioButtonIds.map(async (audioButtonId) => {
-			try {
-				const dislikeDoc = await firestore
-					.collection("users")
-					.doc(user.discordId)
-					.collection("dislikes")
-					.doc(audioButtonId)
-					.get();
-
-				return { audioButtonId, isDisliked: dislikeDoc.exists };
-			} catch (_error) {
-				return { audioButtonId, isDisliked: false };
-			}
-		});
-
-		const results = await Promise.all(dislikeChecks);
-		results.forEach(({ audioButtonId, isDisliked }) => {
-			statusMap.set(audioButtonId, isDisliked);
-		});
-
-		return statusMap;
-	} catch (_error) {
-		// 認証エラーの場合は空のMapを返す
-		return new Map<string, boolean>();
-	}
-}
-
-/**
  * 音声ボタンの低評価状態を切り替え
  */
 export async function toggleDislikeAction(audioButtonId: string): Promise<{

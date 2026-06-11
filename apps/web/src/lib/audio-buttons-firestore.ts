@@ -2,7 +2,7 @@
  * 音声ボタン関連のFirestore操作を提供するモジュール
  */
 
-import { FieldValue, type Query } from "@google-cloud/firestore";
+import type { Query } from "@google-cloud/firestore";
 import {
 	type AudioButton,
 	type AudioButtonDocument,
@@ -210,23 +210,6 @@ export async function getAudioButtonsByUser(
 			stack: error instanceof Error ? error.stack : undefined,
 		});
 		throw new Error("音声ボタン一覧の取得に失敗しました");
-	}
-}
-
-/**
- * 音声ボタンの再生回数を増加
- */
-export async function incrementPlayCount(audioButtonId: string): Promise<void> {
-	try {
-		const firestore = getFirestore();
-		const docRef = firestore.collection("audioButtons").doc(audioButtonId);
-
-		await docRef.update({
-			"stats.playCount": FieldValue.increment(1),
-			updatedAt: new Date().toISOString(),
-		});
-	} catch (_error) {
-		// 再生回数更新の失敗は致命的ではないため、エラーを投げない
 	}
 }
 

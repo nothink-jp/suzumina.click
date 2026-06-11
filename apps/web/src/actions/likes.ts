@@ -6,46 +6,6 @@ import { getFirestore } from "@/lib/firestore";
 import * as logger from "@/lib/logger";
 
 /**
- * ユーザーの音声ボタンに対するいいね状態を取得
- */
-export async function getLikesStatusAction(
-	audioButtonIds: string[],
-): Promise<Map<string, boolean>> {
-	try {
-		const user = await requireAuth();
-		const firestore = getFirestore();
-
-		const statusMap = new Map<string, boolean>();
-
-		// 各音声ボタンIDに対していいね状態を確認
-		const likeChecks = audioButtonIds.map(async (audioButtonId) => {
-			try {
-				const likeDoc = await firestore
-					.collection("users")
-					.doc(user.discordId)
-					.collection("likes")
-					.doc(audioButtonId)
-					.get();
-
-				return { audioButtonId, isLiked: likeDoc.exists };
-			} catch (_error) {
-				return { audioButtonId, isLiked: false };
-			}
-		});
-
-		const results = await Promise.all(likeChecks);
-		results.forEach(({ audioButtonId, isLiked }) => {
-			statusMap.set(audioButtonId, isLiked);
-		});
-
-		return statusMap;
-	} catch (_error) {
-		// 認証エラーの場合は空のMapを返す
-		return new Map<string, boolean>();
-	}
-}
-
-/**
  * 音声ボタンのいいね状態を切り替え
  */
 export async function toggleLikeAction(audioButtonId: string): Promise<{

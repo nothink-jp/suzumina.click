@@ -26,70 +26,11 @@ vi.mock("@/lib/logger", () => ({
 }));
 
 // Import after mocking
-const { getLikesStatusAction, toggleLikeAction } = await import("../likes");
+const { toggleLikeAction } = await import("../likes");
 
 describe("likes actions", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-	});
-
-	describe("getLikesStatusAction", () => {
-		it("returns like status for authenticated user", async () => {
-			const mockUser = { discordId: "user-1", displayName: "Test User", role: "member" };
-			mockRequireAuth.mockResolvedValue(mockUser);
-
-			const mockDoc = {
-				exists: true,
-			};
-			const mockGet = vi.fn().mockResolvedValue(mockDoc);
-			const mockCollection = vi.fn().mockReturnValue({
-				doc: vi.fn().mockReturnValue({
-					collection: vi.fn().mockReturnValue({
-						doc: vi.fn().mockReturnValue({
-							get: mockGet,
-						}),
-					}),
-				}),
-			});
-			const mockFirestore = { collection: mockCollection };
-			mockGetFirestore.mockReturnValue(mockFirestore as any);
-
-			const result = await getLikesStatusAction(["audio-1", "audio-2"]);
-
-			expect(result.get("audio-1")).toBe(true);
-			expect(result.get("audio-2")).toBe(true);
-			expect(mockGet).toHaveBeenCalledTimes(2);
-		});
-
-		it("returns empty map for unauthenticated user", async () => {
-			mockRequireAuth.mockRejectedValue(new Error("Unauthorized"));
-
-			const result = await getLikesStatusAction(["audio-1"]);
-
-			expect(result.size).toBe(0);
-		});
-
-		it("handles firestore errors gracefully", async () => {
-			const mockUser = { discordId: "user-1", displayName: "Test User", role: "member" };
-			mockRequireAuth.mockResolvedValue(mockUser);
-
-			const mockGet = vi.fn().mockRejectedValue(new Error("Firestore error"));
-			const mockCollection = vi.fn().mockReturnValue({
-				doc: vi.fn().mockReturnValue({
-					collection: vi.fn().mockReturnValue({
-						doc: vi.fn().mockReturnValue({
-							get: mockGet,
-						}),
-					}),
-				}),
-			});
-			const mockFirestore = { collection: mockCollection };
-			mockGetFirestore.mockReturnValue(mockFirestore as any);
-
-			const result = await getLikesStatusAction(["audio-1"]);
-
-			expect(result.get("audio-1")).toBe(false);
-		});
 	});
 
 	describe("toggleLikeAction", () => {

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { getPopularGenres, getWorkById, getWorks, getWorksLegacy } from "../actions";
+import { getPopularGenres, getWorkById, getWorks } from "../actions";
 
 // Mock Firestore
 const mockGet = vi.fn();
@@ -289,14 +289,6 @@ describe("Works Server Actions", () => {
 		it("人気ジャンルを出現数の降順で返す", async () => {
 			const r = await getPopularGenres(10);
 			expect(r[0]).toMatchObject({ genre: "癒し", count: 2 });
-		});
-	});
-
-	describe("getWorksLegacy", () => {
-		it("getWorksLegacy は getWorks に委譲する", async () => {
-			mockGet.mockResolvedValue({ docs: [docOf("RJ001", workData())] });
-			const r = await getWorksLegacy({ page: 1, limit: 12 });
-			expect(Array.isArray(r.works)).toBe(true);
 		});
 	});
 });
