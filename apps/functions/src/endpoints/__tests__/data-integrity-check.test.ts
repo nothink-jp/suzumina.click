@@ -35,8 +35,10 @@ import firestore from "../../infrastructure/database/firestore";
 import { checkDataIntegrity, runIntegrityCheck } from "../data-integrity-check";
 
 // モック関数をvitestから取得
-const mockCollection = vi.mocked(firestore.collection) as unknown as Mock;
-const mockBatch = vi.mocked(firestore.batch) as unknown as Mock;
+const mockCollection = vi.mocked(firestore.collection) as unknown as Mock<
+	(collectionPath: string) => unknown
+>;
+const mockBatch = vi.mocked(firestore.batch) as unknown as Mock<() => unknown>;
 
 // その他のモック関数
 const mockDoc = vi.fn();

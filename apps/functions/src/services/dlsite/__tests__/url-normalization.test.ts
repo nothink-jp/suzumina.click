@@ -3,7 +3,6 @@
  * プロトコル相対URLの正規化が正しく動作することを検証
  */
 
-import type { DLsiteApiResponse } from "@suzumina.click/shared-types";
 import { describe, expect, it } from "vitest";
 import { WorkMapper } from "../../mappers/work-mapper";
 
@@ -23,9 +22,7 @@ describe("URL正規化機能", () => {
 			site_id: "maniax",
 			author: "テスト声優",
 			price: 1000,
-			price_without_tax: 909,
 			official_price: 1000,
-			official_price_without_tax: 909,
 			discount_rate: 0,
 			is_discount_work: false,
 			rate_average: 4.5,
@@ -41,7 +38,7 @@ describe("URL正規化機能", () => {
 			],
 		};
 
-		const result = WorkMapper.toWork(mockApiData as DLsiteApiResponse);
+		const result = WorkMapper.toWork(mockApiData);
 
 		// メイン画像URLの正規化確認
 		expect(result.thumbnailUrl).toBe(
@@ -76,9 +73,7 @@ describe("URL正規化機能", () => {
 			site_id: "maniax",
 			author: "テスト声優",
 			price: 1000,
-			price_without_tax: 909,
 			official_price: 1000,
-			official_price_without_tax: 909,
 			discount_rate: 0,
 			is_discount_work: false,
 			rate_average: 4.5,
@@ -92,7 +87,7 @@ describe("URL正規化機能", () => {
 				"https://img.dlsite.jp/modpub/images2/work/doujin/RJ01038000/RJ01037463_img_main.jpg",
 		};
 
-		const result = WorkMapper.toWork(mockApiData as DLsiteApiResponse);
+		const result = WorkMapper.toWork(mockApiData);
 
 		// 正しい形式のURLは変更されないことを確認
 		expect(result.thumbnailUrl).toBe(
@@ -118,9 +113,7 @@ describe("URL正規化機能", () => {
 			site_id: "maniax",
 			author: "テスト声優",
 			price: 1000,
-			price_without_tax: 909,
 			official_price: 1000,
-			official_price_without_tax: 909,
 			discount_rate: 0,
 			is_discount_work: false,
 			rate_average: 4.5,
@@ -132,7 +125,7 @@ describe("URL正規化機能", () => {
 				"//img.dlsite.jp/modpub/images2/work/doujin/RJ01038000/RJ01037463_img_main.jpg 1x, //img.dlsite.jp/modpub/images2/work/doujin/RJ01038000/RJ01037463_img_main_2x.jpg 2x",
 		};
 
-		const result = WorkMapper.toWork(mockApiData as DLsiteApiResponse);
+		const result = WorkMapper.toWork(mockApiData);
 
 		// srcsetから抽出した高解像度URLの正規化確認
 		expect(result.highResImageUrl).toBe(
@@ -155,9 +148,7 @@ describe("URL正規化機能", () => {
 			site_id: "maniax",
 			author: "テスト声優",
 			price: 1000,
-			price_without_tax: 909,
 			official_price: 1000,
-			official_price_without_tax: 909,
 			discount_rate: 0,
 			is_discount_work: false,
 			rate_average: 4.5,
@@ -169,7 +160,7 @@ describe("URL正規化機能", () => {
 			image_main: undefined,
 		};
 
-		const result = WorkMapper.toWork(mockApiData as DLsiteApiResponse);
+		const result = WorkMapper.toWork(mockApiData);
 
 		// デフォルトURLが設定されることを確認
 		expect(result.thumbnailUrl).toBe(
@@ -185,7 +176,7 @@ describe("URL正規化機能", () => {
 			// price 情報も欠損
 		};
 
-		const result = WorkMapper.toWork(mockApiData as DLsiteApiResponse);
+		const result = WorkMapper.toWork(mockApiData);
 
 		// フォールバック値が設定されることを確認
 		expect(result.id).toBe("RJ01037463");
@@ -209,7 +200,7 @@ describe("URL正規化機能", () => {
 			image_samples: [111, 222, 333] as any,
 		};
 
-		const result = WorkMapper.toWork(mockApiData as DLsiteApiResponse);
+		const result = WorkMapper.toWork(mockApiData);
 
 		// 数値が文字列に変換されて処理されることを確認
 		expect(result.thumbnailUrl).toBe("123456");
@@ -238,7 +229,7 @@ describe("URL正規化機能", () => {
 			] as any,
 		};
 
-		const result = WorkMapper.toWork(mockApiData as DLsiteApiResponse);
+		const result = WorkMapper.toWork(mockApiData);
 
 		// オブジェクトから適切なプロパティが抽出されて正規化されることを確認
 		expect(result.thumbnailUrl).toBe("https://img.dlsite.jp/test_thumb.jpg");
