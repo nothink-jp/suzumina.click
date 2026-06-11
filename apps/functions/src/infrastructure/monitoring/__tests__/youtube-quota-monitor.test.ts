@@ -19,15 +19,6 @@ vi.mock("../../../shared/logger", () => ({
 	debug: vi.fn(),
 }));
 
-// config-managerのモック
-vi.mock("../../management/config-manager", () => ({
-	getYouTubeConfig: () => ({
-		dailyQuotaLimit: 10000,
-		maxBatchSize: 50,
-		timeoutMs: 30000,
-	}),
-}));
-
 describe("YouTubeQuotaMonitor", () => {
 	let quotaMonitor: YouTubeQuotaMonitor;
 

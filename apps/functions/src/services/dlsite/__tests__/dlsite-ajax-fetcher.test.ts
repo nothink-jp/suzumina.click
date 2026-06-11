@@ -17,10 +17,6 @@ vi.mock("../../infrastructure/management/config-manager", () => ({
 	getDLsiteConfig: vi.fn(() => ({
 		timeoutMs: 30000,
 		requestDelay: 1000,
-		maxPagesPerExecution: 10,
-		maxRetries: 3,
-		retryDelayMs: 1000,
-		itemsPerPage: 100,
 	})),
 }));
 
