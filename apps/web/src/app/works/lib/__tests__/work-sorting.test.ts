@@ -4,9 +4,24 @@ import { sortWorks } from "../work-sorting";
 
 const work = (over: Partial<WorkDocument>): WorkDocument => over as WorkDocument;
 
-const a = work({ productId: "a", releaseDateISO: "2024-01-01", price: { current: 300 } as never, rating: { stars: 4, count: 10 } as never });
-const b = work({ productId: "b", releaseDateISO: "2024-06-01", price: { current: 100 } as never, rating: { stars: 5, count: 2 } as never });
-const c = work({ productId: "c", releaseDateISO: "2023-01-01", price: { current: 200 } as never, rating: { stars: 3, count: 50 } as never });
+const a = work({
+	productId: "a",
+	releaseDateISO: "2024-01-01",
+	price: { current: 300 } as never,
+	rating: { stars: 4, count: 10 } as never,
+});
+const b = work({
+	productId: "b",
+	releaseDateISO: "2024-06-01",
+	price: { current: 100 } as never,
+	rating: { stars: 5, count: 2 } as never,
+});
+const c = work({
+	productId: "c",
+	releaseDateISO: "2023-01-01",
+	price: { current: 200 } as never,
+	rating: { stars: 3, count: 50 } as never,
+});
 
 const ids = (works: WorkDocument[]) => works.map((w) => w.productId);
 

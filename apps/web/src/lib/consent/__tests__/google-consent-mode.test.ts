@@ -59,10 +59,14 @@ describe("updateGoogleConsent", () => {
 
 	it("gtag があれば consent update と event を送る", () => {
 		updateGoogleConsent(grantAnalytics);
-		expect(gtag).toHaveBeenCalledWith("consent", "update", expect.objectContaining({
-			analytics_storage: "granted",
-			ad_storage: "denied",
-		}));
+		expect(gtag).toHaveBeenCalledWith(
+			"consent",
+			"update",
+			expect.objectContaining({
+				analytics_storage: "granted",
+				ad_storage: "denied",
+			}),
+		);
 		expect(gtag).toHaveBeenCalledWith("event", "consent_update", expect.any(Object));
 	});
 });
@@ -104,7 +108,11 @@ describe("sendGoogleAnalyticsPageView / Event", () => {
 		process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID = "G-TEST";
 		localStorage.setItem("consent-state", JSON.stringify({ analytics: true }));
 		sendGoogleAnalyticsPageView("/page");
-		expect(gtag).toHaveBeenCalledWith("config", "G-TEST", expect.objectContaining({ page_path: "/page" }));
+		expect(gtag).toHaveBeenCalledWith(
+			"config",
+			"G-TEST",
+			expect.objectContaining({ page_path: "/page" }),
+		);
 		sendGoogleAnalyticsEvent("my_event", { foo: 1 });
 		expect(gtag).toHaveBeenCalledWith("event", "my_event", { foo: 1 });
 	});

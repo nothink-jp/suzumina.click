@@ -5,8 +5,7 @@
  * displayName/isFamilyMember 等の正本は `users` コレクションにあり、ここで読んで載せる。
  * customSession プラグイン（auth.ts）から呼ばれる。
  */
-import type { UserSession } from "@suzumina.click/shared-types";
-import type { FirestoreUserData } from "@suzumina.click/shared-types";
+import type { FirestoreUserData, UserSession } from "@suzumina.click/shared-types";
 import { getFirestore } from "@/lib/firestore";
 import { error as logError } from "@/lib/logger";
 import { updateLastLogin } from "@/lib/user-firestore";

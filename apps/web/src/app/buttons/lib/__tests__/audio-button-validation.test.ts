@@ -21,7 +21,6 @@ const makeFirestore = (videoData: unknown, exists = true) => {
 
 const validate = (videoData: unknown, exists = true) => {
 	const { firestore } = makeFirestore(videoData, exists);
-	// biome-ignore lint/suspicious/noExplicitAny: モックを型に流し込む
 	return validateVideoForAudioButton("vid1", firestore as any);
 };
 

@@ -216,7 +216,10 @@ describe("firestoreOps (fake Firestore)", () => {
 	});
 
 	it("create は id を採用して保存し、ba_ 接頭辞コレクションに入る", async () => {
-		const created = await ops.create({ model: "user", data: { id: "u1", name: "A", x: undefined } });
+		const created = await ops.create({
+			model: "user",
+			data: { id: "u1", name: "A", x: undefined },
+		});
 		expect(created).toEqual({ id: "u1", name: "A" });
 		expect(db.raw("ba_user").get("u1")).toEqual({ id: "u1", name: "A" });
 	});
@@ -280,14 +283,20 @@ describe("firestoreOps (fake Firestore)", () => {
 			update: { name: "B" },
 		});
 		expect(updated).toMatchObject({ id: "u1", name: "B" });
-		expect(await ops.update({ model: "user", where: [w("id", "zzz")], update: { name: "x" } })).toBeNull();
+		expect(
+			await ops.update({ model: "user", where: [w("id", "zzz")], update: { name: "x" } }),
+		).toBeNull();
 	});
 
 	it("updateMany / deleteMany は件数を返す", async () => {
 		await ops.create({ model: "session", data: { id: "s1", userId: "u1" } });
 		await ops.create({ model: "session", data: { id: "s2", userId: "u1" } });
 		expect(
-			await ops.updateMany({ model: "session", where: [w("userId", "u1")], update: { live: false } }),
+			await ops.updateMany({
+				model: "session",
+				where: [w("userId", "u1")],
+				update: { live: false },
+			}),
 		).toBe(2);
 		expect(db.raw("ba_session").get("s1")).toMatchObject({ live: false });
 		expect(await ops.deleteMany({ model: "session", where: [w("userId", "u1")] })).toBe(2);

@@ -41,7 +41,9 @@ describe("buildUserSessionFromFirestore", () => {
 	});
 
 	it("flags 無しなら isFamilyMember は false", () => {
-		expect(buildUserSessionFromFirestore(makeUser({ flags: undefined })).isFamilyMember).toBe(false);
+		expect(buildUserSessionFromFirestore(makeUser({ flags: undefined })).isFamilyMember).toBe(
+			false,
+		);
 	});
 
 	it("isActive=false を保持する（Phase 2 のゲートで使用）", () => {

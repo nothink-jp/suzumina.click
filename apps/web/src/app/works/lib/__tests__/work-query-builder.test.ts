@@ -17,7 +17,6 @@ const makeFirestore = () => {
 	return { firestore, calls };
 };
 
-// biome-ignore lint/suspicious/noExplicitAny: モックを Firestore 型に流し込む
 const run = (params: Parameters<typeof buildWorksQuery>[1]) => {
 	const { firestore, calls } = makeFirestore();
 	buildWorksQuery(firestore as any, params);
@@ -32,7 +31,10 @@ describe("buildWorksQuery", () => {
 	});
 
 	it("category 指定で where、'all' はスキップ", () => {
-		expect(run({ category: "SOU" })).toContainEqual({ method: "where", args: ["category", "==", "SOU"] });
+		expect(run({ category: "SOU" })).toContainEqual({
+			method: "where",
+			args: ["category", "==", "SOU"],
+		});
 		expect(run({ category: "all" }).some((c) => c.method === "where")).toBe(false);
 	});
 
