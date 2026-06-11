@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mockRequireAuth = vi.fn();
-vi.mock("@/components/system/protected-route", () => ({ requireAuth: mockRequireAuth }));
+const mockGetCurrentUser = vi.fn();
+vi.mock("@/lib/auth/server", () => ({ getCurrentUser: mockGetCurrentUser }));
 
 const mockGetFirestore = vi.fn();
 vi.mock("@/lib/firestore", () => ({ getFirestore: mockGetFirestore }));
@@ -39,7 +39,7 @@ function setupFirestore({
 describe("toggleReaction (SPR-192)", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mockRequireAuth.mockResolvedValue({ discordId: "u1" });
+		mockGetCurrentUser.mockResolvedValue({ discordId: "u1", isActive: true });
 		mockUpdateCounter.mockResolvedValue({ success: true });
 	});
 
@@ -88,9 +88,15 @@ describe("toggleReaction (SPR-192)", () => {
 		});
 	});
 
-	it("未認証はエラーを返す", async () => {
-		mockRequireAuth.mockRejectedValue(new Error("unauth"));
+	it("未認証は redirect せず「ログインが必要です」を返す（NEXT_REDIRECT 飲み込み回避・SPR-195）", async () => {
+		mockGetCurrentUser.mockResolvedValue(null);
 		const result = await toggleReaction("ab1", "like");
-		expect(result).toEqual({ success: false, error: "いいね状態の更新に失敗しました" });
+		expect(result).toEqual({ success: false, error: "ログインが必要です" });
+	});
+
+	it("無効ユーザー（isActive=false）はブロックする（認可を緩めない・SPR-195）", async () => {
+		mockGetCurrentUser.mockResolvedValue({ discordId: "u1", isActive: false });
+		const result = await toggleReaction("ab1", "like");
+		expect(result).toEqual({ success: false, error: "ログインが必要です" });
 	});
 });
