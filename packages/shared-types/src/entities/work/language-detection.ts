@@ -303,8 +303,11 @@ export function supportsLanguage(work: WorkDocument, language: WorkLanguage): bo
 }
 
 /**
- * 言語でフィルタリング (後方互換性のため)
- * @deprecated Use custom filtering logic with detectWorkLanguage
+ * 言語で作品をフィルタリングする。
+ *
+ * `detectWorkLanguage`（言語判定の正本）を用いる唯一のフィルタ経路。
+ * transformer の `_computed.primaryLanguage` も同じ `detectWorkLanguage` を使うため、
+ * 「フィルタで選んだ言語」と「詳細表示の言語」は一致する（SPR-184）。
  */
 export function filterWorksByLanguage(
 	works: WorkDocument[],

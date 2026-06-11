@@ -4,153 +4,9 @@
  * Minimal implementation that only maps fields that exist in both WorkDocument and WorkPlainObject.
  */
 
-import type { WorkLanguage } from "../entities/work";
+import { detectWorkLanguage, getSupportedLanguages } from "../entities/work/language-detection";
 import type { WorkDocument } from "../entities/work/work-document-schema";
 import type { WorkPlainObject } from "../plain-objects/work-plain";
-
-/**
- * Language code mapping
- */
-const LANGUAGE_CODE_MAP: Record<string, WorkLanguage> = {
-	// Japanese
-	jpn: "ja",
-	ja: "ja",
-	jp: "ja",
-	// English
-	eng: "en",
-	en: "en",
-	// Chinese (Simplified)
-	zho: "zh-cn",
-	zh: "zh-cn",
-	chi: "zh-cn",
-	chn: "zh-cn",
-	// Chinese (Traditional)
-	zht: "zh-tw",
-	"zh-tw": "zh-tw",
-	tw: "zh-tw",
-	// Korean
-	kor: "ko",
-	ko: "ko",
-	kr: "ko",
-	// Spanish
-	spa: "es",
-	es: "es",
-	// Thai
-	tha: "th",
-	th: "th",
-	// German
-	deu: "de",
-	de: "de",
-	// French
-	fra: "fr",
-	fr: "fr",
-	// Italian
-	ita: "it",
-	it: "it",
-	// Portuguese
-	por: "pt",
-	pt: "pt",
-	// Russian
-	rus: "ru",
-	ru: "ru",
-	// Vietnamese
-	vie: "vi",
-	vi: "vi",
-	vn: "vi",
-	// Indonesian
-	ind: "id",
-	id: "id",
-};
-
-/**
- * Map language code to WorkLanguage type
- */
-function mapLanguageCode(lang: string | undefined): WorkLanguage | null {
-	if (!lang) return null;
-	const code = lang.toLowerCase();
-	return LANGUAGE_CODE_MAP[code] || null;
-}
-
-/**
- * Detect language from title
- */
-function detectLanguageFromTitle(title: string): WorkLanguage | null {
-	if (!title) return null;
-
-	if (title.includes("【繁体中文版】") || title.includes("【繁體中文版】")) {
-		return "zh-tw";
-	}
-	if (title.includes("【简体中文版】") || title.includes("【簡体中文版】")) {
-		return "zh-cn";
-	}
-	if (title.includes("【英語版】") || title.includes("【English】")) {
-		return "en";
-	}
-	if (title.includes("【韓国語版】") || title.includes("【한국어】")) {
-		return "ko";
-	}
-
-	return null;
-}
-
-/**
- * Determine primary language for a work
- */
-function determinePrimaryLanguage(doc: WorkDocument): WorkLanguage {
-	// First priority: detect from title for translations
-	const titleLang = detectLanguageFromTitle(doc.title);
-	if (titleLang) return titleLang;
-
-	// Second priority: check translation info
-	const translationLang = mapLanguageCode(doc.translationInfo?.lang);
-	if (translationLang) return translationLang;
-
-	// Third priority: check language downloads
-	if (doc.languageDownloads && doc.languageDownloads.length > 0) {
-		const firstDownload = doc.languageDownloads[0];
-		if (firstDownload) {
-			const firstLang = mapLanguageCode(firstDownload.lang);
-			if (firstLang) return firstLang;
-		}
-	}
-
-	// Default to Japanese
-	return "ja";
-}
-
-/**
- * Collect all available languages for a work
- */
-function collectAvailableLanguages(doc: WorkDocument): WorkLanguage[] {
-	const languages = new Set<WorkLanguage>();
-
-	// Detect from title first for translations
-	const titleLang = detectLanguageFromTitle(doc.title);
-	if (titleLang) {
-		languages.add(titleLang);
-	}
-
-	// Always include Japanese as it's usually available
-	languages.add("ja");
-
-	// Add translation language if exists
-	const translationLang = mapLanguageCode(doc.translationInfo?.lang);
-	if (translationLang) {
-		languages.add(translationLang);
-	}
-
-	// Add languages from language downloads
-	if (doc.languageDownloads && doc.languageDownloads.length > 0) {
-		for (const ld of doc.languageDownloads) {
-			const mapped = mapLanguageCode(ld.lang);
-			if (mapped) {
-				languages.add(mapped);
-			}
-		}
-	}
-
-	return Array.from(languages);
-}
 
 /**
  * Get display name for work category
@@ -407,9 +263,9 @@ export function fromFirestore(doc: WorkDocument): WorkPlainObject {
 			})(),
 			isPopular: (doc.rating?.count || 0) > 100,
 
-			// Language-related
-			primaryLanguage: determinePrimaryLanguage(doc),
-			availableLanguages: collectAvailableLanguages(doc),
+			// Language-related（正本は entities/work/language-detection の detectWorkLanguage）
+			primaryLanguage: detectWorkLanguage(doc) ?? "ja",
+			availableLanguages: getSupportedLanguages(doc),
 
 			// Search and filtering
 			searchableText: [doc.title, doc.circle, doc.description].filter(Boolean).join(" "),
