@@ -78,204 +78,24 @@ class AudioButton extends BaseEntity<AudioButton> {
 
 ## Value Objects
 
-All value objects now extend `BaseValueObject<T>` and implement `ValidatableValueObject<T>` interface.
-They use the Result pattern for error handling.
+> **2026-06 (SPR-181) 更新**: かつて `packages/shared-types/src/value-objects/` に存在した
+> クラス VO 一式（WorkId / WorkTitle / WorkPrice / WorkRating / WorkCreators / Circle /
+> DateRange / Price / Rating、video 系 Channel / VideoContent / VideoMetadata /
+> VideoStatistics、base/*）は **全て削除済み**。apps/web・apps/functions・packages/ui からの
+> import がゼロの死蔵層だったため。実運用のデータ表現と変換は以下に一本化されている。
 
-### Work Value Objects
+**現在の正本（Work / Video のデータ表現）**
 
-#### WorkId
+- **PlainObject**: `packages/shared-types/src/plain-objects/`（`work-plain.ts` / `circle-plain.ts` ほか）
+  — RSC 境界を越える正本のデータ形。
+- **Transformers**: `packages/shared-types/src/transformers/`（Firestore ⇔ PlainObject 変換）。
+- **Operations**: `packages/shared-types/src/operations/`（PlainObject に対する表示・集計などの純関数）。
+- **検証・整形ユーティリティ**: `packages/shared-types/src/utilities/`
+  （例: 日付正規化は `utilities/formatters/date-optimizer.ts` の `optimizeDateFormats`、
+  ID 検証は `utilities/validators/dlsite-ids.ts`）。
 
-**Location**: `packages/shared-types/src/value-objects/work/work-id.ts`
-**Pattern**: Value Object with Branded Type
-
-```typescript
-class WorkId extends BaseValueObject<WorkId> implements ValidatableValueObject<WorkId> {
-  // Private constructor
-  private constructor(private readonly value: WorkIdBrand) { ... }
-  
-  // Factory method returns Result type
-  static create(value: string): Result<WorkId, ValidationError> {
-    // Format: RJ + 6-8 digits
-  }
-  
-  // Validation
-  isValid(): boolean
-  getValidationErrors(): string[]
-  
-  // Serialization
-  toPlainObject(): string
-  static fromPlainObject(obj: unknown): Result<WorkId, ValidationError>
-}
-```
-
-#### WorkTitle
-
-**Location**: `packages/shared-types/src/value-objects/work/work-title.ts`
-**Pattern**: Complex Value Object with multiple fields
-
-```typescript
-class WorkTitle extends BaseValueObject<WorkTitle> {
-  static create(
-    value: string,
-    masked?: string,
-    kana?: string,
-    altName?: string
-  ): Result<WorkTitle, ValidationError>
-  
-  // Business methods
-  toDisplayString(preferMasked?: boolean): string
-  getSearchableText(): string
-}
-```
-
-#### WorkPrice
-
-**Location**: `packages/shared-types/src/value-objects/work/work-price.ts`
-**Pattern**: Value Object with business logic
-
-```typescript
-class WorkPrice extends BaseValueObject<WorkPrice> {
-  static create(
-    current: number,
-    original?: number,
-    discountRate?: number,
-    currency?: string
-  ): Result<WorkPrice, ValidationError>
-  
-  // Business methods
-  isOnSale(): boolean
-  getDiscountAmount(): number
-  format(): string
-}
-```
-
-#### WorkRating
-
-**Location**: `packages/shared-types/src/value-objects/work/work-rating.ts`
-
-```typescript
-class WorkRating extends BaseValueObject<WorkRating> {
-  static create(
-    stars: number,
-    count: number,
-    average: number,
-    reviewCount?: number,
-    distribution?: RatingDistribution
-  ): Result<WorkRating, ValidationError>
-  
-  // Business methods
-  hasRatings(): boolean
-  isHighlyRated(): boolean
-  getReliability(): RatingReliability
-}
-```
-
-#### WorkCreators
-
-**Location**: `packages/shared-types/src/value-objects/work/work-creators.ts`
-
-```typescript
-class WorkCreators extends BaseValueObject<WorkCreators> {
-  static create(
-    voiceActors?: CreatorInfo[],
-    scenario?: CreatorInfo[],
-    illustration?: CreatorInfo[],
-    music?: CreatorInfo[],
-    others?: CreatorInfo[]
-  ): Result<WorkCreators, ValidationError>
-  
-  // Query methods
-  hasVoiceActors(): boolean
-  getPrimaryVoiceActor(): CreatorInfo | undefined
-  getAllUniqueNames(): string[]
-}
-```
-
-#### Circle
-
-**Location**: `packages/shared-types/src/value-objects/work/circle.ts`
-**Pattern**: Value Object with Branded Type
-
-```typescript
-class Circle extends BaseValueObject<Circle> {
-  static create(id: string, name: string, nameEn?: string): Result<Circle, ValidationError>
-  
-  toUrl(): string
-  toDisplayString(preferEnglish?: boolean): string
-}
-```
-
-### Video Value Objects
-
-#### VideoId
-
-**Location**: `packages/shared-types/src/value-objects/video/video-content.ts`
-**Pattern**: Value Object with Branded Type
-
-```typescript
-class VideoId extends BaseValueObject<VideoId> {
-  // YouTube video ID (11 characters)
-  static create(value: string): Result<VideoId, ValidationError>
-  
-  toThumbnailUrl(quality?: "default" | "medium" | "high"): string
-  toYouTubeUrl(): string
-}
-```
-
-#### Channel
-
-**Location**: `packages/shared-types/src/value-objects/video/channel.ts`
-
-```typescript
-class Channel extends BaseValueObject<Channel> {
-  // YouTube channel information
-  static create(channelId: string, channelTitle: string): Result<Channel, ValidationError>
-}
-```
-
-### Reusable Value Objects
-
-#### DateRange
-
-**Location**: `packages/shared-types/src/value-objects/work/date-range.ts`
-
-```typescript
-class DateRangeValueObject extends BaseValueObject<DateRangeValueObject> {
-  static create(original: string, iso: string, display: string): Result<DateRangeValueObject, ValidationError>
-  
-  toDate(): Date
-  daysFromNow(): number
-  relative(): string
-}
-```
-
-#### Price
-
-**Location**: `packages/shared-types/src/value-objects/work/price.ts`
-
-```typescript
-class PriceValueObject extends BaseValueObject<PriceValueObject> {
-  static create(amount: number, currency: string, ...): Result<PriceValueObject, ValidationError>
-  
-  isFree(): boolean
-  isDiscounted(): boolean
-  format(): string
-}
-```
-
-#### Rating
-
-**Location**: `packages/shared-types/src/value-objects/work/rating.ts`
-
-```typescript
-class RatingValueObject extends BaseValueObject<RatingValueObject> {
-  static create(stars: number, count: number, average: number): Result<RatingValueObject, ValidationError>
-  
-  hasRatings(): boolean
-  isHighlyRated(): boolean
-  reliability(): RatingReliability
-}
-```
+新たにクラス VO を再導入する場合は CLAUDE.md の「Entity化のゲート」を先に通すこと
+（ビジネスルール5個以上 / 明確な状態遷移 / 複雑な不変条件のいずれか）。
 
 ## Type System Enhancements
 
@@ -373,25 +193,12 @@ const work = result.value;
 
 ### Value Object Creation
 
-```typescript
-// Before (Constructor or Zod)
-const title = new WorkTitle("タイトル"); // throws
-const price = Price.parse({ amount: 1000, currency: "JPY" }); // Zod
-
-// After (Result Pattern)
-const titleResult = WorkTitle.create("タイトル");
-if (titleResult.isOk()) {
-  const title = titleResult.value;
-}
-
-const priceResult = WorkPrice.create(1000, undefined, undefined, "JPY");
-if (priceResult.isOk()) {
-  const price = priceResult.value;
-}
-```
+> **2026-06 (SPR-181) 更新**: クラス VO（`WorkTitle.create()` / `WorkPrice.create()` など Result
+> パターンのファクトリ）は**削除済み**。Work / Video のデータは PlainObject + Zod スキーマ +
+> `transformers/` の変換関数で扱う（上記「Value Objects」節を参照）。
 
 ---
 
-**Last Updated**: 2025-08-11
-**Version**: 0.4.0
-**Note**: All legacy methods have been removed. All APIs now use Result pattern for error handling.
+**Last Updated**: 2026-06-11
+**Version**: 0.5.0
+**Note**: SPR-181 で `value-objects/` のクラス VO 一式を削除。データ表現は plain-objects + transformers + operations に一本化。

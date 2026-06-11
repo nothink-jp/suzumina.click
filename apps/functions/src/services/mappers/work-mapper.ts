@@ -15,7 +15,7 @@ import type {
 	WorkCategory,
 	WorkDocument,
 } from "@suzumina.click/shared-types";
-import { DateFormatter } from "@suzumina.click/shared-types";
+import { optimizeDateFormats } from "@suzumina.click/shared-types";
 
 // 言語エディション項目の型定義
 interface LanguageEditionItem {
@@ -389,14 +389,14 @@ function toLanguageDownloads(raw: DLsiteApiResponse): LanguageDownload[] {
 function toISODate(dateStr: string): string | undefined {
 	const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
 	if (match) return `${dateStr}T00:00:00.000Z`;
-	return DateFormatter.optimizeDateFormats(dateStr)?.iso;
+	return optimizeDateFormats(dateStr)?.iso;
 }
 
 /**
  * 日付を表示形式に変換
  */
 function formatDateDisplay(dateStr: string): string | undefined {
-	return DateFormatter.optimizeDateFormats(dateStr)?.display;
+	return optimizeDateFormats(dateStr)?.display;
 }
 
 /**

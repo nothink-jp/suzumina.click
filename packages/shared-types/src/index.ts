@@ -137,6 +137,8 @@ export * from "./utilities/evaluation/aggregator";
 export * from "./utilities/evaluation/characteristic-axes";
 // Firestore関連のユーティリティ
 export * from "./utilities/firestore-utils";
+// 日付フォーマット最適化（旧 value-objects DateFormatter から移設）
+export * from "./utilities/formatters/date-optimizer";
 // Relative time / member-since formatters (extracted from entities/user)
 export * from "./utilities/formatters/relative-time";
 // 価格履歴関連の型とスキーマのエクスポート
@@ -151,20 +153,3 @@ export { formatTimestamp, parseDurationToSeconds } from "./utils";
 // ユーティリティ関数 (from subdirectories)
 export * from "./utils/date-parser";
 export * from "./utils/number-parser";
-// === Value Objects ===
-// Export base Value Object utilities and interfaces
-export * from "./value-objects";
-export * from "./value-objects/work/circle";
-// === Value Objects ===
-export * from "./value-objects/work/creator-type";
-export * from "./value-objects/work/date-range";
-// DateFormatterをvalue-objectsから再エクスポート（互換性のため）
-export { DateFormatter } from "./value-objects/work/date-range";
-export * from "./value-objects/work/price";
-export * from "./value-objects/work/rating";
-export { WorkCreators as WorkCreatorsValueObject } from "./value-objects/work/work-creators";
-// Work-specific value objects
-export * from "./value-objects/work/work-id";
-export * from "./value-objects/work/work-price";
-export * from "./value-objects/work/work-rating";
-export * from "./value-objects/work/work-title";
