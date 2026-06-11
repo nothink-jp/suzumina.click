@@ -104,7 +104,7 @@ export class PriceValueObject
 			return { isValid: false, error: "Amount must be a non-negative integer" };
 		}
 
-		if (!data.currency || data.currency.length !== 3 || !/^[A-Z]{3}$/.test(data.currency)) {
+		if (data.currency?.length !== 3 || !/^[A-Z]{3}$/.test(data.currency)) {
 			return { isValid: false, error: "Currency must be a 3-letter uppercase ISO 4217 code" };
 		}
 

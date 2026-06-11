@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // convertToWorkPlainObjectのモック実装を別関数として定義
 const mockConvertToWorkPlainObject = (data: any) => {
-	if (!data || !data.id || !data.productId) return null;
+	if (!data?.id || !data.productId) return null;
 	const creators = data.creators || {};
 	const mapCreators = (arr: any[] = []) =>
 		arr.map((item: any) => ({ id: item.id, name: item.name }));
@@ -75,7 +75,7 @@ vi.mock("@suzumina.click/shared-types", () => ({
 		fromFirestore: vi.fn((data) => {
 			// Use the mock helper function to transform data
 			const mockConvertToWorkPlainObject = (data: any) => {
-				if (!data || !data.id || !data.productId) return null;
+				if (!data?.id || !data.productId) return null;
 				return {
 					...data,
 					price: data.price || { current: 0, currency: "JPY" },
