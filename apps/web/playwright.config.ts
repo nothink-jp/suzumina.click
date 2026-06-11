@@ -30,48 +30,22 @@ export default defineConfig({
 		video: "retain-on-failure",
 	},
 
-	/* Configure projects for major browsers */
+	/* CI（e2e-smoke）が回すのは chromium のみ。firefox / webkit / Mobile project は
+	 * 削除した手動 spec 群の名残で実行経路ゼロだったため撤去した。
+	 * クロスブラウザ確認が必要になったら project を再追加する。 */
 	projects: [
 		{
 			name: "chromium",
 			use: { ...devices["Desktop Chrome"] },
 		},
-
-		{
-			name: "firefox",
-			use: { ...devices["Desktop Firefox"] },
-		},
-
-		{
-			name: "webkit",
-			use: { ...devices["Desktop Safari"] },
-		},
-
-		/* Test against mobile viewports. */
-		{
-			name: "Mobile Chrome",
-			use: { ...devices["Pixel 5"] },
-		},
-		{
-			name: "Mobile Safari",
-			use: { ...devices["iPhone 12"] },
-		},
-
-		/* Test against branded browsers. */
-		// {
-		//   name: 'Microsoft Edge',
-		//   use: { ...devices['Desktop Edge'], channel: 'msedge' },
-		// },
-		// {
-		//   name: 'Google Chrome',
-		//   use: { ...devices['Desktop Chrome'], channel: 'chrome' },
-		// },
 	],
 
 	/* テスト前にローカルサーバを起動する。
 	 * PLAYWRIGHT_PROD=1 のときは本番ビルド(next start)に対して実行する。
 	 * SPR-124 のような「本番ビルドでのみ顕在化する回帰」は dev では捕捉できないため、
-	 * スモーク(@smoke / e2e/smoke.spec.ts)はこのモードで回す（事前に `next build` 済みであること）。 */
+	 * スモーク(@smoke / e2e/smoke.spec.ts)はこのモードで回す（事前に `next build` 済みであること）。
+	 * 残った smoke はデータ非依存（layout/routing のみ・データ取得失敗は error 境界に落ちる）なので、
+	 * 既定の `pnpm dev` は ADC 無しでも成立する（本番データ前提だった手動 spec は撤去済み）。 */
 	webServer: {
 		command: process.env.PLAYWRIGHT_PROD ? "pnpm start" : "pnpm dev",
 		url: "http://127.0.0.1:3000",
