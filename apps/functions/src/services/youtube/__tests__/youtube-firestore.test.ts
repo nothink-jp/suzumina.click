@@ -32,7 +32,7 @@ vi.mock("../../mappers/video-mapper", () => ({
 	},
 }));
 
-import { saveVideosToFirestore, updateVideoWith } from "../youtube-firestore";
+import { saveVideosToFirestore } from "../youtube-firestore";
 
 // videoToFirestore（実物）が受け付ける最小の VideoPlainObject
 const plainObject = (id = "v1") =>
@@ -60,26 +60,6 @@ beforeEach(() => {
 
 afterEach(() => {
 	vi.clearAllMocks();
-});
-
-describe("updateVideoWith", () => {
-	it("マッピング失敗時は null", () => {
-		fromYouTubeAPI.mockReturnValue(null);
-		expect(updateVideoWith({} as never, ytVideo())).toBeNull();
-	});
-
-	it("成功時は FirestoreServerVideoData を返す", () => {
-		const r = updateVideoWith({} as never, ytVideo());
-		expect(r).not.toBeNull();
-		expect(r?.videoId).toBe("v1");
-	});
-
-	it("マッパーが例外を投げたら null", () => {
-		fromYouTubeAPI.mockImplementation(() => {
-			throw new Error("boom");
-		});
-		expect(updateVideoWith({} as never, ytVideo())).toBeNull();
-	});
 });
 
 describe("saveVideosToFirestore", () => {

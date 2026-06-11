@@ -11,7 +11,6 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { DLsiteApiResponse } from "@suzumina.click/shared-types";
 import firestore, { Timestamp } from "../../infrastructure/database/firestore";
-import { logUserAgentSummary } from "../../infrastructure/management/user-agent-manager";
 import { batchFetchIndividualInfo } from "../../services/dlsite/individual-info-api-client";
 import { processBatchUnifiedDLsiteData } from "../../services/dlsite/unified-data-processor";
 import { chunkArray } from "../../shared/array-utils";
@@ -303,11 +302,13 @@ class LocalDataCollector {
 	}
 
 	/**
-	 * Firestoreへの安全なデータ投入
-	 * 注意: 新しい統合処理ではすでにFirestoreへの保存が完了しているため、
-	 * このメソッドは集計結果を返すのみ
+	 * アップロード結果の集計を返す。
+	 *
+	 * 注意: 実際の Firestore 書き込みは収集時の統合処理（processBatchUnifiedDLsiteData）で
+	 * 既に完了している。このメソッドは書き込みを行わず、件数の集計結果のみを返す
+	 * （命名を実態に合わせて upload → summarize に変更 / SPR-183）。
 	 */
-	async uploadToFirestore(localData: LocalCollectedWorkData[]): Promise<UploadResult> {
+	summarizeUploadResult(localData: LocalCollectedWorkData[]): UploadResult {
 		// 統合処理で既にアップロード済みなので、結果を集計するのみ
 		return {
 			totalBatches: 1,
@@ -419,9 +420,9 @@ async function executeCompleteLocalCollection(options?: {
 		logger.info("🎯 Step 1: ローカル完全データ収集");
 		collectionResult = await collector.collectCompleteLocalData();
 
-		// Step 2: Firestoreアップロード（オプション）
+		// Step 2: アップロード結果の集計（実書き込みは Step 1 の統合処理で完了済み・オプション）
 		if (options?.uploadToFirestore && collectionResult.collectedData.length > 0) {
-			uploadResult = await collector.uploadToFirestore(collectionResult.collectedData);
+			uploadResult = collector.summarizeUploadResult(collectionResult.collectedData);
 			logger.info(
 				`Firestore投入完了: ${uploadResult.totalUploaded}/${collectionResult.collectedData.length}件成功`,
 			);
@@ -435,8 +436,6 @@ async function executeCompleteLocalCollection(options?: {
 
 		// Step 4: メタデータ保存
 		await collector.saveCollectionMetadata(collectionResult, uploadResult);
-
-		logUserAgentSummary();
 
 		return { collection: collectionResult, upload: uploadResult };
 	} catch (error) {

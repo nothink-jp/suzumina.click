@@ -2,19 +2,13 @@
  * Creator Firestore ユーティリティ関数のテスト
  */
 
-import type {
-	CreatorDocument,
-	CreatorWorkRelation,
-	DLsiteApiResponse,
-} from "@suzumina.click/shared-types";
+import type { DLsiteApiResponse } from "@suzumina.click/shared-types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as logger from "../../../shared/logger";
 import {
-	getCreatorWithWorks,
 	getCreatorWorkCount,
 	recomputeCreatorStats,
 	removeCreatorMappings,
-	updateCreatorPrimaryRole,
 	updateCreatorWorkMapping,
 } from "../creator-firestore";
 
@@ -359,116 +353,6 @@ describe("creator-firestore", () => {
 
 			expect(count).toBe(0);
 			expect(logger.error).toHaveBeenCalled();
-		});
-	});
-
-	describe("updateCreatorPrimaryRole", () => {
-		it("最も多い役割を主要役割として設定する", async () => {
-			mockGet.mockResolvedValueOnce({
-				empty: false,
-				docs: [
-					{
-						data: () => ({
-							workId: "RJ001",
-							roles: ["voice", "other"],
-						}),
-					},
-					{
-						data: () => ({
-							workId: "RJ002",
-							roles: ["voice"],
-						}),
-					},
-					{
-						data: () => ({
-							workId: "RJ003",
-							roles: ["voice"],
-						}),
-					},
-					{
-						data: () => ({
-							workId: "RJ004",
-							roles: ["illustration"],
-						}),
-					},
-				],
-			});
-
-			const result = await updateCreatorPrimaryRole("VA001");
-
-			expect(result).toBe(true);
-			expect(mockUpdate).toHaveBeenCalledWith(
-				expect.objectContaining({
-					primaryRole: "voice", // 3回出現で最多
-				}),
-			);
-		});
-
-		it("作品がない場合はfalseを返す", async () => {
-			mockGet.mockResolvedValueOnce({
-				empty: true,
-				docs: [],
-			});
-
-			const result = await updateCreatorPrimaryRole("VA001");
-
-			expect(result).toBe(false);
-			expect(mockUpdate).not.toHaveBeenCalled();
-		});
-	});
-
-	describe("getCreatorWithWorks", () => {
-		it("クリエイター情報と作品リストを取得する", async () => {
-			const creatorData: CreatorDocument = {
-				creatorId: "VA001",
-				name: "声優A",
-				primaryRole: "voice",
-				createdAt: { seconds: 1234567890, nanoseconds: 0 } as any,
-				updatedAt: { seconds: 1234567890, nanoseconds: 0 } as any,
-			};
-
-			const workRelations: CreatorWorkRelation[] = [
-				{
-					workId: "RJ001",
-					roles: ["voice"],
-					circleId: "RG001",
-					updatedAt: { seconds: 1234567890, nanoseconds: 0 } as any,
-				},
-				{
-					workId: "RJ002",
-					roles: ["voice", "other"],
-					circleId: "RG002",
-					updatedAt: { seconds: 1234567890, nanoseconds: 0 } as any,
-				},
-			];
-
-			mockGet
-				.mockResolvedValueOnce({
-					exists: true,
-					data: () => creatorData,
-					ref: { collection: mockCollection },
-				})
-				.mockResolvedValueOnce({
-					docs: workRelations.map((data) => ({
-						data: () => data,
-					})),
-				});
-
-			const result = await getCreatorWithWorks("VA001");
-
-			expect(result.creator).toEqual(creatorData);
-			expect(result.works).toEqual(workRelations);
-		});
-
-		it("クリエイターが存在しない場合はnullを返す", async () => {
-			mockGet.mockResolvedValueOnce({
-				exists: false,
-			});
-
-			const result = await getCreatorWithWorks("VA999");
-
-			expect(result.creator).toBeNull();
-			expect(result.works).toEqual([]);
 		});
 	});
 

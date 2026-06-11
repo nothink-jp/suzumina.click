@@ -6,7 +6,6 @@ import type { Mock } from "vitest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	type DLsiteAjaxResponse,
-	estimateItemCountFromHtml,
 	fetchDLsiteAjaxResult,
 	isLastPageFromPageInfo,
 	validateAjaxHtmlContent,
@@ -243,23 +242,6 @@ describe("DLsite AJAX Fetcher", () => {
 			};
 
 			expect(isLastPageFromPageInfo(pageInfo, 1)).toBe(true);
-		});
-	});
-
-	describe("estimateItemCountFromHtml", () => {
-		it("HTML内の作品数を正しくカウントできる", () => {
-			const html = `
-				<li data-list_item_product_id="RJ123456"></li>
-				<li data-list_item_product_id="RJ234567"></li>
-				<li data-list_item_product_id="RJ345678"></li>
-			`;
-
-			expect(estimateItemCountFromHtml(html)).toBe(3);
-		});
-
-		it("作品が存在しない場合は0を返す", () => {
-			const html = "<div>No products</div>";
-			expect(estimateItemCountFromHtml(html)).toBe(0);
 		});
 	});
 });

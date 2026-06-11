@@ -12,7 +12,6 @@ import type {
 	WorkDocument,
 } from "@suzumina.click/shared-types";
 import firestore, { Timestamp } from "../infrastructure/database/firestore";
-import { logUserAgentSummary } from "../infrastructure/management/user-agent-manager";
 import { getExistingWorksMap } from "../services/dlsite/dlsite-firestore";
 import { batchFetchIndividualInfo } from "../services/dlsite/individual-info-api-client";
 import {
@@ -592,8 +591,6 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 		if (allBatchesCompleted) {
 			await finalizeCompletedProcessing(allWorkIds, totalUpdated);
 		}
-
-		logUserAgentSummary();
 
 		return {
 			workCount: totalUpdated,
