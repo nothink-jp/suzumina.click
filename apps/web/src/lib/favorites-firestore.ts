@@ -266,28 +266,27 @@ export async function getUserFavorites(
 ): Promise<FavoriteListResult> {
 	try {
 		const firestore = getFirestore();
-		let firestoreQuery: Query = firestore.collection("users").doc(userId).collection("favorites");
+		const favoritesCollection = firestore.collection("users").doc(userId).collection("favorites");
 
-		// ソート設定
-		switch (query.orderBy) {
-			case "newest":
-				firestoreQuery = firestoreQuery.orderBy("addedAt", "desc");
-				break;
-			case "oldest":
-				firestoreQuery = firestoreQuery.orderBy("addedAt", "asc");
-				break;
-			default:
-				firestoreQuery = firestoreQuery.orderBy("addedAt", "desc");
-		}
+		// ソート設定（addedAt 単一フィールドのため複合インデックス不要）
+		const direction = query.orderBy === "oldest" ? "asc" : "desc";
+		let firestoreQuery: Query = favoritesCollection.orderBy("addedAt", direction);
 
 		// ページネーション
-		if (query.startAfter) {
-			const startAfterDoc = await firestore
-				.collection("users")
-				.doc(userId)
-				.collection("favorites")
-				.doc(query.startAfter)
+		// page 指定時は offset エミュレーション（getAudioButtonsList と同方式: skip 読み → startAfter）
+		const offset = query.page && query.page > 1 ? (query.page - 1) * query.limit : 0;
+		if (offset > 0) {
+			const skipSnapshot = await favoritesCollection
+				.orderBy("addedAt", direction)
+				.limit(offset)
 				.get();
+			const lastSkipped = skipSnapshot.docs[skipSnapshot.docs.length - 1];
+			if (lastSkipped) {
+				firestoreQuery = firestoreQuery.startAfter(lastSkipped);
+			}
+		} else if (query.startAfter) {
+			// page 未指定時の後方互換: doc-ID カーソル
+			const startAfterDoc = await favoritesCollection.doc(query.startAfter).get();
 			if (startAfterDoc.exists) {
 				firestoreQuery = firestoreQuery.startAfter(startAfterDoc);
 			}

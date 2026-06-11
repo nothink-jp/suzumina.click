@@ -32,18 +32,17 @@ interface FavoriteAudioButtonsResult {
 export async function getFavoritesList(
 	params: FetchFavoriteAudioButtonsParams,
 ): Promise<FavoriteAudioButtonsResult> {
-	const { limit = 20, sort = "newest", userId } = params;
+	const { page = 1, limit = 20, sort = "newest", userId } = params;
 
 	try {
 		// 総件数を取得
 		const totalCount = await getUserFavoritesCount(userId);
 
-		// お気に入り一覧を取得（ページネーション対応）
+		// お気に入り一覧を取得（ページ番号 → offset エミュレーションで getUserFavorites がページ送り）
 		const favoritesList = await getUserFavorites(userId, {
+			page,
 			limit,
 			orderBy: sort as "newest" | "oldest",
-			// ページ番号からオフセットを計算
-			// TODO: Firestoreのcursor-based paginationに対応する必要がある
 		});
 
 		// 音声ボタンデータを取得
