@@ -35,19 +35,12 @@
 	},
 	"formatter": {
 		"enabled": true,
-		"indentStyle": "tab",
-		"indentWidth": 2,
-		"lineEnding": "lf",
 		"lineWidth": 100
 	},
 	"linter": {
 		"enabled": true,
 		"rules": {
 			"recommended": true,
-			"correctness": {
-				"noNodejsModules": "off",
-				"noUnusedPrivateClassMembers": "warn"
-			},
 			"suspicious": {
 				"noConsole": "warn",
 				"noExplicitAny": "error",
@@ -59,8 +52,6 @@
 					"level": "error",
 					"options": { "filenameCases": ["kebab-case"], "requireAscii": true }
 				},
-				"noDefaultExport": "off",
-				"noNonNullAssertion": "warn",
 				"noParameterAssign": "error",
 				"useAsConstAssertion": "error",
 				"useDefaultParameterLast": "error",
@@ -81,22 +72,12 @@
 		}
 	},
 	"javascript": {
-		"formatter": {
-			"quoteStyle": "double",
-			"jsxQuoteStyle": "double",
-			"trailingCommas": "all",
-			"semicolons": "always",
-			"arrowParentheses": "always"
-		},
 		"globals": ["vi", "process", "global", "globalThis", "Buffer", "console"]
 	},
 	"json": {
 		"parser": {
 			"allowComments": true,
 			"allowTrailingCommas": true
-		},
-		"formatter": {
-			"trailingCommas": "none"
 		}
 	},
 	"overrides": [
