@@ -36,7 +36,7 @@ export function Top10RankModal({
 	useEffect(() => {
 		if (isOpen) {
 			setLoading(true);
-			getUserTop10List()
+			void getUserTop10List()
 				.then(setTop10List)
 				.finally(() => setLoading(false));
 		} else {

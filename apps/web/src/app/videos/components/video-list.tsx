@@ -34,7 +34,7 @@ export default function VideoList({ initialData }: VideoListProps) {
 				// タグ取得に失敗しても他のフィルタ・検索は動作するため握りつぶす
 			}
 		};
-		fetchTags();
+		void fetchTags();
 	}, []);
 
 	// 年代選択肢を生成（2018年から現在年まで）

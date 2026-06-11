@@ -72,7 +72,7 @@ export function useAudioButtonStatuses(audioButtonIds: string[]): AudioButtonSta
 			}
 		};
 
-		fetchStatuses();
+		void fetchStatuses();
 
 		return () => {
 			isMountedRef.current = false;

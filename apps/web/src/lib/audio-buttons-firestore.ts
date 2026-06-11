@@ -192,6 +192,9 @@ export async function getAudioButtonsByUser(
 			case "mostPlayed":
 				audioButtons.sort((a, b) => (b.stats.playCount || 0) - (a.stats.playCount || 0));
 				break;
+			default:
+				// orderBy は "newest" 既定でこのフォールバックには到達しないが、網羅性のため明示（ソートなし）
+				break;
 		}
 
 		// 最終的な制限を適用

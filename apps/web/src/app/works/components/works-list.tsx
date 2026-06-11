@@ -39,7 +39,7 @@ export default function WorksList({ initialData }: WorksListProps) {
 				// ジャンルの取得に失敗してもUIは動作可能
 			}
 		};
-		fetchGenres();
+		void fetchGenres();
 	}, []);
 
 	// 初期データを準備

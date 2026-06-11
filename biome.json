@@ -39,6 +39,9 @@
 	},
 	"linter": {
 		"enabled": true,
+		"domains": {
+			"types": "recommended"
+		},
 		"rules": {
 			"recommended": true,
 			"suspicious": {
@@ -68,6 +71,11 @@
 			},
 			"complexity": {
 				"noExcessiveCognitiveComplexity": "error"
+			},
+			"nursery": {
+				"noFloatingPromises": "error",
+				"noMisusedPromises": "error",
+				"useExhaustiveSwitchCases": "error"
 			}
 		}
 	},
