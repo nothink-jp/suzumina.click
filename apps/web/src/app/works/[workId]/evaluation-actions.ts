@@ -7,6 +7,7 @@ import {
 	type EvaluationInput,
 	EvaluationInputSchema,
 	type EvaluationResult,
+	type FirestoreTimestamp,
 	type FirestoreWorkEvaluation,
 	type FrontendUserTop10List,
 	type FrontendWorkEvaluation,
@@ -15,6 +16,14 @@ import {
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth/server";
 import { getFirestore } from "@/lib/firestore";
+
+/**
+ * 書き込み境界のヘルパー: serverTimestamp() は FieldValue で読み取り Timestamp と型が
+ * 一致しないため、ここで 1 箇所だけ FirestoreTimestamp へキャストする（SPR-199）。
+ * サーバー書き込み後に実 Timestamp になる前提の、境界での明示キャスト。
+ */
+const serverNow = (): FirestoreTimestamp =>
+	FieldValue.serverTimestamp() as unknown as FirestoreTimestamp;
 
 /**
  * 評価の更新（作成・変更）- revalidatePath使用（重要データ操作）
@@ -119,7 +128,7 @@ function insertWorkToTop10(
 	tempRankings[targetRank] = {
 		workId,
 		workTitle,
-		updatedAt: FieldValue.serverTimestamp() as unknown as { toDate(): Date },
+		updatedAt: serverNow(),
 	};
 
 	// 既存作品を配置（シフト処理）
@@ -168,7 +177,7 @@ async function handleEvaluationRemove(
 				userId,
 				rankings: newRankings,
 				totalCount: Object.keys(newRankings).length,
-				lastUpdatedAt: FieldValue.serverTimestamp() as unknown as { toDate(): Date },
+				lastUpdatedAt: serverNow(),
 			});
 		}
 	}
@@ -206,7 +215,7 @@ async function handleTop10Update(
 		userId,
 		rankings,
 		totalCount: Object.keys(rankings).length,
-		lastUpdatedAt: FieldValue.serverTimestamp() as unknown as { toDate(): Date },
+		lastUpdatedAt: serverNow(),
 	});
 
 	// 押し出された作品を星3つ評価に変換
@@ -220,10 +229,10 @@ async function handleTop10Update(
 			userId,
 			evaluationType: "star" as const,
 			starRating: 3,
-			updatedAt: FieldValue.serverTimestamp() as unknown as { toDate(): Date },
+			updatedAt: serverNow(),
 			createdAt: removedWorkEvalData.exists
 				? (removedWorkEvalData.data() as FirestoreWorkEvaluation).createdAt
-				: (FieldValue.serverTimestamp() as unknown as { toDate(): Date }),
+				: serverNow(),
 		};
 
 		transaction.set(removedEvalRef, evaluationData);
@@ -255,7 +264,7 @@ async function handleEvaluationTypeChange(
 				userId,
 				rankings: newRankings,
 				totalCount: Object.keys(newRankings).length,
-				lastUpdatedAt: FieldValue.serverTimestamp() as unknown as { toDate(): Date },
+				lastUpdatedAt: serverNow(),
 			});
 		}
 	}
@@ -373,8 +382,8 @@ async function performEvaluationUpdate(
 			evaluationType: evaluation.type as "top10" | "star" | "ng",
 			...(evaluation.type === "top10" && { top10Rank: evaluation.top10Rank }),
 			...(evaluation.type === "star" && { starRating: evaluation.starRating }),
-			updatedAt: FieldValue.serverTimestamp() as unknown as { toDate(): Date },
-			createdAt: FieldValue.serverTimestamp() as unknown as { toDate(): Date },
+			updatedAt: serverNow(),
+			createdAt: serverNow(),
 		};
 
 		// 既存の評価がある場合は作成日時を保持
