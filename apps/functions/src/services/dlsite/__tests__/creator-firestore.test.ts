@@ -75,9 +75,11 @@ describe("creator-firestore", () => {
 	beforeEach(async () => {
 		// Firestoreのdefaultインスタンスのモックを設定
 		const firestoreMock = await import("../../../infrastructure/database/firestore");
-		firestoreMock.default.collection = mockCollection;
-		firestoreMock.default.collectionGroup = mockCollectionGroup;
-		firestoreMock.default.batch = mockBatch;
+		Object.assign(firestoreMock.default, {
+			collection: mockCollection,
+			collectionGroup: mockCollectionGroup,
+			batch: mockBatch,
+		});
 
 		// バッチモック
 		mockBatch.mockReturnValue({

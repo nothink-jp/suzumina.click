@@ -1,12 +1,5 @@
+import type { youtube_v3 } from "googleapis";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
-// googleapis型の独自定義（テスト用）
-// biome-ignore lint/correctness/noUnusedVariables: Interface used by test type definitions
-interface youtube_v3 {
-	Schema$SearchListResponse: any;
-	Schema$VideoListResponse: any;
-}
-
 import { SUZUKA_MINASE_CHANNEL_ID } from "../../../shared/common";
 import * as youtubeApi from "../youtube-api";
 
@@ -227,8 +220,8 @@ describe("youtube-api", () => {
 				maxResults: youtubeApi.MAX_VIDEOS_PER_BATCH,
 			});
 			expect(result).toHaveLength(2);
-			expect(result[0].id).toBe("video1");
-			expect(result[1].id).toBe("video2");
+			expect(result[0]!.id).toBe("video1");
+			expect(result[1]!.id).toBe("video2");
 		});
 
 		it("動画IDが多い場合はバッチ処理されること", async () => {
@@ -307,8 +300,8 @@ describe("youtube-api", () => {
 
 			// 検証（最初のバッチの結果だけが返されること）
 			expect(result).toHaveLength(2);
-			expect(result[0].id).toBe("video1");
-			expect(result[1].id).toBe("video2");
+			expect(result[0]!.id).toBe("video1");
+			expect(result[1]!.id).toBe("video2");
 		});
 
 		it("その他のエラーが発生した場合、エラーがスローされること", async () => {

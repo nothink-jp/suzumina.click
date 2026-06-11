@@ -102,21 +102,6 @@ const sampleAjaxResult = {
 	},
 };
 
-const _sampleAjaxResultWithFallbackPattern = {
-	search_result: `
-		<div class="work_item" data-list_item_product_id="RJ999999">
-			<a href="/maniax/work/=/product_id/RJ999999.html">作品</a>
-		</div>
-		<script type="application/json">{"product_id":"RJ888888","title":"作品データ"}</script>
-	`,
-	page_info: {
-		count: 2,
-		per_page: 30,
-		current_page: 1,
-		total_pages: 1,
-	},
-};
-
 describe("work-id-collector", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();

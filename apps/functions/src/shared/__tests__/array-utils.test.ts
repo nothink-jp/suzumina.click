@@ -64,7 +64,7 @@ describe("Array Utils", () => {
 				const chunks = chunkArray(stringArray, 2);
 
 				// Type check: chunks should be string[][]
-				expect(typeof chunks[0][0]).toBe("string");
+				expect(typeof chunks[0]![0]).toBe("string");
 				expect(chunks).toEqual([
 					["a", "b"],
 					["c", "d"],

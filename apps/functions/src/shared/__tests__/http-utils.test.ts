@@ -175,9 +175,7 @@ describe("HTTP Utils", () => {
 
 			mockFetch.mockResolvedValue(mockResponse500);
 
-			await expect(makeRequest("https://example.com", { maxRetries: 0 })).rejects.toThrow(
-				HttpRequestError,
-			);
+			await expect(makeRequest("https://example.com", {})).rejects.toThrow(HttpRequestError);
 
 			expect(mockFetch).toHaveBeenCalledTimes(1);
 		});
@@ -191,9 +189,7 @@ describe("HTTP Utils", () => {
 
 			mockFetch.mockResolvedValue(mockResponse429);
 
-			await expect(makeRequest("https://example.com", { maxRetries: 0 })).rejects.toThrow(
-				HttpRequestError,
-			);
+			await expect(makeRequest("https://example.com", {})).rejects.toThrow(HttpRequestError);
 
 			expect(mockFetch).toHaveBeenCalledTimes(1);
 		});
@@ -207,9 +203,7 @@ describe("HTTP Utils", () => {
 
 			mockFetch.mockResolvedValue(mockResponse400);
 
-			await expect(makeRequest("https://example.com", { maxRetries: 2 })).rejects.toThrow(
-				HttpRequestError,
-			);
+			await expect(makeRequest("https://example.com", {})).rejects.toThrow(HttpRequestError);
 
 			expect(mockFetch).toHaveBeenCalledTimes(1);
 		});
@@ -219,9 +213,7 @@ describe("HTTP Utils", () => {
 
 			mockFetch.mockRejectedValue(networkError);
 
-			await expect(makeRequest("https://example.com", { maxRetries: 0 })).rejects.toThrow(
-				HttpRequestError,
-			);
+			await expect(makeRequest("https://example.com", {})).rejects.toThrow(HttpRequestError);
 
 			expect(mockFetch).toHaveBeenCalledTimes(1);
 		});
@@ -280,9 +272,7 @@ describe("HTTP Utils", () => {
 
 			mockFetch.mockRejectedValue(abortError);
 
-			await expect(makeRequest("https://example.com", { maxRetries: 0 })).rejects.toThrow(
-				HttpRequestError,
-			);
+			await expect(makeRequest("https://example.com", {})).rejects.toThrow(HttpRequestError);
 
 			expect(mockFetch).toHaveBeenCalledTimes(1);
 		});
@@ -477,9 +467,7 @@ describe("HTTP Utils", () => {
 
 			mockFetch.mockResolvedValue(mockResponse);
 
-			await expect(makeRequest("https://example.com", { maxRetries: 2 })).rejects.toThrow(
-				"HTTP 403 Forbidden",
-			);
+			await expect(makeRequest("https://example.com", {})).rejects.toThrow("HTTP 403 Forbidden");
 		});
 
 		// リトライ機能のテストは複雑なため、基本機能のみテスト
@@ -494,7 +482,7 @@ describe("HTTP Utils", () => {
 
 			mockFetch.mockResolvedValue(mockResponse);
 
-			await expect(makeRequest("https://example.com", { maxRetries: 0 })).rejects.toThrow(
+			await expect(makeRequest("https://example.com", {})).rejects.toThrow(
 				"HTTP 500 Internal Server Error",
 			);
 		});
@@ -536,9 +524,7 @@ describe("HTTP Utils", () => {
 
 			mockFetch.mockRejectedValue(abortError);
 
-			await expect(makeRequest("https://example.com", { maxRetries: 0 })).rejects.toThrow(
-				HttpRequestError,
-			);
+			await expect(makeRequest("https://example.com", {})).rejects.toThrow(HttpRequestError);
 		});
 
 		it("should handle non-Error thrown values", async () => {

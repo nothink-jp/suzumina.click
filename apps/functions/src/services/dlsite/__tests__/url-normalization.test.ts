@@ -3,13 +3,12 @@
  * プロトコル相対URLの正規化が正しく動作することを検証
  */
 
-import type { DLsiteApiResponse } from "@suzumina.click/shared-types";
 import { describe, expect, it } from "vitest";
 import { WorkMapper } from "../../mappers/work-mapper";
 
 describe("URL正規化機能", () => {
 	it("プロトコル相対URLを正しく正規化する", () => {
-		const mockApiData: DLsiteApiResponse = {
+		const mockApiData = {
 			workno: "RJ01037463",
 			product_id: "RJ01037463",
 			work_name: "テスト作品",
@@ -23,9 +22,7 @@ describe("URL正規化機能", () => {
 			site_id: "maniax",
 			author: "テスト声優",
 			price: 1000,
-			price_without_tax: 909,
 			official_price: 1000,
-			official_price_without_tax: 909,
 			discount_rate: 0,
 			is_discount_work: false,
 			rate_average: 4.5,
@@ -53,16 +50,16 @@ describe("URL正規化機能", () => {
 
 		// サンプル画像URLの正規化確認
 		expect(result.sampleImages).toHaveLength(2);
-		expect(result.sampleImages[0].thumb).toBe(
+		expect(result.sampleImages[0]!.thumb).toBe(
 			"https://img.dlsite.jp/modpub/images2/work/doujin/RJ01038000/RJ01037463_sample1.jpg",
 		);
-		expect(result.sampleImages[1].thumb).toBe(
+		expect(result.sampleImages[1]!.thumb).toBe(
 			"https://img.dlsite.jp/modpub/images2/work/doujin/RJ01038000/RJ01037463_sample2.jpg",
 		);
 	});
 
 	it("既に正しい形式のURLはそのまま維持する", () => {
-		const mockApiData: DLsiteApiResponse = {
+		const mockApiData = {
 			workno: "RJ01037463",
 			product_id: "RJ01037463",
 			work_name: "テスト作品",
@@ -76,9 +73,7 @@ describe("URL正規化機能", () => {
 			site_id: "maniax",
 			author: "テスト声優",
 			price: 1000,
-			price_without_tax: 909,
 			official_price: 1000,
-			official_price_without_tax: 909,
 			discount_rate: 0,
 			is_discount_work: false,
 			rate_average: 4.5,
@@ -104,7 +99,7 @@ describe("URL正規化機能", () => {
 	});
 
 	it("srcsetから抽出した高解像度URLも正規化される", () => {
-		const mockApiData: DLsiteApiResponse = {
+		const mockApiData = {
 			workno: "RJ01037463",
 			product_id: "RJ01037463",
 			work_name: "テスト作品",
@@ -118,9 +113,7 @@ describe("URL正規化機能", () => {
 			site_id: "maniax",
 			author: "テスト声優",
 			price: 1000,
-			price_without_tax: 909,
 			official_price: 1000,
-			official_price_without_tax: 909,
 			discount_rate: 0,
 			is_discount_work: false,
 			rate_average: 4.5,
@@ -141,7 +134,7 @@ describe("URL正規化機能", () => {
 	});
 
 	it("undefinedやnullのURLは適切に処理される", () => {
-		const mockApiData: DLsiteApiResponse = {
+		const mockApiData = {
 			workno: "RJ01037463",
 			product_id: "RJ01037463",
 			work_name: "テスト作品",
@@ -155,9 +148,7 @@ describe("URL正規化機能", () => {
 			site_id: "maniax",
 			author: "テスト声優",
 			price: 1000,
-			price_without_tax: 909,
 			official_price: 1000,
-			official_price_without_tax: 909,
 			discount_rate: 0,
 			is_discount_work: false,
 			rate_average: 4.5,
@@ -179,7 +170,7 @@ describe("URL正規化機能", () => {
 	});
 
 	it("必須フィールドが欠損していても処理される", () => {
-		const mockApiData: DLsiteApiResponse = {
+		const mockApiData = {
 			workno: "RJ01037463",
 			// work_name と maker_name が欠損
 			// price 情報も欠損
@@ -196,7 +187,7 @@ describe("URL正規化機能", () => {
 	});
 
 	it("画像URLが数値型でも正しく処理される", () => {
-		const mockApiData: DLsiteApiResponse = {
+		const mockApiData = {
 			workno: "RJ01037463",
 			work_name: "テスト作品",
 			maker_name: "テストサークル",
@@ -215,13 +206,13 @@ describe("URL正規化機能", () => {
 		expect(result.thumbnailUrl).toBe("123456");
 		expect(result.highResImageUrl).toBe("789012");
 		expect(result.sampleImages).toHaveLength(3);
-		expect(result.sampleImages[0].thumb).toBe("111");
-		expect(result.sampleImages[1].thumb).toBe("222");
-		expect(result.sampleImages[2].thumb).toBe("333");
+		expect(result.sampleImages[0]!.thumb).toBe("111");
+		expect(result.sampleImages[1]!.thumb).toBe("222");
+		expect(result.sampleImages[2]!.thumb).toBe("333");
 	});
 
 	it("画像URLがオブジェクト型でも正しく処理される", () => {
-		const mockApiData: DLsiteApiResponse = {
+		const mockApiData = {
 			workno: "RJ01037463",
 			work_name: "テスト作品",
 			maker_name: "テストサークル",
@@ -244,7 +235,7 @@ describe("URL正規化機能", () => {
 		expect(result.thumbnailUrl).toBe("https://img.dlsite.jp/test_thumb.jpg");
 		expect(result.highResImageUrl).toBe("https://img.dlsite.jp/test_main.jpg");
 		expect(result.sampleImages).toHaveLength(2); // 無効なオブジェクトはフィルタされる
-		expect(result.sampleImages[0].thumb).toBe("https://img.dlsite.jp/sample1.jpg");
-		expect(result.sampleImages[1].thumb).toBe("https://img.dlsite.jp/sample3.jpg");
+		expect(result.sampleImages[0]!.thumb).toBe("https://img.dlsite.jp/sample1.jpg");
+		expect(result.sampleImages[1]!.thumb).toBe("https://img.dlsite.jp/sample3.jpg");
 	});
 });

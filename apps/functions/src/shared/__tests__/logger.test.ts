@@ -11,7 +11,7 @@ describe("logger", () => {
 		// console.logをモック
 		originalConsoleLog = console.log;
 		mockConsoleLog = vi.fn();
-		console.log = mockConsoleLog;
+		console.log = mockConsoleLog as typeof console.log;
 
 		// 環境変数をバックアップ
 		originalEnv = { ...process.env };
@@ -70,7 +70,7 @@ describe("logger", () => {
 			logger.info("test message");
 
 			expect(mockConsoleLog).toHaveBeenCalledTimes(1);
-			const logOutput = mockConsoleLog.mock.calls[0][0];
+			const logOutput = mockConsoleLog.mock.calls[0]![0];
 
 			// JSONパース可能であることを確認
 			const parsed = JSON.parse(logOutput);
@@ -85,7 +85,7 @@ describe("logger", () => {
 
 			logger.info("test message");
 
-			const logOutput = mockConsoleLog.mock.calls[0][0];
+			const logOutput = mockConsoleLog.mock.calls[0]![0];
 			const parsed = JSON.parse(logOutput);
 
 			expect(parsed["logging.googleapis.com/labels"]).toEqual({
@@ -101,7 +101,7 @@ describe("logger", () => {
 
 			logger.info("test message");
 
-			const logOutput = mockConsoleLog.mock.calls[0][0];
+			const logOutput = mockConsoleLog.mock.calls[0]![0];
 			const parsed = JSON.parse(logOutput);
 
 			expect(parsed["logging.googleapis.com/labels"]).toEqual({
@@ -112,7 +112,7 @@ describe("logger", () => {
 		it("should not include labels when K_SERVICE is not set", () => {
 			logger.info("test message");
 
-			const logOutput = mockConsoleLog.mock.calls[0][0];
+			const logOutput = mockConsoleLog.mock.calls[0]![0];
 			const parsed = JSON.parse(logOutput);
 
 			expect(parsed["logging.googleapis.com/labels"]).toBeUndefined();
@@ -124,7 +124,7 @@ describe("logger", () => {
 
 			logger.error("test message", testError);
 
-			const logOutput = mockConsoleLog.mock.calls[0][0];
+			const logOutput = mockConsoleLog.mock.calls[0]![0];
 			const parsed = JSON.parse(logOutput);
 
 			expect(parsed.severity).toBe("ERROR");
@@ -145,7 +145,7 @@ describe("logger", () => {
 
 			logger.info("test message", options);
 
-			const logOutput = mockConsoleLog.mock.calls[0][0];
+			const logOutput = mockConsoleLog.mock.calls[0]![0];
 			const parsed = JSON.parse(logOutput);
 
 			expect(parsed.severity).toBe("INFO");
@@ -165,7 +165,7 @@ describe("logger", () => {
 			logger.info("test message");
 
 			expect(mockConsoleLog).toHaveBeenCalledTimes(1);
-			const logOutput = mockConsoleLog.mock.calls[0][0];
+			const logOutput = mockConsoleLog.mock.calls[0]![0];
 
 			// タイムスタンプ、アイコン、レベル、メッセージが含まれることを確認
 			expect(logOutput).toMatch(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z ℹ️ INFO test message/);
@@ -177,7 +177,7 @@ describe("logger", () => {
 
 			logger.error("test message", testError);
 
-			const logOutput = mockConsoleLog.mock.calls[0][0];
+			const logOutput = mockConsoleLog.mock.calls[0]![0];
 
 			expect(logOutput).toContain("❌ ERROR test message");
 			expect(logOutput).toContain("Error: test error");
@@ -189,7 +189,7 @@ describe("logger", () => {
 
 			logger.info("test message", data);
 
-			const logOutput = mockConsoleLog.mock.calls[0][0];
+			const logOutput = mockConsoleLog.mock.calls[0]![0];
 
 			expect(logOutput).toContain("ℹ️ INFO test message");
 			expect(logOutput).toContain("Data:");
@@ -203,10 +203,10 @@ describe("logger", () => {
 			logger.warn("warn message");
 			logger.error("error message");
 
-			expect(mockConsoleLog.mock.calls[0][0]).toContain("🔍 DEBUG");
-			expect(mockConsoleLog.mock.calls[1][0]).toContain("ℹ️ INFO");
-			expect(mockConsoleLog.mock.calls[2][0]).toContain("⚠️ WARNING");
-			expect(mockConsoleLog.mock.calls[3][0]).toContain("❌ ERROR");
+			expect(mockConsoleLog.mock.calls[0]![0]).toContain("🔍 DEBUG");
+			expect(mockConsoleLog.mock.calls[1]![0]).toContain("ℹ️ INFO");
+			expect(mockConsoleLog.mock.calls[2]![0]).toContain("⚠️ WARNING");
+			expect(mockConsoleLog.mock.calls[3]![0]).toContain("❌ ERROR");
 		});
 	});
 
@@ -214,7 +214,7 @@ describe("logger", () => {
 		it("should output debug logs with correct severity", () => {
 			logger.debug("debug message");
 
-			const logOutput = mockConsoleLog.mock.calls[0][0];
+			const logOutput = mockConsoleLog.mock.calls[0]![0];
 			const parsed = JSON.parse(logOutput);
 
 			expect(parsed.severity).toBe("DEBUG");
@@ -224,7 +224,7 @@ describe("logger", () => {
 		it("should output info logs with correct severity", () => {
 			logger.info("info message");
 
-			const logOutput = mockConsoleLog.mock.calls[0][0];
+			const logOutput = mockConsoleLog.mock.calls[0]![0];
 			const parsed = JSON.parse(logOutput);
 
 			expect(parsed.severity).toBe("INFO");
@@ -234,7 +234,7 @@ describe("logger", () => {
 		it("should output warn logs with correct severity", () => {
 			logger.warn("warn message");
 
-			const logOutput = mockConsoleLog.mock.calls[0][0];
+			const logOutput = mockConsoleLog.mock.calls[0]![0];
 			const parsed = JSON.parse(logOutput);
 
 			expect(parsed.severity).toBe("WARNING");
@@ -244,7 +244,7 @@ describe("logger", () => {
 		it("should output error logs with correct severity", () => {
 			logger.error("error message");
 
-			const logOutput = mockConsoleLog.mock.calls[0][0];
+			const logOutput = mockConsoleLog.mock.calls[0]![0];
 			const parsed = JSON.parse(logOutput);
 
 			expect(parsed.severity).toBe("ERROR");
@@ -254,9 +254,9 @@ describe("logger", () => {
 
 	describe("Edge cases", () => {
 		it("should handle null options", () => {
-			expect(() => logger.info("test", null)).not.toThrow();
+			expect(() => logger.info("test", null as never)).not.toThrow();
 
-			const logOutput = mockConsoleLog.mock.calls[0][0];
+			const logOutput = mockConsoleLog.mock.calls[0]![0];
 			const parsed = JSON.parse(logOutput);
 
 			expect(parsed.message).toBe("test");
@@ -265,7 +265,7 @@ describe("logger", () => {
 		it("should handle undefined options", () => {
 			expect(() => logger.info("test", undefined)).not.toThrow();
 
-			const logOutput = mockConsoleLog.mock.calls[0][0];
+			const logOutput = mockConsoleLog.mock.calls[0]![0];
 			const parsed = JSON.parse(logOutput);
 
 			expect(parsed.message).toBe("test");
@@ -274,7 +274,7 @@ describe("logger", () => {
 		it("should handle empty object options", () => {
 			logger.info("test", {});
 
-			const logOutput = mockConsoleLog.mock.calls[0][0];
+			const logOutput = mockConsoleLog.mock.calls[0]![0];
 			const parsed = JSON.parse(logOutput);
 
 			expect(parsed.message).toBe("test");
@@ -286,7 +286,7 @@ describe("logger", () => {
 
 			logger.error("test message", testError);
 
-			const logOutput = mockConsoleLog.mock.calls[0][0];
+			const logOutput = mockConsoleLog.mock.calls[0]![0];
 			const parsed = JSON.parse(logOutput);
 
 			expect(parsed.error.message).toBe("test error");
@@ -311,7 +311,7 @@ describe("logger", () => {
 
 			logger.info("complex data", complexData);
 
-			const logOutput = mockConsoleLog.mock.calls[0][0];
+			const logOutput = mockConsoleLog.mock.calls[0]![0];
 			const parsed = JSON.parse(logOutput);
 
 			expect(parsed.user.id).toBe(123);
