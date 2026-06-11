@@ -39,6 +39,12 @@ const generateProducts = (count: number): Product[] => {
 	}));
 };
 
+// fetchFn は必須。ストーリーでは初期データをそのまま返す静的モックを使う
+// （実際の絞り込みはサーバー側の責務で Storybook では再現しない。サーバーフェッチ挙動は ServerSideData 参照）。
+const staticFetch =
+	<T,>(items: T[]) =>
+	async (): Promise<{ items: T[]; total: number }> => ({ items, total: items.length });
+
 const meta = {
 	title: "Custom/List/ConfigurableList",
 	component: ConfigurableList,
@@ -104,6 +110,7 @@ const sortOptions: SortConfig[] = [
 export const Basic: Story = {
 	args: {
 		items: generateProducts(50),
+		fetchFn: staticFetch(generateProducts(50)),
 		renderItem: renderProduct,
 		filters: basicFilters,
 		sorts: sortOptions,
@@ -115,6 +122,7 @@ export const Basic: Story = {
 export const WithYearFilter: Story = {
 	args: {
 		items: generateProducts(50),
+		fetchFn: staticFetch(generateProducts(50)),
 		renderItem: renderProduct,
 		filters: {
 			...basicFilters,
@@ -132,6 +140,7 @@ export const WithYearFilter: Story = {
 export const NoUrlSync: Story = {
 	args: {
 		items: generateProducts(30),
+		fetchFn: staticFetch(generateProducts(30)),
 		renderItem: renderProduct,
 		filters: basicFilters,
 		sorts: sortOptions,
@@ -142,6 +151,7 @@ export const NoUrlSync: Story = {
 export const CustomEmptyMessage: Story = {
 	args: {
 		items: [],
+		fetchFn: staticFetch([]),
 		renderItem: renderProduct,
 		filters: basicFilters,
 		emptyMessage: "商品が見つかりませんでした。条件を変更してお試しください。",
@@ -151,6 +161,7 @@ export const CustomEmptyMessage: Story = {
 export const WithoutSearch: Story = {
 	args: {
 		items: generateProducts(20),
+		fetchFn: staticFetch(generateProducts(20)),
 		renderItem: renderProduct,
 		filters: basicFilters,
 		sorts: sortOptions,
@@ -161,6 +172,7 @@ export const WithoutSearch: Story = {
 export const FiltersOnly: Story = {
 	args: {
 		items: generateProducts(30),
+		fetchFn: staticFetch(generateProducts(30)),
 		renderItem: renderProduct,
 		filters: basicFilters,
 		searchable: false,
@@ -232,6 +244,7 @@ export const ServerSideData: Story = {
 export const WithError: Story = {
 	args: {
 		items: [],
+		fetchFn: staticFetch([]),
 		renderItem: renderProduct,
 		error: {
 			type: "fetch",
@@ -245,6 +258,7 @@ export const WithError: Story = {
 export const CustomLoading: Story = {
 	args: {
 		items: [],
+		fetchFn: staticFetch([]),
 		renderItem: renderProduct,
 		loading: true,
 		loadingComponent: (
@@ -303,6 +317,7 @@ const renderTag = (tag: Tag) => (
 export const FlexLayout: Story = {
 	args: {
 		items: generateTags(50),
+		fetchFn: staticFetch(generateTags(50)),
 		renderItem: renderTag,
 		layout: "flex",
 		searchable: true,
@@ -353,6 +368,7 @@ const renderActionButton = (button: ActionButton) => (
 export const FlexLayoutWithButtons: Story = {
 	args: {
 		items: generateActionButtons(30),
+		fetchFn: staticFetch(generateActionButtons(30)),
 		renderItem: renderActionButton,
 		layout: "flex",
 		searchable: false,

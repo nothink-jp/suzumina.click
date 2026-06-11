@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ConfigurableList } from "../configurable-list";
-import type { FilterConfig } from "../configurable-list/types";
+import type { FilterConfig, StandardListParams } from "../configurable-list/types";
 
 // Next.js のルーターをモック
 vi.mock("next/navigation", () => ({
@@ -42,9 +42,35 @@ const _filters: Record<string, FilterConfig> = {
 	},
 };
 
+// ConfigurableList は常にサーバーフェッチ（fetchFn 必須）。
+// テストでは params（検索/フィルタ/ソート）に応じて絞り込む「擬似サーバー」を fetchFn として渡し、
+// コンポーネントが params を正しく構築して再フェッチ→描画することを検証する。
+const fakeServerFetch =
+	(data: typeof sampleItems) =>
+	async (rawParams: unknown): Promise<{ items: typeof sampleItems; total: number }> => {
+		const params = rawParams as StandardListParams;
+		let result = [...data];
+		if (params.search) {
+			const q = params.search.toLowerCase();
+			result = result.filter((i) => i.name.toLowerCase().includes(q));
+		}
+		const category = params.filters?.category;
+		if (category) result = result.filter((i) => i.category === category);
+		if (params.filters?.inStock === true) result = result.filter((i) => i.inStock);
+		if (params.sort === "price") result = [...result].sort((a, b) => a.price - b.price);
+		if (params.sort === "name") result = [...result].sort((a, b) => a.name.localeCompare(b.name));
+		return { items: result, total: result.length };
+	};
+
 describe("ConfigurableList", () => {
 	it("renders items correctly", () => {
-		render(<ConfigurableList items={sampleItems} renderItem={renderItem} />);
+		render(
+			<ConfigurableList
+				items={sampleItems}
+				renderItem={renderItem}
+				fetchFn={fakeServerFetch(sampleItems)}
+			/>,
+		);
 
 		sampleItems.forEach((item) => {
 			expect(screen.getByTestId(`item-${item.id}`)).toBeInTheDocument();
@@ -52,7 +78,14 @@ describe("ConfigurableList", () => {
 	});
 
 	it("listHeading 指定時に sr-only な h2 を描画する（見出しレベル skip 防止）", () => {
-		render(<ConfigurableList items={sampleItems} renderItem={renderItem} listHeading="動画一覧" />);
+		render(
+			<ConfigurableList
+				items={sampleItems}
+				renderItem={renderItem}
+				fetchFn={fakeServerFetch(sampleItems)}
+				listHeading="動画一覧"
+			/>,
+		);
 
 		const heading = screen.getByRole("heading", { level: 2, name: "動画一覧" });
 		expect(heading.tagName).toBe("H2");
@@ -60,7 +93,13 @@ describe("ConfigurableList", () => {
 	});
 
 	it("listHeading 未指定時は h2 を描画しない", () => {
-		render(<ConfigurableList items={sampleItems} renderItem={renderItem} />);
+		render(
+			<ConfigurableList
+				items={sampleItems}
+				renderItem={renderItem}
+				fetchFn={fakeServerFetch(sampleItems)}
+			/>,
+		);
 		expect(screen.queryByRole("heading", { level: 2 })).not.toBeInTheDocument();
 	});
 
@@ -69,6 +108,7 @@ describe("ConfigurableList", () => {
 			<ConfigurableList
 				items={sampleItems}
 				renderItem={renderItem}
+				fetchFn={fakeServerFetch(sampleItems)}
 				filters={{
 					category: {
 						type: "select",
@@ -98,7 +138,7 @@ describe("ConfigurableList", () => {
 
 		fireEvent.click(screen.getByText("A"));
 
-		// フィルター適用後の状態を確認
+		// フィルター適用後の状態を確認（擬似サーバーが A のみ返す）
 		await waitFor(
 			() => {
 				expect(screen.getByTestId("item-1")).toBeInTheDocument();
@@ -116,6 +156,7 @@ describe("ConfigurableList", () => {
 			<ConfigurableList
 				items={sampleItems}
 				renderItem={renderItem}
+				fetchFn={fakeServerFetch(sampleItems)}
 				filters={{
 					inStock: {
 						type: "boolean",
@@ -140,7 +181,13 @@ describe("ConfigurableList", () => {
 
 	it("searches items by name", async () => {
 		render(
-			<ConfigurableList items={sampleItems} renderItem={renderItem} urlSync={false} searchable />,
+			<ConfigurableList
+				items={sampleItems}
+				renderItem={renderItem}
+				fetchFn={fakeServerFetch(sampleItems)}
+				urlSync={false}
+				searchable
+			/>,
 		);
 
 		const searchInput = screen.getByPlaceholderText("検索... (Enterで検索)");
@@ -156,7 +203,13 @@ describe("ConfigurableList", () => {
 	it("検索ボックスに入力してもEnterキーを押すまでフィルタリングされない", async () => {
 		const user = userEvent.setup();
 		render(
-			<ConfigurableList items={sampleItems} renderItem={renderItem} urlSync={false} searchable />,
+			<ConfigurableList
+				items={sampleItems}
+				renderItem={renderItem}
+				fetchFn={fakeServerFetch(sampleItems)}
+				urlSync={false}
+				searchable
+			/>,
 		);
 
 		const searchInput = screen.getByPlaceholderText("検索... (Enterで検索)");
@@ -183,7 +236,13 @@ describe("ConfigurableList", () => {
 
 	it("日本語入力中（IME変換中）はEnterキーでも検索が実行されない", async () => {
 		render(
-			<ConfigurableList items={sampleItems} renderItem={renderItem} urlSync={false} searchable />,
+			<ConfigurableList
+				items={sampleItems}
+				renderItem={renderItem}
+				fetchFn={fakeServerFetch(sampleItems)}
+				urlSync={false}
+				searchable
+			/>,
 		);
 
 		const searchInput = screen.getByPlaceholderText("検索... (Enterで検索)");
@@ -220,7 +279,13 @@ describe("ConfigurableList", () => {
 		window.dispatchEvent = mockDispatchEvent;
 
 		render(
-			<ConfigurableList items={sampleItems} renderItem={renderItem} urlSync={true} searchable />,
+			<ConfigurableList
+				items={sampleItems}
+				renderItem={renderItem}
+				fetchFn={fakeServerFetch(sampleItems)}
+				urlSync={true}
+				searchable
+			/>,
 		);
 
 		const searchInput = screen.getByPlaceholderText("検索... (Enterで検索)");
@@ -242,6 +307,7 @@ describe("ConfigurableList", () => {
 			<ConfigurableList
 				items={sampleItems}
 				renderItem={renderItem}
+				fetchFn={fakeServerFetch(sampleItems)}
 				sorts={[
 					{ value: "price", label: "価格順" },
 					{ value: "name", label: "名前順" },
@@ -274,6 +340,7 @@ describe("ConfigurableList", () => {
 			<ConfigurableList
 				items={sampleItems}
 				renderItem={renderItem}
+				fetchFn={fakeServerFetch(sampleItems)}
 				filters={{
 					category: {
 						type: "select",
@@ -317,6 +384,7 @@ describe("ConfigurableList", () => {
 			<ConfigurableList
 				items={sampleItems}
 				renderItem={renderItem}
+				fetchFn={fakeServerFetch(sampleItems)}
 				emptyMessage="商品が見つかりません"
 				urlSync={false}
 			/>,
@@ -326,11 +394,9 @@ describe("ConfigurableList", () => {
 		fireEvent.change(searchInput, { target: { value: "NotFound" } });
 		fireEvent.keyDown(searchInput, { key: "Enter", code: "Enter" });
 
-		// 実際の動作では検索結果がありませんと表示されるはずだが、
-		// すべてのアイテムが表示されている場合は元のアイテムが表示されている
+		// 擬似サーバーが空を返すため、全アイテムが非表示になる
 		await waitFor(
 			() => {
-				// 検索結果がない場合、空のアイテムリストを確認
 				sampleItems.forEach((item) => {
 					expect(screen.queryByTestId(`item-${item.id}`)).not.toBeInTheDocument();
 				});
@@ -340,13 +406,27 @@ describe("ConfigurableList", () => {
 	});
 
 	it("disables search when searchable is false", () => {
-		render(<ConfigurableList items={sampleItems} renderItem={renderItem} searchable={false} />);
+		render(
+			<ConfigurableList
+				items={sampleItems}
+				renderItem={renderItem}
+				fetchFn={fakeServerFetch(sampleItems)}
+				searchable={false}
+			/>,
+		);
 
 		expect(screen.queryByPlaceholderText("検索... (Enterで検索)")).not.toBeInTheDocument();
 	});
 
 	it("shows loading state", () => {
-		render(<ConfigurableList items={[]} renderItem={renderItem} loading={true} />);
+		render(
+			<ConfigurableList
+				items={[]}
+				renderItem={renderItem}
+				fetchFn={fakeServerFetch([])}
+				loading={true}
+			/>,
+		);
 
 		// Skeletonが表示されることを確認
 		const skeletons = document.querySelectorAll('[class*="h-24"]');
@@ -358,6 +438,7 @@ describe("ConfigurableList", () => {
 			<ConfigurableList
 				items={[]}
 				renderItem={renderItem}
+				fetchFn={fakeServerFetch([])}
 				loading={true}
 				loadingComponent={<div data-testid="custom-loading">Loading...</div>}
 			/>,
@@ -367,9 +448,14 @@ describe("ConfigurableList", () => {
 	});
 
 	it("displays initialTotal correctly for server-side rendering", () => {
-		// Render with initialTotal to simulate server-side rendering
+		// initialTotal（SSR 初期値）が表示されることを確認。fetchFn も同じ total を返す
 		render(
-			<ConfigurableList items={sampleItems.slice(0, 2)} initialTotal={5} renderItem={renderItem} />,
+			<ConfigurableList
+				items={sampleItems.slice(0, 2)}
+				initialTotal={5}
+				renderItem={renderItem}
+				fetchFn={async () => ({ items: sampleItems.slice(0, 2), total: 5 })}
+			/>,
 		);
 
 		// Verify initial data is displayed with correct total
