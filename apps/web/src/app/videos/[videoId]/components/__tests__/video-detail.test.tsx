@@ -333,32 +333,33 @@ describe("VideoDetail", () => {
 		});
 	});
 
-	describe("動画タイプバッジ", () => {
-		it("配信中（live）はライブ配信バッジを表示する", () => {
-			render(<VideoDetail video={createMockVideo({ liveBroadcastContent: "live" })} />);
+	// SPR-186: 詳細ページのバッジ判定も card と同じ _computed.videoType を正本にする。
+	describe("動画タイプバッジ（_computed.videoType が正本）", () => {
+		it("videoType=live はライブ配信バッジを表示する", () => {
+			render(<VideoDetail video={createMockVideo({ _computed: { videoType: "live" } })} />);
 			expect(screen.getByLabelText("現在配信中のライブ配信")).toBeInTheDocument();
 		});
 
-		it("配信予告（upcoming）は配信予定バッジを表示する", () => {
-			render(<VideoDetail video={createMockVideo({ liveBroadcastContent: "upcoming" })} />);
+		it("videoType=upcoming は配信予定バッジを表示する", () => {
+			render(<VideoDetail video={createMockVideo({ _computed: { videoType: "upcoming" } })} />);
 			expect(screen.getByLabelText("配信予定のライブ配信")).toBeInTheDocument();
 		});
 
 		it("videoType=archived は配信アーカイブバッジを表示する", () => {
-			render(
-				<VideoDetail
-					video={createMockVideo({ liveBroadcastContent: "none", videoType: "archived" })}
-				/>,
-			);
+			render(<VideoDetail video={createMockVideo({ _computed: { videoType: "archived" } })} />);
 			expect(screen.getByLabelText("ライブ配信のアーカイブ")).toBeInTheDocument();
 		});
 
-		it("liveStreamingDetails に開始・終了がある none は配信アーカイブ扱い", () => {
+		it("videoType=premiere はプレミア公開バッジを表示する", () => {
+			render(<VideoDetail video={createMockVideo({ _computed: { videoType: "premiere" } })} />);
+			expect(screen.getByLabelText("プレミア公開動画")).toBeInTheDocument();
+		});
+
+		it("liveStreamingDetails があっても _computed.videoType=normal なら通常動画（正本は _computed）", () => {
 			render(
 				<VideoDetail
 					video={createMockVideo({
-						liveBroadcastContent: "none",
-						videoType: "normal",
+						_computed: { videoType: "normal" },
 						liveStreamingDetails: {
 							actualStartTime: "2024-01-01T12:00:00Z",
 							actualEndTime: "2024-01-01T14:00:00Z",
@@ -366,12 +367,12 @@ describe("VideoDetail", () => {
 					})}
 				/>,
 			);
-			expect(screen.getByLabelText("ライブ配信のアーカイブ")).toBeInTheDocument();
+			expect(screen.getByLabelText("通常動画コンテンツ")).toBeInTheDocument();
 		});
 
-		it("通常動画は動画コンテンツバッジを表示する", () => {
+		it("通常動画は通常動画バッジを表示する", () => {
 			render(<VideoDetail video={createMockVideo()} />);
-			expect(screen.getByLabelText("動画コンテンツ")).toBeInTheDocument();
+			expect(screen.getByLabelText("通常動画コンテンツ")).toBeInTheDocument();
 		});
 	});
 

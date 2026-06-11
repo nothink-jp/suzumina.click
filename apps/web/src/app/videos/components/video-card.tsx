@@ -3,62 +3,13 @@ import { HighlightText } from "@suzumina.click/ui/components/custom/highlight-te
 import { ThreeLayerTagDisplay } from "@suzumina.click/ui/components/custom/three-layer-tag-display";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { getYouTubeCategoryName } from "@suzumina.click/ui/lib/youtube-category-utils";
-import { Calendar, Clock, Lock, Radio, Video } from "lucide-react";
+import { Calendar, Lock } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 import ThumbnailImage from "@/components/ui/thumbnail-image";
+import { getVideoBadgeInfo } from "@/components/video/video-badge";
 import { buildTagSearchHref } from "@/lib/tag-search";
 import VideoCardActions from "./video-card-actions";
-
-// 動画タイプ別バッジ情報（純関数）
-function getVideoBadgeInfo(video: VideoPlainObject) {
-	// VideoPlainObject は常に_computedプロパティを持つ
-	const { videoType } = video._computed;
-	switch (videoType) {
-		case "live":
-			return {
-				text: "配信中",
-				icon: Radio,
-				className: "bg-red-600/90 text-white",
-				ariaLabel: "現在配信中のライブ配信",
-			};
-		case "upcoming":
-			return {
-				text: "配信予告",
-				icon: Clock,
-				className: "bg-blue-600/90 text-white",
-				ariaLabel: "配信予定のライブ配信",
-			};
-		case "possibly_live":
-			return {
-				text: "配信中（推定）",
-				icon: Radio,
-				className: "bg-red-600/90 text-white",
-				ariaLabel: "配信中の可能性があるライブ配信",
-			};
-		case "archived":
-			return {
-				text: "配信アーカイブ",
-				icon: Radio,
-				className: "bg-gray-600/90 text-white",
-				ariaLabel: "ライブ配信のアーカイブ",
-			};
-		case "premiere":
-			return {
-				text: "プレミア公開",
-				icon: Video,
-				className: "bg-purple-600/90 text-white",
-				ariaLabel: "プレミア公開動画",
-			};
-		default:
-			return {
-				text: "通常動画",
-				icon: Video,
-				className: "bg-black/70 text-white",
-				ariaLabel: "通常動画コンテンツ",
-			};
-	}
-}
 
 // 表示日付（純関数）: ライブ配信は配信開始時間を優先し、無効なら公開時間にフォールバック
 function getDisplayDate(video: VideoPlainObject) {
