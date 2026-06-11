@@ -5,10 +5,8 @@ import {
 	generateYearOptions,
 	getDefaultFilterValues,
 	hasActiveFilters,
-	isFilterEnabled,
 	normalizeOptions,
 	transformFilterValue,
-	validateFilterValue,
 } from "../filter-helpers";
 
 const cfg = (over: Partial<FilterConfig> & { type: FilterConfig["type"] }): FilterConfig =>
@@ -62,28 +60,6 @@ describe("generateOptions", () => {
 		expect(generateOptions(cfg({ type: "multiselect", options: ["a"] }))).toEqual([
 			{ value: "a", label: "a" },
 		]);
-	});
-});
-
-describe("isFilterEnabled / validateFilterValue", () => {
-	it("enabled 未指定は true、関数は評価結果", () => {
-		expect(isFilterEnabled("k", cfg({ type: "select" }), {})).toBe(true);
-		expect(
-			isFilterEnabled("k", cfg({ type: "select", enabled: (f) => f.other === 1 }), { other: 1 }),
-		).toBe(true);
-		expect(
-			isFilterEnabled("k", cfg({ type: "select", enabled: (f) => f.other === 1 }), { other: 2 }),
-		).toBe(false);
-	});
-
-	it("validate 未指定は true、関数は評価結果", () => {
-		expect(validateFilterValue("x", cfg({ type: "select" }))).toBe(true);
-		expect(validateFilterValue(5, cfg({ type: "range", validate: (v) => (v as number) > 3 }))).toBe(
-			true,
-		);
-		expect(validateFilterValue(1, cfg({ type: "range", validate: (v) => (v as number) > 3 }))).toBe(
-			false,
-		);
 	});
 });
 
