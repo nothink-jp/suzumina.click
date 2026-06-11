@@ -1,8 +1,29 @@
 import type { WorkDocument } from "@suzumina.click/shared-types";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { convertDocsToWorks, convertWorksToPlainObjects } from "../work-converters";
+import * as logger from "@/lib/logger";
+import {
+	convertDocsToWorks,
+	convertWorksToPlainObjects,
+	parseWorkDocument,
+} from "../work-converters";
 
 vi.mock("@/lib/logger", () => ({ warn: vi.fn(), error: vi.fn(), info: vi.fn(), debug: vi.fn() }));
+
+// WorkDocumentSchema の必須フィールドを満たす最小の有効データ（genres 等の default 検証用に省略）
+const validRaw = {
+	id: "RJ001",
+	productId: "RJ001",
+	title: "作品1",
+	circle: "サークル1",
+	description: "説明",
+	category: "SOU",
+	workUrl: "https://www.dlsite.com/maniax/work/=/product_id/RJ001.html",
+	thumbnailUrl: "https://img.dlsite.jp/RJ001.jpg",
+	price: { current: 1000, currency: "JPY" },
+	lastFetchedAt: "2024-01-01T00:00:00.000Z",
+	createdAt: "2024-01-01T00:00:00.000Z",
+	updatedAt: "2024-01-01T00:00:00.000Z",
+};
 
 const workData = (over: Record<string, unknown> = {}): WorkDocument =>
 	({
@@ -15,11 +36,29 @@ const workData = (over: Record<string, unknown> = {}): WorkDocument =>
 		releaseDateISO: "2024-01-01",
 		language: "ja",
 		...over,
-		// biome-ignore lint/suspicious/noExplicitAny: テスト用の最小 WorkDocument
-	}) as any;
+	}) as unknown as WorkDocument;
 
 beforeEach(() => {
 	vi.clearAllMocks();
+});
+
+describe("parseWorkDocument", () => {
+	it("検証成功時に schema の default を実効化する（genres 等が欠けていても [] になる）", () => {
+		const result = parseWorkDocument(validRaw);
+		expect(result.genres).toEqual([]);
+		expect(result.customGenres).toEqual([]);
+		expect(result.sampleImages).toEqual([]);
+		// id 等スキーマ非定義の付帯フィールドも温存される
+		expect(result.id).toBe("RJ001");
+		expect(logger.warn).not.toHaveBeenCalled();
+	});
+
+	it("検証失敗時は warn して raw を非破壊で返す（落とさない）", () => {
+		const raw = { productId: "RJ999", title: "必須欠落" };
+		const result = parseWorkDocument(raw);
+		expect(result).toBe(raw); // cast フォールバック（同一参照で継続）
+		expect(logger.warn).toHaveBeenCalledTimes(1);
+	});
 });
 
 describe("convertDocsToWorks", () => {

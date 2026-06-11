@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 // checkAgeRating / getAgeRatingDisplayName の内部に依存せず分岐を検証
 const { mockCheck, mockDisplay } = vi.hoisted(() => ({ mockCheck: vi.fn(), mockDisplay: vi.fn() }));
 vi.mock("@suzumina.click/shared-types", () => ({
+	// parseWorkDocument 用の pass-through（検証は素通し）
+	WorkDocumentSchema: { safeParse: (data: unknown) => ({ success: true, data }) },
 	checkAgeRating: mockCheck,
 	getAgeRatingDisplayName: mockDisplay,
 }));
