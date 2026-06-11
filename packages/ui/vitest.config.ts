@@ -47,7 +47,6 @@ export default defineConfig({
 				"**/*.d.ts",
 				"**/index.{ts,tsx}", // エクスポートのみのindexファイル
 				"**/youtube-types.ts", // 型定義のみ
-				"**/use-mobile.ts", // 未使用のユーティリティフック
 			],
 			// カバレッジレポート形式
 			reporter: ["text", "html", "lcov"],
