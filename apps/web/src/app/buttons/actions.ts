@@ -420,42 +420,6 @@ export async function deleteAudioButton(
 }
 
 /**
- * Increment like count
- */
-export async function incrementLikeCount(
-	audioButtonId: string,
-): Promise<{ success: boolean; error?: string }> {
-	return updateCounter("audioButtons", audioButtonId, "stats.likeCount", 1, { min: 0 });
-}
-
-/**
- * Decrement like count
- */
-export async function decrementLikeCount(
-	audioButtonId: string,
-): Promise<{ success: boolean; error?: string }> {
-	return updateCounter("audioButtons", audioButtonId, "stats.likeCount", -1, { min: 0 });
-}
-
-/**
- * Increment dislike count
- */
-export async function incrementDislikeCount(
-	audioButtonId: string,
-): Promise<{ success: boolean; error?: string }> {
-	return updateCounter("audioButtons", audioButtonId, "stats.dislikeCount", 1, { min: 0 });
-}
-
-/**
- * Decrement dislike count
- */
-export async function decrementDislikeCount(
-	audioButtonId: string,
-): Promise<{ success: boolean; error?: string }> {
-	return updateCounter("audioButtons", audioButtonId, "stats.dislikeCount", -1, { min: 0 });
-}
-
-/**
  * Increment play count
  */
 export async function incrementPlayCount(
