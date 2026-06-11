@@ -6,20 +6,11 @@ import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card } from "@suzumina.click/ui/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@suzumina.click/ui/components/ui/tabs";
-import {
-	Calendar,
-	Clock,
-	ExternalLink,
-	Eye,
-	PlayCircle,
-	Plus,
-	Radio,
-	Timer,
-	Video,
-} from "lucide-react";
+import { Calendar, ExternalLink, Eye, PlayCircle, Plus, Timer } from "lucide-react";
 import Link from "next/link";
 import React, { type ReactNode, useMemo } from "react";
 import { ThumbnailImage } from "@/components/ui";
+import { getVideoBadgeInfo } from "@/components/video/video-badge";
 import { useSession } from "@/lib/auth/client";
 import { formatDescriptionText } from "@/lib/text-utils";
 import { VideoUserTagEditor } from "./video-user-tag-editor";
@@ -98,52 +89,6 @@ const formatDuration = (duration?: string) => {
 	// 常にhh:mm:ssフォーマットで表示
 	return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 };
-
-// 動画タイプバッジの情報を取得
-function getVideoBadgeInfo(video: VideoPlainObject) {
-	switch (video.liveBroadcastContent) {
-		case "live":
-			return {
-				text: "配信中",
-				icon: Radio,
-				className: "bg-red-600/80 text-white border-none",
-				ariaLabel: "現在配信中のライブ配信",
-			};
-		case "upcoming":
-			return {
-				text: "配信予告",
-				icon: Clock,
-				className: "bg-blue-600/80 text-white border-none",
-				ariaLabel: "配信予定のライブ配信",
-			};
-		case "none":
-			// videoType が"archived"の場合、または liveStreamingDetails に actualStartTime と actualEndTime がある場合は配信アーカイブ
-			if (
-				video.videoType === "archived" ||
-				(video.liveStreamingDetails?.actualStartTime && video.liveStreamingDetails?.actualEndTime)
-			) {
-				return {
-					text: "配信アーカイブ",
-					icon: Radio,
-					className: "bg-gray-600/80 text-white border-none",
-					ariaLabel: "ライブ配信のアーカイブ",
-				};
-			}
-			return {
-				text: "動画",
-				icon: Video,
-				className: "bg-black/80 text-white border-none",
-				ariaLabel: "動画コンテンツ",
-			};
-		default:
-			return {
-				text: "動画",
-				icon: Video,
-				className: "bg-black/80 text-white border-none",
-				ariaLabel: "動画コンテンツ",
-			};
-	}
-}
 
 // 音声ボタン作成可能判定
 function getCanCreateButtonData(video: VideoPlainObject, user: UserSession | null) {
@@ -288,7 +233,10 @@ export default function VideoDetail({
 							</div>
 
 							<div className="absolute top-4 right-4">
-								<Badge className={videoBadgeInfo.className} aria-label={videoBadgeInfo.ariaLabel}>
+								<Badge
+									className={`${videoBadgeInfo.className} border-none`}
+									aria-label={videoBadgeInfo.ariaLabel}
+								>
 									{React.createElement(videoBadgeInfo.icon, {
 										className: "h-3 w-3 mr-1",
 										"aria-hidden": "true",
