@@ -96,6 +96,10 @@ Discord認証されたユーザー情報
 
 ## 値オブジェクト一覧
 
+> **2026-06 (SPR-181) 更新**: 以下は概念的なデータのまとまりであり、**クラスとしての値オブジェクトは
+> 廃止済み**（`packages/shared-types/src/value-objects/` を削除）。実体は PlainObject のフィールド群 +
+> Zod スキーマ + `utilities/` のユーティリティで表現する。
+
 ### 作品関連
 - **Price**: 価格情報（current, original, discount, currency）
 - **Rating**: 評価情報（stars, count, average）
@@ -168,10 +172,7 @@ packages/shared-types/src/
 │   ├── work-evaluation.ts # WorkEvaluation Zodスキーマ
 │   ├── user-evaluation.ts # UserEvaluation 特性評価スキーマ
 │   └── contact.ts     # Contact Zodスキーマ
-├── value-objects/      # 値オブジェクト
-│   ├── work/          # Work関連（WorkId, WorkTitle, WorkPrice等）
-│   └── video/         # Video関連（VideoContent, VideoMetadata等）
-├── plain-objects/      # Server Component用Plain Object型
+├── plain-objects/      # Server Component用Plain Object型（データ表現の正本）
 ├── types/
 │   ├── firestore/     # Firestoreドキュメント型
 │   ├── video-types.ts
@@ -231,6 +232,9 @@ export class EntityName {
 ```
 
 ### Value Object Structure
+
+> **2026-06 (SPR-181) 更新**: 以下はクラス VO の参考パターンだが、shared-types では**この層を廃止済み**。
+> 新規に値オブジェクトを再導入する場合は CLAUDE.md の「Entity化のゲート」を先に通すこと。
 
 ```typescript
 export class ValueObjectName {

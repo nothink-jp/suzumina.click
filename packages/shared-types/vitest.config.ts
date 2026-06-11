@@ -20,11 +20,13 @@ export default defineConfig({
 				"**/plain-objects/**", // plain object types only
 			],
 			// 実測フロアに合わせたラチェット閾値（回帰ガード / SPR-152）。
-			// 4 指標すべて目標 80 を達成済み（実測 st89/br80/fn90/ln90）。
+			// SPR-181 で value-objects 一式（高カバレッジの死蔵 VO + テスト）を削除したため
+			// 分母が縮み branches/functions が下振れ。実態に合わせて再ピン
+			// （st90/br75/fn87/ln91）。transformers の branch 回復は SPR-197 で対応。
 			thresholds: {
 				statements: 87,
-				branches: 78,
-				functions: 88,
+				branches: 75,
+				functions: 87,
 				lines: 88,
 			},
 		},

@@ -15,67 +15,6 @@ import {
 import type { WorkCategory, WorkLanguage } from "./work-types";
 
 /**
- * 日付最適化ユーティリティ関数
- * 日本語日付文字列をISO形式と表示形式に変換
- */
-export function optimizeDateFormats(dateString: string): {
-	original: string;
-	iso?: string;
-	display: string;
-} {
-	// "2023年03月05日" → { iso: "2023-03-05", display: "2023年03月05日" }
-	const match = dateString.match(/(\d{4})年(\d{2})月(\d{2})日/);
-	if (match) {
-		const [, year, month, day] = match;
-		return {
-			original: dateString,
-			iso: `${year}-${month}-${day}`,
-			display: dateString,
-		};
-	}
-
-	// ISO形式の場合 "2023-03-05" → 日本語形式に変換
-	const isoMatch = dateString.match(/(\d{4})-(\d{2})-(\d{2})/);
-	if (isoMatch) {
-		const [, year, month, day] = isoMatch;
-		return {
-			original: dateString,
-			iso: dateString,
-			display: `${year}年${month}月${day}日`,
-		};
-	}
-
-	return {
-		original: dateString,
-		display: dateString,
-	};
-}
-
-/**
- * ファイルサイズ文字列をバイト数に変換
- */
-export function parseSizeToBytes(sizeText?: string): number | undefined {
-	if (!sizeText) return undefined;
-	const match = sizeText.match(/([\d.]+)\s*(MB|GB|KB)/i);
-	if (!match) return undefined;
-
-	const [, num, unit] = match;
-	if (!unit || !num) return undefined;
-	const size = Number.parseFloat(num);
-
-	switch (unit.toUpperCase()) {
-		case "KB":
-			return Math.round(size * 1024);
-		case "MB":
-			return Math.round(size * 1024 * 1024);
-		case "GB":
-			return Math.round(size * 1024 * 1024 * 1024);
-		default:
-			return undefined;
-	}
-}
-
-/**
  * 作品カテゴリコードから日本語表示名を取得
  * @param category 作品カテゴリコード
  * @returns 日本語表示名
