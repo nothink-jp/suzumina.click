@@ -75,6 +75,56 @@ function lower(v: unknown): string {
 	return typeof v === "string" ? v.toLowerCase() : "";
 }
 
+/** in/not_in は配列必須。memory-adapter と同じく非配列はエラー */
+function requireArray(value: AdapterWhere["value"], op: "in" | "not_in"): unknown[] {
+	if (!Array.isArray(value)) throw new Error(`${op} 演算子の value は配列である必要があります`);
+	return value;
+}
+
+type ClauseHandler = (
+	recordVal: unknown,
+	value: AdapterWhere["value"],
+	insensitive: boolean,
+) => boolean;
+
+/**
+ * 演算子ごとの評価ロジック（memory-adapter の評価規則に対応）。
+ * 1 演算子 = 1 ハンドラに分解し、evalClause の複雑度を抑える。挙動は switch 版と等価。
+ */
+const CLAUSE_HANDLERS: Record<WhereOperator, ClauseHandler> = {
+	in: (recordVal, value, insensitive) => {
+		const arr = requireArray(value, "in");
+		return insensitive ? arr.some((v) => lower(recordVal) === lower(v)) : arr.includes(recordVal);
+	},
+	not_in: (recordVal, value, insensitive) => {
+		const arr = requireArray(value, "not_in");
+		return insensitive ? !arr.some((v) => lower(recordVal) === lower(v)) : !arr.includes(recordVal);
+	},
+	contains: (recordVal, value, insensitive) =>
+		insensitive
+			? lower(recordVal).includes(lower(value))
+			: typeof recordVal === "string" && recordVal.includes(value as string),
+	starts_with: (recordVal, value, insensitive) =>
+		insensitive
+			? lower(recordVal).startsWith(lower(value))
+			: typeof recordVal === "string" && recordVal.startsWith(value as string),
+	ends_with: (recordVal, value, insensitive) =>
+		insensitive
+			? lower(recordVal).endsWith(lower(value))
+			: typeof recordVal === "string" && recordVal.endsWith(value as string),
+	ne: (recordVal, value, insensitive) =>
+		insensitive ? lower(recordVal) !== lower(value) : recordVal !== value,
+	gt: (recordVal, value) => value != null && (recordVal as number) > (value as number),
+	gte: (recordVal, value) => value != null && (recordVal as number) >= (value as number),
+	lt: (recordVal, value) => value != null && (recordVal as number) < (value as number),
+	lte: (recordVal, value) => value != null && (recordVal as number) <= (value as number),
+	eq: (recordVal, value, insensitive) => {
+		if (insensitive) return lower(recordVal) === lower(value);
+		if (value === null) return recordVal == null;
+		return recordVal === value;
+	},
+};
+
 /** 単一 where 条件の評価（memory-adapter と同じ規則） */
 export function evalClause(record: Row, clause: AdapterWhere): boolean {
 	const { field, value, operator } = clause;
@@ -83,46 +133,9 @@ export function evalClause(record: Row, clause: AdapterWhere): boolean {
 		clause.mode === "insensitive" &&
 		(typeof value === "string" ||
 			(Array.isArray(value) && value.every((v) => typeof v === "string")));
-
-	switch (operator) {
-		case "in":
-			if (!Array.isArray(value)) throw new Error("in 演算子の value は配列である必要があります");
-			return insensitive
-				? value.some((v) => lower(recordVal) === lower(v))
-				: (value as unknown[]).includes(recordVal);
-		case "not_in":
-			if (!Array.isArray(value))
-				throw new Error("not_in 演算子の value は配列である必要があります");
-			return insensitive
-				? !value.some((v) => lower(recordVal) === lower(v))
-				: !(value as unknown[]).includes(recordVal);
-		case "contains":
-			return insensitive
-				? lower(recordVal).includes(lower(value))
-				: typeof recordVal === "string" && recordVal.includes(value as string);
-		case "starts_with":
-			return insensitive
-				? lower(recordVal).startsWith(lower(value))
-				: typeof recordVal === "string" && recordVal.startsWith(value as string);
-		case "ends_with":
-			return insensitive
-				? lower(recordVal).endsWith(lower(value))
-				: typeof recordVal === "string" && recordVal.endsWith(value as string);
-		case "ne":
-			return insensitive ? lower(recordVal) !== lower(value) : recordVal !== value;
-		case "gt":
-			return value != null && (recordVal as number) > (value as number);
-		case "gte":
-			return value != null && (recordVal as number) >= (value as number);
-		case "lt":
-			return value != null && (recordVal as number) < (value as number);
-		case "lte":
-			return value != null && (recordVal as number) <= (value as number);
-		default:
-			if (insensitive) return lower(recordVal) === lower(value);
-			if (value === null) return recordVal == null;
-			return recordVal === value;
-	}
+	// 未知の演算子は switch 版の default と同じく eq 相当で評価
+	const handler = CLAUSE_HANDLERS[operator] ?? CLAUSE_HANDLERS.eq;
+	return handler(recordVal, value, insensitive);
 }
 
 /** where 配列の畳み込み（先頭を起点に各 clause を connector で結合：memory-adapter 準拠） */
@@ -142,6 +155,39 @@ export function matchesWhere(record: Row, where?: AdapterWhere[]): boolean {
 	return result;
 }
 
+/** boolean 比較（false < true） */
+function compareBoolean(a: boolean, b: boolean): number {
+	if (a === b) return 0;
+	return a ? 1 : -1;
+}
+
+/**
+ * null/undefined を含む比較。
+ * both-null → 0、av のみ null → -1（先頭）、bv のみ null → 1。
+ * 両者が非 null のときだけ null を返し、型別比較（compareTyped）へ委譲する。
+ * （戻り 0 は falsy だが `??` は素通りするため、null 委譲とは区別される）
+ */
+function compareNullable(av: unknown, bv: unknown): number | null {
+	if (av == null && bv == null) return 0;
+	if (av == null) return -1;
+	if (bv == null) return 1;
+	return null;
+}
+
+/** 同型優先の比較（string/Date/number/boolean、それ以外は文字列化して比較） */
+function compareTyped(av: unknown, bv: unknown): number {
+	if (typeof av === "string" && typeof bv === "string") return av.localeCompare(bv);
+	if (av instanceof Date && bv instanceof Date) return av.getTime() - bv.getTime();
+	if (typeof av === "number" && typeof bv === "number") return av - bv;
+	if (typeof av === "boolean" && typeof bv === "boolean") return compareBoolean(av, bv);
+	return String(av).localeCompare(String(bv));
+}
+
+/** 2 値比較（null 優先 → 型別）。旧 applySort の if/else 連鎖と等価 */
+function compareValues(av: unknown, bv: unknown): number {
+	return compareNullable(av, bv) ?? compareTyped(av, bv);
+}
+
 /** sortBy をメモリ上で適用 */
 export function applySort(
 	records: Row[],
@@ -150,18 +196,7 @@ export function applySort(
 	if (!sortBy) return records;
 	const { field, direction } = sortBy;
 	return [...records].sort((a, b) => {
-		const av = a[field];
-		const bv = b[field];
-		let cmp = 0;
-		if (av == null && bv == null) cmp = 0;
-		else if (av == null) cmp = -1;
-		else if (bv == null) cmp = 1;
-		else if (typeof av === "string" && typeof bv === "string") cmp = av.localeCompare(bv);
-		else if (av instanceof Date && bv instanceof Date) cmp = av.getTime() - bv.getTime();
-		else if (typeof av === "number" && typeof bv === "number") cmp = av - bv;
-		else if (typeof av === "boolean" && typeof bv === "boolean")
-			cmp = av === bv ? 0 : av ? 1 : -1;
-		else cmp = String(av).localeCompare(String(bv));
+		const cmp = compareValues(a[field], b[field]);
 		return direction === "asc" ? cmp : -cmp;
 	});
 }
