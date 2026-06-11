@@ -16,7 +16,6 @@
 		"test:watch": "vitest",
 		"test:coverage": "vitest run --coverage",
 		"test:critical": "vitest run --bail 1",
-		"test:server": "vitest run --config vitest.server.config.ts",
 		"test:e2e": "playwright test",
 		"test:e2e:ui": "playwright test --ui",
 		"test:e2e:debug": "playwright test --debug",
