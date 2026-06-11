@@ -140,6 +140,25 @@ describe("firestore-adapter pure helpers", () => {
 			);
 			expect(evalClause(rec, { ...w("name", ["ALICE"], "in"), mode: "insensitive" })).toBe(true);
 		});
+		it("insensitive: ne / contains / ends_with / not_in", () => {
+			expect(evalClause(rec, { ...w("name", "ALICE", "ne"), mode: "insensitive" })).toBe(false);
+			expect(evalClause(rec, { ...w("name", "LIC", "contains"), mode: "insensitive" })).toBe(true);
+			expect(evalClause(rec, { ...w("name", "CE", "ends_with"), mode: "insensitive" })).toBe(true);
+			expect(evalClause(rec, { ...w("name", ["BOB"], "not_in"), mode: "insensitive" })).toBe(true);
+			expect(evalClause(rec, { ...w("name", ["ALICE"], "not_in"), mode: "insensitive" })).toBe(
+				false,
+			);
+		});
+		it("数値比較で value が null なら false", () => {
+			expect(evalClause(rec, w("age", null, "gt"))).toBe(false);
+			expect(evalClause(rec, w("age", null, "lte"))).toBe(false);
+		});
+		it("contains 系は非文字列 recordVal で false（sensitive）", () => {
+			// rec.age=30(number) に対する文字列演算は型ガードで false
+			expect(evalClause(rec, w("age", "3", "contains"))).toBe(false);
+			expect(evalClause(rec, w("age", "3", "starts_with"))).toBe(false);
+			expect(evalClause(rec, w("age", "0", "ends_with"))).toBe(false);
+		});
 	});
 
 	describe("matchesWhere", () => {
@@ -183,6 +202,34 @@ describe("firestore-adapter pure helpers", () => {
 		it("sortBy 無しはそのまま", () => {
 			const rows = [{ n: 2 }, { n: 1 }];
 			expect(applySort(rows)).toBe(rows);
+		});
+		it("boolean を扱える（false<true）", () => {
+			const rows = [{ b: true }, { b: false }, { b: true }];
+			expect(applySort(rows, { field: "b", direction: "asc" }).map((r) => r.b)).toEqual([
+				false,
+				true,
+				true,
+			]);
+			expect(applySort(rows, { field: "b", direction: "desc" }).map((r) => r.b)).toEqual([
+				true,
+				true,
+				false,
+			]);
+		});
+		it("both null は順序維持（cmp 0）", () => {
+			const rows = [
+				{ x: null, id: 1 },
+				{ x: null, id: 2 },
+			];
+			expect(applySort(rows, { field: "x", direction: "asc" }).map((r) => r.id)).toEqual([1, 2]);
+		});
+		it("型混在は String 比較にフォールバック", () => {
+			const rows = [{ v: 2 }, { v: "10" }];
+			// String(2)="2", String("10")="10" → "10" < "2"
+			expect(applySort(rows, { field: "v", direction: "asc" }).map((r) => String(r.v))).toEqual([
+				"10",
+				"2",
+			]);
 		});
 	});
 
