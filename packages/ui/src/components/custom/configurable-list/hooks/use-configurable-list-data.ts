@@ -61,14 +61,11 @@ export function useConfigurableListData<T>(
 		debounceMs: searchable ? 300 : 0, // 検索時のみデバウンス
 	});
 
-	// 使用するデータソース
-	const data = serverData.data || {
+	// 使用するデータソース（フェッチ前は initialItems / initialTotal にフォールバック）
+	const actualData = serverData.data ?? {
 		items: initialItems,
-		total: initialTotal || initialItems.length,
+		total: initialTotal ?? initialItems.length,
 	};
-
-	// データソースの決定
-	const actualData = serverData.data || data;
 
 	return {
 		actualData,
