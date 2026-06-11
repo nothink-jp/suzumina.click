@@ -174,9 +174,20 @@ describe.skipIf(!RUN)("checkDataIntegrity (integration / Firestore Emulator)", (
 		expect(result.checks.creatorWorkRestore?.creatorsCreated).toBeGreaterThanOrEqual(1);
 
 		expect((await db.collection("creators").doc("CR1").get()).exists).toBe(true);
-		expect(
-			(await db.collection("creators").doc("CR1").collection("works").doc("RJ001").get()).exists,
-		).toBe(true);
+		const relationDoc = await db
+			.collection("creators")
+			.doc("CR1")
+			.collection("works")
+			.doc("RJ001")
+			.get();
+		expect(relationDoc.exists).toBe(true);
+		// 正本スキーマ（CreatorWorkRelation）の roles 配列を含むこと（旧フラット形式でないこと）
+		expect(relationDoc.data()?.roles).toEqual(["voice"]);
+		expect(relationDoc.data()?.circleId).toBe("RG001");
+		// recomputeCreatorStats により denormalized stats が同期されること
+		const creatorDoc = await db.collection("creators").doc("CR1").get();
+		expect(creatorDoc.data()?.workCount).toBe(1);
+		expect(creatorDoc.data()?.types).toEqual(["voice"]);
 	});
 
 	it("dry-run では不整合を検出するが Firestore を変更しない", async () => {

@@ -325,6 +325,8 @@ describe("checkDataIntegrity", () => {
 
 		const mockSubCollection = vi.fn(() => ({
 			doc: mockSubDoc,
+			// recomputeCreatorStats が復元後に works サブコレクションを読む
+			get: vi.fn().mockResolvedValue({ empty: true, size: 0, docs: [] }),
 		}));
 
 		// 空のスナップショット
@@ -344,6 +346,7 @@ describe("checkDataIntegrity", () => {
 					doc: vi.fn((_id: string) => ({
 						get: mockCreatorExists,
 						collection: mockSubCollection,
+						update: vi.fn(), // recomputeCreatorStats の stats 書き戻し
 					})),
 				};
 			}
