@@ -5,6 +5,18 @@ import { z } from "zod";
 // =====================
 
 /**
+ * Firestore Timestamp の読み取り用構造型（環境非依存・firebase-admin に依存しない）。
+ *
+ * 読み取った Firestore ドキュメントの日時フィールドはこの型で受け、`.toDate()` で Date 化する。
+ * 書き込み時の `FieldValue.serverTimestamp()` は別物（型が一致しない）ため、書き込みペイロード側で
+ * 1 箇所だけ構造型へキャストする（evaluation-actions の `serverNow()` ヘルパー）。
+ * 以前は `unknown` で退避し利用側で二重キャストが増殖していた（SPR-199）。
+ */
+export interface FirestoreTimestamp {
+	toDate(): Date;
+}
+
+/**
  * 作品評価のFirestoreデータ型
  */
 export interface FirestoreWorkEvaluation {
@@ -21,8 +33,8 @@ export interface FirestoreWorkEvaluation {
 	starRating?: 1 | 2 | 3; // 星評価 (evaluationType === 'star'の時のみ)
 
 	// メタデータ
-	createdAt: unknown; // 初回評価日時 (Firestore.Timestamp)
-	updatedAt: unknown; // 最終更新日時 (Firestore.Timestamp)
+	createdAt: FirestoreTimestamp; // 初回評価日時
+	updatedAt: FirestoreTimestamp; // 最終更新日時
 }
 
 /**
@@ -35,10 +47,10 @@ export interface UserTop10List {
 			// キー: 1-10の順位
 			workId: string; // 作品ID
 			workTitle?: string; // 作品タイトル（表示用キャッシュ）
-			updatedAt: unknown; // この順位に設定された日時 (Firestore.Timestamp)
+			updatedAt: FirestoreTimestamp; // この順位に設定された日時
 		} | null; // null = その順位は空き
 	};
-	lastUpdatedAt: unknown; // 最終更新日時 (Firestore.Timestamp)
+	lastUpdatedAt: FirestoreTimestamp; // 最終更新日時
 	totalCount: number; // 現在の10選登録数（0-10）
 }
 
@@ -204,10 +216,6 @@ export function isNgEvaluation(evaluation: FrontendWorkEvaluation): boolean {
 export function convertToFrontendEvaluation(
 	firestoreData: FirestoreWorkEvaluation,
 ): FrontendWorkEvaluation {
-	// Firestore Timestampの型定義
-	const createdAtTimestamp = firestoreData.createdAt as { toDate(): Date };
-	const updatedAtTimestamp = firestoreData.updatedAt as { toDate(): Date };
-
 	return {
 		id: firestoreData.id,
 		workId: firestoreData.workId,
@@ -215,8 +223,8 @@ export function convertToFrontendEvaluation(
 		evaluationType: firestoreData.evaluationType,
 		top10Rank: firestoreData.top10Rank,
 		starRating: firestoreData.starRating,
-		createdAt: createdAtTimestamp.toDate().toISOString(),
-		updatedAt: updatedAtTimestamp.toDate().toISOString(),
+		createdAt: firestoreData.createdAt.toDate().toISOString(),
+		updatedAt: firestoreData.updatedAt.toDate().toISOString(),
 	};
 }
 
@@ -226,28 +234,22 @@ export function convertToFrontendEvaluation(
 export function convertToFrontendTop10List(firestoreData: UserTop10List): FrontendUserTop10List {
 	const frontendRankings: FrontendUserTop10List["rankings"] = {};
 
-	// Firestore Timestampの型定義
-	type FirestoreTimestamp = { toDate(): Date };
-
 	for (const [rank, data] of Object.entries(firestoreData.rankings)) {
 		if (data === null) {
 			frontendRankings[Number(rank)] = null;
 		} else {
-			const updatedAtTimestamp = data.updatedAt as FirestoreTimestamp;
 			frontendRankings[Number(rank)] = {
 				workId: data.workId,
 				workTitle: data.workTitle,
-				updatedAt: updatedAtTimestamp.toDate().toISOString(),
+				updatedAt: data.updatedAt.toDate().toISOString(),
 			};
 		}
 	}
 
-	const lastUpdatedAtTimestamp = firestoreData.lastUpdatedAt as FirestoreTimestamp;
-
 	return {
 		userId: firestoreData.userId,
 		rankings: frontendRankings,
-		lastUpdatedAt: lastUpdatedAtTimestamp.toDate().toISOString(),
+		lastUpdatedAt: firestoreData.lastUpdatedAt.toDate().toISOString(),
 		totalCount: firestoreData.totalCount,
 	};
 }
