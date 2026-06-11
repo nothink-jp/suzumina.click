@@ -20,16 +20,14 @@ export default defineConfig({
 				"**/plain-objects/**", // plain object types only
 			],
 			// 実測フロアに合わせたラチェット閾値（回帰ガード / SPR-152）。
-			// SPR-181 で value-objects 一式（高カバレッジの死蔵 VO + テスト）を削除したため
-			// 分母が縮み branches/functions が下振れ。実態に合わせて再ピン
-			// （st90/br75/fn87/ln91）。transformers の branch 回復は SPR-197 で対応。
-			// SPR-198 で死蔵 utils（date-parser/number-parser + テスト）削除により branch が
-			// 74.96% へ微減したため 74 に再ピン。
+			// SPR-197 で transformers の死蔵（work toFirestore / audio-button 操作群 / work-conversions）と
+			// genre 正規化の重複を一掃し、分母が締まって全指標が回復（実測 st94 / br78 / fn92 / ln94）。
+			// それに合わせてラチェットを引き上げ（SPR-181/198 で一時的に下げた br74 から復帰）。
 			thresholds: {
-				statements: 87,
-				branches: 74,
-				functions: 87,
-				lines: 88,
+				statements: 90,
+				branches: 78,
+				functions: 90,
+				lines: 92,
 			},
 		},
 	},

@@ -1,7 +1,8 @@
 /**
- * Final Work Firestore Transformer
+ * Work Firestore Transformer（旧 work-firestore-final.ts。"final" が何を約束するか不明だったため改名）
  *
- * Minimal implementation that only maps fields that exist in both WorkDocument and WorkPlainObject.
+ * WorkDocument（Firestore）→ WorkPlainObject の読み取り変換。Document に存在するフィールドのみを写す。
+ * 書き込み（Plain→Document）は持たない（収集パイプライン / Server Action が直接構築する）。
  */
 
 import { detectWorkLanguage, getSupportedLanguages } from "../entities/work/language-detection";
@@ -32,6 +33,27 @@ function getCategoryDisplay(category: string): string {
 		etc: "その他",
 	};
 	return categoryMap[category] || category;
+}
+
+/**
+ * genre / customGenre フィールドを文字列配列に正規化する。
+ *
+ * Firestore 上では `string` と `{ name }` オブジェクトが混在しうる（旧データ）ため、両形を吸収する。
+ * 以前は fromFirestore 内の genres / customGenres × 2箇所で同じ map が4重複し、各所で
+ * `(g as any).name` の noExplicitAny biome-ignore を発生させていた（重複を1関数に集約）。
+ */
+function normalizeGenres(raw: readonly unknown[] | undefined): string[] {
+	if (!raw) return [];
+	return raw
+		.map((g): string => {
+			if (typeof g === "string") return g;
+			if (g && typeof g === "object" && "name" in g) {
+				const name = (g as { name?: unknown }).name;
+				return typeof name === "string" ? name : "";
+			}
+			return "";
+		})
+		.filter(Boolean);
 }
 
 /**
@@ -172,24 +194,8 @@ export function fromFirestore(doc: WorkDocument): WorkPlainObject {
 		fileType: doc.fileType,
 		fileTypeString: doc.fileTypeString,
 		fileSize: doc.fileSize,
-		genres:
-			doc.genres
-				?.map((g) => {
-					if (typeof g === "string") return g;
-					// biome-ignore lint/suspicious/noExplicitAny: Genre can be string or object with name
-					if (g && typeof g === "object" && "name" in g) return (g as any).name;
-					return "";
-				})
-				.filter(Boolean) || [],
-		customGenres:
-			doc.customGenres
-				?.map((g) => {
-					if (typeof g === "string") return g;
-					// biome-ignore lint/suspicious/noExplicitAny: Genre can be string or object with name
-					if (g && typeof g === "object" && "name" in g) return (g as any).name;
-					return "";
-				})
-				.filter(Boolean) || [],
+		genres: normalizeGenres(doc.genres),
+		customGenres: normalizeGenres(doc.customGenres),
 		sampleImages:
 			doc.sampleImages?.map((img) => {
 				if (typeof img === "string") {
@@ -269,24 +275,7 @@ export function fromFirestore(doc: WorkDocument): WorkPlainObject {
 
 			// Search and filtering
 			searchableText: [doc.title, doc.circle, doc.description].filter(Boolean).join(" "),
-			tags: [
-				...(doc.genres
-					?.map((g) => {
-						if (typeof g === "string") return g;
-						// biome-ignore lint/suspicious/noExplicitAny: Genre can be string or object with name
-						if (g && typeof g === "object" && "name" in g) return (g as any).name;
-						return "";
-					})
-					.filter(Boolean) || []),
-				...(doc.customGenres
-					?.map((g) => {
-						if (typeof g === "string") return g;
-						// biome-ignore lint/suspicious/noExplicitAny: Genre can be string or object with name
-						if (g && typeof g === "object" && "name" in g) return (g as any).name;
-						return "";
-					})
-					.filter(Boolean) || []),
-			],
+			tags: [...normalizeGenres(doc.genres), ...normalizeGenres(doc.customGenres)],
 		},
 	};
 
@@ -294,60 +283,12 @@ export function fromFirestore(doc: WorkDocument): WorkPlainObject {
 }
 
 /**
- * Transforms WorkPlainObject to Firestore document format
- */
-export function toFirestore(work: WorkPlainObject): WorkDocument {
-	// Return simplified mapping (as any to bypass strict typing)
-	return {
-		id: work.productId,
-		productId: work.productId,
-		title: work.title,
-		circle: work.circle,
-		description: work.description,
-		category: work.category,
-		workUrl: work.workUrl,
-		thumbnailUrl: work.thumbnailUrl,
-		price: {
-			current: work.price.current,
-			original: work.price.original,
-			currency: work.price.currency,
-			point: work.price.point,
-		},
-		rating: work.rating
-			? {
-					stars: work.rating.stars,
-					count: work.rating.count,
-					reviewCount: work.rating.reviewCount,
-				}
-			: undefined,
-		genres: work.genres,
-		customGenres: work.customGenres,
-		creators: {
-			voice_by: work.creators.voiceActors.map((c) => ({ id: c.id, name: c.name })),
-			scenario_by: work.creators.scenario.map((c) => ({ id: c.id, name: c.name })),
-			illust_by: work.creators.illustration.map((c) => ({ id: c.id, name: c.name })),
-			music_by: work.creators.music.map((c) => ({ id: c.id, name: c.name })),
-			others_by: work.creators.others.map((c) => ({ id: c.id, name: c.name })),
-			created_by: [],
-		},
-		sampleImages: work.sampleImages.map((img) => ({
-			thumb: img.thumbnailUrl,
-			width: img.width,
-			height: img.height,
-		})),
-		translationInfo: work.translationInfo,
-		languageDownloads: work.languageDownloads,
-		createdAt: work.createdAt,
-		updatedAt: work.updatedAt,
-		lastFetchedAt: work.lastFetchedAt,
-		// biome-ignore lint/suspicious/noExplicitAny: Type coercion needed for partial mapping
-	} as any as WorkDocument;
-}
-
-/**
  * Work Firestore transformers namespace
+ *
+ * 読み取り（Document→Plain）の正本は fromFirestore。書き込み（Plain→Document）は
+ * 各 Server Action / 収集パイプラインがドキュメントを直接構築するため、本 transformer は
+ * 持たない（旧 toFirestore は `as any as WorkDocument` 付きの呼び出しゼロの死蔵だったため削除）。
  */
 export const workTransformers = {
 	fromFirestore,
-	toFirestore,
 };

@@ -72,7 +72,12 @@ export {
 export * from "./plain-objects/circle-plain";
 export * from "./plain-objects/video-plain";
 export * from "./plain-objects/work-plain";
-// New functional exports (available for gradual migration)
+// Transformers（Firestore Document ↔ PlainObject の正本）。
+// Document→Plain（読み取り）の入口は各ドメインの transformer の fromFirestore に統一:
+//   Work        → workTransformers.fromFirestore
+//   Video       → videoTransformers.fromFirestore（videoFromFirestore 別名）
+//   AudioButton → audioButtonTransformers.fromFirestore
+// 旧 utilities/work-conversions.ts（convertToWorkPlainObject 等）は呼び出しゼロの死蔵だったため削除。
 export { audioButtonTransformers } from "./transformers/audio-button";
 export {
 	convertToFrontendVideo,
@@ -80,8 +85,7 @@ export {
 	toFirestore as videoToFirestore,
 	videoTransformers,
 } from "./transformers/video-firestore";
-// Transformers
-export { workTransformers } from "./transformers/work-firestore-final";
+export { workTransformers } from "./transformers/work-firestore";
 // === Firestore Types ===
 // FirestoreServerWorkData has been removed - use WorkDocument from entities/work instead
 // FirestoreServerAudioButtonData is available from entities/audio-button
@@ -148,5 +152,3 @@ export * from "./utilities/price-history";
 export * from "./utilities/user/display-name";
 // DLsite ID validators (extracted from entities/circle-creator)
 export * from "./utilities/validators/dlsite-ids";
-// Work変換ユーティリティのエクスポート
-export * from "./utilities/work-conversions";

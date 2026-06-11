@@ -2,75 +2,10 @@
  * Creator page server actions のテストスイート
  */
 
-import { convertToWorkPlainObject } from "@suzumina.click/shared-types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-// convertToWorkPlainObjectのモック実装を別関数として定義
-const mockConvertToWorkPlainObject = (data: any) => {
-	if (!data?.id || !data.productId) return null;
-	const creators = data.creators || {};
-	const mapCreators = (arr: any[] = []) =>
-		arr.map((item: any) => ({ id: item.id, name: item.name }));
-	const mapNames = (arr: any[] = []) => arr.map((item: any) => item.name);
-
-	return {
-		...data,
-		price: data.price || {
-			current: 0,
-			currency: "JPY",
-			formattedPrice: "¥0",
-			isFree: false,
-			isDiscounted: false,
-		},
-		rating: data.rating,
-		creators: {
-			voiceActors: mapCreators(creators.voice_by),
-			scenario: mapCreators(creators.scenario_by),
-			illustration: mapCreators(creators.illust_by),
-			music: mapCreators(creators.music_by),
-			others: mapCreators(creators.others),
-			voiceActorNames: mapNames(creators.voice_by),
-			scenarioNames: mapNames(creators.scenario_by),
-			illustrationNames: mapNames(creators.illust_by),
-			musicNames: mapNames(creators.music_by),
-			otherNames: mapNames(creators.others),
-		},
-		salesStatus: data.salesStatus || {
-			isOnSale: true,
-			isDiscounted: false,
-			isFree: false,
-			isSoldOut: false,
-			isReserveWork: false,
-			dlsiteplaySupported: false,
-		},
-		sampleImages: data.sampleImages || [],
-		genres: data.genres?.map((g: any) => g.name || g) || [],
-		customGenres: data.customGenres || [],
-		_computed: {
-			displayTitle: data.title,
-			displayCircle: data.circle,
-			displayCategory: data.category,
-			displayAgeRating: "全年齢",
-			displayReleaseDate: data.releaseDateDisplay || "",
-			relativeUrl: `/works/${data.productId}`,
-			isAdultContent: false,
-			isVoiceWork: data.category === "SOU",
-			isGameWork: false,
-			isMangaWork: false,
-			hasDiscount: false,
-			isNewRelease: false,
-			isPopular: false,
-			primaryLanguage: "ja",
-			availableLanguages: ["ja"],
-			searchableText: `${data.title} ${data.circle}`,
-			tags: data.tags || [],
-		},
-	};
-};
-
-// convertToWorkPlainObject, workTransformersのモック
+// workTransformers のモック
 vi.mock("@suzumina.click/shared-types", () => ({
-	convertToWorkPlainObject: vi.fn(),
 	workTransformers: {
 		fromFirestore: vi.fn((data) => {
 			// Use the mock helper function to transform data
@@ -175,20 +110,6 @@ describe("Creator page server actions", () => {
 					data: () => null,
 				})),
 			);
-		});
-		// Reset convertToWorkPlainObject mock to default implementation
-		vi.mocked(convertToWorkPlainObject).mockImplementation((data: any) => {
-			const result = mockConvertToWorkPlainObject(data);
-			if (result === null) {
-				return {
-					isOk: () => false,
-					error: { message: "Invalid data" },
-				};
-			}
-			return {
-				isOk: () => true,
-				value: result,
-			};
 		});
 	});
 

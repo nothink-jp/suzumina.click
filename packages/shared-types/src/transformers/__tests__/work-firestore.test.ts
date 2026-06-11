@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { detectWorkLanguage, getSupportedLanguages } from "../../entities/work/language-detection";
 import type { WorkDocument } from "../../entities/work/work-document-schema";
-import { fromFirestore } from "../work-firestore-final";
+import { fromFirestore } from "../work-firestore";
 
 const createWorkDocument = (overrides: Partial<WorkDocument> = {}): WorkDocument => ({
 	id: "RJ123456",
@@ -25,7 +25,7 @@ const createWorkDocument = (overrides: Partial<WorkDocument> = {}): WorkDocument
 // SPR-184: transformer の _computed が言語判定の正本（detectWorkLanguage /
 // getSupportedLanguages）に委譲していること、すなわち「詳細表示」と「フィルタ」で
 // 同じ言語が得られることを固定する。
-describe("work-firestore-final fromFirestore の言語判定（detectWorkLanguage への委譲）", () => {
+describe("work-firestore fromFirestore の言語判定（detectWorkLanguage への委譲）", () => {
 	const cases: Array<{ name: string; doc: WorkDocument }> = [
 		{ name: "デフォルト(ja)", doc: createWorkDocument() },
 		{ name: "英語タイトル", doc: createWorkDocument({ title: "English Version" }) },
