@@ -7,14 +7,14 @@ pre-commit:
     # 自動フォーマット（ブロッキングなし、即座の修正）
     format:
       glob: "*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc}"
-      run: npx @biomejs/biome check --write --no-errors-on-unmatched --files-ignore-unknown=true --colors=off {staged_files}
+      run: pnpm exec biome check --write --no-errors-on-unmatched --files-ignore-unknown=true --colors=off {staged_files}
       stage_fixed: true
       fail_text: "コード整形に失敗しました"
 
     # シークレット混入チェック（検出時はコミットをブロック）
     # secretlint はデフォルトで引数を glob 解釈するため、実パス列には --no-glob が必須
     secretlint:
-      run: npx secretlint --no-glob {staged_files}
+      run: pnpm exec secretlint --no-glob {staged_files}
       fail_text: "シークレットの混入を検出しました。コミットを中止します"
 
 pre-push:
