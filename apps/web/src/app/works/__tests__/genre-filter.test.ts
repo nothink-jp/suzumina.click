@@ -65,12 +65,12 @@ describe("Genre Filter", () => {
 			const result = await getPopularGenres(3);
 
 			expect(result).toHaveLength(3);
-			expect(result[0].genre).toBe("中出し");
-			expect(result[0].count).toBe(3);
-			expect(result[1].genre).toBe("耳舐め");
-			expect(result[1].count).toBe(3);
-			expect(result[2].genre).toBe("バイノーラル");
-			expect(result[2].count).toBe(2);
+			expect(result[0]!.genre).toBe("中出し");
+			expect(result[0]!.count).toBe(3);
+			expect(result[1]!.genre).toBe("耳舐め");
+			expect(result[1]!.count).toBe(3);
+			expect(result[2]!.genre).toBe("バイノーラル");
+			expect(result[2]!.count).toBe(2);
 		});
 
 		it("should respect the limit parameter", async () => {
@@ -112,10 +112,10 @@ describe("Genre Filter", () => {
 			});
 
 			expect(filtered).toHaveLength(2);
-			expect(filtered[0].genres).toContain("中出し");
-			expect(filtered[0].genres).toContain("耳舐め");
-			expect(filtered[1].genres).toContain("中出し");
-			expect(filtered[1].genres).toContain("耳舐め");
+			expect(filtered[0]!.genres).toContain("中出し");
+			expect(filtered[0]!.genres).toContain("耳舐め");
+			expect(filtered[1]!.genres).toContain("中出し");
+			expect(filtered[1]!.genres).toContain("耳舐め");
 		});
 
 		it("should return empty array when no works match all genres", () => {

@@ -199,7 +199,7 @@ describe("WorkCard", () => {
 		const work = createWork({
 			creators: {
 				...createWork().creators,
-				voiceActors: [{ name: "名前のみ声優" }],
+				voiceActors: [{ id: "", name: "名前のみ声優" }],
 			},
 		});
 		render(<WorkCard work={work} />);

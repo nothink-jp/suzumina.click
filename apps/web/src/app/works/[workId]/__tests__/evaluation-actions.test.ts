@@ -415,7 +415,7 @@ describe("evaluation-actions", () => {
 				expect(result.success).toBe(true);
 
 				// Check that top10 was updated
-				const setCall = mockTransaction.set.mock.calls[0];
+				const setCall = mockTransaction.set.mock.calls[0]!;
 				expect(setCall[1].rankings[1].workId).toBe("RJ111");
 				expect(setCall[1].rankings[2].workId).toBe("RJ333");
 				expect(setCall[1].totalCount).toBe(2);

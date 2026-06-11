@@ -154,7 +154,7 @@ describe("Video Server Actions", () => {
 			const result = await getVideoTitles();
 
 			expect(result.videos).toHaveLength(2);
-			expect(result.videos[0].title).toBe("動画タイトル1");
+			expect(result.videos[0]!.title).toBe("動画タイトル1");
 			expect(result.total).toBe(2);
 		});
 
@@ -369,7 +369,7 @@ describe("Video Server Actions", () => {
 			});
 
 			expect(result.items).toHaveLength(1);
-			expect(result.items[0].title).toBe("歌動画");
+			expect(result.items[0]!.title).toBe("歌動画");
 		});
 
 		it("categoryNames は配列でも単一文字列でも正規化して絞り込む（正規化の対称化）", async () => {

@@ -2,7 +2,7 @@
  * Circle page server actions のテストスイート
  */
 
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from "vitest";
 
 // Mock conversion helper function
 
@@ -86,7 +86,7 @@ const mockCollection = vi.fn((_collectionName) => ({
 	orderBy: mockOrderBy,
 	limit: mockLimit,
 	get: mockGet,
-}));
+})) as unknown as Mock<(collectionName: string) => unknown>;
 
 // doc method setup
 mockDoc.mockReturnValue({
@@ -343,7 +343,7 @@ describe("Circle page server actions", () => {
 			expect(result.totalCount).toBe(3); // 全作品数
 			expect(result.filteredCount).toBe(1); // フィルター後の作品数
 			expect(result.works).toHaveLength(1);
-			expect(result.works[0].title).toBe("魔法少女の冒険");
+			expect(result.works[0]!.title).toBe("魔法少女の冒険");
 		});
 
 		it("声優名で検索できる", async () => {
@@ -453,7 +453,7 @@ describe("Circle page server actions", () => {
 
 			expect(result.filteredCount).toBe(1);
 			expect(result.works).toHaveLength(1);
-			expect(result.works[0].creators.voiceActors[0].name).toBe("田中太郎");
+			expect(result.works[0]!.creators.voiceActors[0]!.name).toBe("田中太郎");
 		});
 
 		it("ページネーションと検索を組み合わせて正しく動作する", async () => {
@@ -533,7 +533,7 @@ describe("Circle page server actions", () => {
 			expect(result.totalCount).toBe(5); // 全作品数
 			expect(result.filteredCount).toBe(3); // "冒険"を含む作品数
 			expect(result.works).toHaveLength(1); // ページ2には1件のみ（3件中の3件目）
-			expect(result.works[0].title).toBe("冒険作品3");
+			expect(result.works[0]!.title).toBe("冒険作品3");
 		});
 
 		it("検索語が見つからない場合は空の結果を返す", async () => {

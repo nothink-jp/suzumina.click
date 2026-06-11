@@ -32,7 +32,7 @@ function createMockVideo(overrides?: Partial<any>): VideoPlainObject {
 			youtubeUrl: "https://youtube.com/watch?v=abc123",
 		},
 	};
-	return { ...base, ...overrides } as VideoPlainObject;
+	return { ...base, ...overrides } as unknown as VideoPlainObject;
 }
 
 const loggedIn = { discordId: "user123", displayName: "テストユーザー" };

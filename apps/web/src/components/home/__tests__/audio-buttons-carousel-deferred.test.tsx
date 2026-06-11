@@ -12,7 +12,7 @@ vi.mock("@/components/audio/featured-audio-buttons-carousel", () => ({
 			<span data-testid="carousel-count">{audioButtons.length}</span>
 			{audioButtons.map((b) => (
 				<span key={b.id} data-testid="carousel-item">
-					{b.title}
+					{b.buttonText}
 				</span>
 			))}
 		</div>
@@ -22,7 +22,7 @@ vi.mock("@/components/audio/featured-audio-buttons-carousel", () => ({
 const buildAudioButton = (id: string, title: string): AudioButtonPlainObject =>
 	({
 		id,
-		title,
+		buttonText: title,
 		description: "",
 		tags: [],
 		sourceVideoId: "video-1",

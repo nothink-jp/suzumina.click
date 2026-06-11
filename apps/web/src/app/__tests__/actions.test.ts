@@ -119,8 +119,8 @@ describe("Homepage Actions", () => {
 			});
 			expect(result).toEqual(mockWorks);
 			expect(result).toHaveLength(2);
-			expect(result[0].title).toBe("テスト作品1");
-			expect(result[1].title).toBe("テスト作品2");
+			expect(result[0]!.title).toBe("テスト作品1");
+			expect(result[1]!.title).toBe("テスト作品2");
 		});
 
 		it("デフォルトのlimit値で動作する", async () => {
@@ -331,8 +331,8 @@ describe("Homepage Actions", () => {
 			expect(getVideoTitles).toHaveBeenCalledWith({ page: 1, limit: 10 });
 			expect(result).toEqual(mockVideos);
 			expect(result).toHaveLength(2);
-			expect(result[0].title).toBe("テスト動画1");
-			expect(result[1].title).toBe("テスト動画2");
+			expect(result[0]!.title).toBe("テスト動画1");
+			expect(result[1]!.title).toBe("テスト動画2");
 		});
 
 		it("デフォルトのlimit値で動作する", async () => {
@@ -455,7 +455,7 @@ describe("Homepage Actions", () => {
 			const mockAudioButtons = [
 				{
 					id: "audio-1",
-					title: "テスト音声ボタン1",
+					buttonText: "テスト音声ボタン1",
 					description: "テスト用の音声ボタン",
 					tags: ["テスト"],
 					sourceVideoId: "video-1",
@@ -477,7 +477,7 @@ describe("Homepage Actions", () => {
 				},
 				{
 					id: "audio-2",
-					title: "テスト音声ボタン2",
+					buttonText: "テスト音声ボタン2",
 					description: "テスト用の音声ボタン2",
 					tags: ["音楽"],
 					sourceVideoId: "video-2",
@@ -506,8 +506,8 @@ describe("Homepage Actions", () => {
 			expect(getRecentAudioButtons).toHaveBeenCalledWith(10);
 			expect(result).toEqual(mockAudioButtons);
 			expect(result).toHaveLength(2);
-			expect(result[0].title).toBe("テスト音声ボタン1");
-			expect(result[1].title).toBe("テスト音声ボタン2");
+			expect(result[0]!.buttonText).toBe("テスト音声ボタン1");
+			expect(result[1]!.buttonText).toBe("テスト音声ボタン2");
 		});
 
 		it("デフォルトのlimit値で動作する", async () => {

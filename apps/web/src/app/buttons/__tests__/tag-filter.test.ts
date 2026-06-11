@@ -69,12 +69,12 @@ describe("Audio Button Tag Filter", () => {
 			const result = await getPopularAudioButtonTags(3);
 
 			expect(result).toHaveLength(3);
-			expect(result[0].tag).toBe("かわいい");
-			expect(result[0].count).toBe(3);
-			expect(result[1].tag).toBe("甘え");
-			expect(result[1].count).toBe(3);
-			expect(result[2].tag).toBe("ツンデレ");
-			expect(result[2].count).toBe(2);
+			expect(result[0]!.tag).toBe("かわいい");
+			expect(result[0]!.count).toBe(3);
+			expect(result[1]!.tag).toBe("甘え");
+			expect(result[1]!.count).toBe(3);
+			expect(result[2]!.tag).toBe("ツンデレ");
+			expect(result[2]!.count).toBe(2);
 		});
 
 		it("should respect the limit parameter", async () => {
@@ -116,10 +116,10 @@ describe("Audio Button Tag Filter", () => {
 			});
 
 			expect(filtered).toHaveLength(2);
-			expect(filtered[0].tags).toContain("かわいい");
-			expect(filtered[0].tags).toContain("甘え");
-			expect(filtered[1].tags).toContain("かわいい");
-			expect(filtered[1].tags).toContain("甘え");
+			expect(filtered[0]!.tags).toContain("かわいい");
+			expect(filtered[0]!.tags).toContain("甘え");
+			expect(filtered[1]!.tags).toContain("かわいい");
+			expect(filtered[1]!.tags).toContain("甘え");
 		});
 
 		it("should return empty array when no buttons match all tags", () => {
@@ -151,7 +151,7 @@ describe("Audio Button Tag Filter", () => {
 			});
 
 			expect(filtered).toHaveLength(1);
-			expect(filtered[0].tags).toContain("かわいい");
+			expect(filtered[0]!.tags).toContain("かわいい");
 		});
 	});
 });

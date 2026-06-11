@@ -9,9 +9,6 @@ export default defineConfig({
 		globals: true,
 		environment: "happy-dom",
 		setupFiles: ["./vitest.setup.ts"],
-		typecheck: {
-			tsconfig: "tsconfig.test.json",
-		},
 		// 標準エラー出力を抑制
 		silent: true,
 		server: {

@@ -1,4 +1,4 @@
-import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
+import { type AudioButtonPlainObject, audioButtonTransformers } from "@suzumina.click/shared-types";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { UI_MESSAGES } from "@/constants/ui-messages";
@@ -8,7 +8,7 @@ import { FeaturedAudioButtonsCarousel } from "../featured-audio-buttons-carousel
 vi.mock("../AudioButtonWithPlayCount", () => ({
 	AudioButtonWithPlayCount: ({ audioButton }: { audioButton: AudioButtonPlainObject }) => (
 		<div data-testid="audio-button-with-favorite">
-			<span data-testid="audio-button-title">{audioButton.title}</span>
+			<span data-testid="audio-button-title">{audioButton.buttonText}</span>
 			<span data-testid="audio-button-id">{audioButton.id}</span>
 		</div>
 	),
@@ -18,14 +18,15 @@ vi.mock("../AudioButtonWithPlayCount", () => ({
 vi.mock("../audio-button-with-favorite-client", () => ({
 	AudioButtonWithFavoriteClient: ({ audioButton }: { audioButton: AudioButtonPlainObject }) => (
 		<div data-testid="audio-button-with-favorite">
-			<span data-testid="audio-button-title">{audioButton.title}</span>
+			<span data-testid="audio-button-title">{audioButton.buttonText}</span>
 			<span data-testid="audio-button-id">{audioButton.id}</span>
 		</div>
 	),
 }));
 
 describe("FeaturedAudioButtonsCarousel", () => {
-	const mockAudioButtons: AudioButtonPlainObject[] = [
+	// レガシー入力を fromFirestore に通して正規の AudioButtonPlainObject（_computed 含む）を生成する
+	const mockAudioButtons = [
 		{
 			id: "audio-1",
 			title: "テスト音声ボタン1",
@@ -45,15 +46,6 @@ describe("FeaturedAudioButtonsCarousel", () => {
 			favoriteCount: 1,
 			createdAt: "2023-01-01T00:00:00Z",
 			updatedAt: "2023-01-01T00:00:00Z",
-			_computed: {
-				isPopular: false,
-				engagementRate: 0.4,
-				engagementRatePercentage: 40,
-				popularityScore: 9,
-				searchableText: "テスト音声ボタン1 テスト テスト動画1 ユーザー1",
-				durationText: "10秒",
-				relativeTimeText: "1日前",
-			},
 		},
 		{
 			id: "audio-2",
@@ -74,17 +66,10 @@ describe("FeaturedAudioButtonsCarousel", () => {
 			favoriteCount: 0,
 			createdAt: "2023-01-02T00:00:00Z",
 			updatedAt: "2023-01-02T00:00:00Z",
-			_computed: {
-				isPopular: false,
-				engagementRate: 0.375,
-				engagementRatePercentage: 38,
-				popularityScore: 14,
-				searchableText: "テスト音声ボタン2 音楽 テスト動画2 ユーザー2",
-				durationText: "15秒",
-				relativeTimeText: "2日前",
-			},
 		},
-	];
+	]
+		.map((d) => audioButtonTransformers.fromFirestore(d))
+		.filter((b): b is AudioButtonPlainObject => b !== null);
 
 	it("音声ボタンが正しく表示される", () => {
 		render(<FeaturedAudioButtonsCarousel audioButtons={mockAudioButtons} />);
@@ -106,7 +91,7 @@ describe("FeaturedAudioButtonsCarousel", () => {
 
 		// flex-wrapコンテナが存在することを確認
 		const buttons = screen.getAllByTestId("audio-button-with-favorite");
-		const container = buttons[0].parentElement;
+		const container = buttons[0]!.parentElement;
 		expect(container).toHaveClass(
 			"flex",
 			"flex-wrap",
@@ -125,7 +110,7 @@ describe("FeaturedAudioButtonsCarousel", () => {
 	});
 
 	it("単一の音声ボタンも正しく表示される", () => {
-		const singleAudioButton = [mockAudioButtons[0]];
+		const singleAudioButton = [mockAudioButtons[0]!];
 		render(<FeaturedAudioButtonsCarousel audioButtons={singleAudioButton} />);
 
 		expect(screen.getByTestId("audio-button-with-favorite")).toBeInTheDocument();
@@ -141,8 +126,8 @@ describe("FeaturedAudioButtonsCarousel", () => {
 
 		// 各音声ボタンが正しいタイトルとIDを持つことを確認
 		audioButtons.forEach((button, index) => {
-			const audioButton = mockAudioButtons[index];
-			expect(button).toHaveTextContent(audioButton.title);
+			const audioButton = mockAudioButtons[index]!;
+			expect(button).toHaveTextContent(audioButton.buttonText);
 			expect(button).toHaveTextContent(audioButton.id);
 		});
 	});

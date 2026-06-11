@@ -245,7 +245,7 @@ describe("audio-buttons-firestore", () => {
 			expect(mockLimit).toHaveBeenCalledWith(40); // limit * 2
 
 			expect(result).toHaveLength(1);
-			expect(result[0].buttonText).toBe("音声ボタン1");
+			expect(result[0]!.buttonText).toBe("音声ボタン1");
 		});
 
 		it("should respect custom options", async () => {
