@@ -1,6 +1,6 @@
 "use server";
 
-import { requireAuth } from "@/components/system/protected-route";
+import { getCurrentUser } from "@/lib/auth/server";
 import { getFirestore } from "@/lib/firestore";
 import { toggleReaction } from "./reaction-toggle";
 
@@ -22,8 +22,14 @@ export async function toggleDislikeAction(audioButtonId: string): Promise<{
 export async function getLikeDislikeStatusAction(
 	audioButtonIds: string[],
 ): Promise<Map<string, { isLiked: boolean; isDisliked: boolean }>> {
+	// 認可ゲートの正本は getCurrentUser（SPR-195）。状態取得は未認証/無効ユーザーなら
+	// 空 Map を返すだけで redirect しない（requireAuth の NEXT_REDIRECT を catch で飲む構造を避ける）。
+	const user = await getCurrentUser();
+	if (!user?.discordId || !user.isActive) {
+		return new Map<string, { isLiked: boolean; isDisliked: boolean }>();
+	}
+
 	try {
-		const user = await requireAuth();
 		const firestore = getFirestore();
 
 		const statusMap = new Map<string, { isLiked: boolean; isDisliked: boolean }>();
@@ -67,7 +73,7 @@ export async function getLikeDislikeStatusAction(
 
 		return statusMap;
 	} catch (_error) {
-		// 認証エラーの場合は空のMapを返す
+		// Firestore エラー時も空の Map にフォールバック（表示は状態なしになる）
 		return new Map<string, { isLiked: boolean; isDisliked: boolean }>();
 	}
 }

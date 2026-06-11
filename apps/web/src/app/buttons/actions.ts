@@ -499,7 +499,9 @@ export async function updateAudioButtonTags(
 				throw new Error("音声ボタンのデータが無効です");
 			}
 
-			// タグ編集はログインユーザーなら誰でも可能
+			// 作成者チェックは意図的に省略（SPR-195）。タグは協働メタデータで、
+			// ログイン済みユーザーなら誰でも編集可能とする設計。本文編集（updateAudioButton）が
+			// creatorId を要求するのと非対称なのは「タグ=共有・本体=所有」の区別による。
 
 			await docRef.update({
 				tags,

@@ -1,6 +1,6 @@
 "use server";
 
-import { requireAuth } from "@/components/system/protected-route";
+import { getCurrentUser } from "@/lib/auth/server";
 import { getFirestore } from "@/lib/firestore";
 import { updateCounter } from "@/lib/firestore-helpers";
 import * as logger from "@/lib/logger";
@@ -38,7 +38,15 @@ export async function toggleReaction(
 	const opposite: ReactionKind = kind === "like" ? "dislike" : "like";
 
 	try {
-		const user = await requireAuth();
+		// 認可ゲートの正本は getCurrentUser の null チェック（SPR-195）。
+		// requireAuth() は redirect() を投げるため try/catch 内で呼ぶと NEXT_REDIRECT が
+		// 飲み込まれる。書き込み系 Server Action は redirect せず error を返す契約に揃える。
+		// getCurrentUser は isActive を絞らないため、従来 requireAuth が弾いていた無効ユーザーは
+		// 明示的にブロックする（リファクタで認可を緩めない）。
+		const user = await getCurrentUser();
+		if (!user?.discordId || !user.isActive) {
+			return { success: false, error: "ログインが必要です" };
+		}
 		const firestore = getFirestore();
 
 		const targetRef = firestore

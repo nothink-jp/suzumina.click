@@ -7,7 +7,7 @@ vi.mock("../reaction-toggle", () => ({ toggleReaction: mockToggleReaction }));
 
 vi.mock("@/lib/firestore", () => ({ getFirestore: vi.fn() }));
 
-vi.mock("@/components/system/protected-route", () => ({ requireAuth: vi.fn() }));
+vi.mock("@/lib/auth/server", () => ({ getCurrentUser: vi.fn() }));
 
 vi.mock("@/lib/logger", () => ({
 	info: vi.fn(),
@@ -15,7 +15,7 @@ vi.mock("@/lib/logger", () => ({
 	error: vi.fn(),
 }));
 
-const mockRequireAuth = vi.mocked(await import("@/components/system/protected-route")).requireAuth;
+const mockGetCurrentUser = vi.mocked(await import("@/lib/auth/server")).getCurrentUser;
 
 describe("dislikes actions", () => {
 	beforeEach(() => {
@@ -49,8 +49,17 @@ describe("dislikes actions", () => {
 	});
 
 	describe("getLikeDislikeStatusAction", () => {
-		it("認証されていない場合は空のMapが返される", async () => {
-			mockRequireAuth.mockRejectedValue(new Error("認証が必要です"));
+		it("未認証（getCurrentUser が null）は空の Map を返す（redirect しない・SPR-195）", async () => {
+			mockGetCurrentUser.mockResolvedValue(null);
+
+			const result = await getLikeDislikeStatusAction(["test-id"]);
+
+			expect(result).toBeInstanceOf(Map);
+			expect(result.size).toBe(0);
+		});
+
+		it("無効ユーザー（isActive=false）も空の Map を返す（認可を緩めない・SPR-195）", async () => {
+			mockGetCurrentUser.mockResolvedValue({ discordId: "u1", isActive: false } as never);
 
 			const result = await getLikeDislikeStatusAction(["test-id"]);
 
@@ -64,9 +73,10 @@ describe("dislikes actions", () => {
 				name: "Test User",
 				email: "test@example.com",
 				image: null,
+				isActive: true,
 			};
 
-			mockRequireAuth.mockResolvedValue(mockUser as never);
+			mockGetCurrentUser.mockResolvedValue(mockUser as never);
 
 			// Firestoreのモックを設定
 			const mockFirestore = await import("@/lib/firestore");
