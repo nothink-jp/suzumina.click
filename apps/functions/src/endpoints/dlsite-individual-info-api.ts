@@ -21,6 +21,7 @@ import {
 } from "../services/dlsite/unified-data-processor";
 import { collectWorkIdsForProduction } from "../services/dlsite/work-id-collector";
 import { chunkArray } from "../shared/array-utils";
+import { withClearedUndefined } from "../shared/firestore-write";
 import * as logger from "../shared/logger";
 
 // 統合メタデータ保存用の定数
@@ -81,10 +82,14 @@ async function getOrCreateUnifiedMetadata(): Promise<CollectionMetadata> {
 
 /**
  * 統合データ収集メタデータの更新
+ *
+ * undefined フィールドは FieldValue.delete() へ変換してから書き込む。
+ * ignoreUndefinedProperties 環境では undefined がスキップされ旧値が残る（sticky）ため、
+ * メタデータをクリア可能にする（`withClearedUndefined` 参照）。
  */
 async function updateUnifiedMetadata(update: Partial<CollectionMetadata>): Promise<void> {
 	const metadataRef = firestore.collection(METADATA_COLLECTION).doc(UNIFIED_METADATA_DOC_ID);
-	await metadataRef.update(update);
+	await metadataRef.update(withClearedUndefined(update));
 }
 
 /**
