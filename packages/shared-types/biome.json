@@ -3,21 +3,6 @@
 	"root": false,
 	"linter": {
 		"rules": {
-			"suspicious": {
-				"noExplicitAny": "error"
-			},
-			"style": {
-				"noInferrableTypes": "error",
-				"useAsConstAssertion": "error",
-				"noParameterAssign": "error",
-				"useDefaultParameterLast": "error",
-				"useEnumInitializers": "error",
-				"useSelfClosingElements": "error",
-				"useSingleVarDeclarator": "error",
-				"noUnusedTemplateLiteral": "error",
-				"useNumberNamespace": "error",
-				"noUselessElse": "error"
-			},
 			"correctness": {
 				"noUnusedVariables": "error"
 			}

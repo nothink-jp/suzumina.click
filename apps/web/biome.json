@@ -3,29 +3,9 @@
 	"root": false,
 	"overrides": [
 		{
-			"includes": [
-				"src/app/**/page.tsx",
-				"src/app/**/layout.tsx",
-				"src/app/**/loading.tsx",
-				"src/app/**/error.tsx",
-				"src/app/**/not-found.tsx",
-				"src/app/**/route.ts"
-			],
-			"linter": {
-				"rules": {
-					"style": {
-						"noDefaultExport": "off"
-					}
-				}
-			}
-		},
-		{
 			"includes": ["**/*.config.js", "**/*.config.ts", "**/*.config.mjs"],
 			"linter": {
 				"rules": {
-					"style": {
-						"noDefaultExport": "off"
-					},
 					"suspicious": {
 						"noExplicitAny": "off"
 					}
@@ -63,16 +43,6 @@
 	"linter": {
 		"rules": {
 			"style": {
-				"noParameterAssign": "error",
-				"useAsConstAssertion": "error",
-				"useDefaultParameterLast": "error",
-				"useEnumInitializers": "error",
-				"useSelfClosingElements": "error",
-				"useSingleVarDeclarator": "error",
-				"noUnusedTemplateLiteral": "error",
-				"useNumberNamespace": "error",
-				"noInferrableTypes": "error",
-				"noUselessElse": "error",
 				"noRestrictedImports": {
 					"level": "error",
 					"options": {
@@ -88,12 +58,6 @@
 						}
 					}
 				}
-			},
-			"complexity": {
-				"noExcessiveCognitiveComplexity": "error"
-			},
-			"suspicious": {
-				"noExplicitAny": "error"
 			}
 		}
 	}
