@@ -19,7 +19,7 @@
 			"!!**/dist",
 			"!!**/.next",
 			"!!apps/functions/lib",
-			"!!**/better-auth/firestore-adapter.ts",
+			"!!**/lib/better-auth/firestore-adapter.ts",
 			"!!**/storybook-static",
 			"!!**/coverage",
 			"!!**/build",
