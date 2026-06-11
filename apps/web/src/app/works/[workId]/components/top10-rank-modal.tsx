@@ -11,6 +11,7 @@ import {
 import { cn } from "@suzumina.click/ui/lib/utils";
 import { AlertTriangle } from "lucide-react";
 import { useEffect, useState } from "react";
+import { error as logError } from "@/lib/logger";
 import { getUserTop10List } from "../evaluation-actions";
 
 interface Top10RankModalProps {
@@ -32,16 +33,24 @@ export function Top10RankModal({
 }: Top10RankModalProps) {
 	const [top10List, setTop10List] = useState<FrontendUserTop10List | null>(null);
 	const [loading, setLoading] = useState(false);
+	const [loadError, setLoadError] = useState(false);
 
 	useEffect(() => {
 		if (isOpen) {
 			setLoading(true);
-			void getUserTop10List()
+			setLoadError(false);
+			getUserTop10List()
 				.then(setTop10List)
+				.catch((e) => {
+					// 取得失敗時は空スロット表示で誤解させず、明示的にエラー状態にする
+					logError("Top10 リストの取得に失敗しました", e);
+					setLoadError(true);
+				})
 				.finally(() => setLoading(false));
 		} else {
 			// モーダルが閉じられた時に状態をリセット
 			setTop10List(null);
+			setLoadError(false);
 			setLoading(false);
 		}
 	}, [isOpen]);
@@ -162,6 +171,12 @@ export function Top10RankModal({
 					{loading ? (
 						<div className="flex h-40 items-center justify-center">
 							<div className="text-sm text-gray-500">読み込み中...</div>
+						</div>
+					) : loadError ? (
+						<div className="flex h-40 flex-col items-center justify-center gap-2 text-center">
+							<AlertTriangle className="h-6 w-6 text-orange-600" />
+							<p className="text-sm text-gray-700">10選リストの読み込みに失敗しました</p>
+							<p className="text-xs text-gray-500">時間をおいて再度お試しください</p>
 						</div>
 					) : (
 						<div className="space-y-2">
