@@ -58,6 +58,15 @@ describe("dislikes actions", () => {
 			expect(result.size).toBe(0);
 		});
 
+		it("無効ユーザー（isActive=false）も空の Map を返す（認可を緩めない・SPR-195）", async () => {
+			mockGetCurrentUser.mockResolvedValue({ discordId: "u1", isActive: false } as never);
+
+			const result = await getLikeDislikeStatusAction(["test-id"]);
+
+			expect(result).toBeInstanceOf(Map);
+			expect(result.size).toBe(0);
+		});
+
 		it("認証されている場合はステータスが返される", async () => {
 			const mockUser = {
 				discordId: "123456789012345678",
