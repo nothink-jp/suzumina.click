@@ -4,7 +4,6 @@ import {
 	convertToAudioButtonPlainObject,
 	getAudioButtonsByUser,
 	getUserAudioButtonStats,
-	incrementPlayCount,
 } from "../audio-buttons-firestore";
 import { getFirestore } from "../firestore";
 
@@ -298,28 +297,6 @@ describe("audio-buttons-firestore", () => {
 			await expect(getAudioButtonsByUser("user-123")).rejects.toThrow(
 				"音声ボタン一覧の取得に失敗しました",
 			);
-		});
-	});
-
-	describe("incrementPlayCount", () => {
-		it("should increment play count successfully", async () => {
-			mockUpdate.mockResolvedValue(undefined);
-
-			await incrementPlayCount("button-123");
-
-			expect(mockCollection).toHaveBeenCalledWith("audioButtons");
-			expect(mockDoc).toHaveBeenCalledWith("button-123");
-			expect(mockUpdate).toHaveBeenCalledWith({
-				"stats.playCount": expect.objectContaining({ operand: 1 }),
-				updatedAt: expect.any(String),
-			});
-		});
-
-		it("should handle update errors silently", async () => {
-			mockUpdate.mockRejectedValue(new Error("Update failed"));
-
-			// Should not throw error
-			await expect(incrementPlayCount("button-123")).resolves.toBeUndefined();
 		});
 	});
 
