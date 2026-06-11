@@ -59,26 +59,6 @@ export function normalizeOptions(
 }
 
 /**
- * フィルターが有効かチェック
- */
-export function isFilterEnabled(
-	_filterKey: string,
-	config: FilterConfig,
-	allFilters: Record<string, unknown>,
-): boolean {
-	if (!config.enabled) return true;
-	return config.enabled(allFilters);
-}
-
-/**
- * フィルター値のバリデーション
- */
-export function validateFilterValue(value: unknown, config: FilterConfig): boolean {
-	if (!config.validate) return true;
-	return config.validate(value);
-}
-
-/**
  * デフォルトフィルター値を生成
  */
 // Helper function to get default value for a single filter

@@ -88,9 +88,6 @@ export interface FilterConfig {
 export interface SortOption {
 	value: string;
 	label: string;
-	field?: string;
-	order?: "asc" | "desc";
-	compareFn?: <T>(a: T, b: T) => number;
 }
 
 export type SortConfig = string | SortOption;

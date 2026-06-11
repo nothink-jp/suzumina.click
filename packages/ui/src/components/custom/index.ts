@@ -16,20 +16,14 @@ export type {
 } from "./configurable-list/types";
 // Hooks are not exported from index to avoid Server Component issues
 // Import them directly from the component that uses them if needed
-export {
-	calculatePagination,
-	createDataAdapter,
-	wrapLegacyFetchData,
-} from "./configurable-list/utils/data-adapter";
+export { calculatePagination } from "./configurable-list/utils/data-adapter";
 export {
 	generateOptions,
 	generateYearOptions,
 	getDefaultFilterValues,
 	hasActiveFilters,
-	isFilterEnabled,
 	normalizeOptions,
 	transformFilterValue,
-	validateFilterValue,
 } from "./configurable-list/utils/filter-helpers";
 
 // Utility components
