@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock conversion helper function
 const mockConvertToWorkPlainObject = (data: any) => {
-	if (!data || !data.id || !data.productId) return null;
+	if (!data?.id || !data.productId) return null;
 	return {
 		...data,
 		price: data.price || {
@@ -59,7 +59,7 @@ vi.mock("@suzumina.click/shared-types", () => ({
 		fromFirestore: vi.fn((data) => {
 			// Use the mock helper function to transform data
 			const mockConvertToWorkPlainObject = (data: any) => {
-				if (!data || !data.id || !data.productId) return null;
+				if (!data?.id || !data.productId) return null;
 				return {
 					...data,
 					price: data.price || {

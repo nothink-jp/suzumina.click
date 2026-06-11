@@ -347,7 +347,7 @@ export async function getAudioButtonById(
 			}
 
 			const data = doc.data();
-			if (!data || !data.isPublic) {
+			if (!data?.isPublic) {
 				throw new Error("この音声ボタンは非公開です");
 			}
 
