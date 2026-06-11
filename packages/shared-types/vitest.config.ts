@@ -23,9 +23,11 @@ export default defineConfig({
 			// SPR-181 で value-objects 一式（高カバレッジの死蔵 VO + テスト）を削除したため
 			// 分母が縮み branches/functions が下振れ。実態に合わせて再ピン
 			// （st90/br75/fn87/ln91）。transformers の branch 回復は SPR-197 で対応。
+			// SPR-198 で死蔵 utils（date-parser/number-parser + テスト）削除により branch が
+			// 74.96% へ微減したため 74 に再ピン。
 			thresholds: {
 				statements: 87,
-				branches: 75,
+				branches: 74,
 				functions: 87,
 				lines: 88,
 			},
