@@ -419,11 +419,3 @@ export function getNextUserAgent(): string {
 export function generateDLsiteHeaders(referer?: string): Record<string, string> {
 	return getUserAgentManager().generateHeaders(referer);
 }
-
-/**
- * User-Agent使用統計のサマリーを出力（大量処理完了時用）
- * 注: ログ削減のため出力を省略
- */
-export function logUserAgentSummary(): void {
-	// User-Agent統計サマリーログは省略（ログ削減）
-}

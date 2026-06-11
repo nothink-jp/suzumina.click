@@ -272,15 +272,3 @@ export function isLastPageFromPageInfo(
 
 	return isLast;
 }
-
-/**
- * AJAX レスポンスから実際の作品数を推定
- *
- * @param html - search_result のHTMLコンテンツ
- * @returns 推定される作品数（最大100件/ページ）
- */
-export function estimateItemCountFromHtml(html: string): number {
-	// data-list_item_product_id属性を持つli要素の数をカウント（100件/ページ対応）
-	const matches = html.match(/data-list_item_product_id="RJ\d+"/g);
-	return matches ? matches.length : 0;
-}

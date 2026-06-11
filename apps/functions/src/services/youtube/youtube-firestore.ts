@@ -5,7 +5,6 @@
  * 新規データには_v2Migrationフラグを自動付与
  */
 
-import type { FirestoreServerVideoData } from "@suzumina.click/shared-types";
 import { videoToFirestore } from "@suzumina.click/shared-types";
 import type { youtube_v3 } from "googleapis";
 import firestore from "../../infrastructure/database/firestore";
@@ -195,33 +194,4 @@ async function saveChannelVideos(
 	}
 
 	return { savedCount };
-}
-
-/**
- * 既存の動画データをEntity 形式で更新
- *
- * @param existingData - 既存のFirestoreデータ
- * @param newVideo - YouTube APIから取得した新しい動画データ
- * @returns 更新されたFirestoreデータ
- */
-export function updateVideoWith(
-	_existingData: FirestoreServerVideoData,
-	newVideo: youtube_v3.Schema$Video,
-): FirestoreServerVideoData | null {
-	try {
-		// VideoPlainObjectに変換
-		const videoPlainObject = VideoMapper.fromYouTubeAPI(newVideo);
-		if (!videoPlainObject) {
-			return null;
-		}
-
-		// Firestore用データに変換
-		return videoToFirestore(videoPlainObject);
-	} catch (error) {
-		logger.error("動画更新エラー", {
-			videoId: newVideo.id,
-			error: error instanceof Error ? error.message : String(error),
-		});
-		return null;
-	}
 }

@@ -1,10 +1,6 @@
 import type { youtube_v3 } from "googleapis";
 import { describe, expect, it, vi } from "vitest";
-import {
-	mapYouTubeToVideoPlainObject,
-	mapYouTubeVideosWithErrors,
-	VideoMapper,
-} from "../video-mapper";
+import { mapYouTubeToVideoPlainObject, VideoMapper } from "../video-mapper";
 
 vi.mock("../../../shared/logger", () => ({
 	info: vi.fn(),
@@ -167,31 +163,6 @@ describe("mapYouTubeToVideoPlainObject", () => {
 		it("サムネイル無しは空文字", () => {
 			expect(thumbUrl({})).toBe("");
 		});
-	});
-});
-
-describe("mapYouTubeVideosWithErrors", () => {
-	it("id 欠落・snippet 欠落をエラーとして収集する", () => {
-		const result = mapYouTubeVideosWithErrors([
-			{} as youtube_v3.Schema$Video, // id 欠落
-			{ id: "noSnippet" } as youtube_v3.Schema$Video, // snippet 欠落
-			ytVideo({ id: "ok1" }),
-		]);
-		expect(result.totalProcessed).toBe(3);
-		expect(result.successCount).toBe(1);
-		expect(result.failureCount).toBe(2);
-		expect(result.errors.map((e) => e.field).sort()).toEqual(["id", "snippet"]);
-		expect(result.videos[0]?.videoId).toBe("ok1");
-	});
-
-	it("playlistTags / userTags マップを引き当てる", () => {
-		const result = mapYouTubeVideosWithErrors(
-			[ytVideo({ id: "v1" })],
-			new Map([["v1", ["pl"]]]),
-			new Map([["v1", ["ut"]]]),
-		);
-		expect(result.videos[0]?.tags?.playlistTags).toEqual(["pl"]);
-		expect(result.videos[0]?.tags?.userTags).toEqual(["ut"]);
 	});
 });
 

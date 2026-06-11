@@ -44,13 +44,9 @@ vi.mock("../../../shared/logger", () => ({
 }));
 
 import {
-	checkMultipleWorksExist,
-	checkWorkExists,
 	getExistingWorksMap,
 	getWorkFromFirestore,
-	getWorksStatistics,
 	saveWorksToFirestore,
-	searchWorksFromFirestore,
 } from "../dlsite-firestore";
 
 // モックの参照を取得
@@ -188,78 +184,6 @@ describe("dlsite-firestore", () => {
 		});
 	});
 
-	describe("searchWorksFromFirestore", () => {
-		it("検索条件で作品を取得できる", async () => {
-			const mockDocs = [
-				{ id: "RJ12345", data: () => sampleWork },
-				{ id: "RJ54321", data: () => ({ ...sampleWork, id: "RJ54321" }) },
-			];
-			mockQuery.get.mockResolvedValue({ docs: mockDocs });
-
-			const result = await searchWorksFromFirestore({
-				category: "SOU",
-				limit: 10,
-			});
-
-			expect(result).toHaveLength(2);
-			expect(mockQuery.where).toHaveBeenCalledWith("category", "==", "SOU");
-			expect(mockQuery.limit).toHaveBeenCalledWith(10);
-		});
-
-		it("検索条件なしで全作品を取得できる", async () => {
-			mockQuery.get.mockResolvedValue({ docs: [] });
-
-			const result = await searchWorksFromFirestore({});
-
-			expect(result).toEqual([]);
-			expect(mockQuery.where).not.toHaveBeenCalled();
-		});
-	});
-
-	describe("getWorksStatistics", () => {
-		it("作品統計情報を正常に取得できる", async () => {
-			const mockDocs = [
-				{
-					data: () => ({
-						...sampleWork,
-						price: { current: 1000, currency: "JPY" },
-						category: "SOU",
-						updatedAt: "2024-01-01T00:00:00Z",
-					}),
-				},
-				{
-					data: () => ({
-						...sampleWork,
-						price: { current: 2000, currency: "JPY" },
-						category: "MOV",
-						updatedAt: "2024-01-02T00:00:00Z",
-					}),
-				},
-			];
-			mockQuery.get.mockResolvedValue({ docs: mockDocs, size: 2 });
-
-			const result = await getWorksStatistics();
-
-			expect(result).toMatchObject({
-				totalWorks: 2,
-				categoryCounts: expect.any(Object),
-				lastUpdated: expect.any(String),
-			});
-		});
-
-		it("作品がない場合の統計情報", async () => {
-			mockQuery.get.mockResolvedValue({ docs: [], size: 0 });
-
-			const result = await getWorksStatistics();
-
-			expect(result).toMatchObject({
-				totalWorks: 0,
-				categoryCounts: {},
-				lastUpdated: null,
-			});
-		});
-	});
-
 	describe("getExistingWorksMap", () => {
 		it("既存作品データのマップを正常に取得できる", async () => {
 			const productIds = ["RJ12345", "RJ54321"];
@@ -383,93 +307,6 @@ describe("dlsite-firestore", () => {
 			mockBatch.commit.mockRejectedValue(new Error("Batch commit failed"));
 
 			await expect(saveWorksToFirestore([sampleWork])).rejects.toThrow();
-		});
-
-		it("searchWorksFromFirestoreでエラーが発生した場合", async () => {
-			// モックをリセットしてエラーを設定
-			mockQuery.get.mockReset();
-			mockQuery.get.mockRejectedValue(new Error("Search failed"));
-
-			await expect(searchWorksFromFirestore({ category: "SOU" })).rejects.toThrow("作品検索に失敗");
-		});
-
-		it("getWorksStatisticsでエラーが発生した場合", async () => {
-			// モックをリセットしてエラーを設定
-			mockQuery.get.mockReset();
-			mockQuery.get.mockRejectedValue(new Error("Statistics failed"));
-
-			await expect(getWorksStatistics()).rejects.toThrow("作品統計情報の取得に失敗");
-		});
-	});
-
-	describe("checkWorkExists", () => {
-		it("作品が存在する場合はtrueを返す", async () => {
-			const mockDocRef = {
-				get: vi.fn().mockResolvedValue({ exists: true }),
-			};
-			mockDoc.mockReturnValue(mockDocRef);
-
-			const result = await checkWorkExists("RJ12345");
-
-			expect(result).toBe(true);
-		});
-
-		it("作品が存在しない場合はfalseを返す", async () => {
-			const mockDocRef = {
-				get: vi.fn().mockResolvedValue({ exists: false }),
-			};
-			mockDoc.mockReturnValue(mockDocRef);
-
-			const result = await checkWorkExists("RJ99999");
-
-			expect(result).toBe(false);
-		});
-
-		it("エラーが発生した場合はfalseを返す", async () => {
-			const mockDocRef = {
-				get: vi.fn().mockRejectedValue(new Error("Firestore error")),
-			};
-			mockDoc.mockReturnValue(mockDocRef);
-
-			const result = await checkWorkExists("RJ12345");
-
-			expect(result).toBe(false);
-		});
-	});
-
-	describe("checkMultipleWorksExist", () => {
-		it("複数作品の存在確認を正常に実行する", async () => {
-			const mockDocs = [
-				{ id: "doc1", data: () => ({ productId: "RJ123456" }) },
-				{ id: "doc2", data: () => ({ productId: "RJ123458" }) },
-			];
-
-			mockQuery.get.mockResolvedValue({
-				docs: mockDocs,
-			});
-
-			const productIds = ["RJ123456", "RJ123457", "RJ123458"];
-			const result = await checkMultipleWorksExist(productIds);
-
-			expect(result.get("RJ123456")).toBe(true);
-			expect(result.get("RJ123457")).toBe(false);
-			expect(result.get("RJ123458")).toBe(true);
-		});
-
-		it("空配列の場合は空のMapを返す", async () => {
-			const result = await checkMultipleWorksExist([]);
-
-			expect(result.size).toBe(0);
-		});
-
-		it("エラーが発生した場合は全てfalseで返す", async () => {
-			mockQuery.get.mockRejectedValue(new Error("Firestore error"));
-
-			const productIds = ["RJ123456", "RJ123457"];
-			const result = await checkMultipleWorksExist(productIds);
-
-			expect(result.get("RJ123456")).toBe(false);
-			expect(result.get("RJ123457")).toBe(false);
 		});
 	});
 });
