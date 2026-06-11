@@ -1,6 +1,6 @@
 /**
  * 3層タグ → 動画一覧ページの href ビルダー（純関数）。
- * 層に応じたフィルターパラメータを付与し、ThreeLayerTagDisplay の tagHref に渡す。
+ * 層に応じたフィルターパラメータを付与し、VideoTagDisplay の tagHref に渡す。
  * VideoCard・動画タグ表示のタグ遷移先を一元化する（正本）。
  * 遷移先は /videos で、getVideosList の filterVideos が各層タグで絞り込む。
  */

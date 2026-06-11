@@ -6,7 +6,7 @@
 "use client";
 
 import type { VideoPlainObject } from "@suzumina.click/shared-types";
-import { ThreeLayerTagDisplay } from "@suzumina.click/ui/components/custom/three-layer-tag-display";
+import { VideoTagDisplay } from "@suzumina.click/ui/components/custom/three-layer-tag-display";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { getYouTubeCategoryName } from "@suzumina.click/ui/lib/youtube-category-utils";
 import { Edit } from "lucide-react";
@@ -74,7 +74,7 @@ export function VideoUserTagEditor({ video }: VideoUserTagEditorProps) {
 	return (
 		<div className="space-y-6">
 			{/* 動画タグ表示 */}
-			<ThreeLayerTagDisplay
+			<VideoTagDisplay
 				playlistTags={video.tags?.playlistTags || []}
 				userTags={video.tags?.userTags || []}
 				categoryId={video.categoryId}

@@ -25,7 +25,7 @@ vi.mock("next/navigation", () => ({
 // 子コンポーネントは本体ロジックの検証外なのでスタブ化する。
 // onTagClick / onUpdateTags のコールバックを発火できるようにしておく。
 vi.mock("@suzumina.click/ui/components/custom/three-layer-tag-display", () => ({
-	ThreeLayerTagDisplay: ({
+	VideoTagDisplay: ({
 		onTagClick,
 	}: {
 		onTagClick: (tag: string, layer: "playlist" | "user" | "category") => void;
@@ -204,7 +204,7 @@ describe("VideoUserTagEditor", () => {
 		mockUseSession(loggedIn);
 		render(<VideoUserTagEditor video={createVideo()} />);
 
-		// ThreeLayerTagDisplay スタブが onTagClick("ASMR", "user") を発火する
+		// VideoTagDisplay スタブが onTagClick("ASMR", "user") を発火する
 		fireEvent.click(screen.getByText("tag-display"));
 
 		expect(mockPush).toHaveBeenCalledWith(buildTagSearchHref("ASMR", "user"));

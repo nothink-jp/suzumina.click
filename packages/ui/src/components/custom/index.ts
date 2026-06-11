@@ -44,7 +44,7 @@ export { NotImplementedOverlay } from "./not-implemented-overlay";
 export type { TagSuggestion } from "./tag-input";
 export { TagInput } from "./tag-input";
 export { TagList } from "./tag-list";
-export { ThreeLayerTagDisplay } from "./three-layer-tag-display";
+export { VideoTagDisplay } from "./three-layer-tag-display";
 
 // Time and validation components
 export type { TimeDisplayProps } from "./time-display";

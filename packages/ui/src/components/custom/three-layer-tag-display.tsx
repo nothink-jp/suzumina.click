@@ -1,7 +1,7 @@
 /**
  * VideoTagDisplay - 動画タグ表示コンポーネント
  * 配信タイプ、みんなのタグ、ジャンルを統合表示
- * 旧名: ThreeLayerTagDisplay（後方互換性のため名前は残す）
+ * 正本は VideoTagDisplay（旧名 ThreeLayerTagDisplay の別名は SPR-200 で撤去）
  */
 
 "use client";
@@ -181,7 +181,3 @@ export function VideoTagDisplay({
 		</div>
 	);
 }
-
-// 後方互換性のため旧名も残す
-export const ThreeLayerTagDisplay = VideoTagDisplay;
-export type ThreeLayerTagDisplayProps = VideoTagDisplayProps;

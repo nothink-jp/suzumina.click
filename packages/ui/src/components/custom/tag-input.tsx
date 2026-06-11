@@ -396,7 +396,7 @@ export function TagInput({
 						)}
 						maxLength={maxTagLength}
 						aria-invalid={!!error}
-						aria-describedby={error ? "tag-input-error" : undefined}
+						aria-describedby={error ? errorId : undefined}
 						aria-expanded={showSuggestions}
 						aria-autocomplete="list"
 						aria-haspopup="listbox"
