@@ -3,7 +3,6 @@
  */
 
 import type { Query } from "@google-cloud/firestore";
-import { FieldValue } from "@google-cloud/firestore";
 import type {
 	AddFavoriteInput,
 	FavoriteListResult,
@@ -13,6 +12,7 @@ import type {
 	RemoveFavoriteInput,
 } from "@suzumina.click/shared-types";
 import { getFirestore } from "./firestore";
+import { updateCounter } from "./firestore-helpers";
 import { error as logError } from "./logger";
 
 /**
@@ -78,17 +78,12 @@ export async function addFavorite(
 			.add(favoriteData);
 
 		// 音声ボタンのお気に入り数を増加 (Fire-and-Forget パターン)
-		// revalidatePath を使用せず、バックグラウンドで非同期実行
-		firestore
-			.collection("audioButtons")
-			.doc(input.audioButtonId)
-			.update({
-				favoriteCount: FieldValue.increment(1),
-				updatedAt: new Date().toISOString(),
-			})
-			.catch((error) => {
+		// 正本は stats.favoriteCount（読み手が優先するドットパス）。like/play と同じ updateCounter を使う
+		updateCounter("audioButtons", input.audioButtonId, "stats.favoriteCount", 1, { min: 0 }).catch(
+			(error) => {
 				handleFireAndForgetError("お気に入り数増加", { audioButtonId: input.audioButtonId }, error);
-			});
+			},
+		);
 
 		return { success: true, favoriteId: docRef.id };
 	} catch (error) {
@@ -128,17 +123,11 @@ export async function removeFavorite(
 		await favoriteDoc.ref.delete();
 
 		// 音声ボタンのお気に入り数を減少 (Fire-and-Forget パターン)
-		// revalidatePath を使用せず、バックグラウンドで非同期実行
-		firestore
-			.collection("audioButtons")
-			.doc(input.audioButtonId)
-			.update({
-				favoriteCount: FieldValue.increment(-1),
-				updatedAt: new Date().toISOString(),
-			})
-			.catch((error) => {
+		updateCounter("audioButtons", input.audioButtonId, "stats.favoriteCount", -1, { min: 0 }).catch(
+			(error) => {
 				handleFireAndForgetError("お気に入り数減少", { audioButtonId: input.audioButtonId }, error);
-			});
+			},
+		);
 
 		return { success: true };
 	} catch (error) {
