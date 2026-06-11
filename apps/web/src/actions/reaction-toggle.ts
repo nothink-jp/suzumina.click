@@ -52,12 +52,19 @@ export async function toggleReaction(
 			.collection(SUBCOLLECTION[opposite])
 			.doc(audioButtonId);
 
-		const [targetDoc, oppositeDoc] = await Promise.all([targetRef.get(), oppositeRef.get()]);
-		const isActive = targetDoc.exists;
-		const hasOpposite = oppositeDoc.exists;
-
-		// トランザクションで整合性を保つ（相互排他）
+		// 存在チェックと書き込みはトランザクション内で行い、相互排他の判定を atomic にする。
+		// 以前は transaction 外で get していたため、並行トグルで二重 set/delete になる
+		// TOCTOU があった（SPR-192 レビュー指摘）。
+		let isActive = false;
+		let hasOpposite = false;
 		await firestore.runTransaction(async (transaction) => {
+			const [targetDoc, oppositeDoc] = await Promise.all([
+				transaction.get(targetRef),
+				transaction.get(oppositeRef),
+			]);
+			isActive = targetDoc.exists;
+			hasOpposite = oppositeDoc.exists;
+
 			if (isActive) {
 				transaction.delete(targetRef);
 			} else {

@@ -20,9 +20,16 @@ function setupFirestore({
 	likeExists: boolean;
 	dislikeExists: boolean;
 }) {
-	const tx = { set: vi.fn(), delete: vi.fn() };
-	const likeRef = { get: vi.fn().mockResolvedValue({ exists: likeExists }) };
-	const dislikeRef = { get: vi.fn().mockResolvedValue({ exists: dislikeExists }) };
+	const likeRef = { id: "like" };
+	const dislikeRef = { id: "dislike" };
+	// 存在チェックは transaction.get 経由（TOCTOU 修正・SPR-192）。ref の同一性で存在を返し分ける。
+	const tx = {
+		set: vi.fn(),
+		delete: vi.fn(),
+		get: vi.fn((ref: unknown) =>
+			Promise.resolve({ exists: ref === likeRef ? likeExists : dislikeExists }),
+		),
+	};
 	mockGetFirestore.mockReturnValue({
 		collection: () => ({
 			doc: () => ({
