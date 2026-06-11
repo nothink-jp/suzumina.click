@@ -1,7 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { ThreeLayerTagDisplay, VideoTagDisplay } from "../three-layer-tag-display";
+import { VideoTagDisplay } from "../three-layer-tag-display";
 
 describe("VideoTagDisplay", () => {
 	// 基本的な表示テスト
@@ -443,20 +443,6 @@ describe("VideoTagDisplay", () => {
 			await user.click(badge);
 
 			expect(onTagClick).toHaveBeenCalledWith("配信", "playlist");
-		});
-	});
-
-	// 後方互換性テスト
-	describe("Backward compatibility", () => {
-		it("should export ThreeLayerTagDisplay as alias", () => {
-			expect(ThreeLayerTagDisplay).toBe(VideoTagDisplay);
-		});
-
-		it("should work with ThreeLayerTagDisplay component name", () => {
-			render(<ThreeLayerTagDisplay playlistTags={["配信"]} userTags={["可愛い"]} />);
-
-			expect(screen.getByText("配信")).toBeInTheDocument();
-			expect(screen.getByText("可愛い")).toBeInTheDocument();
 		});
 	});
 });

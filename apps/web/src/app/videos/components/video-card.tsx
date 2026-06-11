@@ -1,6 +1,6 @@
 import type { VideoPlainObject } from "@suzumina.click/shared-types";
 import { HighlightText } from "@suzumina.click/ui/components/custom/highlight-text";
-import { ThreeLayerTagDisplay } from "@suzumina.click/ui/components/custom/three-layer-tag-display";
+import { VideoTagDisplay } from "@suzumina.click/ui/components/custom/three-layer-tag-display";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { getYouTubeCategoryName } from "@suzumina.click/ui/lib/youtube-category-utils";
 import { Calendar, Clock, Lock, Radio, Video } from "lucide-react";
@@ -211,7 +211,7 @@ function VideoCard({ video, variant = "grid", priority = false, searchQuery }: V
 
 					{/* タグ表示（一列・コンパクト） */}
 					<div className="mb-4">
-						<ThreeLayerTagDisplay
+						<VideoTagDisplay
 							playlistTags={video.tags?.playlistTags || []}
 							userTags={video.tags?.userTags || []}
 							categoryId={video.categoryId}

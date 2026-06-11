@@ -467,6 +467,9 @@ export function AudioButton({
 			if (isPlaying) {
 				audioPlayerRef.current?.pause();
 			} else {
+				// 再生開始までの読み込み中はスピナーを出す（onPlay=handlePlayStart で解除）。
+				// 以前は setIsLoading(true) の経路が無くスピナーが不達だった（SPR-200）。
+				setIsLoading(true);
 				audioPlayerRef.current?.play();
 			}
 		},

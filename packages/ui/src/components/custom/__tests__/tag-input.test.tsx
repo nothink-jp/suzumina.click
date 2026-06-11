@@ -297,7 +297,7 @@ describe("TagInput", () => {
 			expect(input).toHaveAttribute("aria-invalid", "false");
 		});
 
-		it("エラー時にaria-invalidが適切に設定される", async () => {
+		it("エラー時に aria-describedby がエラーメッセージ要素の実 ID と一致する（SPR-200）", async () => {
 			const user = userEvent.setup();
 			render(<TagInput {...defaultProps} />);
 
@@ -308,7 +308,11 @@ describe("TagInput", () => {
 			await user.keyboard("{Enter}");
 
 			expect(input).toHaveAttribute("aria-invalid", "true");
-			expect(input).toHaveAttribute("aria-describedby", "tag-input-error");
+			// 以前は固定文字列 "tag-input-error" を指していたが、エラー要素の id は useId 生成値で
+			// 不一致だった。aria-describedby が実エラー要素の id を指すことを検証する。
+			const errorEl = screen.getByText("タグを入力してください");
+			expect(errorEl.id).toBeTruthy();
+			expect(input).toHaveAttribute("aria-describedby", errorEl.id);
 		});
 
 		it("削除ボタンに適切なaria-labelが設定されている", () => {
