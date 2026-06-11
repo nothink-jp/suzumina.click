@@ -57,7 +57,7 @@ export function AudioButtonWithFavoriteClient({
 		// initialIsLiked/initialIsDislikedがtrueまたはfalseの場合は、すでにデータが提供されている
 		// undefinedの場合のみ個別に取得
 		if (isAuthenticated && initialIsLiked === undefined && initialIsDisliked === undefined) {
-			getLikeDislikeStatusAction([audioButton.id]).then((statusMap) => {
+			void getLikeDislikeStatusAction([audioButton.id]).then((statusMap) => {
 				const status = statusMap.get(audioButton.id) || { isLiked: false, isDisliked: false };
 				setIsLiked(status.isLiked);
 				setIsDisliked(status.isDisliked);

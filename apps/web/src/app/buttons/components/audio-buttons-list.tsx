@@ -65,7 +65,7 @@ export default function AudioButtonsList({ searchParams, initialData }: AudioBut
 				// タグの取得に失敗してもUIは動作可能
 			}
 		};
-		fetchTags();
+		void fetchTags();
 	}, []);
 
 	// 初期データを準備

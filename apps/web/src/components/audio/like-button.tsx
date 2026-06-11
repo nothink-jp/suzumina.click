@@ -34,7 +34,7 @@ export function LikeButton({
 	// ユーザーの高評価・低評価状態を取得
 	useEffect(() => {
 		if (isAuthenticated && !initialIsLiked) {
-			getLikeDislikeStatusAction([audioButtonId]).then((statusMap) => {
+			void getLikeDislikeStatusAction([audioButtonId]).then((statusMap) => {
 				const status = statusMap.get(audioButtonId) || { isLiked: false, isDisliked: false };
 				setIsLiked(status.isLiked);
 			});

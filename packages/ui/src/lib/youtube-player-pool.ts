@@ -118,28 +118,38 @@ export class YouTubePlayerPool {
 	 */
 	async getOrCreatePlayer(videoId: string): Promise<YTPlayer> {
 		return new Promise((resolve, reject) => {
-			this.onReady(async () => {
-				try {
-					if (!this.players.has(videoId)) {
-						if (this.players.size >= this.maxPoolSize) {
-							this.removeLeastUsedPlayer();
-						}
-						const playerData = await this.createPlayer(videoId);
-						this.players.set(videoId, playerData);
-					}
-
-					const playerData = this.players.get(videoId);
-					if (playerData) {
-						playerData.lastUsed = Date.now();
-						resolve(playerData.player);
-					} else {
-						reject(new Error(`Player for video ${videoId} not found`));
-					}
-				} catch (error) {
-					reject(error);
-				}
+			// onReady は () => void を期待するため、非同期処理は void で明示的に fire-and-forget する
+			this.onReady(() => {
+				void this.resolvePlayer(videoId, resolve, reject);
 			});
 		});
+	}
+
+	/** getOrCreatePlayer の onReady 後処理（プール確保 → resolve/reject）。onReady のコールバックを同期に保つために分離 */
+	private async resolvePlayer(
+		videoId: string,
+		resolve: (player: YTPlayer) => void,
+		reject: (reason?: unknown) => void,
+	): Promise<void> {
+		try {
+			if (!this.players.has(videoId)) {
+				if (this.players.size >= this.maxPoolSize) {
+					this.removeLeastUsedPlayer();
+				}
+				const playerData = await this.createPlayer(videoId);
+				this.players.set(videoId, playerData);
+			}
+
+			const playerData = this.players.get(videoId);
+			if (playerData) {
+				playerData.lastUsed = Date.now();
+				resolve(playerData.player);
+			} else {
+				reject(new Error(`Player for video ${videoId} not found`));
+			}
+		} catch (error) {
+			reject(error);
+		}
 	}
 
 	/**

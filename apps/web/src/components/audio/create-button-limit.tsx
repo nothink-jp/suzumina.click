@@ -29,7 +29,7 @@ export function CreateButtonLimit({ userId }: CreateButtonLimitProps) {
 			}
 		};
 
-		fetchLimit();
+		void fetchLimit();
 		// 1分ごとに更新
 		const interval = setInterval(fetchLimit, 60000);
 		return () => clearInterval(interval);
