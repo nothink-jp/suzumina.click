@@ -188,7 +188,7 @@ export default function SampleImageGallery({ sampleImages, workTitle }: SampleIm
 			<CardContent>
 				<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
 					{sampleImages.map((image, index) => (
-						<Dialog key={`sample-${index}-${image.thumb.slice(-10)}`}>
+						<Dialog key={image.thumb}>
 							<DialogTrigger asChild>
 								<button
 									type="button"

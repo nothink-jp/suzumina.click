@@ -9,8 +9,7 @@
 		"rules": {
 			"suspicious": {
 				"noExplicitAny": "error",
-				"noConsole": "off",
-				"noArrayIndexKey": "off"
+				"noConsole": "off"
 			},
 			"complexity": {
 				"noExcessiveCognitiveComplexity": "error"
