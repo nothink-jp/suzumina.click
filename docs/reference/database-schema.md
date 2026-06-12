@@ -366,7 +366,7 @@
   description?: string,               // 音声ボタン説明（最大500文字）
   
   // YouTube動画参照情報
-  sourceVideoId: string,              // YouTube動画ID（videosコレクション参照）
+  videoId: string,                    // YouTube動画ID（videosコレクション参照。旧称 sourceVideoId）
   videoTitle: string,                 // 動画タイトル
   startTime: number,                  // 開始時刻（秒）
   endTime: number,                    // 終了時刻（秒）
@@ -444,23 +444,19 @@
 
 **ドキュメントID**: 音声ボタンID
 
-**データ構造** (`FavoritedAudioButton`):
+**データ構造** (`FirestoreFavoriteData`):
 
 ```typescript
 {
-  // 基本情報
   audioButtonId: string,              // 音声ボタンID (audioButtonsコレクション参照)
-  title: string,                      // 音声ボタンタイトル (キャッシュ用)
-  
-  // メタデータ
-  createdAt: Timestamp,               // お気に入り登録日時
-  
-  // キャッシュ情報 (パフォーマンス最適化)
-  sourceVideoId?: string,             // YouTube動画ID
-  category?: string,                  // カテゴリ
-  duration?: number                   // 再生時間（秒）
+  addedAt: string                     // お気に入り登録日時（ISO 8601）
 }
 ```
+
+> **注記（SPR-174 監査・2026-06-13）**: 旧記述はパフォーマンス用に `title` / `sourceVideoId` / `category` /
+> `duration` を非正規化キャッシュする構造だったが、現行は最小スキーマ（`audioButtonId` + `addedAt`）で、
+> 表示時に audioButtons を都度 join する方式に移行済み。正本は
+> `packages/shared-types/src/entities/favorite.ts` の `FirestoreFavoriteSchema`。
 
 **制約事項**:
 - 同一ユーザーが同じ音声ボタンを重複してお気に入り登録不可
@@ -787,17 +783,25 @@ type CreatorType = "voice" | "illustration" | "scenario" | "music" | "other";
 
 #### ✅ **audioButtons コレクション** (8個使用中 + 1個削除推奨 + 3個フォールバック用)
 
+> **⚠️ 実デプロイ検証（2026-06-13 / SPR-174）**: `gcloud firestore indexes composite list`（本番 `suzumina-click` / `(default)`）で確認。
+> **動画別音声ボタンの参照フィールドは live でも `videoId`**（`sourceVideoId` のインデックスは存在しない）。
+> よってコードの `.where("videoId", …)` クエリは正しく裏付けられており、FAILED_PRECONDITION のリスクはない。
+> なおこの表は 2025-07-19 時点のスナップショットで、以下は live と乖離（本タスクのスコープ外・別途整理）:
+> 統計ソートは live では `stats.playCount` / `stats.likeCount`（flat な `playCount` / `likeCount` は旧称）、
+> 作成者系は新 `creatorId` インデックスが追加済みだが旧 `createdBy` 系も未削除で残存（drift）。
+> 正確なフィールドパスの正本は `terraform/firestore_indexes*.tf` と上記 live 一覧。
+
 | インデックス | フィールド | 使用状況 | 使用箇所 |
 |-------------|------------|----------|----------|
 | `isPublic + createdAt (DESC)` | [`isPublic`, `createdAt`, `__name__`] | ✅ **使用中** | `/buttons` 一覧・オートコンプリート |
 | `isPublic + playCount (DESC)` | [`isPublic`, `playCount`, `__name__`] | ✅ **使用中** | 再生数順ソート |
 | `isPublic + likeCount (DESC)` | [`isPublic`, `likeCount`, `__name__`] | ✅ **使用中** | 人気順ソート |
-| `sourceVideoId + isPublic + createdAt (DESC)` | [`sourceVideoId`, `isPublic`, `createdAt`, `__name__`] | ✅ **使用中** | 動画別音声ボタン（新着順） |
-| `sourceVideoId + isPublic + likeCount (DESC)` | [`sourceVideoId`, `isPublic`, `likeCount`, `__name__`] | ✅ **使用中** | 動画別音声ボタン（人気順） |
-| `sourceVideoId + isPublic + playCount (DESC)` | [`sourceVideoId`, `isPublic`, `playCount`, `__name__`] | ✅ **使用中** | 動画別音声ボタン（再生数順） |
+| `videoId + isPublic + createdAt (DESC)` | [`videoId`, `isPublic`, `createdAt`, `__name__`] | ✅ **使用中** | 動画別音声ボタン（新着順） |
+| `videoId + isPublic + stats.likeCount (DESC)` | [`videoId`, `isPublic`, `stats.likeCount`, `__name__`] | ✅ **使用中** | 動画別音声ボタン（人気順） |
+| `videoId + isPublic + stats.playCount (DESC)` | [`videoId`, `isPublic`, `stats.playCount`, `__name__`] | ✅ **使用中** | 動画別音声ボタン（再生数順） |
 | `tags (ARRAY_CONTAINS) + isPublic + createdAt (DESC)` | [`tags`, `isPublic`, `createdAt`, `__name__`] | ✅ **使用中** | タグフィルター（クライアント補完） |
 | `createdBy + createdAt (DESC)` | [`createdBy`, `createdAt`, `__name__`] | ✅ **使用中** | ユーザー統計・管理・レート制限 |
-| `isPublic + sourceVideoId + startTime (ASC)` | [`isPublic`, `sourceVideoId`, `startTime`, `__name__`] | 🔴 **削除推奨** | 時間順ソート機能未実装 |
+| `isPublic + videoId + startTime (ASC)` | [`isPublic`, `videoId`, `startTime`, `__name__`] | 🔴 **削除済み** | 時間順ソート機能未実装。terraform で削除完了・live 非存在（`firestore_indexes.tf:113`） |
 | `createdBy + createdAt (ASC)` | [`createdBy`, `createdAt`, `__name__`] | 🔶 **フォールバック** | レート制限・範囲クエリ用 |
 | `createdBy + isPublic + createdAt (DESC)` | [`createdBy`, `isPublic`, `createdAt`, `__name__`] | 🔶 **フォールバック** | マイページ機能（無効化中） |
 | `createdBy + isPublic + playCount (DESC)` | [`createdBy`, `isPublic`, `playCount`, `__name__`] | 🔶 **フォールバック** | マイページソート（無効化中） |
@@ -852,7 +856,7 @@ const allSnapshot = await firestore.collection("works").get();
 
 #### **🔴 削除推奨 (8個)**
 - **videos**: 7個（videoType 1個 + liveStreamingDetails 6個）
-- **audioButtons**: 1個（startTime未実装）
+- **audioButtons**: 1個（startTime未実装・削除完了済み）
 
 #### **⚠️ 新規追加必要 (5個)**
 - **contacts**: 2個（管理者機能で必須）
@@ -877,16 +881,16 @@ const allSnapshot = await firestore.collection("works").get();
 | 🔴 **高** | `isPublic + createdAt (DESC)` | ✅ **設定済み** | `/buttons` 一覧・検索結果 |
 | 🔴 **高** | `isPublic + playCount (DESC)` | ✅ **設定済み** | 再生数順ソート |
 | 🔴 **高** | `isPublic + likeCount (DESC)` | ✅ **設定済み** | 人気順ソート |
-| 🔴 **高** | `sourceVideoId + isPublic + createdAt (DESC)` | ✅ **設定済み** | 動画別音声ボタン |
-| 🔴 **高** | `sourceVideoId + isPublic + playCount (DESC)` | ✅ **設定済み** | 動画別再生数順 |
-| 🔴 **高** | `sourceVideoId + isPublic + likeCount (DESC)` | ✅ **設定済み** | 動画別人気順 |
+| 🔴 **高** | `videoId + isPublic + createdAt (DESC)` | ✅ **設定済み** | 動画別音声ボタン |
+| 🔴 **高** | `videoId + isPublic + stats.playCount (DESC)` | ✅ **設定済み** | 動画別再生数順 |
+| 🔴 **高** | `videoId + isPublic + stats.likeCount (DESC)` | ✅ **設定済み** | 動画別人気順 |
 | 🔴 **高** | `tags (ARRAY_CONTAINS) + isPublic + createdAt (DESC)` | ✅ **設定済み** | タグフィルター |
 | 🔴 **高** | `createdBy + createdAt (DESC)` | ✅ **設定済み** | ユーザー統計・管理 |
 | 🟡 **中** | `createdBy + isPublic + createdAt (DESC)` | ✅ **設定済み** | マイページ（フォールバック） |
 | 🟡 **中** | `createdBy + isPublic + playCount (DESC)` | ✅ **設定済み** | マイページソート（フォールバック） |
 | 🟡 **中** | `createdBy + createdAt (ASC)` | ✅ **設定済み** | レート制限・範囲クエリ |
 | 🟢 **低** | `category + isPublic + createdAt (DESC)` | ⚠️ **未設定** | カテゴリフィルター（将来機能） |
-| 🟢 **低** | `isPublic + sourceVideoId + startTime (ASC)` | 🔴 **削除推奨** | 時間順ソート（未実装） |
+| 🟢 **低** | `isPublic + videoId + startTime (ASC)` | 🔴 **削除済み** | 時間順ソート（未実装・削除完了済み） |
 
 ##### **videos コレクション** (3個の要件)
 
@@ -1081,9 +1085,9 @@ try {
 .where("isPublic", "==", true).orderBy("likeCount", "desc")  // 人気順
 
 // ✅ 動画別音声ボタン（中頻度）
-.where("sourceVideoId", "==", videoId).where("isPublic", "==", true).orderBy("createdAt", "desc")
-.where("sourceVideoId", "==", videoId).where("isPublic", "==", true).orderBy("playCount", "desc")
-.where("sourceVideoId", "==", videoId).where("isPublic", "==", true).orderBy("likeCount", "desc")
+.where("videoId", "==", videoId).where("isPublic", "==", true).orderBy("createdAt", "desc")
+.where("videoId", "==", videoId).where("isPublic", "==", true).orderBy("stats.playCount", "desc")
+.where("videoId", "==", videoId).where("isPublic", "==", true).orderBy("stats.likeCount", "desc")
 
 // ✅ タグ検索（中頻度）
 .where("tags", "array-contains", tag).where("isPublic", "==", true).orderBy("createdAt", "desc")
@@ -1135,8 +1139,8 @@ users/{userId}/favorites.orderBy("addedAt", "desc")
    - `liveBroadcastContent + publishedAt (ASC/DESC)`
    - `videoType + publishedAt (DESC)`
    
-2. **audioButtons コレクション (1個)** - 未使用
-   - `isPublic + sourceVideoId + startTime (ASC)` - 時間順ソートなし
+2. **audioButtons コレクション (1個)** - 削除完了済み
+   - `isPublic + videoId + startTime (ASC)` - 時間順ソート未実装。terraform で削除完了済み（live 非存在）
 
 **予想コスト削減: 月額約$8 (4インデックス削除)**
 
@@ -1478,7 +1482,7 @@ gcloud firestore indexes composite delete projects/suzumina-click/databases/\(de
 **現在の状況**:
 - **インデックス総数**: 12個（audioButtons: 8個、videos: 3個、users: 2個）
 - **未使用インデックス**: 依然として 6個が削除推奨状態
-- **必要インデックス**: `sourceVideoId + createdAt` が 1個残り
+- **必要インデックス**: `sourceVideoId + createdAt` が 1個残り（※当時の記録。フィールドは後に `videoId` へ改称済み）
 
 ### 2025-06-28 お気に入りシステム実装完了
 
@@ -1497,7 +1501,7 @@ gcloud firestore indexes composite delete projects/suzumina-click/databases/\(de
 
 **発見した問題**:
 - ✅ `createdBy` フィールド用インデックスが作成済み（レート制限クエリで使用）
-- 🔴 `sourceVideoId` 用インデックスが未作成（動画別表示で使用）
+- 🔴 `sourceVideoId` 用インデックスが未作成（動画別表示で使用）※当時の記録。現行は `videoId` で作成済み（2026-06-13 live 確認）
 - 🔴 videos コレクションの 3個のインデックスが完全未使用
 - 🔴 audioButtons コレクションの 3個のインデックスが未使用
 
