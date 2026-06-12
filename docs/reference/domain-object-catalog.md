@@ -11,70 +11,34 @@ This catalog provides detailed specifications for all domain objects in the suzu
 
 ## Entities
 
-All entities now extend `BaseEntity<T>` and implement `EntityValidatable<T>` interface.
+> **2026-06 更新（SPR-174 監査で再確認）**: かつて `packages/shared-types/src/entities/` に存在した
+> Entity クラス（`Work` / `Video` / `AudioButton` が `BaseEntity<T>` を継承し `EntityValidatable<T>` を
+> 実装し、private constructor + Result ベースの `fromFirestoreData()` ファクトリ + `toPlainObject()` を持つ設計）は、
+> 関数型アーキテクチャへの移行で **全て廃止済み**。2026-06-12 の SPR-174 監査で `class Work` /
+> `class Video` / `class AudioButton` / `extends BaseEntity` が shared-types に **1 件も存在しない**ことを確認した。
+> データ表現は **PlainObject 型 + Zod スキーマ + `transformers/` の変換関数**に一本化されている
+> （ファクトリ・private constructor・`BaseEntity` 継承はもう無い）。
+
+各ドメインの「正本」は次のとおり。Firestore ドキュメント形 ↔ RSC 境界を越える PlainObject 形を
+`packages/shared-types/src/transformers/` の純関数が相互変換する。
 
 ### Work
 
-**Location**: `packages/shared-types/src/entities/work-entity.ts`
-**Pattern**: Entity with Result-based factory methods
-
-```typescript
-class Work extends BaseEntity<Work> implements EntityValidatable<Work> {
-  // Private constructor - use factory methods
-  private constructor(...) { ... }
-  
-  // Factory method returns Result type
-  static fromFirestoreData(data: WorkDocument): Result<Work, DatabaseError> {
-    // Validation and construction logic
-  }
-  
-  // Validation methods
-  isValid(): boolean
-  getValidationErrors(): string[]
-  
-  // Business methods
-  toPlainObject(): WorkPlainObject
-  equals(other: Work): boolean
-  clone(): Work
-}
-```
+- **PlainObject（RSC 境界を越えるデータ表現の正本）**: `packages/shared-types/src/plain-objects/work-plain.ts` の `WorkPlainObject`
+- **Firestore ドキュメント / Zod スキーマ（永続データの正本）**: `packages/shared-types/src/entities/work/work-document-schema.ts` の
+  `WorkDocument`（`z.infer<typeof WorkDocumentSchema>`。旧称 `OptimizedFirestoreDLsiteWorkData`）
 
 ### Video
 
-**Location**: `packages/shared-types/src/entities/video.ts`
-**Pattern**: Entity with Result-based factory methods
-
-```typescript
-class Video extends BaseEntity<Video> implements EntityValidatable<Video> {
-  // Private constructor
-  private constructor(...) { ... }
-  
-  // Factory method returns Result type
-  static fromFirestoreData(data: FirestoreServerVideoData): Result<Video, DatabaseError> {
-    // Validation and construction logic
-  }
-  
-  // Validation methods
-  isValid(): boolean
-  getValidationErrors(): string[]
-  
-  // Business methods
-  toPlainObject(): VideoPlainObject
-  getVideoType(): VideoComputedProperties["videoType"]
-  canCreateAudioButton(): boolean
-}
-```
+- **PlainObject（RSC 境界を越えるデータ表現の正本）**: `packages/shared-types/src/plain-objects/video-plain.ts` の `VideoPlainObject`
+- **Firestore ドキュメント（永続データの正本）**: `packages/shared-types/src/types/firestore/video.ts` の `FirestoreServerVideoData`
 
 ### AudioButton
 
-**Location**: `packages/shared-types/src/entities/audio-button.ts`
-**Pattern**: Entity with BaseEntity inheritance
-
-```typescript
-class AudioButton extends BaseEntity<AudioButton> {
-  // Entity implementation
-}
-```
+- **正本**: `packages/shared-types/src/types/audio-button.ts`
+  - `AudioButtonDocument`: Firestore ドキュメント形（永続データのみ）
+  - `AudioButton`: `AudioButtonDocument` に `id` と `_computed`（`AudioButtonComputedProperties`）を加えた表示用モデル
+  - `AudioButtonPlainObject`: `AudioButton` のエイリアス（RSC 境界を越えるデータ表現の正本）
 
 ## Value Objects
 
@@ -101,15 +65,17 @@ class AudioButton extends BaseEntity<AudioButton> {
 
 ### Branded Types
 
-**Location**: `packages/shared-types/src/core/branded-types.ts`
+**Location**: `packages/shared-types/src/core/branded-types.ts`（`Brand<K, T>` ヘルパーと `createBrandFactory`）/
+`packages/shared-types/src/core/ids.ts`（各ドメイン ID の具体型と検証付きファクトリ）
 
 ```typescript
-// Nominal typing for domain IDs
+// Nominal typing for domain IDs（具体型・ファクトリは core/ids.ts）
 type WorkId = Brand<string, 'WorkId'>
 type CircleId = Brand<string, 'CircleId'>
 type VideoId = Brand<string, 'VideoId'>
 type ChannelId = Brand<string, 'ChannelId'>
 type UserId = Brand<string, 'UserId'>
+type AudioButtonId = Brand<string, 'AudioButtonId'>
 ```
 
 ### Result Pattern
@@ -128,23 +94,19 @@ type DatabaseError = { entity: string; message: string }
 
 ## Conversion Utilities
 
-### Work Conversions
+> **2026-06 更新（SPR-174 監査で再確認）**: 旧 `utilities/work-conversions.ts`
+> （`convertToWorkPlainObject` / `convertToWorkPlainObjects` / `normalizeToWorkPlainObject` など Result を返す関数群）は
+> 呼び出しゼロの死蔵層だったため **削除済み**。Firestore ⇔ PlainObject 変換の正本は `transformers/` の純関数に一本化されている。
 
-**Location**: `packages/shared-types/src/utilities/work-conversions.ts`
+**正本**: `packages/shared-types/src/transformers/`（公開 API は barrel が再エクスポートする名前空間オブジェクト）
 
 ```typescript
-// All conversion functions return Result types
-function convertToWorkPlainObject(
-  data: WorkDocument | null | undefined
-): Result<WorkPlainObject, NotFoundError | DatabaseError>
+// barrel（@suzumina.click/shared-types）からの公開入口。Document→Plain（読み取り）の入口に統一:
+workTransformers.fromFirestore(doc: WorkDocument): WorkPlainObject              // transformers/work-firestore.ts
+videoTransformers.fromFirestore(doc: FirestoreServerVideoData): VideoPlainObject // transformers/video-firestore.ts（別名 videoFromFirestore）
+audioButtonTransformers.fromFirestore(data): AudioButton | null                 // transformers/audio-button.ts
 
-function convertToWorkPlainObjects(
-  dataArray: WorkDocument[]
-): Result<WorkPlainObject[], DatabaseError>
-
-function normalizeToWorkPlainObject(
-  data: WorkDocument | WorkPlainObject | null | undefined
-): Result<WorkPlainObject, NotFoundError | DatabaseError>
+// 逆変換（Plain→Document）は各 transformer の toFirestore（video / audio-button が提供）
 ```
 
 ## Business Rules
@@ -166,29 +128,33 @@ function normalizeToWorkPlainObject(
 
 ### Validation Rules
 
-1. **All factory methods return Result types** - No exceptions thrown
-2. **Private constructors** - Object creation only through factory methods
-3. **Immutability** - All value objects are immutable
-4. **Validation on creation** - All validation happens in factory methods
+> **2026-06 更新（SPR-174 監査で再確認）**: かつての「ファクトリは Result を返す / private constructor /
+> 生成時バリデーション」はクラス Entity・VO 前提の規約であり、それらの廃止に伴い無効。
+> 現在の検証は Zod スキーマ（`entities/work/work-document-schema.ts` の `WorkDocumentSchema` など）で行う。
+
+1. **読み取り境界の検証は Zod スキーマで行う**（`schema.safeParse(...)` で不正データを早期に弾く）
+2. **データは不変として扱う**（PlainObject を直接書き換えず、`transformers/` で変換する）
+3. **変換は純関数**（`transformers/` の `fromFirestore` / `toFirestore` は副作用を持たない）
 
 ## Migration Notes
 
-### From Legacy to Result Pattern
+### From Legacy to Functional（クラス Entity の廃止）
+
+> **2026-06 更新（SPR-174 監査で再確認）**: クラス Entity（`Work.fromFirestoreData()` のような
+> Result ベースのファクトリ）は廃止済み。復元は `transformers/` の純関数 + Zod スキーマで行う。
 
 ```typescript
-// Before (Legacy)
-const work = Work.fromFirestoreDataLegacy(data); // throws or returns null
-if (!work) {
-  // handle error
-}
+// 旧（クラス Entity 時代・現在は存在しない）
+// const result = Work.fromFirestoreData(data);
+// if (result.isErr()) { ... }
+// const work = result.value;
 
-// After (Result Pattern)
-const result = Work.fromFirestoreData(data);
-if (result.isErr()) {
-  console.error(result.error.message);
-  return;
-}
-const work = result.value;
+// 現在（関数型）: 読み取り境界で Zod 検証 → transformer で PlainObject 化（barrel から import）
+import { WorkDocumentSchema, workTransformers } from "@suzumina.click/shared-types";
+
+const parsed = WorkDocumentSchema.safeParse(raw); // 読み取り境界の漏斗（default を実効化）
+const data = parsed.success ? parsed.data : (raw as WorkDocument); // 実装の正本は work-converters.ts の parseWorkDocument
+const work = workTransformers.fromFirestore(data); // WorkPlainObject
 ```
 
 ### Value Object Creation
@@ -199,6 +165,9 @@ const work = result.value;
 
 ---
 
-**Last Updated**: 2026-06-11
-**Version**: 0.5.0
-**Note**: SPR-181 で `value-objects/` のクラス VO 一式を削除。データ表現は plain-objects + transformers + operations に一本化。
+**Last Updated**: 2026-06-13
+**Version**: 0.6.0
+**Note**: SPR-174 監査で、クラス Entity 廃止後の実態に未同期だった記述を是正。
+Entities 節（`class Work/Video/AudioButton extends BaseEntity` の例）・Conversion Utilities 節（削除済み `utilities/work-conversions.ts`）・
+Migration Notes / Validation Rules（クラス Entity の Result ファクトリ前提）を、PlainObject + Zod スキーマ + `transformers/` の正本に揃えた。
+（SPR-181 で `value-objects/` のクラス VO 一式は既に削除済み。）
