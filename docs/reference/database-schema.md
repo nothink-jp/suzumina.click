@@ -801,7 +801,7 @@ type CreatorType = "voice" | "illustration" | "scenario" | "music" | "other";
 | `videoId + isPublic + stats.playCount (DESC)` | [`videoId`, `isPublic`, `stats.playCount`, `__name__`] | ✅ **使用中** | 動画別音声ボタン（再生数順） |
 | `tags (ARRAY_CONTAINS) + isPublic + createdAt (DESC)` | [`tags`, `isPublic`, `createdAt`, `__name__`] | ✅ **使用中** | タグフィルター（クライアント補完） |
 | `createdBy + createdAt (DESC)` | [`createdBy`, `createdAt`, `__name__`] | ✅ **使用中** | ユーザー統計・管理・レート制限 |
-| `isPublic + videoId + startTime (ASC)` | [`isPublic`, `videoId`, `startTime`, `__name__`] | 🔴 **削除推奨** | 時間順ソート機能未実装（live 未デプロイ） |
+| `isPublic + videoId + startTime (ASC)` | [`isPublic`, `videoId`, `startTime`, `__name__`] | 🔴 **削除済み** | 時間順ソート機能未実装。terraform で削除完了・live 非存在（`firestore_indexes.tf:113`） |
 | `createdBy + createdAt (ASC)` | [`createdBy`, `createdAt`, `__name__`] | 🔶 **フォールバック** | レート制限・範囲クエリ用 |
 | `createdBy + isPublic + createdAt (DESC)` | [`createdBy`, `isPublic`, `createdAt`, `__name__`] | 🔶 **フォールバック** | マイページ機能（無効化中） |
 | `createdBy + isPublic + playCount (DESC)` | [`createdBy`, `isPublic`, `playCount`, `__name__`] | 🔶 **フォールバック** | マイページソート（無効化中） |
@@ -856,7 +856,7 @@ const allSnapshot = await firestore.collection("works").get();
 
 #### **🔴 削除推奨 (8個)**
 - **videos**: 7個（videoType 1個 + liveStreamingDetails 6個）
-- **audioButtons**: 1個（startTime未実装）
+- **audioButtons**: 1個（startTime未実装・削除完了済み）
 
 #### **⚠️ 新規追加必要 (5個)**
 - **contacts**: 2個（管理者機能で必須）
@@ -890,7 +890,7 @@ const allSnapshot = await firestore.collection("works").get();
 | 🟡 **中** | `createdBy + isPublic + playCount (DESC)` | ✅ **設定済み** | マイページソート（フォールバック） |
 | 🟡 **中** | `createdBy + createdAt (ASC)` | ✅ **設定済み** | レート制限・範囲クエリ |
 | 🟢 **低** | `category + isPublic + createdAt (DESC)` | ⚠️ **未設定** | カテゴリフィルター（将来機能） |
-| 🟢 **低** | `isPublic + videoId + startTime (ASC)` | 🔴 **削除推奨** | 時間順ソート（未実装） |
+| 🟢 **低** | `isPublic + videoId + startTime (ASC)` | 🔴 **削除済み** | 時間順ソート（未実装・削除完了済み） |
 
 ##### **videos コレクション** (3個の要件)
 
@@ -1139,8 +1139,8 @@ users/{userId}/favorites.orderBy("addedAt", "desc")
    - `liveBroadcastContent + publishedAt (ASC/DESC)`
    - `videoType + publishedAt (DESC)`
    
-2. **audioButtons コレクション (1個)** - 未使用
-   - `isPublic + videoId + startTime (ASC)` - 時間順ソートなし
+2. **audioButtons コレクション (1個)** - 削除完了済み
+   - `isPublic + videoId + startTime (ASC)` - 時間順ソート未実装。terraform で削除完了済み（live 非存在）
 
 **予想コスト削減: 月額約$8 (4インデックス削除)**
 
