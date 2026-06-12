@@ -202,12 +202,8 @@ export async function getWorkById(workId: string): Promise<WorkPlainObject | nul
 				return null;
 			}
 
+			// raw に id: doc.id を常に含めるため、data.id は設定済み
 			const data = parseWorkDocument({ ...doc.data(), id: doc.id });
-
-			// データにIDが設定されていない場合、ドキュメントIDを使用
-			if (!data.id) {
-				data.id = doc.id;
-			}
 
 			// フロントエンド形式に変換
 			return workTransformers.fromFirestore(data);

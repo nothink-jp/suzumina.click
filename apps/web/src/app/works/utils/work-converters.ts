@@ -16,8 +16,7 @@ import * as logger from "@/lib/logger";
 export function parseWorkDocument(raw: unknown): WorkDocument {
 	const parsed = WorkDocumentSchema.safeParse(raw);
 	if (parsed.success) {
-		// parse 済み（default 適用）を基準に、スキーマ外フィールドは raw から温存する
-		// （id 等スキーマ非定義の付帯フィールドを落とさないため）。
+		// parse 済み（default 適用）を基準に、スキーマが strip する未定義フィールドは raw から温存する。
 		return { ...(raw as Record<string, unknown>), ...parsed.data } as WorkDocument;
 	}
 	logger.warn("WorkDocument スキーマ検証に失敗（cast で継続）", {
@@ -39,10 +38,8 @@ export async function convertDocsToWorks(
 	const works: WorkPlainObject[] = [];
 	for (const doc of docs) {
 		try {
+			// raw に id: doc.id を常に含めるため、data.id は成功/フォールバックいずれでも設定済み
 			const data = parseWorkDocument({ ...doc.data(), id: doc.id });
-			if (!data.id) {
-				data.id = data.productId;
-			}
 			const converted = workTransformers.fromFirestore(data);
 			works.push(converted);
 		} catch (error) {
