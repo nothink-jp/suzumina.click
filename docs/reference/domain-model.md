@@ -1,41 +1,67 @@
 # ドメインモデル設計（簡易版）
 
-**最終更新**: 2026-05-22  
+**最終更新**: 2026-06-12  
 **目的**: suzumina.clickプロジェクトのドメインモデルの簡潔な参照ドキュメント
+
+> **2026-06 (SPR-174 監査) 更新**: 各エンティティの「主要プロパティ」を shared-types の現行正本型
+> （`plain-objects/` の `*PlainObject`・`types/` のドキュメント型）に揃えた。クラスとしての
+> エンティティ・値オブジェクトは廃止済み（クラス VO は SPR-181 で削除）。本文中の「値オブジェクト」は
+> PlainObject のネストしたプロパティ群を指す概念表記であり、クラスを意味しない。
 
 ## エンティティ一覧
 
 ### 1. Work（作品）
-DLsite作品を表現する中核エンティティ
+DLsite作品を表現する中核データ。RSC 境界を越える正本は `WorkPlainObject`
+（`packages/shared-types/src/plain-objects/work-plain.ts`）。
 
-**主要プロパティ**
-- `id`: 作品ID（例: RJ123456）
-- `title`: 作品タイトル
-- `price`: 価格情報（値オブジェクト）
-- `rating`: 評価情報（値オブジェクト）
-- `creators`: クリエイター情報（値オブジェクト）
+**主要プロパティ**（`WorkPlainObject`。フラットなスカラ + ネストした plain object 群）
+- `id` / `productId`: 作品ID（例: RJ01234567）
+- `title` / `circle` / `circleId?` / `description` / `category`: 基本情報
+- `workUrl` / `thumbnailUrl`: 表示用 URL
+- `price`: 価格情報（`WorkPricePlain`: current / original? / discount? / currency / isDiscounted …）
+- `rating?`: 評価情報（`WorkRatingPlain`: stars / count / average …）
+- `creators`: クリエイター情報（`WorkCreatorsPlain`: voiceActors / scenario / illustration / music / others）
+- `salesStatus` / `series?` / `genres` / `sampleImages`: 販売状態・付随情報
+- `createdAt` / `updatedAt` / `lastFetchedAt`: タイムスタンプ（ISO 文字列）
+- `_computed`: 表示・派生値（`WorkComputedProperties`）
 
-**Firestore型**: `WorkDocument`（旧: OptimizedFirestoreDLsiteWorkData）
+**Firestore型**: `WorkDocument`（`packages/shared-types/src/entities/work/work-document-schema.ts`。旧: OptimizedFirestoreDLsiteWorkData）
 
 ### 2. AudioButton（音声ボタン）
-YouTube動画の特定タイムスタンプを参照する音声再生ボタン
+YouTube動画の特定タイムスタンプを参照する音声再生ボタン。正本型は
+`packages/shared-types/src/types/audio-button.ts`。
 
-**主要プロパティ**
-- `id`: ボタンID
-- `content`: テキストとタグ（値オブジェクト）
-- `reference`: YouTube動画参照情報（値オブジェクト）
-- `statistics`: 統計情報（値オブジェクト）
+**主要プロパティ**（`AudioButtonDocument` のフラット構造。`stats` のみネスト）
+- `buttonText` / `description?`: 表示テキスト・補足
+- `videoId` / `videoTitle` / `videoThumbnailUrl?`: 参照する YouTube 動画
+- `startTime` / `endTime` / `duration`: 再生区間（秒）
+- `tags`: 分類タグ
+- `creatorId` / `creatorName`: 作成者
+- `isPublic`: 公開設定
+- `stats`: 集計（playCount / likeCount / dislikeCount / favoriteCount / engagementRate）
+- `createdAt` / `updatedAt`: タイムスタンプ（ISO 文字列）
 
-**特徴**: DLsite作品への直接参照なし、YouTube動画IDのみ保持
+アプリ層の正本は `AudioButton`（= `AudioButtonDocument` + `id` + `_computed`。PlainObject 別名は `AudioButtonPlainObject`）。
+
+**特徴**: DLsite作品への直接参照なし、YouTube動画ID（`videoId`）のみ保持
 
 ### 3. Video（動画）
-YouTube動画メタデータを管理
+YouTube動画メタデータを管理。RSC 境界を越える正本は `VideoPlainObject`
+（`packages/shared-types/src/plain-objects/video-plain.ts`。`types/firestore/video.ts` の
+`FirestoreServerVideoData` を継承し、タイムスタンプを文字列化 + `_computed` を付与）。
 
-**主要プロパティ**
-- `content`: 動画基本情報（値オブジェクト）
-- `metadata`: タイトル、説明等（値オブジェクト）
-- `statistics`: 再生数、いいね数等（値オブジェクト）
-- `channel`: チャンネル情報（値オブジェクト）
+**主要プロパティ**（`VideoPlainObject` のフラット構造 + ネストしたオブジェクト群）
+- `videoId` / `title` / `description`: 基本情報
+- `channelId` / `channelTitle`: チャンネル情報（フラットに保持）
+- `publishedAt` / `lastFetchedAt`: タイムスタンプ（PlainObject では ISO 文字列）
+- `thumbnailUrl` / `thumbnails?`: サムネイル（既定 + 解像度別）
+- `videoType?` / `liveBroadcastContent?`: 種別・配信状態
+- `duration?`: 再生時間
+- `tags?`: 4層タグ（playlistTags / userTags / contentTags）
+- `statistics?`: viewCount / likeCount / dislikeCount / favoriteCount / commentCount
+- `liveStreamingDetails?`: 配信予定・実時刻（PlainObject では文字列）/ concurrentViewers
+- `audioButtonCount?` / `hasAudioButtons?`: 音声ボタン集計
+- `_computed`: 種別判定・URL 等の派生値（`VideoComputedProperties`）
 
 **特徴**: DLsite作品への直接参照なし
 
@@ -96,31 +122,36 @@ Discord認証されたユーザー情報
 
 ## 値オブジェクト一覧
 
-> **2026-06 (SPR-181) 更新**: 以下は概念的なデータのまとまりであり、**クラスとしての値オブジェクトは
-> 廃止済み**（`packages/shared-types/src/value-objects/` を削除）。実体は PlainObject のフィールド群 +
-> Zod スキーマ + `utilities/` のユーティリティで表現する。
+> **2026-06 (SPR-181 / SPR-174 監査) 更新**: 以下は概念的なデータのまとまりであり、**クラスとしての
+> 値オブジェクトは廃止済み**（`packages/shared-types/src/value-objects/` を削除）。実体は各 `*PlainObject`
+> のネストしたプロパティ群 + Zod スキーマ + `utilities/` のユーティリティで表現する。下記は現行の
+> PlainObject に実在するネストオブジェクトに揃えてある。
 
 ### 作品関連
-- **Price**: 価格情報（current, original, discount, currency）
-- **Rating**: 評価情報（stars, count, average）
-- **WorkCreators**: クリエイター情報（voice_by, illustration_by等）
-- **FileInfo**: ファイル情報（type, size, duration）
+`WorkPlainObject` のネストした plain object 群：
+- **`price`（`WorkPricePlain`）**: current / original? / discount? / currency / isDiscounted …
+- **`rating?`（`WorkRatingPlain`）**: stars / count / average / reliability …
+- **`creators`（`WorkCreatorsPlain`）**: voiceActors / scenario / illustration / music / others
+- **`salesStatus`（`WorkSalesStatusPlain`） / `series?`（`WorkSeriesPlain`）**: 販売状態・シリーズ情報
+- ※ ファイル情報は `fileFormat` / `fileType` / `fileSize` としてフラットに保持（旧 FileInfo VO は廃止）
 
 ### 音声ボタン関連
-- **AudioContent**: ボタンテキストとカテゴリ
-- **AudioReference**: YouTube動画参照（videoId, timestamp）
-- **ButtonStatistics**: 再生数、いいね数等
+AudioButton はフラット構造（`AudioButtonDocument`）。唯一のネストは集計の **`stats`**
+（playCount / likeCount / dislikeCount / favoriteCount / engagementRate）。
+旧 AudioContent / AudioReference / ButtonStatistics の区分は廃止。
 
 ### 動画関連
-- **VideoContent**: 動画ID、公開日等
-- **VideoMetadata**: タイトル、説明、時間
-- **VideoStatistics**: 再生数、いいね数
-- **Channel**: チャンネル情報
+`VideoPlainObject` のネストしたオブジェクト：
+- **`statistics?`**: viewCount / likeCount / dislikeCount / favoriteCount / commentCount
+- **`liveStreamingDetails?`**: 配信予定・実時刻（文字列）/ concurrentViewers
+- **`thumbnails?`**: default / medium / high / standard / maxres
+- **`tags?`**: playlistTags / userTags / contentTags（4層タグ）
+- ※ チャンネルは `channelId` / `channelTitle` としてフラットに保持（旧 Channel VO は廃止）
 
 ## エンティティ間の関係
 
 ```
-AudioButton → Video (sourceVideoIdで参照)
+AudioButton → Video (videoId で参照)
 User → AudioButton (作成者, Favorite)
 User → Work (WorkEvaluation, UserTop10List)
 
@@ -132,10 +163,12 @@ CreatorWorkMapping → Work, Creator (非正規化関連)
 
 ## 実装状況
 
-### ✅ 完全実装（Entity/Value Objectパターン）
-- Work エンティティと関連値オブジェクト
-- Video エンティティと関連値オブジェクト
-- AudioButton エンティティと関連値オブジェクト
+### ✅ PlainObject + Zod スキーマ + Transformer で実装
+> **2026-06 (SPR-174 監査) 更新**: shared-types はエンティティクラス・クラス VO を持たない
+> （クラス VO は SPR-181 で削除）。Work / Video / AudioButton のデータは以下の現行型に一本化。
+- Work: `WorkPlainObject`（plain-objects/work-plain.ts）/ `WorkDocument`（entities/work/work-document-schema.ts）/ transformers
+- Video: `VideoPlainObject`（plain-objects/video-plain.ts）
+- AudioButton: `AudioButtonDocument` / `AudioButton`（types/audio-button.ts）
 
 ### ✅ Zodスキーマ実装（型定義・バリデーション中心）
 - User（`FirestoreUserSchema` / `FrontendUserSchema` / `UserSessionSchema`）
@@ -190,6 +223,10 @@ packages/shared-types/src/
 4. **型安全性**: TypeScript strict modeで完全な型安全性
 
 ## Entity Implementation Patterns
+
+> **2026-06 (SPR-174 監査) 更新**: 以下のクラスベースのパターンは**歴史的な参考**。現行の shared-types は
+> エンティティクラスを持たず（クラス VO は SPR-181 で削除）、データは PlainObject + Zod スキーマ +
+> transformers で扱う。Entity / VO を新規に再導入する場合は CLAUDE.md の「Entity化のゲート」を先に通すこと。
 
 ### Basic Entity Structure
 
@@ -272,4 +309,4 @@ export class ValueObjectName {
 
 ---
 
-最終更新: 2026-05-22
+最終更新: 2026-06-12（SPR-174 監査: 主要プロパティを shared-types の現行正本型に同期）
