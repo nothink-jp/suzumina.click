@@ -41,6 +41,8 @@ vi.mock("../components/circle-page-client", () => ({
 
 // shared-types モック
 vi.mock("@suzumina.click/shared-types", () => ({
+	// parseWorkDocument 用の pass-through（検証は素通し）
+	WorkDocumentSchema: { safeParse: (data: unknown) => ({ success: true, data }) },
 	convertToFrontendWork: vi.fn((work: any) => work), // パススルー変換
 }));
 

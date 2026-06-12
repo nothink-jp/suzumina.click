@@ -47,6 +47,8 @@ vi.mock("@/app/works/components/work-card", () => ({
 
 // shared-types モック
 vi.mock("@suzumina.click/shared-types", () => ({
+	// parseWorkDocument 用の pass-through（検証は素通し）
+	WorkDocumentSchema: { safeParse: (data: unknown) => ({ success: true, data }) },
 	getCreatorTypeLabel: vi.fn((types: string[]) => {
 		const labels: Record<string, string> = {
 			voice: "声優",

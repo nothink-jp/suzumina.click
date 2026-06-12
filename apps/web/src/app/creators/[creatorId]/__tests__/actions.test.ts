@@ -6,6 +6,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // workTransformers のモック
 vi.mock("@suzumina.click/shared-types", () => ({
+	// parseWorkDocument 用の pass-through（検証は素通し）
+	WorkDocumentSchema: { safeParse: (data: unknown) => ({ success: true, data }) },
 	workTransformers: {
 		fromFirestore: vi.fn((data) => {
 			// Use the mock helper function to transform data

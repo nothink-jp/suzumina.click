@@ -11,7 +11,11 @@ import type { EnhancedSearchParams } from "./lib/work-filtering";
 import { filterWorksByUnifiedData, needsComplexFiltering } from "./lib/work-filtering";
 import { buildWorksQuery } from "./lib/work-query-builder";
 import { sortWorks } from "./lib/work-sorting";
-import { convertDocsToWorks, convertWorksToPlainObjects } from "./utils/work-converters";
+import {
+	convertDocsToWorks,
+	convertWorksToPlainObjects,
+	parseWorkDocument,
+} from "./utils/work-converters";
 
 /**
  * シンプルなクエリで作品を取得
@@ -198,12 +202,8 @@ export async function getWorkById(workId: string): Promise<WorkPlainObject | nul
 				return null;
 			}
 
-			const data = doc.data() as import("@suzumina.click/shared-types").WorkDocument;
-
-			// データにIDが設定されていない場合、ドキュメントIDを使用
-			if (!data.id) {
-				data.id = doc.id;
-			}
+			// raw に id: doc.id を常に含めるため、data.id は設定済み
+			const data = parseWorkDocument({ ...doc.data(), id: doc.id });
 
 			// フロントエンド形式に変換
 			return workTransformers.fromFirestore(data);
