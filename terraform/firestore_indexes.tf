@@ -380,8 +380,10 @@ resource "google_firestore_index" "contacts_priority_createdat_desc" {
 # 
 # ⚠️ 注意: dateフィールドのみのインデックスは不要
 # Firestoreの自動single-fieldインデックスで十分対応可能
-# - date ASC/DESC: Single-field indexで自動作成
-# - Collection Group クエリ: 自動インデックスで対応
+# - date ASC/DESC: Single-field index（COLLECTION スコープ）で自動作成
+# - Collection Group クエリ: 現在 collectionGroup("priceHistory") は未使用のため不要。
+#   使う場合は google_firestore_field で COLLECTION_GROUP index を明示定義すること
+#   （COLLECTION_GROUP スコープの単一フィールド index は自動生成されない。SPR-204 参照）
 # 
 # 以下のクエリパターンが自動インデックスで実行可能:
 # - orderBy('date', 'desc').limit(90)
