@@ -21,9 +21,6 @@ vi.mock("next/navigation", () => ({
 // Server Actions モック
 vi.mock("../actions", () => ({
 	getCreatorInfo: vi.fn(),
-	getCreatorWorks: vi.fn(),
-	getCreatorWithWorks: vi.fn(),
-	getCreatorWithWorksWithPagination: vi.fn(),
 	getCreatorWorksList: vi.fn(),
 }));
 
