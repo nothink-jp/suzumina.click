@@ -25,7 +25,7 @@
 | **音声ボタン** | YouTubeタイムスタンプを参照してワンクリックで音声再生できる機能 | Audio Button | `audioButtons` コレクション |
 | **音声参照** | YouTube動画の特定時間範囲を指定して音声コンテンツを作成すること | Audio Reference | 開始時刻・終了時刻・再生時間で定義 |
 | **タイムスタンプ参照** | YouTube動画内の特定時間を秒単位で指定する仕組み | Timestamp Reference | `startTime`, `endTime` フィールド |
-| **ソース動画** | 音声ボタンの音声データ元となるYouTube動画 | Source Video | `sourceVideoId` で参照 |
+| **ソース動画** | 音声ボタンの音声データ元となるYouTube動画 | Source Video | `videoId` で参照（旧称 `sourceVideoId` は legacy・読み取り時の fallback のみ） |
 
 ### 音声分類・管理
 
