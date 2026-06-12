@@ -380,8 +380,10 @@ resource "google_firestore_index" "contacts_priority_createdat_desc" {
 # 
 # ⚠️ 注意: dateフィールドのみのインデックスは不要
 # Firestoreの自動single-fieldインデックスで十分対応可能
-# - date ASC/DESC: Single-field indexで自動作成
-# - Collection Group クエリ: 自動インデックスで対応
+# - date ASC/DESC: Single-field index（COLLECTION スコープ）で自動作成
+# - Collection Group クエリ: 現在 collectionGroup("priceHistory") は未使用のため不要。
+#   使う場合は google_firestore_field で COLLECTION_GROUP index を明示定義すること
+#   （COLLECTION_GROUP スコープの単一フィールド index は自動生成されない。SPR-204 参照）
 # 
 # 以下のクエリパターンが自動インデックスで実行可能:
 # - orderBy('date', 'desc').limit(90)
@@ -413,23 +415,55 @@ resource "google_firestore_index" "circles_name_workcount_desc" {
 }
 
 # creators サブコレクション works - Collection Group Query用
-# 注意: 単一フィールドのCollection Group QueryはFirestoreが自動的にインデックスを作成するため、
-# 複合インデックスのみを定義する必要があります。
+#
+# 重要: COLLECTION_GROUP スコープの「単一フィールド」index は Firestore の自動生成対象外。
+# 自動生成されるのは COLLECTION スコープの単一フィールド index のみで、
+# collectionGroup("works").where("workId", "==", ...) のような CG 横断クエリには
+# 明示的な single-field index 設定（exemption）が必須。無いと実行時に
+# `9 FAILED_PRECONDITION: The query requires a COLLECTION_GROUP_ASC index ...` になる。
+# 参照: apps/functions/src/services/dlsite/creator-firestore.ts getExistingCreatorMappings() / SPR-204
+#
+# 複合 index 専用の google_firestore_index ではなく、単一フィールド index 設定を扱う
+# google_firestore_field で定義する。index_config は当該フィールドの index 構成を
+# 「全置換」するため、既定の COLLECTION ASC/DESC を残したうえで COLLECTION_GROUP ASC を追加する。
+resource "google_firestore_field" "works_workid_collection_group" {
+  project    = var.gcp_project_id
+  database   = "(default)"
+  collection = "works"
+  field      = "workId"
 
-# 複合インデックスの例: 役割と作品IDの組み合わせ検索用
-# 現在のクエリでは不要だが、将来的に必要になる可能性がある
+  index_config {
+    # 既定（自動生成）の単一フィールド index を維持（明示しないと削除される）
+    indexes {
+      query_scope = "COLLECTION"
+      order       = "ASCENDING"
+    }
+    indexes {
+      query_scope = "COLLECTION"
+      order       = "DESCENDING"
+    }
+    # 本対応で追加する Collection Group index（getExistingCreatorMappings 用）
+    indexes {
+      query_scope = "COLLECTION_GROUP"
+      order       = "ASCENDING"
+    }
+  }
+}
+
+# （将来用・複合インデックスの例）役割と作品IDの組み合わせ検索用。
+# 現在のクエリでは不要。必要になったら有効化する。
 # resource "google_firestore_index" "creators_works_collection_group_roles_workid" {
 #   project    = var.gcp_project_id
 #   collection = "works"
 #   database   = "(default)"
-#   
+#
 #   query_scope = "COLLECTION_GROUP"
-#   
+#
 #   fields {
 #     field_path   = "roles"
 #     array_config = "CONTAINS"
 #   }
-#   
+#
 #   fields {
 #     field_path = "workId"
 #     order      = "ASCENDING"
