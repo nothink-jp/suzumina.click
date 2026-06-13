@@ -2,7 +2,9 @@
 # Optimized for Next.js with advanced caching and monorepo structure
 
 FROM node:24.16.0-alpine AS base
-RUN apk add --no-cache libc6-compat tini
+# ベースイメージ同梱の OS パッケージ(openssl libssl3/libcrypto3 等)に既知 CVE が出るため
+# Alpine の security backport を取り込んでから必要パッケージを追加する
+RUN apk upgrade --no-cache && apk add --no-cache libc6-compat tini
 
 # pnpm v11 では非対話環境での node_modules purge が abort されるため
 # CI=true を設定して非対話モードで自動承認させる
@@ -72,6 +74,10 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # Create app user for security
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
+
+# 実行時に npm は不要(node server.js で起動)。ベースイメージ同梱 npm の既知脆弱性
+# (brace-expansion / ip-address 等)を除去し、攻撃面も削減する
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
 # Copy built application (standalone includes all dependencies)
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
