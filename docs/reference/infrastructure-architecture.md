@@ -308,7 +308,7 @@ production = {
 
 ### **デプロイ戦略との統合**
 
-このTerraform構成は、[リリースプロセス](./RELEASE_PROCESS.md)と[デプロイ戦略](./DEPLOYMENT_STRATEGY.md)と完全に統合されており、以下の自動化を実現します：
+このTerraform構成は、[デプロイガイド](../guides/deployment.md)（リリース・デプロイ手順）と完全に統合されており、以下の自動化を実現します：
 
 1. **main ブランチ統合** → Staging環境自動デプロイ
 2. **Git Tag作成** → Production環境手動承認デプロイ  
