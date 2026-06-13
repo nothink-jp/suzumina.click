@@ -203,5 +203,4 @@ DDDのEntity実装は以下の基準に基づいて判断する：
 ## 参考
 
 - [ADR-005: Entity実装の教訓](ADR-005-entity-implementation-lessons.md)
-- [Domain Model](../../reference/domain-model.md)
-- [Domain Object Catalog](../../reference/domain-object-catalog.md)
+- [Domain Model](../../reference/domain-model.md)（旧 Domain Object Catalog を統合）
