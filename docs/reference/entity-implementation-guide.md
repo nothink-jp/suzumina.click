@@ -120,8 +120,7 @@ const work = workTransformers.fromFirestore(data); // WorkPlainObject
   [video-firestore.ts](../../packages/shared-types/src/transformers/video-firestore.ts) /
   [audio-button.ts](../../packages/shared-types/src/transformers/audio-button.ts)
 - 読み取り境界の safeParse: [work-converters.ts](../../apps/web/src/app/works/utils/work-converters.ts)
-- ドメイン一覧と業務ルール: [domain-object-catalog.md](domain-object-catalog.md) /
-  [domain-model.md](domain-model.md)
+- ドメイン一覧と業務ルール: [domain-model.md](domain-model.md)
 
 ---
 
