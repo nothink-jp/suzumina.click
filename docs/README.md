@@ -34,8 +34,7 @@ Core technical references for the project:
 - [Infrastructure Architecture](reference/infrastructure-architecture.md) - GCP infrastructure and deployment
 - [Application Architecture](reference/application-architecture.md) - Application design and patterns
 - [Database Schema](reference/database-schema.md) - Firestore structure and data models
-- [Domain Model](reference/domain-model.md) - Domain-driven design architecture
-- [Domain Object Catalog](reference/domain-object-catalog.md) - Detailed entity and value object specifications
+- [Domain Model](reference/domain-model.md) - Domain object catalog: where each concept's source of truth lives (links into shared-types)
 - [Ubiquitous Language](reference/ubiquitous-language.md) - Common terminology and concepts
 
 ### Architecture Decisions
