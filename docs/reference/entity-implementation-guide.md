@@ -1,240 +1,129 @@
-# Entity実装ガイド
+# ドメインオブジェクト実装ガイド（関数型・現行アーキテクチャ）
 
-このガイドは、suzumina.clickプロジェクトでEntity/Value Objectパターンを実装する際の参考ドキュメントです。
+このガイドは、suzumina.click でドメインオブジェクト（Work / Video / AudioButton など）の
+**読み取り・変換・追加**を実装する際の手順書です。
 
-> **実装ステータス**: ✅ Result/Eitherパターン採用済み (2025-08-11)
-> - すべてのファクトリメソッドがResult型を返す
-> - プライベートコンストラクタパターンを採用
-> - エラーを値として扱う（例外をスローしない）
+> **2026-06 (SPR-174) 全面改訂**: 本ガイドはかつて「クラス Entity の実装手順」
+> （`extends BaseEntity` / `implements EntityValidatable` / プライベートコンストラクタ /
+> `static create()` / `static fromFirestoreData()` を持つクラス）を解説していたが、
+> **その API は現存しない**。クラス Entity は関数型アーキテクチャへの移行で全廃され、
+> クラス Value Object は SPR-181 で削除済み（`packages/shared-types/src/value-objects/` ごと削除）。
+> grep で `extends BaseEntity` / `EntityValidatable` / `fromFirestoreData` は **0 件**。
+> データ表現は **PlainObject 型 + Zod スキーマ + `transformers/` の純関数**に一本化されている。
+> 関数型アーキテクチャへの移行記録は [ADR-006](../decisions/architecture/ADR-006-functional-architecture-migration.md)、
+> 旧クラス実装の教訓は [ADR-005](../decisions/architecture/ADR-005-entity-implementation-lessons.md)（いずれも歴史文書）を参照。
 
-> **重要な決定**: ⚠️ 関数型パターンへの移行を断念 (2025-08-19)
-> - Entity/PlainObjectパターンから関数型パターンへの移行を試みたが、本番環境での表示不具合が発生
-> - 現行のEntity/PlainObjectパターンを維持し、安定性を優先する方針に決定
-> - 詳細は[ADR-005: Entity実装の教訓](../decisions/architecture/ADR-005-entity-implementation-lessons.md)を参照
+## 現行アーキテクチャ（3つの姿と1方向の変換）
 
-## 実装前の確認事項
+一つのドメイン（例: Work）は3つの姿を持つ。**正本（どれが真か）は文脈で決まる**:
 
-Entity実装を開始する前に、必ず以下を確認してください：
+| 姿 | 何か | 正本ファイル |
+|---|---|---|
+| **Firestore Document** | Firestore に永続化される生の形 | コレクション `works`（DLsite 作品） |
+| **`WorkDocument`（型 + Zod）** | Document の型・読み取り境界の検証スキーマ | `packages/shared-types/src/entities/work/work-document-schema.ts`（`WorkDocumentSchema` / `WorkDocument`） |
+| **`WorkPlainObject`** | RSC 境界（Server→Client）を越える表示用の形 | `packages/shared-types/src/plain-objects/work-plain.ts`（`WorkPlainObject`） |
 
-1. [ADR-001: DDD実装ガイドライン](../decisions/architecture/ADR-001-ddd-implementation-guidelines.md) - 実装判断基準
-2. [ADR-005: Entity実装の教訓](../decisions/architecture/ADR-005-entity-implementation-lessons.md) - 過去の実装から学ぶ
+変換は **`transformers/` の純関数**が担う。Entity/PlainObject の変換層は
+「RSC 境界の誤り訂正符号」＝フレームワークに強制された冗長であり、新しい変換層・抽象を足さない
+（CLAUDE.md §0 軸2）。
 
-## Entity実装パターン
+- **変換**: `packages/shared-types/src/transformers/`
+  （`work-firestore.ts` / `video-firestore.ts` / `audio-button.ts`）
+- **表示・集計の純関数**: `packages/shared-types/src/operations/`（現状 `video.ts`）、
+  および各ドメイン配下の utils（例: `entities/work/work-utils.ts`）
+- **検証・整形ユーティリティ**: `packages/shared-types/src/utilities/`
+- **エラー型・Result**: `packages/shared-types/src/core/result.ts`（`Result` / `DatabaseError` 等。
+  読み取り境界の純変換では基本使わないが、core ユーティリティで利用）
 
-### 1. 基本構造（Result型パターン）
+## 読み取りパス（Firestore Document → 画面）
 
-```typescript
-import { BaseEntity, type EntityValidatable } from "./base/entity";
-import { Result, ok, err } from "../core/result";
-import type { DatabaseError } from "../core/errors";
+公開 API は **barrel の `xxxTransformers.fromFirestore`** に統一されている:
 
-export class SomeEntity extends BaseEntity<SomeEntity> 
-  implements EntityValidatable<SomeEntity> {
-  
-  // プライベートコンストラクタ（直接呼び出し不可）
-  private constructor(
-    private readonly _id: SomeId,
-    private readonly _name: SomeName,
-    // ... other value objects
-  ) {
-    super();
-  }
-  
-  // Getters
-  get id(): SomeId { return this._id; }
-  
-  // Business logic methods
-  someBusinessMethod(): Result<SomeEntity, ValidationError> {
-    // バリデーション
-    if (!this.canPerformOperation()) {
-      return err({ field: 'entity', message: 'Cannot perform operation' });
-    }
-    // return new instance (immutability)
-    return ok(new SomeEntity(...));
-  }
-  
-  // Entity interface implementations
-  isValid(): boolean { /* ... */ }
-  getValidationErrors(): string[] { /* ... */ }
-  clone(): SomeEntity { /* ... */ }
-  equals(other: SomeEntity): boolean { /* ... */ }
-  
-  // Factory methods（Result型を返す）
-  static create(...args): Result<SomeEntity, ValidationError> {
-    // バリデーション
-    // 成功時: return ok(new SomeEntity(...))
-    // 失敗時: return err({...})
-  }
-  
-  static fromFirestoreData(data: any): Result<SomeEntity, DatabaseError> {
-    // データ検証と変換
-    // 成功時: return ok(new SomeEntity(...))
-    // 失敗時: return err({...})
-  }
-  
-  // Conversion methods
-  toFirestore(): FirestoreData { /* ... */ }
-  toPlainObject(): PlainObject { /* ... */ }
+```
+Work        → workTransformers.fromFirestore
+Video       → videoTransformers.fromFirestore（videoFromFirestore 別名）
+AudioButton → audioButtonTransformers.fromFirestore
 ```
 
-### 2. Value Object実装（BaseValueObject継承）
+実装手順:
+
+1. **Zod スキーマを定義/拡張**する（`*-document-schema.ts`）。
+   `.default([])` 等のデフォルトは **parse 時にのみ効く**点に注意（後述 SPR-201）。
+2. **PlainObject 型を定義/拡張**する（`plain-objects/*-plain.ts`）。プリミティブのみ。
+3. **`transformers/*.fromFirestore`** に Document→PlainObject の写像を書く。
+4. **読み取り境界（Server Action / loader）で `safeParse` を通す**。
+   正本パターンは [parseWorkDocument](../../apps/web/src/app/works/utils/work-converters.ts)（SPR-201）:
 
 ```typescript
-import { BaseValueObject, type ValidatableValueObject } from "../base/value-object";
-import { Result, ok, err } from "../core/result";
-import type { ValidationError } from "../core/errors";
-
-export class SomeId extends BaseValueObject<SomeId> 
-  implements ValidatableValueObject<SomeId> {
-  
-  // プライベートコンストラクタ
-  private constructor(private readonly value: string) {
-    super();
+// apps/web/src/app/works/utils/work-converters.ts（要約）
+export function parseWorkDocument(raw: unknown): WorkDocument {
+  const parsed = WorkDocumentSchema.safeParse(raw);
+  if (parsed.success) {
+    // parse 済み（default 適用）を基準に、schema が strip する未定義フィールドは raw から温存
+    return { ...(raw as Record<string, unknown>), ...parsed.data } as WorkDocument;
   }
-  
-  // ファクトリメソッド（Result型を返す）
-  static create(value: string): Result<SomeId, ValidationError> {
-    // validation
-    if (!value || value.trim().length === 0) {
-      return err({ 
-        field: 'id', 
-        message: 'ID cannot be empty' 
-      });
-    }
-    return ok(new SomeId(value));
-  }
-  
-  // 値の取得
-  toString(): string { return this.value; }
-  getValue(): string { return this.value; }
-  
-  // ValidatableValueObject実装
-  isValid(): boolean { 
-    return this.value && this.value.trim().length > 0;
-  }
-  
-  getValidationErrors(): string[] {
-    const errors: string[] = [];
-    if (!this.value || this.value.trim().length === 0) {
-      errors.push('ID cannot be empty');
-    }
-    return errors;
-  }
-  
-  // BaseValueObject実装
-  equals(other: SomeId): boolean {
-    return other instanceof SomeId && this.value === other.value;
-  }
-  
-  clone(): SomeId {
-    return new SomeId(this.value);
-  }
-  
-  toPlainObject(): string {
-    return this.value;
-  }
+  // 非破壊フォールバック（cast で継続）+ warn でスキーマドリフトを観測
+  logger.warn("WorkDocument スキーマ検証に失敗（cast で継続）", { /* ... */ });
+  return raw as WorkDocument;
 }
+
+// 読み取りの入口
+const data = parseWorkDocument({ ...doc.data(), id: doc.id });
+const work = workTransformers.fromFirestore(data); // WorkPlainObject
 ```
 
-### 3. PlainObject定義（Server/Client境界用）
+**なぜ blind cast でなく safeParse か（SPR-201）**: 従来の `as WorkDocument` 直 cast は
+`.default([])` を実効化せず、「required のはずのフィールドが実行時に欠ける静かな型嘘」を残していた。
+検証失敗時に落とさず warn するのは、本番データとスキーマの整合が未確認のため
+「落とさず観測」を選んでいるから。warn が常態化したら schema を実態へ寄せ、収束後は skip へ倒す余地がある。
 
-```typescript
-export interface SomePlainObject {
-  id: string;
-  name: string;
-  // ... other properties (primitive types only)
-}
-```
+## 書き込みパス（画面 → Firestore Document）
 
-## テスト実装
+- **データ操作は Server Actions**（正本は `apps/web/src/actions/`。route 同居 `app/*/actions.ts` は段階移行中）。
+- 書き込み（Plain→Document）の **transformer は基本持たない**。各 Server Action / 収集パイプラインが
+  Document を直接構築する（旧 `work-firestore.ts` の `toFirestore` は呼び出しゼロの死蔵だったため削除済み。
+  Video は `videoToFirestore` を残す）。
+- **カウンタ更新は `lib/firestore-helpers` の `updateCounter` を直接使う**（CLAUDE.md §2）。
+- **merge の sticky フィールドに注意**: `merge:true` + `ignoreUndefinedProperties` では `undefined` が
+  スキップされ旧値が残る。不在を表すなら `FieldValue.delete()` で明示する。
 
-各Entityには包括的なテストが必要です（Result型対応）：
+## 新しいドメインオブジェクトを足すとき
 
-```typescript
-describe("SomeEntity", () => {
-  describe("create", () => {
-    it("should create valid entity", () => {
-      const result = SomeEntity.create(validData);
-      expect(result.isOk()).toBe(true);
-      if (result.isOk()) {
-        expect(result.value.id.toString()).toBe(validData.id);
-      }
-    });
-    
-    it("should return error on invalid data", () => {
-      const result = SomeEntity.create(invalidData);
-      expect(result.isErr()).toBe(true);
-      if (result.isErr()) {
-        expect(result.error.field).toBe('expectedField');
-        expect(result.error.message).toContain('expected message');
-      }
-    });
-  });
-  
-  describe("business logic", () => {
-    it("should perform business operation", () => {
-      const entity = SomeEntity.create(validData).value!;
-      const result = entity.someBusinessMethod();
-      expect(result.isOk()).toBe(true);
-    });
-  });
-  
-  describe("validation", () => {
-    it("should validate correctly", () => {
-      const entity = SomeEntity.create(validData).value!;
-      expect(entity.isValid()).toBe(true);
-      expect(entity.getValidationErrors()).toHaveLength(0);
-    });
-  });
-  
-  describe("serialization", () => {
-    it("should convert from Firestore", () => {
-      const result = SomeEntity.fromFirestoreData(firestoreData);
-      expect(result.isOk()).toBe(true);
-    });
-    
-    it("should convert to PlainObject", () => {
-      const entity = SomeEntity.create(validData).value!;
-      const plain = entity.toPlainObject();
-      expect(plain.id).toBe(validData.id);
-    });
-  });
-});
-```
+まず **CLAUDE.md の「Entity化のゲート」を通す**。次のいずれも満たさなければ
+「型定義 + 純関数」に留める（クラス化しない）:
 
-## 実装チェックリスト
+- ビジネスルールが5個以上ある、または
+- 明確な状態遷移がある（例: draft→published→archived）、または
+- 不変条件が複雑
 
-- [ ] ビジネスルールを5個以上リストアップ
-- [ ] Value Objectの必要性を検討
-- [ ] BaseEntity/BaseValueObjectを継承
-- [ ] プライベートコンストラクタの使用
-- [ ] Result型を返すファクトリメソッド
-- [ ] 不変性（Immutability）の確保
-- [ ] 包括的なバリデーション（例外をスローしない）
-- [ ] Firestore変換メソッド（Result型対応）
-- [ ] PlainObject変換メソッド（Server Components用）
-- [ ] 単体テスト（Result型対応、カバレッジ100%目標）
-- [ ] ドキュメント更新
+「他のドメインが成功したから」は理由にしない（過剰一般化の禁止。判断背景は
+[ADR-001](../decisions/architecture/ADR-001-ddd-implementation-guidelines.md) /
+[ADR-005](../decisions/architecture/ADR-005-entity-implementation-lessons.md)）。
+**現時点では全ドメインが「型 + Zod + 純関数」に収まっており、クラス Entity はゼロ**。
+ゲートを通さない通常ケースの実装は次の3点に集約される:
 
-## 参考実装
+1. `*-document-schema.ts` に Zod スキーマと `XxxDocument` 型を追加
+2. `plain-objects/*-plain.ts` に `XxxPlainObject` を追加
+3. `transformers/*.ts` に `fromFirestore` を追加し、barrel から `xxxTransformers` を公開
 
-成功例：
-- [Video Entity](../../packages/shared-types/src/entities/video.ts)
-- [Work Entity](../../packages/shared-types/src/entities/work.ts)
+## テスト
 
-## 注意事項
+- テストは `__tests__` ディレクトリに置く（ソースと同居させない）。
+- 検証対象は **Zod スキーマ（parse の成否・default 適用）と transformer（写像の正しさ）**。
+- 完了前は必ず `pnpm verify`（lint + typecheck + test、カバレッジ閾値も強制）。
 
-1. **エラーハンドリング**: 例外をスローせず、Result型でエラーを返す
-2. **プライベートコンストラクタ**: すべてのEntity/Value Objectで採用
-3. **YAGNI原則**: 必要になるまで実装しない
-4. **段階的実装**: 最小限から始めて徐々に拡張
-5. **ROI考慮**: 実装コストが利益を上回る場合は見送る
+## 参考実装（正本ファイル）
 
-詳細な判断基準は以下を参照：
-- [ADR-001: DDD実装ガイドライン](../decisions/architecture/ADR-001-ddd-implementation-guidelines.md)
-- [ADR-002: TypeScript型安全性強化](../decisions/architecture/ADR-002-typescript-type-safety-enhancement.md)
+- スキーマ: [work-document-schema.ts](../../packages/shared-types/src/entities/work/work-document-schema.ts)
+- PlainObject: [work-plain.ts](../../packages/shared-types/src/plain-objects/work-plain.ts)
+- 変換: [work-firestore.ts](../../packages/shared-types/src/transformers/work-firestore.ts) /
+  [video-firestore.ts](../../packages/shared-types/src/transformers/video-firestore.ts) /
+  [audio-button.ts](../../packages/shared-types/src/transformers/audio-button.ts)
+- 読み取り境界の safeParse: [work-converters.ts](../../apps/web/src/app/works/utils/work-converters.ts)
+- ドメイン一覧と業務ルール: [domain-object-catalog.md](domain-object-catalog.md) /
+  [domain-model.md](domain-model.md)
 
 ---
 
-**最終更新**: 2025-08-11
-**バージョン**: 2.0 (Result型パターン採用)
+**最終更新**: 2026-06-13
+**バージョン**: 3.0（SPR-174: 関数型アーキテクチャに全面改訂。旧 2.0 のクラス Entity 実装手順は全廃済み API のため撤去）
