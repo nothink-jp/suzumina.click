@@ -1,6 +1,6 @@
 # ドメインモデル設計（簡易版）
 
-**最終更新**: 2026-06-12  
+**最終更新**: 2026-06-13  
 **目的**: suzumina.clickプロジェクトのドメインモデルの簡潔な参照ドキュメント
 
 > **2026-06 (SPR-174 監査) 更新**: 各エンティティの「主要プロパティ」を shared-types の現行正本型
@@ -218,96 +218,26 @@ packages/shared-types/src/
 
 ## 設計原則
 
-1. **不変性**: 値オブジェクトは不変
-2. **カプセル化**: ビジネスロジックは適切なドメインオブジェクトに配置
-3. **Plain Object変換**: Next.js Server Componentsとの連携用
-4. **型安全性**: TypeScript strict modeで完全な型安全性
+1. **データ表現の一本化**: 各ドメインは PlainObject 型 + Zod スキーマで定義し、Firestore ⇄ 型の変換は
+   `transformers/` の純関数で行う（クラス Entity・クラス VO は持たない）
+2. **不変性**: PlainObject は読み取り専用の値として扱い、書き換えず新しい値を作る
+3. **RSC 境界の正本は PlainObject**: Server Component へ渡る正本は `*PlainObject`。
+   Firestore Document ⇄ PlainObject の変換層は RSC 境界の誤り訂正符号であり、新たな変換層を足さない
+4. **読み取り境界でのバリデーション**: Firestore 読み取りは Zod `safeParse` を通す
+   （例: `apps/web/src/app/works/utils/work-converters.ts` の `parseWorkDocument`、SPR-201）
+5. **型安全性**: TypeScript strict mode + `@suzumina.click/shared-types` の型を使う
 
-## Entity Implementation Patterns
+## 実装手順
 
-> **2026-06 (SPR-174 監査) 更新**: 以下のクラスベースのパターンは**歴史的な参考**。現行の shared-types は
-> エンティティクラスを持たず（クラス VO は SPR-181 で削除）、データは PlainObject + Zod スキーマ +
-> transformers で扱う。Entity / VO を新規に再導入する場合は CLAUDE.md の「Entity化のゲート」を先に通すこと。
+データ表現（PlainObject 型 + Zod スキーマ + `transformers/` の純関数）の具体的な実装手順
+— Firestore 読み取り境界での `safeParse`、`_computed` の付与、`fromFirestore` 変換の使い方など —
+は [entity-implementation-guide.md](./entity-implementation-guide.md) に一本化している。
+本ドキュメントはモデル（どの概念が存在し、どう関係するか）に専念し、how-to は重複再掲しない
+（CLAUDE.md §0「doc は少なく・濃く・近く」）。
 
-### Basic Entity Structure
-
-```typescript
-export class EntityName {
-  // Private readonly properties
-  constructor(
-    private readonly _id: EntityId,
-    private readonly _content: ContentValueObject,
-    private readonly _metadata: MetadataValueObject
-  ) {}
-
-  // Firestore restoration (required)
-  static fromFirestoreData(data: FirestoreData): EntityName | null {
-    try {
-      const id = new EntityId(data.id);
-      const content = ContentValueObject.fromData(data);
-      const metadata = MetadataValueObject.fromData(data);
-      
-      return new EntityName(id, content, metadata);
-    } catch (error) {
-      console.error('Failed to create entity:', error);
-      return null;
-    }
-  }
-
-  // Plain Object conversion (for Server Components)
-  toPlainObject(): EntityPlainObject {
-    return {
-      id: this._id.value,
-      content: this._content.toPlainObject(),
-      metadata: this._metadata.toPlainObject(),
-      _computed: {
-        displayName: this.getDisplayName(),
-        isValid: this.isValid(),
-      }
-    };
-  }
-}
-```
-
-### Value Object Structure
-
-> **2026-06 (SPR-181) 更新**: 以下はクラス VO の参考パターンだが、shared-types では**この層を廃止済み**。
-> 新規に値オブジェクトを再導入する場合は CLAUDE.md の「Entity化のゲート」を先に通すこと。
-
-```typescript
-export class ValueObjectName {
-  constructor(private readonly _value: string) {
-    this.validate();
-  }
-
-  private validate(): void {
-    if (!this._value || this._value.length === 0) {
-      throw new Error('Value cannot be empty');
-    }
-  }
-
-  get value(): string {
-    return this._value;
-  }
-
-  equals(other: ValueObjectName): boolean {
-    return this._value === other._value;
-  }
-
-  toPlainObject(): string {
-    return this._value;
-  }
-}
-```
-
-### Implementation Guidelines
-
-1. **Error Handling**: Use null returns instead of throwing errors
-2. **Validation**: Validate in constructors and factory methods
-3. **Immutability**: All properties should be readonly
-4. **Type Safety**: Use TypeScript strict mode
-5. **Server Components**: Always provide toPlainObject() method
+Entity / 値オブジェクトを新規に再導入する場合は、まず CLAUDE.md の「Entity化のゲート」を通すこと。
 
 ---
 
-最終更新: 2026-06-12（SPR-174 監査: 主要プロパティを shared-types の現行正本型に同期）
+最終更新: 2026-06-13（SPR-174 監査: 死んだクラス Entity / クラス VO のコード例を撤去し、実装手順は
+entity-implementation-guide.md へ集約。設計原則を関数型アーキテクチャに是正）
