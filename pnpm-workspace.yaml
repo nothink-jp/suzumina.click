@@ -11,6 +11,10 @@ overrides:
   "@tootallnate/once": ">=2.0.1"
   postcss: ">=8.5.10"
   qs: ">=6.15.2"
+  # esbuild < 0.28.1: バイナリ整合性未検証で RCE（GHSA-gv7w-rqvm-qjhr）・dev server 任意ファイル読み取り（GHSA-g7r4-m6w7-qqqr）
+  esbuild: ">=0.28.1"
+  # @grpc/grpc-js < 1.14.4: malformed request/圧縮メッセージでクラッシュ（CVE-2026-48068 / CVE-2026-48069）
+  "@grpc/grpc-js": ">=1.14.4"
   # better-auth(@better-auth/kysely-adapter) は kysely 0.28 系の DEFAULT_MIGRATION_LOCK_TABLE を要求するが
   # 0.29.x で削除されており、0.29.2 が解決されると認証ルートが ESM import で 500 になる。0.28 系にピン（SPR-156）。
   kysely: "0.28.17"
