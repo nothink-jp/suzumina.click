@@ -7,12 +7,23 @@ on:
   push:
     branches:
       - main
-    paths:
+    # 依存解決・イメージ構成に影響するファイル。pnpm-workspace.yaml(overrides の正本) と
+    # apps/web/Dockerfile を含める(以前は欠落し、Dockerfile/ベースイメージ単独の変更では
+    # コンテナスキャンが走らず退行を見逃していた)
+    paths: &scan-paths
       - 'package.json'
       - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
       - 'apps/*/package.json'
       - 'packages/*/package.json'
+      - 'apps/web/Dockerfile'
       - '.github/workflows/security-scan.yml'
+  # マージ前にイメージ/依存スキャンを走らせる(以前は push 後の main でしか走らず、
+  # PR 時点で脆弱性を検出できなかった)。paths は push と同一(アンカーで同期しドリフト再発を防ぐ)
+  pull_request:
+    branches:
+      - main
+    paths: *scan-paths
 
 permissions:
   contents: read
