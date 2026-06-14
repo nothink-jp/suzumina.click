@@ -42,7 +42,7 @@
 	},
 	"devDependencies": {
 		"@suzumina.click/typescript-config": "workspace:*",
-		"@types/node": "^25.9.2",
+		"@types/node": "^25.9.3",
 		"@vitest/coverage-v8": "^4.1.8",
 		"dotenv-cli": "^11.0.0",
 		"esbuild": "^0.28.0",
