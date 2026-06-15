@@ -3,7 +3,10 @@ packages:
   - packages/*
 
 overrides:
-  protobufjs: ">=7.5.8"
+  # protobufjs <= 8.5.0: schema 由来の名前が runtime プロパティを shadow（CVE-2026-54269）/
+  # binary decode の unknown fields 保持によるメモリ増幅（CVE-2026-54270）。8.6.0 で修正。
+  # 直接の依存元（google-gax 等）は ^7.5.3 を要求するが override で 8.x に引き上げる。
+  protobufjs: ">=8.6.0"
   vite: ">=7.3.2"
   path-to-regexp: ">=8.4.0"
   uuid: ">=11.1.1"
