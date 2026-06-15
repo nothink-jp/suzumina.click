@@ -222,6 +222,9 @@ describe("CreatorPage", () => {
 			title: "テストクリエイター - suzumina.click",
 			description:
 				"クリエイター「テストクリエイター」（声優 / イラスト）の参加作品一覧。総作品数: 5作品",
+			alternates: {
+				canonical: "/creators/creator123",
+			},
 			openGraph: {
 				title: "テストクリエイター - suzumina.click",
 				description:

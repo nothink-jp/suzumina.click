@@ -48,5 +48,8 @@ export async function generateMetadata({ params }: WorkDetailPageProps) {
 		title: `${work.title} | すずみなくりっく！`,
 		description:
 			work.description || `涼花みなせさんが出演する音声作品「${work.title}」の詳細ページです。`,
+		alternates: {
+			canonical: `/works/${workId}`,
+		},
 	};
 }

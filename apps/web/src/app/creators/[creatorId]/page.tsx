@@ -26,6 +26,9 @@ export async function generateMetadata({ params }: { params: Promise<{ creatorId
 	return {
 		title: `${creator.name} - suzumina.click`,
 		description: `クリエイター「${creator.name}」（${typeLabel}）の参加作品一覧。総作品数: ${creator.workCount}作品`,
+		alternates: {
+			canonical: `/creators/${creatorId}`,
+		},
 		openGraph: {
 			title: `${creator.name} - suzumina.click`,
 			description: `クリエイター「${creator.name}」（${typeLabel}）の参加作品一覧。総作品数: ${creator.workCount}作品`,

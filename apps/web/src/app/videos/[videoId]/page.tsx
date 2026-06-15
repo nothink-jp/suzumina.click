@@ -68,5 +68,8 @@ export async function generateMetadata({ params }: VideoDetailPageProps) {
 	return {
 		title: `${video.title} | すずみなくりっく！`,
 		description: video.description || `涼花みなせさんの動画「${video.title}」の詳細ページです。`,
+		alternates: {
+			canonical: `/videos/${videoId}`,
+		},
 	};
 }

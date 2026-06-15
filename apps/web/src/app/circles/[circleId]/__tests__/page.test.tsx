@@ -220,6 +220,9 @@ describe("CirclePage", () => {
 		expect(metadata).toEqual({
 			title: "テストサークル - suzumina.click",
 			description: "サークル「テストサークル」の作品一覧。総作品数: 10作品",
+			alternates: {
+				canonical: "/circles/RG12345",
+			},
 			openGraph: {
 				title: "テストサークル - suzumina.click",
 				description: "サークル「テストサークル」の作品一覧。総作品数: 10作品",

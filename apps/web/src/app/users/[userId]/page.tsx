@@ -28,6 +28,9 @@ export async function generateMetadata({ params }: UserProfilePageProps): Promis
 		return {
 			title: `${user.displayName}のプロフィール | すずみなくりっく！`,
 			description: `${user.displayName}さんの作成した音声ボタンをチェック。涼花みなせファンコミュニティ suzumina.click`,
+			alternates: {
+				canonical: `/users/${resolvedParams.userId}`,
+			},
 			openGraph: {
 				title: `${user.displayName}のプロフィール`,
 				description: `${user.displayName}さんのプロフィール`,

@@ -61,9 +61,6 @@ export const metadata: Metadata = {
 	authors: [{ name: "suzumina.click" }],
 	creator: "suzumina.click",
 	metadataBase: new URL("https://suzumina.click"),
-	alternates: {
-		canonical: "/",
-	},
 	openGraph: {
 		type: "website",
 		locale: "ja_JP",
