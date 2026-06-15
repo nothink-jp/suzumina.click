@@ -3,11 +3,17 @@ packages:
   - packages/*
 
 overrides:
-  protobufjs: ">=7.5.8"
-  vite: ">=7.3.2"
+  # protobufjs <= 8.5.0: schema 由来の名前が runtime プロパティを shadow（CVE-2026-54269）/
+  # binary decode の unknown fields 保持によるメモリ増幅（CVE-2026-54270）。8.6.0 で修正。
+  # 直接の依存元（google-gax 等）は ^7.5.3 を要求するが override で 8.x に引き上げる。
+  protobufjs: ">=8.6.0"
+  # vite < 8.0.16: server.fs.deny の Windows alternate path バイパス（GHSA-fx2h-pf6j-xcff）・
+  # 同梱 launch-editor の UNC path 経由 NTLMv2 ハッシュ漏洩（GHSA-v6wh-96g9-6wx3）。8.0.16 で修正。
+  vite: ">=8.0.16"
   path-to-regexp: ">=8.4.0"
   uuid: ">=11.1.1"
-  ws: ">=8.20.1"
+  # ws < 8.21.0: 小さな fragment/data chunk によるメモリ枯渇 DoS（GHSA-96hv-2xvq-fx4p）。8.21.0 で修正。
+  ws: ">=8.21.0"
   "@tootallnate/once": ">=2.0.1"
   postcss: ">=8.5.10"
   qs: ">=6.15.2"
@@ -15,6 +21,8 @@ overrides:
   esbuild: ">=0.28.1"
   # @grpc/grpc-js < 1.14.4: malformed request/圧縮メッセージでクラッシュ（CVE-2026-48068 / CVE-2026-48069）
   "@grpc/grpc-js": ">=1.14.4"
+  # js-yaml <= 4.1.1: merge key の繰り返し alias による二次計算量 DoS（CVE-2026-53550 / GHSA-h67p-54hq-rp68）。4.2.0 で修正。
+  "js-yaml": ">=4.2.0"
   # better-auth(@better-auth/kysely-adapter) は kysely 0.28 系の DEFAULT_MIGRATION_LOCK_TABLE を要求するが
   # 0.29.x で削除されており、0.29.2 が解決されると認証ルートが ESM import で 500 になる。0.28 系にピン（SPR-156）。
   kysely: "0.28.17"
