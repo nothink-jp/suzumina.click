@@ -26,7 +26,7 @@
 		"clean:all": "pnpm clean && rimraf node_modules **/node_modules"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "2.4.16",
+		"@biomejs/biome": "2.5.0",
 		"@secretlint/secretlint-formatter-sarif": "^13.0.2",
 		"@secretlint/secretlint-rule-pattern": "^13.0.2",
 		"@secretlint/secretlint-rule-preset-recommend": "^13.0.2",
