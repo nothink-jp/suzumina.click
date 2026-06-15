@@ -23,6 +23,9 @@ export async function generateMetadata({ params }: { params: Promise<{ circleId:
 	return {
 		title: `${circle.name} - suzumina.click`,
 		description: `サークル「${circle.name}」の作品一覧。総作品数: ${circle.workCount}作品`,
+		alternates: {
+			canonical: `/circles/${circleId}`,
+		},
 		openGraph: {
 			title: `${circle.name} - suzumina.click`,
 			description: `サークル「${circle.name}」の作品一覧。総作品数: ${circle.workCount}作品`,

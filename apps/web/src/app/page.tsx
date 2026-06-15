@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import {
 	AudioButtonsSection,
@@ -9,6 +10,16 @@ import {
 import { HeroSection } from "@/components/home/hero-section";
 import { VideosSection } from "@/components/sections/videos-section";
 import { WorksSection } from "@/components/sections/works-section";
+
+// トップページの自己参照 canonical。
+// ルートレイアウトに canonical を置くと全ページが "/" を継承してしまう（Next.js は
+// pathname を自動付与しない）ため、ここでトップページ専用に明示する。詳細ページは
+// 各 generateMetadata で自身の URL を canonical に設定する。
+export const metadata: Metadata = {
+	alternates: {
+		canonical: "/",
+	},
+};
 
 // Cache Components モデル: HeroSection と CommunitySection は静的シェル、
 // 各データセクションはそれぞれ個別の <Suspense> 境界で並列ストリーミングされる。
