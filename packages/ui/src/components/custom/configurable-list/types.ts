@@ -102,15 +102,48 @@ export interface ListError {
 }
 
 /**
- * ConfigurableList用のプロパティ
+ * 汎用リスト表示・ページング・状態の props（責務: 「ページ分割されたリストをどう描画するか」）。
+ * どのリストでも使う関心事のみ。フィルタ/ソート/検索/取得などの用途特化は ListQueryProps 側に置く。
  */
-export interface ConfigurableListProps<T> {
+export interface ListDisplayProps<T> {
 	items: T[];
 	renderItem: (item: T, index: number) => React.ReactNode;
-	itemsPerPage?: number;
+	className?: string;
+	emptyMessage?: string;
+	loadingComponent?: React.ReactNode;
+
+	// リスト本体の見出し（スクリーンリーダー向け）。
+	// ページ h1 と各カードの見出し（h3）の間を埋める中間 h2 として sr-only で描画し、
+	// 見出しレベルの skip を防ぐ。指定時のみ描画。
+	listHeading?: string;
+
+	// レイアウト設定
+	layout?: "list" | "grid" | "flex";
+	gridColumns?: {
+		default?: number;
+		sm?: number;
+		md?: number;
+		lg?: number;
+		xl?: number;
+	};
+
+	// 状態（外部から注入する loading / error）
 	loading?: boolean;
 	error?: ListError;
-	className?: string;
+
+	// ページング設定
+	itemsPerPage?: number;
+	itemsPerPageOptions?: number[];
+
+	// 初期総数（サーバーサイドレンダリング時）
+	initialTotal?: number;
+}
+
+/**
+ * 用途特化のクエリ（フィルタ/ソート/検索/URL同期）とサーバー連携の props
+ * （責務: 「リストをどう絞り込み・並べ替え・取得するか」）。設定値は画面ごとに異なる。
+ */
+export interface ListQueryProps<T> {
 	// フィルター設定
 	filters?: Record<string, FilterConfig>;
 
@@ -129,32 +162,16 @@ export interface ConfigurableListProps<T> {
 	dataAdapter?: DataAdapter<T>;
 	fetchFn: (params: unknown) => Promise<unknown>;
 
-	// カスタマイズ
+	// 取得エラーのコールバック
 	onError?: (error: Error) => void;
-	emptyMessage?: string;
-	loadingComponent?: React.ReactNode;
-
-	// レイアウト設定
-	layout?: "list" | "grid" | "flex";
-	gridColumns?: {
-		default?: number;
-		sm?: number;
-		md?: number;
-		lg?: number;
-		xl?: number;
-	};
-
-	// ページサイズ設定
-	itemsPerPageOptions?: number[];
-
-	// 初期総数（サーバーサイドレンダリング時）
-	initialTotal?: number;
-
-	// リスト本体の見出し（スクリーンリーダー向け）。
-	// ページ h1 と各カードの見出し（h3）の間を埋める中間 h2 として sr-only で描画し、
-	// 見出しレベルの skip を防ぐ。指定時のみ描画。
-	listHeading?: string;
 }
+
+/**
+ * ConfigurableList 用のプロパティ。
+ * 汎用表示（ListDisplayProps）と用途特化クエリ（ListQueryProps）の合成。
+ * どちらの責務に属する prop かは各インターフェイス定義を参照。
+ */
+export type ConfigurableListProps<T> = ListDisplayProps<T> & ListQueryProps<T>;
 
 /**
  * AdvancedList用のコントローラー

@@ -1,22 +1,20 @@
 /**
  * ConfigurableList - カスタマイズ可能なリストコンポーネント
  * フィルター、ソート、URL同期、サーバーサイドデータ取得機能を提供
+ *
+ * props は責務で 2 つに分かれる（型は ConfigurableListProps = 合成）:
+ * - 汎用表示・ページング・状態: ListDisplayProps（items/renderItem/layout/loading 等）
+ * - 用途特化クエリ・サーバー連携: ListQueryProps（filters/sorts/search/urlSync/fetchFn 等）
+ * フィルター UI ウィジェットは configurable-list-filters（FilterControl）に分離。
  */
 
 "use client";
 
-import { ChevronDown } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
-import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
-import { Checkbox } from "../ui/checkbox";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Skeleton } from "../ui/skeleton";
-import { Slider } from "../ui/slider";
 import { ConfigurableListControls } from "./configurable-list/configurable-list-controls";
+import { FilterControl } from "./configurable-list/configurable-list-filters";
 import { ConfigurableListFooter } from "./configurable-list/configurable-list-footer";
 import { ConfigurableListHeader } from "./configurable-list/configurable-list-header";
 import { ConfigurableListItems } from "./configurable-list/configurable-list-items";
@@ -31,339 +29,10 @@ import type {
 } from "./configurable-list/types";
 import { calculatePagination } from "./configurable-list/utils/data-adapter";
 import {
-	generateOptions,
 	getDefaultFilterValues,
 	hasActiveFilters,
 	normalizeOptions,
 } from "./configurable-list/utils/filter-helpers";
-
-// Filter component helpers to reduce complexity
-function SelectFilter({
-	value,
-	config,
-	onChange,
-}: {
-	value: unknown;
-	config: FilterConfig;
-	onChange: (value: unknown) => void;
-}) {
-	const options = generateOptions(config);
-	return (
-		<Select value={value?.toString() || ""} onValueChange={onChange}>
-			<SelectTrigger className="w-[180px]" aria-label={config.label || "絞り込み"}>
-				<SelectValue placeholder={config.placeholder || `${config.label}を選択`} />
-			</SelectTrigger>
-			<SelectContent>
-				{options.map((opt) => (
-					<SelectItem key={opt.value} value={opt.value}>
-						{opt.label}
-					</SelectItem>
-				))}
-			</SelectContent>
-		</Select>
-	);
-}
-
-function BooleanFilter({
-	keyName,
-	value,
-	config,
-	onChange,
-}: {
-	keyName: string;
-	value: unknown;
-	config: FilterConfig;
-	onChange: (value: unknown) => void;
-}) {
-	return (
-		<Button variant={value ? "default" : "outline"} size="sm" onClick={() => onChange(!value)}>
-			{config.label || keyName}
-		</Button>
-	);
-}
-
-function MultiselectFilter({
-	keyName,
-	value,
-	config,
-	onChange,
-}: {
-	keyName: string;
-	value: unknown;
-	config: FilterConfig;
-	onChange: (value: unknown) => void;
-}) {
-	const options = generateOptions(config);
-	const selectedValues = Array.isArray(value) ? value : [];
-
-	return (
-		<div className="space-y-2">
-			<Label>{config.label}</Label>
-			<div className="space-y-1 max-h-48 overflow-y-auto border rounded-md p-2">
-				{options.map((opt) => (
-					<div key={opt.value} className="flex items-center space-x-2">
-						<Checkbox
-							id={`${keyName}-${opt.value}`}
-							checked={selectedValues.includes(opt.value)}
-							onCheckedChange={(checked) => {
-								const newValues = checked
-									? [...selectedValues, opt.value]
-									: selectedValues.filter((v) => v !== opt.value);
-								onChange(newValues.length > 0 ? newValues : undefined);
-							}}
-						/>
-						<Label
-							htmlFor={`${keyName}-${opt.value}`}
-							className="text-sm font-normal cursor-pointer"
-						>
-							{opt.label}
-						</Label>
-					</div>
-				))}
-			</div>
-		</div>
-	);
-}
-
-function RangeFilter({
-	value,
-	config,
-	onChange,
-}: {
-	value: unknown;
-	config: FilterConfig;
-	onChange: (value: unknown) => void;
-}) {
-	const min = config.min ?? 0;
-	const max = config.max ?? 100;
-	const step = config.step ?? 1;
-	const rangeValue = value as { min?: number; max?: number } | undefined;
-	const currentMin = rangeValue?.min ?? min;
-	const currentMax = rangeValue?.max ?? max;
-
-	return (
-		<div className="space-y-2">
-			<Label>{config.label}</Label>
-			<div className="flex items-center space-x-2">
-				<Input
-					type="number"
-					value={currentMin}
-					min={min}
-					max={max}
-					step={step}
-					className="w-20"
-					onChange={(e) => {
-						const newMin = Number(e.target.value);
-						onChange({ min: newMin, max: currentMax });
-					}}
-				/>
-				<span className="text-sm text-muted-foreground">〜</span>
-				<Input
-					type="number"
-					value={currentMax}
-					min={min}
-					max={max}
-					step={step}
-					className="w-20"
-					onChange={(e) => {
-						const newMax = Number(e.target.value);
-						onChange({ min: currentMin, max: newMax });
-					}}
-				/>
-			</div>
-			<Slider
-				value={[currentMin, currentMax]}
-				min={min}
-				max={max}
-				step={step}
-				onValueChange={([newMin, newMax]) => {
-					onChange({ min: newMin, max: newMax });
-				}}
-				className="mt-2"
-			/>
-		</div>
-	);
-}
-
-function DateFilter({
-	keyName,
-	value,
-	config,
-	onChange,
-}: {
-	keyName: string;
-	value: unknown;
-	config: FilterConfig;
-	onChange: (value: unknown) => void;
-}) {
-	return (
-		<div className="space-y-2">
-			<Label>{config.label || keyName}</Label>
-			<Input
-				type="date"
-				value={value?.toString() || ""}
-				onChange={(e) => onChange(e.target.value || undefined)}
-				className="w-[180px]"
-			/>
-		</div>
-	);
-}
-
-function DateRangeFilter({
-	keyName,
-	value,
-	config,
-	onChange,
-}: {
-	keyName: string;
-	value: unknown;
-	config: FilterConfig;
-	onChange: (value: unknown) => void;
-}) {
-	const dateValue = value as { start?: string; end?: string } | undefined;
-	return (
-		<div className="space-y-2">
-			<Label>{config.label || keyName}</Label>
-			<div className="flex items-center space-x-2">
-				<Input
-					type="date"
-					value={dateValue?.start || ""}
-					min={config.minDate}
-					max={config.maxDate}
-					onChange={(e) => {
-						onChange({
-							start: e.target.value || undefined,
-							end: dateValue?.end,
-						});
-					}}
-					className="w-[140px]"
-				/>
-				<span className="text-sm text-muted-foreground">〜</span>
-				<Input
-					type="date"
-					value={dateValue?.end || ""}
-					min={config.minDate}
-					max={config.maxDate}
-					onChange={(e) => {
-						onChange({
-							start: dateValue?.start,
-							end: e.target.value || undefined,
-						});
-					}}
-					className="w-[140px]"
-				/>
-			</div>
-		</div>
-	);
-}
-
-function TagsFilter({
-	keyName,
-	value,
-	config,
-	onChange,
-}: {
-	keyName: string;
-	value: unknown;
-	config: FilterConfig;
-	onChange: (value: unknown) => void;
-}) {
-	const options = generateOptions(config);
-	const selectedValues = Array.isArray(value) ? value : [];
-	const isLoading = options === undefined || options === null;
-	const hasNoData = !isLoading && options.length === 0;
-
-	return (
-		<Popover>
-			<PopoverTrigger asChild>
-				<Button
-					variant="outline"
-					size="sm"
-					className="h-9 border-dashed"
-					disabled={isLoading || hasNoData}
-				>
-					{config.label || keyName}
-					{selectedValues.length > 0 && (
-						<>
-							<div className="mx-1 h-4 w-[1px] bg-border" />
-							<Badge variant="secondary" className="rounded-sm px-1 font-normal lg:hidden">
-								{selectedValues.length}
-							</Badge>
-							<div className="hidden space-x-1 lg:flex">
-								{selectedValues.length > 2 ? (
-									<Badge variant="secondary" className="rounded-sm px-1 font-normal">
-										{selectedValues.length}件選択中
-									</Badge>
-								) : (
-									options
-										.filter((option) => selectedValues.includes(option.value))
-										.map((option) => (
-											<Badge
-												key={option.value}
-												variant="secondary"
-												className="rounded-sm px-1 font-normal"
-											>
-												{option.label}
-											</Badge>
-										))
-								)}
-							</div>
-						</>
-					)}
-					<ChevronDown className="ml-2 h-4 w-4" />
-				</Button>
-			</PopoverTrigger>
-			<PopoverContent className="w-[300px] p-0" align="start">
-				<div className="p-4">
-					<div className="mb-2 text-sm font-medium">{config.label || keyName}</div>
-					{isLoading ? (
-						<div className="flex items-center justify-center py-8">
-							<div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-							<span className="ml-2 text-sm text-muted-foreground">読み込み中...</span>
-						</div>
-					) : options.length === 0 ? (
-						<div className="text-center py-4 text-sm text-muted-foreground">データがありません</div>
-					) : (
-						<>
-							<div className="grid gap-2 max-h-[300px] overflow-y-auto">
-								{options.map((option) => (
-									<div key={option.value} className="flex items-center space-x-2">
-										<Checkbox
-											id={`tag-${option.value}`}
-											checked={selectedValues.includes(option.value)}
-											onCheckedChange={(checked) => {
-												const newValues = checked
-													? [...selectedValues, option.value]
-													: selectedValues.filter((v) => v !== option.value);
-												onChange(newValues.length > 0 ? newValues : undefined);
-											}}
-										/>
-										<Label
-											htmlFor={`tag-${option.value}`}
-											className="text-sm font-normal cursor-pointer flex-1"
-										>
-											{option.label}
-										</Label>
-									</div>
-								))}
-							</div>
-							{selectedValues.length > 0 && (
-								<Button
-									variant="ghost"
-									size="sm"
-									className="mt-2 w-full"
-									onClick={() => onChange(undefined)}
-								>
-									クリア
-								</Button>
-							)}
-						</>
-					)}
-				</div>
-			</PopoverContent>
-		</Popover>
-	);
-}
 
 export function ConfigurableList<T>({
 	items: initialItems,
@@ -476,35 +145,16 @@ export function ConfigurableList<T>({
 		onSearch: handleSearch,
 	});
 
-	// フィルターコンポーネントのレンダリング
+	// フィルターUIの描画（type 振り分けは configurable-list-filters の FilterControl に委譲）
 	const renderFilter = useCallback(
-		(key: string, config: FilterConfig) => {
-			const value = fetchParams.filters[key];
-			const onChange = (v: unknown) => handleFilterChange(key, v);
-
-			switch (config.type) {
-				case "select":
-					return <SelectFilter value={value} config={config} onChange={onChange} />;
-				case "boolean":
-					return <BooleanFilter keyName={key} value={value} config={config} onChange={onChange} />;
-				case "multiselect":
-					return (
-						<MultiselectFilter keyName={key} value={value} config={config} onChange={onChange} />
-					);
-				case "range":
-					return <RangeFilter value={value} config={config} onChange={onChange} />;
-				case "date":
-					return <DateFilter keyName={key} value={value} config={config} onChange={onChange} />;
-				case "dateRange":
-					return (
-						<DateRangeFilter keyName={key} value={value} config={config} onChange={onChange} />
-					);
-				case "tags":
-					return <TagsFilter keyName={key} value={value} config={config} onChange={onChange} />;
-				default:
-					return null;
-			}
-		},
+		(key: string, config: FilterConfig) => (
+			<FilterControl
+				keyName={key}
+				value={fetchParams.filters[key]}
+				config={config}
+				onChange={(v) => handleFilterChange(key, v)}
+			/>
+		),
 		[fetchParams.filters, handleFilterChange],
 	);
 
