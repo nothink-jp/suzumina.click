@@ -1,15 +1,13 @@
 import type { VideoPlainObject } from "@suzumina.click/shared-types";
 import { HighlightText } from "@suzumina.click/ui/components/custom/highlight-text";
-import { VideoTagDisplay } from "@suzumina.click/ui/components/custom/three-layer-tag-display";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
-import { getYouTubeCategoryName } from "@suzumina.click/ui/lib/youtube-category-utils";
 import { Calendar, Lock } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 import ThumbnailImage from "@/components/ui/thumbnail-image";
 import { getVideoBadgeInfo } from "@/components/video/video-badge";
-import { buildTagSearchHref } from "@/lib/tag-search";
 import VideoCardActions from "./video-card-actions";
+import { VideoCardTags } from "./video-card-tags";
 
 // 表示日付（純関数）: ライブ配信は配信開始時間を優先し、無効なら公開時間にフォールバック
 function getDisplayDate(video: VideoPlainObject) {
@@ -65,7 +63,6 @@ interface VideoCardProps {
 function VideoCard({ video, variant = "grid", priority = false, searchQuery }: VideoCardProps) {
 	const actualButtonCount = video.audioButtonCount ?? 0;
 	const { formattedDate, displayLabel, dateTimeValue } = getDisplayDate(video);
-	const categoryName = getYouTubeCategoryName(video.categoryId);
 	const videoBadgeInfo = getVideoBadgeInfo(video);
 
 	return (
@@ -160,19 +157,12 @@ function VideoCard({ video, variant = "grid", priority = false, searchQuery }: V
 						</time>
 					</div>
 
-					{/* タグ表示（一列・コンパクト） */}
+					{/* タグ表示（一列・コンパクト）。tagHref(関数)注入は client island に隔離する */}
 					<div className="mb-4">
-						<VideoTagDisplay
+						<VideoCardTags
 							playlistTags={video.tags?.playlistTags || []}
 							userTags={video.tags?.userTags || []}
 							categoryId={video.categoryId}
-							categoryName={categoryName || undefined}
-							size="sm"
-							maxTagsPerLayer={5}
-							showEmptyLayers={false}
-							showCategory={true}
-							compact={true}
-							tagHref={buildTagSearchHref}
 							searchQuery={searchQuery}
 						/>
 					</div>
