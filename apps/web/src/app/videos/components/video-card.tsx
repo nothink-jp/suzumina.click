@@ -1,7 +1,6 @@
 import type { VideoPlainObject } from "@suzumina.click/shared-types";
 import { HighlightText } from "@suzumina.click/ui/components/custom/highlight-text";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
-import { getYouTubeCategoryName } from "@suzumina.click/ui/lib/youtube-category-utils";
 import { Calendar, Lock } from "lucide-react";
 import Link from "next/link";
 import React from "react";
@@ -64,7 +63,6 @@ interface VideoCardProps {
 function VideoCard({ video, variant = "grid", priority = false, searchQuery }: VideoCardProps) {
 	const actualButtonCount = video.audioButtonCount ?? 0;
 	const { formattedDate, displayLabel, dateTimeValue } = getDisplayDate(video);
-	const categoryName = getYouTubeCategoryName(video.categoryId);
 	const videoBadgeInfo = getVideoBadgeInfo(video);
 
 	return (
@@ -165,7 +163,6 @@ function VideoCard({ video, variant = "grid", priority = false, searchQuery }: V
 							playlistTags={video.tags?.playlistTags || []}
 							userTags={video.tags?.userTags || []}
 							categoryId={video.categoryId}
-							categoryName={categoryName || undefined}
 							searchQuery={searchQuery}
 						/>
 					</div>
