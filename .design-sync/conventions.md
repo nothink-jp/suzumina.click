@@ -53,6 +53,16 @@ white text on orange (it fails AA at 2.3:1; use dark or `minase-50` text).
 
 **Radius:** `rounded-sm | rounded-md | rounded-lg | rounded-xl | rounded-full` (from the `--radius` token, 0.5rem).
 
+## Component API conventions
+
+- **variant / size vocabulary** — `Button` is the base set; other components use a consistent subset:
+  - `variant`: `default | secondary | destructive | outline | ghost | link` (Button, Badge).
+  - `Alert` variant: `default | destructive | info | success | warning` (status colors).
+  - `Toggle` variant: `default | outline`.
+  - `size`: `default | sm | lg | icon` (+ `xs` / `icon-*` on Button). Don't invent new variant/size names — pick from these unions (each component's `VariantProps` is the contract).
+- **prop naming** — state booleans `is*` (`isFavorite`, `isAuthenticated`), event handlers `on*` (`onFavoriteToggle`, `onTagClick`), display toggles `show*` (`showDetailLink`, `showIcon`). Plain config booleans (`disabled`, `compact`, `animated`) stay unprefixed, matching React idiom.
+- **primitive vs domain** — `components/ui/*` are reusable shadcn-derived primitives (Button, Badge, Alert, …); `components/custom/*` are app-specific compositions (AudioButton, TagList, ConfigurableList, …). Both are re-exported from the package root.
+
 ## Where the truth lives
 
 - The bound **`styles.css`** (and its `@import` closure) is the authoritative source of tokens and
