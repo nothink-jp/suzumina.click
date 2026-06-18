@@ -249,20 +249,15 @@ function TagsFilter({
 	config: FilterConfig;
 	onChange: (value: unknown) => void;
 }) {
+	// generateOptions は常に配列を返す（nullish にならない）ため、判定は「空かどうか」だけで足りる
 	const options = generateOptions(config);
 	const selectedValues = Array.isArray(value) ? value : [];
-	const isLoading = options === undefined || options === null;
-	const hasNoData = !isLoading && options.length === 0;
+	const hasOptions = options.length > 0;
 
 	return (
 		<Popover>
 			<PopoverTrigger asChild>
-				<Button
-					variant="outline"
-					size="sm"
-					className="h-9 border-dashed"
-					disabled={isLoading || hasNoData}
-				>
+				<Button variant="outline" size="sm" className="h-9 border-dashed" disabled={!hasOptions}>
 					{config.label || keyName}
 					{selectedValues.length > 0 && (
 						<>
@@ -297,14 +292,7 @@ function TagsFilter({
 			<PopoverContent className="w-[300px] p-0" align="start">
 				<div className="p-4">
 					<div className="mb-2 text-sm font-medium">{config.label || keyName}</div>
-					{isLoading ? (
-						<div className="flex items-center justify-center py-8">
-							<div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-							<span className="ml-2 text-sm text-muted-foreground">読み込み中...</span>
-						</div>
-					) : options.length === 0 ? (
-						<div className="text-center py-4 text-sm text-muted-foreground">データがありません</div>
-					) : (
+					{hasOptions ? (
 						<>
 							<div className="grid gap-2 max-h-[300px] overflow-y-auto">
 								{options.map((option) => (
@@ -339,6 +327,8 @@ function TagsFilter({
 								</Button>
 							)}
 						</>
+					) : (
+						<div className="text-center py-4 text-sm text-muted-foreground">データがありません</div>
 					)}
 				</div>
 			</PopoverContent>
