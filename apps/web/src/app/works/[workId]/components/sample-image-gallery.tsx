@@ -52,10 +52,10 @@ function SampleThumbnail({
 	if (hasError) {
 		return (
 			<div
-				className={`${className} bg-gray-100 flex items-center justify-center`}
+				className={`${className} bg-muted flex items-center justify-center`}
 				style={{ aspectRatio: "1/1" }}
 			>
-				<span className="text-gray-400 text-xs">読み込み失敗</span>
+				<span className="text-muted-foreground text-xs">読み込み失敗</span>
 			</div>
 		);
 	}
@@ -130,10 +130,10 @@ function ExpandedImage({
 	if (hasError) {
 		return (
 			<div
-				className="bg-gray-100 flex items-center justify-center"
+				className="bg-muted flex items-center justify-center"
 				style={{ width: "400px", height: "300px" }}
 			>
-				<span className="text-gray-400">画像を読み込めませんでした</span>
+				<span className="text-muted-foreground">画像を読み込めませんでした</span>
 			</div>
 		);
 	}
@@ -168,8 +168,8 @@ export default function SampleImageGallery({ sampleImages, workTitle }: SampleIm
 					</CardTitle>
 				</CardHeader>
 				<CardContent>
-					<div className="text-center py-8 text-gray-500">
-						<ImageIcon className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+					<div className="text-center py-8 text-muted-foreground">
+						<ImageIcon className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
 						<p>サンプル画像はありません</p>
 					</div>
 				</CardContent>
@@ -192,7 +192,7 @@ export default function SampleImageGallery({ sampleImages, workTitle }: SampleIm
 							<DialogTrigger asChild>
 								<button
 									type="button"
-									className="relative aspect-square bg-gray-200 rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-blue-500"
+									className="relative aspect-square bg-muted rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-info"
 									onClick={() => setSelectedImageIndex(index)}
 									onKeyDown={(e) => {
 										if (e.key === "Enter" || e.key === " ") {
@@ -249,7 +249,7 @@ export default function SampleImageGallery({ sampleImages, workTitle }: SampleIm
 				</div>
 
 				{/* ギャラリービューの説明 */}
-				<div className="mt-6 text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+				<div className="mt-6 text-sm text-muted-foreground bg-muted p-3 rounded-lg">
 					<p className="flex items-center gap-2">
 						<ZoomIn className="h-4 w-4" />
 						画像をクリックすると拡大表示されます

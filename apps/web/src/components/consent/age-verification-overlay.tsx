@@ -154,8 +154,8 @@ export function AgeVerificationOverlay() {
 		>
 			<Card className="w-full max-w-md mx-auto shadow-xl">
 				<CardHeader className="text-center pb-4">
-					<div className="mx-auto w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mb-4">
-						<AlertTriangle className="h-8 w-8 text-amber-600" />
+					<div className="mx-auto w-16 h-16 bg-warning/10 rounded-full flex items-center justify-center mb-4">
+						<AlertTriangle className="h-8 w-8 text-warning" />
 					</div>
 					<CardTitle id="age-verification-title" className="text-xl font-bold text-foreground">
 						年齢確認

@@ -71,9 +71,9 @@ export function Top10RankModal({
 		: false;
 
 	const getButtonStyles = (rank: number, isSameWorkAtRank: boolean) => {
-		if (currentRank === rank) return "border-blue-300 bg-blue-50";
-		if (isSameWorkAtRank) return "border-yellow-300 bg-yellow-50 hover:bg-yellow-100";
-		return "border-gray-200 bg-white hover:bg-gray-50";
+		if (currentRank === rank) return "border-info/30 bg-info/10";
+		if (isSameWorkAtRank) return "border-warning/30 bg-warning/10 hover:bg-warning/20";
+		return "border-border bg-background hover:bg-muted";
 	};
 
 	const renderWorkInfo = (
@@ -82,21 +82,21 @@ export function Top10RankModal({
 		rank: number,
 	) => {
 		if (!existingWork) {
-			return <p className="text-sm text-gray-500">空き</p>;
+			return <p className="text-sm text-muted-foreground">空き</p>;
 		}
 
 		return (
 			<div className="space-y-1">
-				<p className="text-sm font-medium text-gray-900 leading-tight line-clamp-2">
+				<p className="text-sm font-medium text-foreground leading-tight line-clamp-2">
 					{existingWork.workTitle}
 				</p>
 				{isSameWorkAtRank ? (
-					<p className="text-xs text-yellow-700">現在の作品 (順位変更なし)</p>
+					<p className="text-xs text-warning">現在の作品 (順位変更なし)</p>
 				) : currentRank !== rank ? (
 					rank + 1 <= 10 ? (
-						<p className="text-xs text-gray-500">→ {rank + 1}位に移動</p>
+						<p className="text-xs text-muted-foreground">→ {rank + 1}位に移動</p>
 					) : (
-						<p className="text-xs text-orange-600">→ 10選から削除されます</p>
+						<p className="text-xs text-warning">→ 10選から削除されます</p>
 					)
 				) : null}
 			</div>
@@ -128,21 +128,21 @@ export function Top10RankModal({
 				className={cn(
 					"flex w-full items-start rounded-md border px-4 py-3 text-left transition-colors",
 					shouldDisable
-						? "border-gray-100 bg-gray-50 cursor-not-allowed opacity-50"
+						? "border-border bg-muted cursor-not-allowed opacity-50"
 						: getButtonStyles(rank, isSameWorkAtRank),
 				)}
 			>
 				<div className="flex w-full items-start gap-3">
-					<span className="text-lg font-bold text-gray-700 flex-shrink-0">{rank}</span>
+					<span className="text-lg font-bold text-foreground flex-shrink-0">{rank}</span>
 					<div className="min-w-0 flex-1">
 						{shouldDisable && !existingWork ? (
-							<p className="text-sm text-gray-400">選択不可</p>
+							<p className="text-sm text-muted-foreground">選択不可</p>
 						) : (
 							renderWorkInfo(existingWork, isSameWorkAtRank, rank)
 						)}
 					</div>
 					{willBePushedOut && (
-						<div className="flex items-center gap-1 text-orange-600 flex-shrink-0">
+						<div className="flex items-center gap-1 text-warning flex-shrink-0">
 							<AlertTriangle className="h-4 w-4" />
 							<span className="text-xs">削除されます</span>
 						</div>
@@ -161,22 +161,22 @@ export function Top10RankModal({
 						<DialogDescription>作品を追加する順位を選択してください</DialogDescription>
 					</DialogHeader>
 
-					<div className="rounded-md bg-blue-50 p-3 mt-4 mb-4">
-						<p className="text-sm font-medium text-blue-900">追加する作品</p>
-						<p className="mt-1 text-sm text-blue-700">{workTitle}</p>
+					<div className="rounded-md bg-info/10 p-3 mt-4 mb-4">
+						<p className="text-sm font-medium text-info">追加する作品</p>
+						<p className="mt-1 text-sm text-foreground">{workTitle}</p>
 					</div>
 				</div>
 
 				<div className="flex-1 overflow-y-auto px-6 min-h-0">
 					{loading ? (
 						<div className="flex h-40 items-center justify-center">
-							<div className="text-sm text-gray-500">読み込み中...</div>
+							<div className="text-sm text-muted-foreground">読み込み中...</div>
 						</div>
 					) : loadError ? (
 						<div className="flex h-40 flex-col items-center justify-center gap-2 text-center">
-							<AlertTriangle className="h-6 w-6 text-orange-600" />
-							<p className="text-sm text-gray-700">10選リストの読み込みに失敗しました</p>
-							<p className="text-xs text-gray-500">時間をおいて再度お試しください</p>
+							<AlertTriangle className="h-6 w-6 text-warning" />
+							<p className="text-sm text-foreground">10選リストの読み込みに失敗しました</p>
+							<p className="text-xs text-muted-foreground">時間をおいて再度お試しください</p>
 						</div>
 					) : (
 						<div className="space-y-2">
@@ -187,10 +187,10 @@ export function Top10RankModal({
 
 				{top10List?.totalCount === 10 && !currentRank && (
 					<div className="p-6 pt-4 flex-shrink-0">
-						<div className="rounded-md bg-orange-50 p-3">
+						<div className="rounded-md bg-warning/10 p-3">
 							<div className="flex items-start gap-2">
-								<AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-orange-600" />
-								<div className="text-sm text-orange-800">
+								<AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-warning" />
+								<div className="text-sm text-warning">
 									<p className="font-medium">10作品が登録済みです</p>
 									<p className="mt-1">新しい作品を追加すると、10位の作品が自動的に削除されます。</p>
 								</div>

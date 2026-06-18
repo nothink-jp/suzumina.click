@@ -48,7 +48,7 @@ export default function ButtonsError({
 					<div className="space-y-3">
 						<Button
 							onClick={reset}
-							className="w-full sm:w-auto bg-gradient-to-r from-suzuka-500 to-minase-500 hover:from-suzuka-600 hover:to-minase-600 text-white group"
+							className="w-full sm:w-auto bg-gradient-to-r from-suzuka-500 to-minase-700 hover:from-suzuka-600 hover:to-minase-800 text-white group"
 						>
 							<RefreshCw className="mr-2 h-4 w-4 group-hover:rotate-180 transition-transform duration-500" />
 							再読み込み

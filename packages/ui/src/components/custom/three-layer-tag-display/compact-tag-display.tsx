@@ -51,7 +51,7 @@ export function CompactTagDisplay({
 			<HighlightText
 				text={text}
 				searchQuery={searchQuery}
-				highlightClassName={highlightClassName || "bg-yellow-200 text-yellow-900 px-1 rounded"}
+				highlightClassName={highlightClassName || "bg-primary/20 text-foreground px-1 rounded"}
 			/>
 		) : (
 			text

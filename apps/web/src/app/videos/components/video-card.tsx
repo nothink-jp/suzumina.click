@@ -120,7 +120,7 @@ function VideoCard({ video, variant = "grid", priority = false, searchQuery }: V
 						<div className="absolute top-2 right-2">
 							<Badge
 								variant="destructive"
-								className="bg-red-600/90 text-white"
+								className="bg-destructive/90 text-destructive-foreground"
 								aria-label="埋め込み制限あり"
 								title="この動画は埋め込みが制限されているため、音声ボタンを作成できません"
 							>
@@ -140,7 +140,7 @@ function VideoCard({ video, variant = "grid", priority = false, searchQuery }: V
 								<HighlightText
 									text={video.title}
 									searchQuery={searchQuery}
-									highlightClassName="bg-yellow-200 text-yellow-900 px-0.5 rounded"
+									highlightClassName="bg-primary/20 text-foreground px-0.5 rounded"
 								/>
 							) : (
 								video.title

@@ -111,7 +111,8 @@ import { Meta, Title, Subtitle } from "@storybook/addon-docs/blocks";
 ## ボーダーカラー
 
 境界線は **semantic トークン優先**。システムの境界色は暖色ニュートラル（`--border: 20 6% 90%`）で、
-冷色系の `gray-*` / `red-*` / `green-*` の直書きは使いません（成功色は本システムにトークンが無い）。
+素の `gray-*` / `red-*` / `green-*` / `blue-*` / `amber-*` 等の直書きは使いません。状態色は `--info`（青）/
+`--success`（緑）/ `--warning`（琥珀）＋ `destructive`（赤）、中立は `muted` / `border` を使います（点3）。
 
 | 用途             | クラス例（semantic 優先）                               |
 | ---------------- | ------------------------------------------------------- |

@@ -23,7 +23,7 @@ export default async function WorkDetailPage({ params }: WorkDetailPageProps) {
 	const initialEvaluation = await getWorkEvaluation(workId);
 
 	return (
-		<div className="min-h-screen bg-gray-50">
+		<div className="min-h-screen bg-muted">
 			<main className="max-w-7xl mx-auto px-4 py-8">
 				<WorkDetail work={work} initialEvaluation={initialEvaluation} />
 			</main>

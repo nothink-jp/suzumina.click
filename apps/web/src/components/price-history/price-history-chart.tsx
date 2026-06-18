@@ -224,7 +224,7 @@ export function PriceHistoryChart({
 
 	if (chartData.length === 0) {
 		return (
-			<div className={`flex h-64 items-center justify-center text-gray-500 ${className}`}>
+			<div className={`flex h-64 items-center justify-center text-muted-foreground ${className}`}>
 				価格履歴データがありません
 			</div>
 		);

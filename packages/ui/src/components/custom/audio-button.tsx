@@ -275,8 +275,8 @@ function LikeDislikeButtons({
 				className={cn(
 					"flex items-center justify-center w-10 h-10 border-0 rounded-r-md rounded-l-none bg-background hover:bg-accent hover:text-accent-foreground transition-colors",
 					isDisliked
-						? "text-gray-600 hover:text-gray-700"
-						: "text-muted-foreground hover:text-gray-600",
+						? "text-muted-foreground hover:text-foreground"
+						: "text-muted-foreground hover:text-foreground",
 					!isAuthenticated && "opacity-50 cursor-not-allowed hover:bg-background",
 				)}
 			>
@@ -335,7 +335,7 @@ function PopoverActions({
 				href={youtubeUrl}
 				target="_blank"
 				rel="noopener noreferrer"
-				className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
+				className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
 				onClick={(e) => e.stopPropagation()}
 			>
 				<YoutubeIcon className="h-4 w-4" />

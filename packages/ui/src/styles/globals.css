@@ -57,6 +57,15 @@
 		--destructive: 0 72% 45%; /* WCAG AA: 白との相互で 4.5:1（旧 50% は 4.36 で未満。fg/bg 両用のため SPR-131 で darken） */
 		--destructive-foreground: 60 9% 98%;
 
+		/* 状態色（情報=青 / 成功=緑 / 注意=琥珀）— 素の blue/green/amber 直書きの置換先（点3）。
+		 * いずれも text-on-white と white-on-bg の相互で WCAG AA 4.5:1 を満たすよう darken。危険=destructive を流用。 */
+		--info: 214 84% 44%; /* ≈ #1267ca */
+		--info-foreground: 0 0% 100%;
+		--success: 142 70% 29%; /* ≈ #15803d (green-700) */
+		--success-foreground: 0 0% 100%;
+		--warning: 30 92% 32%; /* ≈ #9c4f0a (amber-700/800)。琥珀は明色のため darken: text-warning on bg-warning/10 も 4.5:1（点3 で実測） */
+		--warning-foreground: 0 0% 100%;
+
 		--border: 20 6% 90%;
 		--input: 20 6% 90%;
 		--ring: 340 75% 48%; /* primary に一致（SPR-129 Phase1 で primary を 48% に） */
@@ -126,6 +135,14 @@
 		--destructive: 0 62.8% 30.6%;
 		--destructive-foreground: 60 9% 98%;
 
+		/* 状態色 ダーク: text-* がダーク面で読めるよう明るめ。bg-* 用に foreground は暗色 */
+		--info: 214 90% 66%;
+		--info-foreground: 214 84% 14%;
+		--success: 142 60% 52%;
+		--success-foreground: 142 70% 10%;
+		--warning: 38 95% 60%;
+		--warning-foreground: 32 90% 12%;
+
 		--border: 12 6% 15%;
 		--input: 12 6% 15%;
 		--ring: 340 75% 65%;
@@ -180,6 +197,12 @@
 	--color-accent-foreground: hsl(var(--accent-foreground));
 	--color-destructive: hsl(var(--destructive));
 	--color-destructive-foreground: hsl(var(--destructive-foreground));
+	--color-info: hsl(var(--info));
+	--color-info-foreground: hsl(var(--info-foreground));
+	--color-success: hsl(var(--success));
+	--color-success-foreground: hsl(var(--success-foreground));
+	--color-warning: hsl(var(--warning));
+	--color-warning-foreground: hsl(var(--warning-foreground));
 	--color-border: hsl(var(--border));
 	--color-input: hsl(var(--input));
 	--color-ring: hsl(var(--ring));

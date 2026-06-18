@@ -57,7 +57,7 @@ function StarRating({ rating }: { rating: number }) {
 			{[1, 2, 3, 4, 5].map((star) => (
 				<Star
 					key={star}
-					className={`h-5 w-5 ${star <= displayRating ? "text-foreground fill-current" : "text-gray-300"}`}
+					className={`h-5 w-5 ${star <= displayRating ? "text-foreground fill-current" : "text-muted-foreground"}`}
 				/>
 			))}
 		</div>
@@ -100,7 +100,7 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 		<div className="max-w-6xl mx-auto">
 			{/* パンくずリスト */}
 			<nav className="mb-6 text-sm">
-				<ol className="flex items-center space-x-2 text-gray-600 min-w-0">
+				<ol className="flex items-center space-x-2 text-muted-foreground min-w-0">
 					<li className="shrink-0">
 						<Link href="/" className="hover:text-foreground/80">
 							ホーム
@@ -117,18 +117,18 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 					<li className="shrink-0">
 						<span className="mx-2">/</span>
 					</li>
-					<li className="text-gray-800 font-medium truncate min-w-0 max-w-[200px] sm:max-w-[300px] md:max-w-[400px] lg:max-w-[500px]">
+					<li className="text-foreground font-medium truncate min-w-0 max-w-[200px] sm:max-w-[300px] md:max-w-[400px] lg:max-w-[500px]">
 						{work.title}
 					</li>
 				</ol>
 			</nav>
 
 			{/* ヘッダー: 基本情報とサムネイル */}
-			<div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-6">
+			<div className="bg-white rounded-lg shadow-sm border border-border overflow-hidden mb-6">
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
 					{/* 作品サムネイル */}
 					<div className="space-y-4">
-						<div className="relative aspect-[4/3] bg-gray-100 rounded-lg overflow-hidden">
+						<div className="relative aspect-[4/3] bg-muted rounded-lg overflow-hidden">
 							<ThumbnailImage
 								src={work.highResImageUrl || work.thumbnailUrl}
 								fallbackSrc={work.thumbnailUrl}
@@ -151,8 +151,8 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 					{/* 基本情報 */}
 					<div className="space-y-4">
 						<div>
-							<h1 className="text-3xl font-bold text-gray-900 mb-2">{work.title}</h1>
-							<p className="text-lg text-gray-700">
+							<h1 className="text-3xl font-bold text-foreground mb-2">{work.title}</h1>
+							<p className="text-lg text-foreground">
 								サークル:{" "}
 								{work.circleId ? (
 									<Link href={`/circles/${work.circleId}`} className="text-primary hover:underline">
@@ -162,7 +162,7 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 									<>
 										{work.circle}
 										{process.env.NODE_ENV === "development" && (
-											<span className="text-xs text-red-500 ml-2">
+											<span className="text-xs text-destructive ml-2">
 												[DEBUG: circleId={JSON.stringify(work.circleId)}]
 											</span>
 										)}
@@ -178,7 +178,7 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 									<span className="text-3xl font-bold text-destructive">
 										¥{currentPrice.toLocaleString("ja-JP")}
 									</span>
-									<span className="text-xl text-gray-600 line-through">
+									<span className="text-xl text-muted-foreground line-through">
 										¥{originalPrice.toLocaleString("ja-JP")}
 									</span>
 									<Badge className="bg-destructive/10 text-destructive text-lg px-3 py-1">
@@ -186,7 +186,7 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 									</Badge>
 								</div>
 							) : (
-								<span className="text-3xl font-bold text-gray-900">
+								<span className="text-3xl font-bold text-foreground">
 									¥{currentPrice.toLocaleString("ja-JP")}
 								</span>
 							)}
@@ -196,17 +196,19 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 						{work.rating && (
 							<div className="flex items-center gap-3">
 								<StarRating rating={work.rating.stars} />
-								<span className="text-xl font-semibold text-gray-900">
+								<span className="text-xl font-semibold text-foreground">
 									{(work.rating.stars / 10).toFixed(1)}
 								</span>
-								<span className="text-base text-gray-600">({work.rating.count}件の評価)</span>
+								<span className="text-base text-muted-foreground">
+									({work.rating.count}件の評価)
+								</span>
 							</div>
 						)}
 
 						{/* 年齢レーティング表示 */}
 						{work.ageRating && (
 							<div className="space-y-2">
-								<div className="text-sm font-medium text-gray-700">年齢指定</div>
+								<div className="text-sm font-medium text-foreground">年齢指定</div>
 								<div className="flex items-center gap-2">
 									<Shield className="h-4 w-4 text-muted-foreground" />
 									<AgeRatingBadge ageRating={work.ageRating} size="base" />
@@ -216,12 +218,12 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 
 						{/* 言語情報表示（シンプル版） */}
 						<div className="space-y-2">
-							<div className="text-sm font-medium text-gray-700">対応言語</div>
+							<div className="text-sm font-medium text-foreground">対応言語</div>
 							<div className="flex items-center gap-2">
 								<Globe className="h-4 w-4 text-muted-foreground" />
 								<Badge
 									variant="default"
-									className="bg-blue-600 text-white font-medium text-base px-3 py-1"
+									className="bg-info text-info-foreground font-medium text-base px-3 py-1"
 								>
 									{getWorkLanguageDisplayName(work._computed.primaryLanguage)}
 								</Badge>
@@ -235,7 +237,9 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 									const additionalCount = additionalLanguages.length;
 
 									if (additionalCount > 0) {
-										return <span className="text-sm text-gray-600">+{additionalCount}言語</span>;
+										return (
+											<span className="text-sm text-muted-foreground">+{additionalCount}言語</span>
+										);
 									}
 									return null;
 								})()}
@@ -252,7 +256,7 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 
 								return (
 									<div>
-										<div className="text-sm font-medium text-gray-700 mb-2">ジャンル</div>
+										<div className="text-sm font-medium text-foreground mb-2">ジャンル</div>
 										<div className="flex flex-wrap gap-2">
 											{genres.map((genre) => (
 												<Badge
@@ -338,8 +342,8 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 											<div className="flex items-center gap-3">
 												<FileText className="h-5 w-5 text-muted-foreground" />
 												<div>
-													<div className="text-sm text-gray-700">作品ID</div>
-													<div className="font-semibold text-gray-900 font-mono">
+													<div className="text-sm text-foreground">作品ID</div>
+													<div className="font-semibold text-foreground font-mono">
 														{work.productId}
 													</div>
 												</div>
@@ -347,8 +351,8 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 											<div className="flex items-center gap-3">
 												<Tag className="h-5 w-5 text-muted-foreground" />
 												<div>
-													<div className="text-sm text-gray-700">カテゴリ</div>
-													<div className="font-semibold text-gray-900">
+													<div className="text-sm text-foreground">カテゴリ</div>
+													<div className="font-semibold text-foreground">
 														{getWorkCategoryDisplayText(work)}
 													</div>
 												</div>
@@ -357,8 +361,8 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 												<div className="flex items-center gap-3">
 													<Calendar className="h-5 w-5 text-muted-foreground" />
 													<div>
-														<div className="text-sm text-gray-700">販売日</div>
-														<div className="font-semibold text-gray-900">
+														<div className="text-sm text-foreground">販売日</div>
+														<div className="font-semibold text-foreground">
 															{formatJSTDateTime(work.releaseDate)}
 														</div>
 													</div>
@@ -368,8 +372,8 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 												<div className="flex items-center gap-3">
 													<FileText className="h-5 w-5 text-muted-foreground" />
 													<div>
-														<div className="text-sm text-gray-700">シリーズ名</div>
-														<div className="font-semibold text-gray-900">{work.series.name}</div>
+														<div className="text-sm text-foreground">シリーズ名</div>
+														<div className="font-semibold text-foreground">{work.series.name}</div>
 													</div>
 												</div>
 											)}
@@ -377,7 +381,7 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 												<div className="flex items-center gap-3">
 													<Shield className="h-5 w-5 text-muted-foreground" />
 													<div>
-														<div className="text-sm text-gray-700">年齢指定</div>
+														<div className="text-sm text-foreground">年齢指定</div>
 														<div className="flex items-center gap-2">
 															<AgeRatingBadge ageRating={work.ageRating} size="sm" />
 														</div>
@@ -389,11 +393,11 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 											<div className="flex items-start gap-3">
 												<Globe className="h-5 w-5 text-muted-foreground mt-0.5" />
 												<div className="space-y-3 flex-1">
-													<div className="text-sm text-gray-700">言語・翻訳情報</div>
+													<div className="text-sm text-foreground">言語・翻訳情報</div>
 
 													{/* 対応言語一覧 */}
 													<div className="space-y-2">
-														<div className="text-xs text-gray-600">対応言語</div>
+														<div className="text-xs text-muted-foreground">対応言語</div>
 														<div className="flex flex-wrap gap-1">
 															{(() => {
 																const primaryLanguage = work._computed?.primaryLanguage || "ja";
@@ -405,8 +409,8 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 																		variant={lang === primaryLanguage ? "default" : "secondary"}
 																		className={
 																			lang === primaryLanguage
-																				? "bg-blue-600 text-white text-xs px-2 py-1"
-																				: "text-gray-700 bg-gray-100 text-xs px-2 py-1"
+																				? "bg-info text-info-foreground text-xs px-2 py-1"
+																				: "text-foreground bg-muted text-xs px-2 py-1"
 																		}
 																		title={lang === primaryLanguage ? "主要言語" : undefined}
 																	>
@@ -433,16 +437,16 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 																{/* 翻訳作品の場合 */}
 																{isTranslation && translationInfo.originalWorkno && (
 																	<div className="space-y-1">
-																		<div className="text-xs text-gray-600">翻訳情報</div>
+																		<div className="text-xs text-muted-foreground">翻訳情報</div>
 																		<div className="flex items-center gap-2 text-sm">
-																			<div className="w-2 h-2 bg-amber-500 rounded-full" />
-																			<span className="text-gray-700">この作品は翻訳版です</span>
+																			<div className="w-2 h-2 bg-warning rounded-full" />
+																			<span className="text-foreground">この作品は翻訳版です</span>
 																		</div>
-																		<div className="text-xs text-gray-600 ml-4">
+																		<div className="text-xs text-muted-foreground ml-4">
 																			原作:
 																			<Link
 																				href={`/works/${translationInfo.originalWorkno}`}
-																				className="text-blue-600 hover:text-blue-800 underline ml-1"
+																				className="text-info hover:text-info/90 underline ml-1"
 																			>
 																				{translationInfo.originalWorkno}
 																			</Link>
@@ -453,10 +457,10 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 																{/* 翻訳版がある原作の場合 */}
 																{isOriginalWithTranslations && (
 																	<div className="space-y-1">
-																		<div className="text-xs text-gray-600">原作</div>
+																		<div className="text-xs text-muted-foreground">原作</div>
 																		<div className="flex items-center gap-2 text-sm">
-																			<div className="w-2 h-2 bg-green-500 rounded-full" />
-																			<span className="text-gray-700">翻訳版が利用可能です</span>
+																			<div className="w-2 h-2 bg-success rounded-full" />
+																			<span className="text-foreground">翻訳版が利用可能です</span>
 																		</div>
 																	</div>
 																)}
@@ -464,15 +468,15 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 																{/* 言語版一覧（Individual Info API）*/}
 																{work.languageDownloads && work.languageDownloads.length > 1 && (
 																	<div className="space-y-1">
-																		<div className="text-xs text-gray-600">他言語版</div>
+																		<div className="text-xs text-muted-foreground">他言語版</div>
 																		<div className="space-y-1 ml-4">
 																			{work.languageDownloads.map((download) => (
 																				<div
 																					key={download.workno}
 																					className="flex items-center gap-2 text-xs"
 																				>
-																					<span className="text-gray-700">{download.lang}</span>
-																					<span className="text-gray-500">
+																					<span className="text-foreground">{download.lang}</span>
+																					<span className="text-muted-foreground">
 																						({download.label || "言語不明"})
 																					</span>
 																				</div>
@@ -510,10 +514,10 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 						<TabsContent value="characteristics" className="relative">
 							<div className="space-y-4">
 								<div className="text-center mb-6">
-									<h3 className="text-xl font-semibold text-gray-900 mb-2">
+									<h3 className="text-xl font-semibold text-foreground mb-2">
 										ユーザー特性評価 (4分類18軸)
 									</h3>
-									<p className="text-gray-600">
+									<p className="text-muted-foreground">
 										ユーザーによる声質・性格・行動・魅力の多角的評価システム
 									</p>
 								</div>
@@ -558,7 +562,7 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 									<span className="text-foreground font-bold text-lg">{work.circle.charAt(0)}</span>
 								</div>
 								<div className="flex-1">
-									<p className="font-semibold text-gray-900">{work.circle}</p>
+									<p className="font-semibold text-foreground">{work.circle}</p>
 								</div>
 							</div>
 							{work.circleId ? (
@@ -577,7 +581,7 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 								>
 									他の作品を見る（準備中）
 									{process.env.NODE_ENV === "development" && (
-										<span className="text-xs text-red-500 ml-2">[DEBUG: No circleId]</span>
+										<span className="text-xs text-destructive ml-2">[DEBUG: No circleId]</span>
 									)}
 								</Button>
 							)}

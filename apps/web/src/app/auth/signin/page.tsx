@@ -8,15 +8,15 @@ interface SignInPageProps {
 async function SignInForm({ searchParams }: SignInPageProps) {
 	const { callbackUrl, error } = await searchParams;
 	return (
-		<div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-pink-50">
-			<div className="max-w-md w-full space-y-8 p-8 bg-white rounded-xl shadow-lg">
+		<div className="min-h-screen flex items-center justify-center bg-muted">
+			<div className="max-w-md w-full space-y-8 p-8 bg-card rounded-xl shadow-lg">
 				<div className="text-center">
-					<h2 className="text-3xl font-bold text-gray-900 mb-2">すずみなくりっく！</h2>
-					<p className="text-gray-600 mb-6">涼花みなせファンサイトにログイン</p>
+					<h2 className="text-3xl font-bold text-foreground mb-2">すずみなくりっく！</h2>
+					<p className="text-muted-foreground mb-6">涼花みなせファンサイトにログイン</p>
 
 					{error && (
-						<div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-							<p className="text-red-700 text-sm">
+						<div className="mb-4 p-4 bg-destructive/10 border border-destructive/30 rounded-lg">
+							<p className="text-destructive text-sm">
 								{error === "AccessDenied"
 									? "アクセスが拒否されました。もう一度お試しください。"
 									: error === "Configuration"
@@ -36,7 +36,7 @@ async function SignInForm({ searchParams }: SignInPageProps) {
 				>
 					<button
 						type="submit"
-						className="w-full flex items-center justify-center gap-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200"
+						className="w-full flex items-center justify-center gap-3 bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-3 px-4 rounded-lg transition-colors duration-200"
 					>
 						<svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
 							<title>Discordアイコン</title>
@@ -46,16 +46,16 @@ async function SignInForm({ searchParams }: SignInPageProps) {
 					</button>
 				</form>
 
-				<div className="text-center text-sm text-gray-500 space-y-3">
+				<div className="text-center text-sm text-muted-foreground space-y-3">
 					<p>Discordアカウントでログインして、音声ボタンを作成・共有しましょう！</p>
 
 					{/* プレビューリリース案内 */}
-					<div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-left">
+					<div className="bg-info/10 border border-info/30 rounded-lg p-4 text-left">
 						<div className="flex items-start gap-2">
 							<span className="text-lg">🎉</span>
 							<div className="space-y-2">
-								<h4 className="font-semibold text-blue-900 text-sm">一般公開スタート！</h4>
-								<p className="text-blue-800 text-xs leading-relaxed">
+								<h4 className="font-semibold text-info text-sm">一般公開スタート！</h4>
+								<p className="text-foreground text-xs leading-relaxed">
 									すずみなくりっく！は全てのDiscordユーザーに公開されました。
 									<br />• 一般ユーザー：1日10個まで音声ボタン作成可能
 									<br />• ふぁみりーメンバー：1日110個まで音声ボタン作成可能
@@ -65,12 +65,12 @@ async function SignInForm({ searchParams }: SignInPageProps) {
 										href="https://ci-en.dlsite.com/creator/9805"
 										target="_blank"
 										rel="noopener noreferrer"
-										className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 text-xs font-medium underline"
+										className="inline-flex items-center gap-1 text-info hover:text-info/90 text-xs font-medium underline"
 									>
 										<span>💝</span>
 										涼花みなせさんのci-enで支援者になる
 									</a>
-									<p className="text-blue-700 text-xs mt-1">
+									<p className="text-info text-xs mt-1">
 										※ ci-en支援者はすずみなふぁみりーDiscordサーバーに参加できます
 									</p>
 								</div>
@@ -89,8 +89,8 @@ export default function SignInPage({ searchParams }: SignInPageProps) {
 			fallback={
 				<div className="min-h-screen flex items-center justify-center">
 					<div className="text-center">
-						<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto" />
-						<p className="mt-4 text-gray-600">読み込み中...</p>
+						<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
+						<p className="mt-4 text-muted-foreground">読み込み中...</p>
 					</div>
 				</div>
 			}

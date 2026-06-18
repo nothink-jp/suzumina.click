@@ -8,7 +8,7 @@ interface AgeRatingBadgeProps {
 }
 
 /**
- * 年齢レーティングバッジ（R18=赤 / 全年齢=緑 / その他=グレー）。
+ * 年齢レーティングバッジ（R18=destructive / 全年齢=success / その他=中立）。
  *
  * work-detail.tsx の主表示と詳細タブで二重実装されていたものを統合（SPR-194）。
  * 差はサイズclassのみ。
@@ -20,7 +20,10 @@ export function AgeRatingBadge({ ageRating, size = "base" }: AgeRatingBadgeProps
 
 	if (check.isR18) {
 		return (
-			<Badge variant="destructive" className={`bg-red-600 text-white font-bold ${sizeClass}`}>
+			<Badge
+				variant="destructive"
+				className={`bg-destructive text-destructive-foreground font-bold ${sizeClass}`}
+			>
 				{label}
 			</Badge>
 		);
@@ -29,14 +32,14 @@ export function AgeRatingBadge({ ageRating, size = "base" }: AgeRatingBadgeProps
 		return (
 			<Badge
 				variant="outline"
-				className={`border-green-500 text-green-700 bg-green-50 font-medium ${sizeClass}`}
+				className={`border-success/30 text-success bg-success/10 font-medium ${sizeClass}`}
 			>
 				{label}
 			</Badge>
 		);
 	}
 	return (
-		<Badge variant="secondary" className={`text-gray-700 bg-gray-100 font-medium ${sizeClass}`}>
+		<Badge variant="secondary" className={`text-foreground bg-muted font-medium ${sizeClass}`}>
 			{label}
 		</Badge>
 	);

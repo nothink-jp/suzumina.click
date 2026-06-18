@@ -75,12 +75,11 @@ export function ValidationMessage({
 			icon: AlertCircle,
 		},
 		warning: {
-			// minase-600 は白背景で 3.3:1（AA 未満）。minase-700 で 4.5:1 を満たす（SPR-131）
-			container: "text-minase-700",
+			container: "text-warning",
 			icon: AlertTriangle,
 		},
 		info: {
-			container: "text-suzuka-600",
+			container: "text-info",
 			icon: Info,
 		},
 	};

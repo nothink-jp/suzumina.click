@@ -18,23 +18,23 @@ describe("AgeRatingBadge", () => {
 		mockDisplay.mockReturnValue("表示名");
 	});
 
-	it("R18 は赤バッジ", () => {
+	it("R18 は destructive バッジ", () => {
 		mockCheck.mockReturnValue({ isR18: true, isAllAges: false });
 		render(<AgeRatingBadge ageRating="R18" />);
-		expect(screen.getByText("表示名").className).toContain("bg-red-600");
+		expect(screen.getByText("表示名").className).toContain("bg-destructive");
 	});
 
-	it("全年齢は緑バッジ", () => {
+	it("全年齢は success バッジ", () => {
 		mockCheck.mockReturnValue({ isR18: false, isAllAges: true });
 		render(<AgeRatingBadge ageRating="全年齢" />);
-		expect(screen.getByText("表示名").className).toContain("border-green-500");
+		expect(screen.getByText("表示名").className).toContain("border-success/30");
 	});
 
-	it("その他はグレー、size=sm で小サイズ class", () => {
+	it("その他は中立、size=sm で小サイズ class", () => {
 		mockCheck.mockReturnValue({ isR18: false, isAllAges: false });
 		render(<AgeRatingBadge ageRating="R15" size="sm" />);
 		const badge = screen.getByText("表示名");
-		expect(badge.className).toContain("bg-gray-100");
+		expect(badge.className).toContain("bg-muted");
 		expect(badge.className).toContain("text-sm px-3 py-1");
 	});
 

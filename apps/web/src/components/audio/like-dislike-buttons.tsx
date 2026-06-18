@@ -178,8 +178,8 @@ export function LikeDislikeButtons({
 				disabled={isPending || !isAuthenticated}
 				className={`flex items-center justify-center border-0 rounded-r-md rounded-l-none ${
 					isDisliked
-						? "text-gray-600 hover:text-gray-700"
-						: "text-muted-foreground hover:text-gray-600"
+						? "text-muted-foreground hover:text-muted-foreground"
+						: "text-muted-foreground hover:text-muted-foreground"
 				}`}
 				title={
 					!isAuthenticated

@@ -20,21 +20,21 @@ export function AudioButtonDetailStats({
 				<div className="text-lg font-bold text-foreground">{playCount.toLocaleString("ja-JP")}</div>
 				<div className="text-xs text-muted-foreground">再生回数</div>
 			</div>
-			<div className="text-center p-3 bg-rose-50 rounded-lg border border-rose-100">
+			<div className="text-center p-3 bg-primary/10 rounded-lg border border-primary/20">
 				<div className="flex items-center justify-center mb-1">
-					<Heart className="h-4 w-4 text-rose-600" />
+					<Heart className="h-4 w-4 text-primary" />
 				</div>
-				<div className="text-lg font-bold text-rose-700">
+				<div className="text-lg font-bold text-primary">
 					{favoriteCount.toLocaleString("ja-JP")}
 				</div>
-				<div className="text-xs text-rose-600">お気に入り</div>
+				<div className="text-xs text-primary">お気に入り</div>
 			</div>
-			<div className="text-center p-3 bg-amber-50 rounded-lg border border-amber-100">
+			<div className="text-center p-3 bg-warning/10 rounded-lg border border-warning/30">
 				<div className="flex items-center justify-center mb-1">
-					<ThumbsUp className="h-4 w-4 text-amber-600" />
+					<ThumbsUp className="h-4 w-4 text-warning" />
 				</div>
-				<div className="text-lg font-bold text-amber-700">{likeCount.toLocaleString("ja-JP")}</div>
-				<div className="text-xs text-amber-600">高評価</div>
+				<div className="text-lg font-bold text-warning">{likeCount.toLocaleString("ja-JP")}</div>
+				<div className="text-xs text-warning">高評価</div>
 			</div>
 		</div>
 	);

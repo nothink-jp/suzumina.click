@@ -50,9 +50,9 @@ export function PriceHistory({ workId, className = "" }: PriceHistoryProps) {
 	if (error) {
 		return (
 			<div className={`text-center ${className}`}>
-				<div className="rounded-lg bg-red-50 p-6">
-					<div className="text-red-800 font-medium mb-2">価格履歴の読み込みに失敗しました</div>
-					<div className="text-red-600 text-sm">
+				<div className="rounded-lg bg-destructive/10 p-6 border border-destructive/30">
+					<div className="text-destructive font-medium mb-2">価格履歴の読み込みに失敗しました</div>
+					<div className="text-foreground text-sm">
 						{error.message || "不明なエラーが発生しました"}
 					</div>
 				</div>
@@ -64,15 +64,15 @@ export function PriceHistory({ workId, className = "" }: PriceHistoryProps) {
 		return (
 			<div className={`space-y-6 ${className}`}>
 				{/* チャート部分のスケルトン */}
-				<div className="h-64 bg-gray-100 rounded-lg animate-pulse" />
+				<div className="h-64 bg-muted rounded-lg animate-pulse" />
 
 				{/* 統計情報のスケルトン */}
 				<div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
 					{["stat1", "stat2", "stat3", "stat4"].map((key) => (
-						<div key={key} className="h-20 bg-gray-100 rounded-lg animate-pulse" />
+						<div key={key} className="h-20 bg-muted rounded-lg animate-pulse" />
 					))}
 				</div>
-				<div className="h-20 bg-gray-100 rounded-lg animate-pulse" />
+				<div className="h-20 bg-muted rounded-lg animate-pulse" />
 			</div>
 		);
 	}
@@ -80,9 +80,9 @@ export function PriceHistory({ workId, className = "" }: PriceHistoryProps) {
 	if (!priceHistory || priceHistory.length === 0) {
 		return (
 			<div className={`text-center ${className}`}>
-				<div className="rounded-lg bg-gray-50 p-6">
-					<div className="text-gray-600 font-medium mb-2">価格履歴データがありません</div>
-					<div className="text-gray-500 text-sm">
+				<div className="rounded-lg bg-muted p-6">
+					<div className="text-foreground font-medium mb-2">価格履歴データがありません</div>
+					<div className="text-muted-foreground text-sm">
 						この作品の価格履歴がまだ収集されていないか、データが存在しません
 					</div>
 				</div>
@@ -94,14 +94,14 @@ export function PriceHistory({ workId, className = "" }: PriceHistoryProps) {
 		<div className={`space-y-6 ${className}`}>
 			{/* コントロールパネル */}
 			<div className="flex items-center gap-2">
-				<label htmlFor={currencySelectId} className="text-sm font-medium text-gray-700">
+				<label htmlFor={currencySelectId} className="text-sm font-medium text-foreground">
 					通貨:
 				</label>
 				<select
 					id={currencySelectId}
 					value={selectedCurrency}
 					onChange={(e) => setSelectedCurrency(e.target.value as CurrencyOption)}
-					className="rounded-md border border-gray-300 px-3 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+					className="rounded-md border border-border px-3 py-1 text-sm focus:border-info focus:outline-none focus:ring-1 focus:ring-info"
 				>
 					{CURRENCY_OPTIONS.map((option) => (
 						<option key={option.value} value={option.value}>
@@ -112,8 +112,10 @@ export function PriceHistory({ workId, className = "" }: PriceHistoryProps) {
 			</div>
 
 			{/* 価格チャート */}
-			<div className="rounded-lg border border-gray-200 p-4">
-				<h3 className="text-lg font-semibold text-gray-900 mb-4">価格推移チャート (最近90日間)</h3>
+			<div className="rounded-lg border border-border p-4">
+				<h3 className="text-lg font-semibold text-foreground mb-4">
+					価格推移チャート (最近90日間)
+				</h3>
 				<PriceHistoryChart
 					priceHistory={priceHistory}
 					currency={selectedCurrency}
@@ -122,8 +124,8 @@ export function PriceHistory({ workId, className = "" }: PriceHistoryProps) {
 			</div>
 
 			{/* 価格統計 */}
-			<div className="rounded-lg border border-gray-200 p-4">
-				<h3 className="text-lg font-semibold text-gray-900 mb-4">価格統計情報</h3>
+			<div className="rounded-lg border border-border p-4">
+				<h3 className="text-lg font-semibold text-foreground mb-4">価格統計情報</h3>
 				<PriceStatistics priceHistory={priceHistory} currency={selectedCurrency} />
 			</div>
 		</div>
