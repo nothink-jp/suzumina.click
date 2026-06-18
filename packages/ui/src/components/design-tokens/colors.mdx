@@ -3,75 +3,180 @@ import { Meta, ColorPalette, ColorItem, Title, Subtitle } from "@storybook/addon
 <Meta title="Design Tokens/Colors" />
 
 <Title>Colors</Title>
-<Subtitle>涼花みなせテーマのカラーシステム — suzuka（桜色） + minase（オレンジ）</Subtitle>
+<Subtitle>涼花みなせテーマのカラーシステム — semantic トークン + suzuka（桜色） / minase（オレンジ）</Subtitle>
 
-このプロジェクトは Tailwind CSS v4 のカスタムカラーパレットとして `suzuka-*` と `minase-*` の 11 段階のスケールを提供します。
-すべて WCAG 2.1 AA 準拠のコントラスト比を満たす組み合わせを想定して設計されています。
+すべての色の正準ソースは `src/styles/globals.css`（`:root` / `.dark`）です。本ドキュメントのスウォッチは
+`hsl(var(--token))` で実際の CSS 変数を参照しているため、globals.css を変更すればここも自動的に追従します
+（手書きの 16 進スナップショットは持ちません）。
 
-## Suzuka Colors（メインカラー）
+実装では **semantic トークン（`primary` など）を優先**し、`suzuka-*` / `minase-*` の生スケールは bespoke な
+ブランド表現にのみ使用します（README の idiom 準拠）。すべて WCAG 2.1 AA を想定した設計です。
 
-桜色をベースにしたブランドのプライマリーカラー。プライマリーアクション、ブランド要素、強調表示に使用します。
+## Semantic Tokens（実装の基盤・優先使用）
+
+shadcn/ui 準拠のセマンティックトークン。面となる `bg-*` と、その上のテキスト `*-foreground` を対で使います。
+
+### Surfaces
+
+<ColorPalette>
+  <ColorItem
+    title="surfaces"
+    subtitle="背景・前景・カード・ポップオーバー"
+    colors={{
+      background: "hsl(var(--background))",
+      foreground: "hsl(var(--foreground))",
+      card: "hsl(var(--card))",
+      "card-foreground": "hsl(var(--card-foreground))",
+      popover: "hsl(var(--popover))",
+      "popover-foreground": "hsl(var(--popover-foreground))",
+    }}
+  />
+</ColorPalette>
+
+### Actions & States
+
+<ColorPalette>
+  <ColorItem
+    title="primary"
+    subtitle="プライマリ（= suzuka-500 / 340 75% 48%）"
+    colors={{ primary: "hsl(var(--primary))", "primary-foreground": "hsl(var(--primary-foreground))" }}
+  />
+  <ColorItem
+    title="secondary"
+    subtitle="セカンダリ（= minase-500 / 27 100% 59%・明色のため暗色文字で AA）"
+    colors={{ secondary: "hsl(var(--secondary))", "secondary-foreground": "hsl(var(--secondary-foreground))" }}
+  />
+  <ColorItem
+    title="muted"
+    subtitle="抑制トーン・ヒントテキスト"
+    colors={{ muted: "hsl(var(--muted))", "muted-foreground": "hsl(var(--muted-foreground))" }}
+  />
+  <ColorItem
+    title="accent"
+    subtitle="ホバー/アクティブ面（暖色ニュートラル）"
+    colors={{ accent: "hsl(var(--accent))", "accent-foreground": "hsl(var(--accent-foreground))" }}
+  />
+  <ColorItem
+    title="destructive"
+    subtitle="破壊的操作・エラー"
+    colors={{ destructive: "hsl(var(--destructive))", "destructive-foreground": "hsl(var(--destructive-foreground))" }}
+  />
+</ColorPalette>
+
+### Borders & Focus
+
+<ColorPalette>
+  <ColorItem
+    title="border / input / ring"
+    subtitle="境界線・入力枠（暖色ニュートラル 20 6% 90%）・フォーカスリング（= primary）"
+    colors={{
+      border: "hsl(var(--border))",
+      input: "hsl(var(--input))",
+      ring: "hsl(var(--ring))",
+    }}
+  />
+</ColorPalette>
+
+## Suzuka Colors（ブランド生スケール）
+
+桜色ベースのプライマリブランドスケール。`primary` で足りない bespoke なブランド面・カードにのみ使用します。
 
 <ColorPalette>
   <ColorItem
     title="suzuka"
-    subtitle="桜色 - メインブランドカラー"
+    subtitle="桜色 - メインブランドカラー（500 = primary / 340 75% 48% / ≈ #d61f5c）"
     colors={{
-      "suzuka-50": "#fff5fa",
-      "suzuka-100": "#ffe0ed",
-      "suzuka-200": "#ffc2d9",
-      "suzuka-300": "#ff9ebf",
-      "suzuka-400": "#ff6b9d",
-      "suzuka-500": "#ff4785",
-      "suzuka-600": "#e0266e",
-      "suzuka-700": "#b81d5b",
-      "suzuka-800": "#8f1447",
-      "suzuka-900": "#660d33",
-      "suzuka-950": "#3d0820",
+      "suzuka-50": "hsl(var(--suzuka-50))",
+      "suzuka-100": "hsl(var(--suzuka-100))",
+      "suzuka-200": "hsl(var(--suzuka-200))",
+      "suzuka-300": "hsl(var(--suzuka-300))",
+      "suzuka-400": "hsl(var(--suzuka-400))",
+      "suzuka-500": "hsl(var(--suzuka-500))",
+      "suzuka-600": "hsl(var(--suzuka-600))",
+      "suzuka-700": "hsl(var(--suzuka-700))",
+      "suzuka-800": "hsl(var(--suzuka-800))",
+      "suzuka-900": "hsl(var(--suzuka-900))",
+      "suzuka-950": "hsl(var(--suzuka-950))",
     }}
   />
 </ColorPalette>
 
-## Minase Colors（サブカラー）
+## Minase Colors（サブ生スケール）
 
-オレンジ・ウォーム系のサブブランドカラー。セカンダリーアクション、アクセント、ウォーム表現に使用します。
+オレンジ・ウォーム系のサブブランドスケール（500 = secondary）。アクセント・ウォーム表現に使用します。
 
 <ColorPalette>
   <ColorItem
     title="minase"
-    subtitle="オレンジ - サブブランドカラー"
+    subtitle="オレンジ - サブブランドカラー（500 = secondary / 27 100% 59%）"
     colors={{
-      "minase-50": "#fff8f3",
-      "minase-100": "#ffedd5",
-      "minase-200": "#fed7aa",
-      "minase-300": "#fdba74",
-      "minase-400": "#fb923c",
-      "minase-500": "#ff7e2d",
-      "minase-600": "#ea5a0b",
-      "minase-700": "#c2410c",
-      "minase-800": "#9a3412",
-      "minase-900": "#7c2d12",
-      "minase-950": "#431407",
+      "minase-50": "hsl(var(--minase-50))",
+      "minase-100": "hsl(var(--minase-100))",
+      "minase-200": "hsl(var(--minase-200))",
+      "minase-300": "hsl(var(--minase-300))",
+      "minase-400": "hsl(var(--minase-400))",
+      "minase-500": "hsl(var(--minase-500))",
+      "minase-600": "hsl(var(--minase-600))",
+      "minase-700": "hsl(var(--minase-700))",
+      "minase-800": "hsl(var(--minase-800))",
+      "minase-900": "hsl(var(--minase-900))",
+      "minase-950": "hsl(var(--minase-950))",
     }}
   />
 </ColorPalette>
 
+## Dark Mode
+
+祖先要素に `.dark` クラスを付与するとトークンが切り替わります。semantic トークンは値が差し替わり、
+`suzuka-*` / `minase-*` の生スケールは **明暗が反転**します（`suzuka-50 ↔ 950`、`100 ↔ 900` …）。
+値はすべて `globals.css` の `.dark` スコープが正準です。
+
+### Semantic（light → dark, HSL）
+
+| トークン                | Light        | Dark         |
+| ----------------------- | ------------ | ------------ |
+| `--background`          | 0 0% 100%    | 20 14% 4%    |
+| `--foreground`          | 28 25% 8%    | 60 9% 98%    |
+| `--card`                | 0 0% 100%    | 24 10% 10%   |
+| `--primary`             | 340 75% 48%  | 340 75% 65%  |
+| `--secondary`           | 27 100% 59%  | 27 90% 65%   |
+| `--muted-foreground`    | 25 5% 42%    | 24 5% 64%    |
+| `--accent`              | 24 6% 94%    | 12 6% 15%    |
+| `--destructive`         | 0 72% 45%    | 0 63% 31%    |
+| `--border` / `--input`  | 20 6% 90%    | 12 6% 15%    |
+| `--ring`                | 340 75% 48%  | 340 75% 65%  |
+
+### 生スケールの反転（例）
+
+| スケール段   | Light        | Dark         |
+| ------------ | ------------ | ------------ |
+| `suzuka-50`  | 340 100% 98% | 340 50% 15%  |
+| `suzuka-500` | 340 75% 48%  | 340 75% 55%  |
+| `suzuka-950` | 340 50% 15%  | 340 100% 98% |
+| `minase-50`  | 33 100% 97%  | 23 69% 16%   |
+| `minase-950` | 23 69% 16%   | 33 100% 97%  |
+
+（端の段ほど明暗がそのまま入れ替わり、中央の `500` は明度のみ微調整される。）
+
 ## 使用ガイドライン
 
-| ロール          | クラス例                                          | 用途                                  |
-| --------------- | ------------------------------------------------- | ------------------------------------- |
-| Primary Action  | `bg-suzuka-500` / `hover:bg-suzuka-600`           | メインCTA、フォーム送信               |
-| Secondary       | `bg-suzuka-100 text-suzuka-700`                   | 補助アクション、選択中の状態          |
-| Outline         | `border-suzuka-300 text-suzuka-600`               | 控えめなアクション                    |
-| Brand Card      | `bg-suzuka-50 border-suzuka-200`                  | ブランド色のカード背景                |
-| Body Text       | `text-suzuka-800` / `text-suzuka-900`             | 本文・見出しテキスト                  |
-| Accent          | `bg-minase-500` / `hover:bg-minase-600`           | サブCTA、アクセント要素               |
-| Border (default) | `border-suzuka-200`                              | カード境界                            |
-| Focus Ring      | `ring-suzuka-500`                                 | フォーカス表示                        |
+実装は **semantic トークン優先**。生スケールは bespoke なブランド表現にのみ使う。
+
+| ロール          | 推奨クラス（semantic 優先）                       | 用途                          |
+| --------------- | ------------------------------------------------- | ----------------------------- |
+| Primary Action  | `bg-primary text-primary-foreground`              | メイン CTA、フォーム送信       |
+| Secondary       | `bg-secondary text-secondary-foreground`          | 補助アクション                 |
+| Muted           | `bg-muted text-muted-foreground`                  | 抑制面・ヒントテキスト         |
+| Accent (hover)  | `bg-accent`                                       | ホバー/アクティブ面            |
+| Destructive     | `bg-destructive text-destructive-foreground`      | 削除・エラー                   |
+| Border          | `border-border`                                   | 既定の境界線                   |
+| Focus Ring      | `ring-ring`                                        | フォーカス表示                 |
+| Brand (bespoke) | `bg-suzuka-500` / `bg-suzuka-50 border-suzuka-200` | ブランド色の面・カード         |
+| Brand Text      | `text-suzuka-800` / `text-suzuka-900`             | ブランド見出し                 |
 
 ## アクセシビリティ
 
-- **本文 + 背景**: `bg-suzuka-50` + `text-suzuka-900`（コントラスト比 12.5:1）✓
-- **Primary**: `bg-suzuka-500` + `text-white`（4.5:1 以上）✓
-- **Danger**: `bg-suzuka-600` + `text-white`（5.0:1 以上）✓
+- **Primary**: `bg-primary`（= suzuka-500 / `340 75% 48%` / ≈ #d61f5c）+ `text-primary-foreground`（≒白）で **4.5:1 以上** ✓（SPR-129 で L55%→48% に darken して達成）
+- **本文 + 背景**: `bg-suzuka-50` + `text-suzuka-900`（高コントラスト）✓
+- **Secondary（オレンジ）**: 明色のため **暗色文字**（`text-secondary-foreground`）で AA を取る。白文字は不適合
 - 隣接した明度（`suzuka-200` + `suzuka-400` など）の組み合わせは避ける
