@@ -53,23 +53,23 @@ export function EvaluationRadioGroup({
 				className={cn(
 					"flex w-full items-center gap-3 rounded-md border px-4 py-3 text-left transition-colors",
 					isTop10
-						? "border-yellow-300 bg-yellow-50 text-yellow-900"
-						: "border-gray-200 bg-white hover:bg-gray-50",
+						? "border-warning/30 bg-warning/10 text-warning"
+						: "border-border bg-background hover:bg-muted",
 					disabled && "cursor-not-allowed opacity-50",
 				)}
 			>
-				<Award className={cn("h-5 w-5", isTop10 ? "text-yellow-600" : "text-gray-400")} />
+				<Award className={cn("h-5 w-5", isTop10 ? "text-warning" : "text-muted-foreground")} />
 				<div className="flex-1">
 					<div className="text-sm font-medium">10選に追加</div>
-					<div className="text-xs text-gray-600">特におすすめの作品として登録</div>
+					<div className="text-xs text-muted-foreground">特におすすめの作品として登録</div>
 				</div>
 			</button>
 
 			<div
 				className={cn(
 					"flex items-center gap-3 rounded-md border px-4 py-3",
-					isStar ? "border-blue-300 bg-blue-50" : "border-gray-200 bg-white",
-					!disabled && "hover:bg-gray-50",
+					isStar ? "border-info/30 bg-info/10" : "border-border bg-background",
+					!disabled && "hover:bg-muted",
 					disabled && "cursor-not-allowed opacity-50",
 				)}
 			>
@@ -88,8 +88,8 @@ export function EvaluationRadioGroup({
 								className={cn(
 									"h-5 w-5 transition-colors",
 									(hoveredStar !== null ? rating <= hoveredStar : rating <= starRating)
-										? "fill-blue-500 text-blue-500"
-										: "text-gray-300",
+										? "fill-info text-info"
+										: "text-muted-foreground",
 								)}
 							/>
 						</button>
@@ -97,7 +97,7 @@ export function EvaluationRadioGroup({
 				</div>
 				<div className="flex-1">
 					<div className="text-sm font-medium">星評価</div>
-					<div className="text-xs text-gray-600">作品の満足度を評価</div>
+					<div className="text-xs text-muted-foreground">作品の満足度を評価</div>
 				</div>
 			</div>
 
@@ -108,15 +108,17 @@ export function EvaluationRadioGroup({
 				className={cn(
 					"flex w-full items-center gap-3 rounded-md border px-4 py-3 text-left transition-colors",
 					isNG
-						? "border-red-300 bg-red-50 text-red-900"
-						: "border-gray-200 bg-white hover:bg-gray-50",
+						? "border-destructive/30 bg-destructive/10 text-destructive"
+						: "border-border bg-background hover:bg-muted",
 					disabled && "cursor-not-allowed opacity-50",
 				)}
 			>
-				<ThumbsDown className={cn("h-5 w-5", isNG ? "text-red-600" : "text-gray-400")} />
+				<ThumbsDown
+					className={cn("h-5 w-5", isNG ? "text-destructive" : "text-muted-foreground")}
+				/>
 				<div className="flex-1">
 					<div className="text-sm font-medium">NG登録</div>
-					<div className="text-xs text-gray-600">今後表示しないようにする</div>
+					<div className="text-xs text-muted-foreground">今後表示しないようにする</div>
 				</div>
 			</button>
 		</div>

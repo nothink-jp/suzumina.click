@@ -15,9 +15,15 @@ describe("formatWorkDescription", () => {
 	it("改行を段落に変換する", () => {
 		const input = "段落1\n\n段落2\n\n段落3";
 		const result = formatWorkDescription(input);
-		expect(result).toContain('<p class="mb-4 last:mb-0 text-gray-700 leading-relaxed">段落1</p>');
-		expect(result).toContain('<p class="mb-4 last:mb-0 text-gray-700 leading-relaxed">段落2</p>');
-		expect(result).toContain('<p class="mb-4 last:mb-0 text-gray-700 leading-relaxed">段落3</p>');
+		expect(result).toContain(
+			'<p class="mb-4 last:mb-0 text-muted-foreground leading-relaxed">段落1</p>',
+		);
+		expect(result).toContain(
+			'<p class="mb-4 last:mb-0 text-muted-foreground leading-relaxed">段落2</p>',
+		);
+		expect(result).toContain(
+			'<p class="mb-4 last:mb-0 text-muted-foreground leading-relaxed">段落3</p>',
+		);
 	});
 
 	it("単一改行を<br>に変換する", () => {
@@ -59,7 +65,7 @@ describe("formatWorkDescription", () => {
 	it("【】で囲まれた部分を強調表示する", () => {
 		const input = "【注意事項】こちらをお読みください";
 		const result = formatWorkDescription(input);
-		expect(result).toContain('<span class="font-semibold text-gray-900">【注意事項】</span>');
+		expect(result).toContain('<span class="font-semibold text-foreground">【注意事項】</span>');
 	});
 
 	it("リスト項目を処理する", () => {
@@ -79,7 +85,7 @@ https://example.com/info
 
 お問い合わせは support@example.com まで。`;
 		const result = formatWorkDescription(input);
-		expect(result).toContain('<p class="mb-4 last:mb-0 text-gray-700 leading-relaxed">');
+		expect(result).toContain('<p class="mb-4 last:mb-0 text-muted-foreground leading-relaxed">');
 		expect(result).toContain('<a href="https://example.com/info"');
 		expect(result).toMatch(/<p[^>]*>.*<\/p>.*<p[^>]*>.*<\/p>/s);
 	});

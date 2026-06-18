@@ -66,7 +66,7 @@ export function CreateButtonLimit({ userId }: CreateButtonLimitProps) {
 			<Progress
 				value={percentage}
 				aria-label={`本日の音声ボタン作成数 ${limit.current}/${limit.limit}`}
-				className={`h-2 ${isNearLimit ? "[&>div]:bg-orange-500" : ""} ${
+				className={`h-2 ${isNearLimit ? "[&>div]:bg-warning" : ""} ${
 					isAtLimit ? "[&>div]:bg-destructive" : ""
 				}`}
 			/>

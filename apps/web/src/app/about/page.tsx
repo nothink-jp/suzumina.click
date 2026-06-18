@@ -85,12 +85,12 @@ export default function AboutPage() {
 								涼花みなせさんや関係者様とは一切関係ありません
 							</p>
 						</div>
-						<div className="bg-orange-50 p-4 rounded-lg">
-							<h4 className="font-semibold text-orange-700 mb-2">ファン活動</h4>
+						<div className="bg-warning/10 p-4 rounded-lg">
+							<h4 className="font-semibold text-warning mb-2">ファン活動</h4>
 							<p className="text-sm text-muted-foreground">個人が趣味で運営しています</p>
 						</div>
-						<div className="bg-blue-50 p-4 rounded-lg">
-							<h4 className="font-semibold text-blue-700 mb-2">著作権・コンテンツ利用方針</h4>
+						<div className="bg-info/10 p-4 rounded-lg">
+							<h4 className="font-semibold text-info mb-2">著作権・コンテンツ利用方針</h4>
 							<p className="text-sm text-muted-foreground">
 								すべての音声・画像の著作権は原著作者に帰属します。本サイトは公開されているコンテンツへの参照・リンクのみを行い、音声・画像データの複製・転載・再配布は一切行いません
 							</p>

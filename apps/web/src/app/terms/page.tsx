@@ -38,9 +38,9 @@ export default function TermsPage() {
 				</Card>
 
 				{/* 免責事項 */}
-				<Card className="border-orange-200">
+				<Card className="border-warning/30">
 					<CardHeader>
-						<CardTitle className="flex items-center gap-2 text-orange-700">
+						<CardTitle className="flex items-center gap-2 text-warning">
 							<AlertTriangle className="h-5 w-5" />
 							2. 免責事項
 						</CardTitle>

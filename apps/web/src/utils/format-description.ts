@@ -40,7 +40,7 @@ export function formatWorkDescription(description: string): string {
 		// 【】で囲まれた部分を強調表示
 		formatted = formatted.replace(
 			/【([^】]+)】/g,
-			'<span class="font-semibold text-gray-900">【$1】</span>',
+			'<span class="font-semibold text-foreground">【$1】</span>',
 		);
 
 		// ★や☆で始まる行を特別な装飾
@@ -83,10 +83,10 @@ export function formatWorkDescription(description: string): string {
 					return line;
 				})
 				.join("");
-			return `<ul class="list-disc list-inside mb-4 last:mb-0 text-gray-700 leading-relaxed">${listItems}</ul>`;
+			return `<ul class="list-disc list-inside mb-4 last:mb-0 text-muted-foreground leading-relaxed">${listItems}</ul>`;
 		}
 
-		return `<p class="mb-4 last:mb-0 text-gray-700 leading-relaxed">${formatted}</p>`;
+		return `<p class="mb-4 last:mb-0 text-muted-foreground leading-relaxed">${formatted}</p>`;
 	});
 
 	return formattedParagraphs.join("");

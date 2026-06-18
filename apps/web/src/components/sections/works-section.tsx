@@ -80,7 +80,7 @@ export function WorksSection({
 						<h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-2 flex items-center gap-2">
 							🎭 新着作品
 							{!effectiveShowR18 && (
-								<span className="ml-2 text-sm text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
+								<span className="ml-2 text-sm text-info bg-info/10 px-2 py-1 rounded-full">
 									全年齢対象
 								</span>
 							)}

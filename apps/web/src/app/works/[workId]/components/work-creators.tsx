@@ -40,7 +40,7 @@ export function CreatorBadges({ creators }: { creators: Creators | undefined }) 
 				if (entries.length === 0) return null;
 				return (
 					<div key={role.key}>
-						<div className="text-sm text-gray-700 mb-2">{role.badgeLabel}</div>
+						<div className="text-sm text-muted-foreground mb-2">{role.badgeLabel}</div>
 						<div className="flex flex-wrap gap-2">
 							{entries.map((creator, index) =>
 								role.badgeLinked && creator.id ? (
@@ -84,7 +84,7 @@ export function CreatorList({ creators }: { creators: Creators | undefined }) {
 				if (entries.length === 0) return null;
 				return (
 					<div key={role.key}>
-						<h5 className="text-sm font-medium text-gray-700 mb-2">{role.sidebarLabel}</h5>
+						<h5 className="text-sm font-medium text-muted-foreground mb-2">{role.sidebarLabel}</h5>
 						<div className="space-y-2">
 							{entries.map((creator, index) => (
 								<div key={creator.id || creator.name || index} className="flex items-center gap-3">
@@ -96,13 +96,13 @@ export function CreatorList({ creators }: { creators: Creators | undefined }) {
 									{creator.id ? (
 										<Link
 											href={`/creators/${creator.id}`}
-											className="text-gray-900 text-sm hover:text-primary hover:underline"
+											className="text-foreground text-sm hover:text-primary hover:underline"
 											title={`ID: ${creator.id}`}
 										>
 											{creator.name}
 										</Link>
 									) : (
-										<span className="text-gray-900 text-sm">{creator.name}</span>
+										<span className="text-foreground text-sm">{creator.name}</span>
 									)}
 								</div>
 							))}

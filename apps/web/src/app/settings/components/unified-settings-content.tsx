@@ -175,7 +175,10 @@ export function UnifiedSettingsContent({ user }: UnifiedSettingsContentProps) {
 											<div className="flex items-center gap-2">
 												<span className="font-medium">18歳以上として認証</span>
 												{isAdult ? (
-													<Badge variant="default" className="bg-green-100 text-green-800">
+													<Badge
+														variant="outline"
+														className="bg-success/10 text-success border-success/30"
+													>
 														認証済み
 													</Badge>
 												) : (
@@ -195,8 +198,8 @@ export function UnifiedSettingsContent({ user }: UnifiedSettingsContentProps) {
 										/>
 									</div>
 									{!isAdult && (
-										<div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-											<p className="text-sm text-blue-800">
+										<div className="mt-4 p-4 bg-info/10 rounded-lg border border-info/30">
+											<p className="text-sm text-foreground">
 												🛡️ 現在は全年齢対象のコンテンツのみが表示されています。
 												18歳以上の方は上記のスイッチをオンにしてください。
 											</p>
@@ -222,15 +225,22 @@ export function UnifiedSettingsContent({ user }: UnifiedSettingsContentProps) {
 									<div className="space-y-3">
 										<div className="flex items-center justify-between">
 											<span className="text-sm font-medium">必須Cookie</span>
-											<Badge variant="default" className="bg-green-100 text-green-800">
+											<Badge
+												variant="outline"
+												className="bg-success/10 text-success border-success/30"
+											>
 												有効
 											</Badge>
 										</div>
 										<div className="flex items-center justify-between">
 											<span className="text-sm font-medium">分析Cookie</span>
 											<Badge
-												variant={consentState.analytics ? "default" : "secondary"}
-												className={consentState.analytics ? "bg-green-100 text-green-800" : ""}
+												variant={consentState.analytics ? "outline" : "secondary"}
+												className={
+													consentState.analytics
+														? "bg-success/10 text-success border-success/30"
+														: ""
+												}
 											>
 												{consentState.analytics ? "有効" : "無効"}
 											</Badge>
@@ -238,9 +248,11 @@ export function UnifiedSettingsContent({ user }: UnifiedSettingsContentProps) {
 										<div className="flex items-center justify-between">
 											<span className="text-sm font-medium">パーソナライゼーション</span>
 											<Badge
-												variant={consentState.personalization ? "default" : "secondary"}
+												variant={consentState.personalization ? "outline" : "secondary"}
 												className={
-													consentState.personalization ? "bg-green-100 text-green-800" : ""
+													consentState.personalization
+														? "bg-success/10 text-success border-success/30"
+														: ""
 												}
 											>
 												{consentState.personalization ? "有効" : "無効"}
@@ -271,15 +283,12 @@ export function UnifiedSettingsContent({ user }: UnifiedSettingsContentProps) {
 										</Button>
 									</div>
 
-									<div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-										<p className="text-sm text-blue-800">
+									<div className="p-4 bg-info/10 rounded-lg border border-info/30">
+										<p className="text-sm text-foreground">
 											💡
 											詳細なCookie設定は画面下部のフッター「クッキー設定」からもアクセスできます。
 											詳細については
-											<Link
-												href="/privacy"
-												className="text-blue-600 hover:text-blue-800 underline mx-1"
-											>
+											<Link href="/privacy" className="text-info hover:text-info/90 underline mx-1">
 												プライバシーポリシー
 											</Link>
 											をご確認ください。
@@ -346,7 +355,7 @@ export function UnifiedSettingsContent({ user }: UnifiedSettingsContentProps) {
 										<div className="flex items-center gap-2">
 											{user.isFamilyMember ? (
 												<>
-													<span className="inline-flex items-center gap-1.5 rounded-full bg-purple-100 px-3 py-1 text-sm font-semibold text-purple-700">
+													<span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-sm font-semibold text-foreground">
 														<span className="text-base">👨‍👩‍👧‍👦</span>
 														すずみなふぁみりー
 													</span>
@@ -356,7 +365,7 @@ export function UnifiedSettingsContent({ user }: UnifiedSettingsContentProps) {
 												</>
 											) : (
 												<>
-													<span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-700">
+													<span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-sm font-semibold text-foreground">
 														<span className="text-base">👤</span>
 														一般ユーザー
 													</span>
@@ -372,7 +381,7 @@ export function UnifiedSettingsContent({ user }: UnifiedSettingsContentProps) {
 												href="https://ci-en.dlsite.com/creator/9805"
 												target="_blank"
 												rel="noopener noreferrer"
-												className="text-blue-600 hover:text-blue-700 underline"
+												className="text-info hover:text-info/90 underline"
 											>
 												こちら
 											</a>
@@ -398,7 +407,10 @@ export function UnifiedSettingsContent({ user }: UnifiedSettingsContentProps) {
 											<div className="flex items-center gap-2">
 												<span className="font-medium">プロフィールを公開</span>
 												{isPublicProfile ? (
-													<Badge variant="default" className="bg-green-100 text-green-800">
+													<Badge
+														variant="outline"
+														className="bg-success/10 text-success border-success/30"
+													>
 														<Eye className="w-3 h-3 mr-1" />
 														公開
 													</Badge>

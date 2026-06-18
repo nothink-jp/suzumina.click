@@ -105,7 +105,7 @@ export async function UserCardWrapper({ createdBy, createdByName }: UserCardWrap
 						<div className="space-y-1 flex-1">
 							<h3 className="font-medium text-foreground">{createdByName}</h3>
 							<p className="text-xs text-muted-foreground">ボタン作成者</p>
-							<p className="text-xs text-amber-600">※ ユーザー情報の取得に失敗しました</p>
+							<p className="text-xs text-warning">※ ユーザー情報の取得に失敗しました</p>
 						</div>
 					</div>
 				</CardContent>

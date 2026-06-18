@@ -23,35 +23,35 @@ export function getVideoBadgeInfo(video: VideoPlainObject): VideoBadgeInfo {
 			return {
 				text: "配信中",
 				icon: Radio,
-				className: "bg-red-600/90 text-white",
+				className: "bg-destructive/90 text-destructive-foreground",
 				ariaLabel: "現在配信中のライブ配信",
 			};
 		case "upcoming":
 			return {
 				text: "配信予告",
 				icon: Clock,
-				className: "bg-blue-600/90 text-white",
+				className: "bg-info/90 text-info-foreground",
 				ariaLabel: "配信予定のライブ配信",
 			};
 		case "possibly_live":
 			return {
 				text: "配信中（推定）",
 				icon: Radio,
-				className: "bg-red-600/90 text-white",
+				className: "bg-destructive/90 text-destructive-foreground",
 				ariaLabel: "配信中の可能性があるライブ配信",
 			};
 		case "archived":
 			return {
 				text: "配信アーカイブ",
 				icon: Radio,
-				className: "bg-gray-600/90 text-white",
+				className: "bg-foreground/70 text-background",
 				ariaLabel: "ライブ配信のアーカイブ",
 			};
 		case "premiere":
 			return {
 				text: "プレミア公開",
 				icon: Video,
-				className: "bg-purple-600/90 text-white",
+				className: "bg-foreground/70 text-background",
 				ariaLabel: "プレミア公開動画",
 			};
 		default:

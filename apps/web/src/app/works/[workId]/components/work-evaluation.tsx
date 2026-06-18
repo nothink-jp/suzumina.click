@@ -89,12 +89,12 @@ export function WorkEvaluation({ workId, workTitle, initialEvaluation }: WorkEva
 
 	if (!user) {
 		return (
-			<div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-				<p className="text-sm text-gray-600">
+			<div className="rounded-lg border border-border bg-muted p-4">
+				<p className="text-sm text-muted-foreground">
 					評価するには
 					<button
 						type="button"
-						className="text-blue-600 underline hover:text-blue-700"
+						className="text-info underline hover:text-info/90"
 						onClick={() => {
 							// TODO: ログインモーダルを開く
 						}}
@@ -112,11 +112,11 @@ export function WorkEvaluation({ workId, workTitle, initialEvaluation }: WorkEva
 
 	return (
 		<div className="space-y-4">
-			<div className="rounded-lg border border-gray-200 bg-white p-4">
-				<h3 className="mb-3 text-sm font-semibold text-gray-900">作品の評価</h3>
+			<div className="rounded-lg border border-border bg-white p-4">
+				<h3 className="mb-3 text-sm font-semibold text-foreground">作品の評価</h3>
 
 				{error && (
-					<div className="mb-3 flex items-start gap-2 rounded-md bg-red-50 p-3 text-sm text-red-700">
+					<div className="mb-3 flex items-start gap-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
 						<AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
 						<span>{error}</span>
 					</div>
@@ -124,10 +124,10 @@ export function WorkEvaluation({ workId, workTitle, initialEvaluation }: WorkEva
 
 				<div className="space-y-3">
 					{isTop10 && evaluation && (
-						<div className="flex items-center justify-between rounded-md bg-yellow-50 p-3">
+						<div className="flex items-center justify-between rounded-md bg-warning/10 p-3">
 							<div className="flex items-center gap-2">
-								<Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
-								<span className="text-sm font-medium text-gray-900">
+								<Star className="h-4 w-4 fill-warning text-warning" />
+								<span className="text-sm font-medium text-foreground">
 									10選 {evaluation.top10Rank}位
 								</span>
 							</div>
@@ -135,7 +135,7 @@ export function WorkEvaluation({ workId, workTitle, initialEvaluation }: WorkEva
 								type="button"
 								onClick={() => setShowTop10Modal(true)}
 								disabled={isLoading}
-								className="text-sm text-blue-600 hover:text-blue-700 disabled:opacity-50"
+								className="text-sm text-info hover:text-info/90 disabled:opacity-50"
 							>
 								順位変更
 							</button>
@@ -163,8 +163,8 @@ export function WorkEvaluation({ workId, workTitle, initialEvaluation }: WorkEva
 							onClick={handleRemove}
 							disabled={isLoading}
 							className={cn(
-								"w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700",
-								"hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2",
+								"w-full rounded-md border border-border bg-white px-4 py-2 text-sm font-medium text-foreground",
+								"hover:bg-muted focus:outline-none focus:ring-2 focus:ring-info focus:ring-offset-2",
 								"disabled:cursor-not-allowed disabled:opacity-50",
 							)}
 						>

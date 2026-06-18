@@ -91,7 +91,7 @@ export async function VideoCardWrapper({ videoId, fallbackTitle }: VideoCardWrap
 								</h3>
 							)}
 							<p className="text-xs text-muted-foreground">涼花みなせ</p>
-							<p className="text-xs text-amber-600">※ 動画情報の取得に失敗しました</p>
+							<p className="text-xs text-warning">※ 動画情報の取得に失敗しました</p>
 						</div>
 
 						{/* アクションボタン */}

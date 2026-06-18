@@ -482,7 +482,7 @@ export default function VideoDetail({
 																	<span className="text-sm font-medium">カテゴリID:</span>
 																	<span className="ml-2 font-mono">{video.categoryId}</span>
 																	{!categoryName && (
-																		<span className="ml-2 text-xs text-orange-600 dark:text-orange-400">
+																		<span className="ml-2 text-xs text-warning">
 																			(未対応カテゴリ)
 																		</span>
 																	)}

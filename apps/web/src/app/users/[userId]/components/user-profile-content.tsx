@@ -51,9 +51,9 @@ function UserAvatar({ user }: { user: FrontendUserData }) {
 			)}
 			<div className="absolute -bottom-2 -right-2 bg-white rounded-full p-2 shadow-md">
 				{user.isPublicProfile ? (
-					<Eye className="w-4 h-4 text-green-600" />
+					<Eye className="w-4 h-4 text-success" />
 				) : (
-					<EyeOff className="w-4 h-4 text-gray-600" />
+					<EyeOff className="w-4 h-4 text-muted-foreground" />
 				)}
 			</div>
 		</div>
@@ -67,10 +67,7 @@ function UserHeader({ user, isOwnProfile }: { user: FrontendUserData; isOwnProfi
 				<h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
 					{user.displayName}
 					{user.isFamilyMember && (
-						<Badge
-							variant="default"
-							className="bg-purple-100 text-purple-700 hover:bg-purple-200 text-xs"
-						>
+						<Badge variant="default" className="bg-muted text-foreground hover:bg-accent text-xs">
 							<span className="mr-1">👨‍👩‍👧‍👦</span>
 							すずみなふぁみりー
 						</Badge>

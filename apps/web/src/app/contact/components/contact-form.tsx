@@ -45,8 +45,8 @@ const categoryOptions = [
 function SuccessMessage({ onReset }: { onReset: () => void }) {
 	return (
 		<div className="text-center py-8 space-y-4">
-			<div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-				<CheckCircle className="w-8 h-8 text-green-600" />
+			<div className="mx-auto w-16 h-16 bg-success/10 rounded-full flex items-center justify-center">
+				<CheckCircle className="w-8 h-8 text-success" />
 			</div>
 			<div className="space-y-2">
 				<h3 className="text-xl font-semibold text-foreground">送信完了</h3>

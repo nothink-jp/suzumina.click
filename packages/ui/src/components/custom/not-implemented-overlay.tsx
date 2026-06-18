@@ -22,7 +22,7 @@ export function NotImplementedOverlay({
 					</div>
 				</div>
 				<div className="flex items-center justify-center gap-2 mb-2">
-					<AlertCircle className="w-5 h-5 text-amber-500" />
+					<AlertCircle className="w-5 h-5 text-warning" />
 					<h3 className="text-lg font-semibold text-foreground">{title}</h3>
 				</div>
 				<p className="text-muted-foreground text-sm">{description}</p>
