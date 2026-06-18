@@ -15,8 +15,17 @@ claude.ai/design への同期に関する、リポジトリ固有の前提と落
   `--filter ... exec` が必須。cwd が packages/ui になるのでパスはパッケージ相対）。
 - **`.ds-sync` の converter deps**: `npm i esbuild ts-morph @types/react playwright` の代わりに
   `(cd .ds-sync && pnpm add esbuild ts-morph @types/react playwright)`、chromium は
-  `(cd .ds-sync && pnpm exec playwright install chromium)`。`.ds-sync` は独自 package.json + gitignore で
-  リポジトリの lockfile から隔離されている。
+  `(cd .ds-sync && pnpm exec playwright install chromium)`。`.ds-sync` は独自 package.json + gitignore。
+  - **⚠️ ただし lockfile からは隔離されない（2026-06-18 #2 で判明・旧記述は誤り）**: `pnpm add` を
+    `.ds-sync` 内で実行すると pnpm が root の pnpm-workspace.yaml まで遡り、`.ds-sync` を ad-hoc
+    ワークスペースメンバーとして root `pnpm-lock.yaml` に `  .ds-sync:` importer 行を**追記する**
+    （workspace glob は `apps/*`/`packages/*` のみだが cwd 由来で attach される）。`.ds-sync` は
+    gitignore 対象なのでこの lockfile 変更は不要なノイズ → **deps install 後に
+    `git checkout pnpm-lock.yaml` で必ず復元**してから handoff すること（commit に混ぜない）。
+- **fresh-clone / 古い node_modules で storybook build が `MODULE_NOT_FOUND`
+  （`storybook/dist/bin/dispatcher.js`）**: dev-deps bump 後などに node_modules が lockfile と
+  ズレていると storybook bin が不完全展開で落ちる。`pnpm install --frozen-lockfile`（root）で
+  修復してから sb-reference をビルドする（frozen なので lockfile は書き換わらない）。
 
 ## 前提（このリポジトリの特殊性）
 
@@ -149,3 +158,21 @@ component-style 配下／未分類が大量に出る（報告値: 89 件 compone
   fallback。self-host したい場合は `cfg.extraFonts` で woff2 を同梱する余地あり（現状未対応）。
 - **interaction story の grade**: skip した play story は将来 storybook 側の story 構成が変わると
   story-id がズレる可能性。再 sync で [TITLE_UNMAPPED]/pairing 警告が出たら skip リストを見直す。
+
+## conventions.md 検証メモ（2026-06-18 再 sync #2）
+
+再 sync 時の conventions.md バリデーション（書き換えず検証のみ）で判明した既知の不正確さ。
+次回の検証で再発見しても新規 drift ではない。文面の正本は作者（ユーザー）に属する。
+
+- **body フォントは M PLUS ではなくフォールバック丸ゴシックスタック**: bound `styles.css` は
+  M PLUS Rounded 1c を CDN `@import` で**ロードはする**が、`body { font-family }` は globals.css の
+  システム丸ゴシックフォールバックスタック（ヒラギノ丸ゴ…）であり M PLUS を**割り当てていない**
+  （globals.css L228-232 のコメントが正本：self-host 不可・実適用は本番 next/font と Storybook
+  preview-head が各文脈で担う）。conventions.md の「M PLUS を body に適用・inherit せよ」は実用上は
+  正しい（inherit で丸ゴシックは得られる）が、bound 成果物では M PLUS そのものは適用されない。
+  正確を期すなら「ブランドフォントは M PLUS（ロード済）／body は丸ゴシックフォールバックを継承／
+  厳密に M PLUS を出すなら `font-family:"M PLUS Rounded 1c",…` を明示」。
+- **`var(--color-suzuka-950)` は bound CSS に出ない**: Tailwind v4 は未参照の `--color-*` を tree-shake
+  するため scraped CSS の `--color-suzuka-*` は 50–900 のみ（minase も使用分のみ）。raw 形 `--suzuka-50..950`
+  は :root に全段あり常に出る。conventions の例 `var(--color-suzuka-700)` は検証 OK。最高段を直接参照
+  するなら raw 形 `var(--suzuka-950)` を使う。
