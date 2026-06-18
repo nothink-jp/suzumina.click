@@ -45,7 +45,7 @@ export function AudioButtonDetailSidebar({
 						<Card className="bg-card/80 backdrop-blur-sm shadow-lg border-0">
 							<CardHeader className="pb-3">
 								<CardTitle className="text-lg flex items-center gap-2">
-									<User className="h-5 w-5 text-suzuka-600" />
+									<User className="h-5 w-5 text-primary" />
 									作成者
 								</CardTitle>
 							</CardHeader>

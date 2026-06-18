@@ -164,10 +164,10 @@ export function UserProfileContent({
 	const averagePlays = audioButtonsCount > 0 ? Math.round(totalPlayCount / audioButtonsCount) : 0;
 
 	return (
-		<div className="min-h-screen bg-gradient-to-br from-suzuka-50/30 to-minase-50/30">
+		<div className="min-h-screen bg-background">
 			<div className="container mx-auto px-4 py-8 max-w-6xl">
 				<Card className="mb-8 overflow-hidden">
-					<div className="bg-gradient-to-r from-suzuka-500/10 to-minase-500/10 p-6">
+					<div className="bg-muted/50 p-6">
 						<div className="flex flex-col md:flex-row items-start md:items-center gap-6">
 							<UserAvatar user={user} />
 							<div className="flex-1">
@@ -199,21 +199,21 @@ export function UserProfileContent({
 					<CardContent className="p-6">
 						<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
 							<div className="text-center">
-								<div className="text-2xl font-bold text-suzuka-600">{audioButtonsCount}</div>
+								<div className="text-2xl font-bold text-primary">{audioButtonsCount}</div>
 								<div className="text-sm text-muted-foreground">作成ボタン</div>
 							</div>
 							<div className="text-center">
-								<div className="text-2xl font-bold text-minase-600">
+								<div className="text-2xl font-bold text-secondary">
 									{totalPlayCount.toLocaleString("ja-JP")}
 								</div>
 								<div className="text-sm text-muted-foreground">総再生数</div>
 							</div>
 							<div className="text-center">
-								<div className="text-2xl font-bold text-suzuka-600">{averagePlays}</div>
+								<div className="text-2xl font-bold text-primary">{averagePlays}</div>
 								<div className="text-sm text-muted-foreground">平均再生数</div>
 							</div>
 							<div className="text-center">
-								<div className="text-2xl font-bold text-minase-600">{favoritesCount || 0}</div>
+								<div className="text-2xl font-bold text-secondary">{favoritesCount || 0}</div>
 								<div className="text-sm text-muted-foreground">お気に入り</div>
 							</div>
 						</div>
@@ -278,7 +278,7 @@ export function UserProfileContent({
 						<Card>
 							<CardHeader>
 								<CardTitle className="flex items-center gap-2">
-									<Music className="w-5 h-5 text-suzuka-500" />
+									<Music className="w-5 h-5 text-primary" />
 									作成統計
 								</CardTitle>
 							</CardHeader>
@@ -300,7 +300,7 @@ export function UserProfileContent({
 						<Card>
 							<CardHeader>
 								<CardTitle className="flex items-center gap-2">
-									<Play className="w-5 h-5 text-minase-500" />
+									<Play className="w-5 h-5 text-secondary" />
 									再生統計
 								</CardTitle>
 							</CardHeader>
@@ -328,7 +328,7 @@ export function UserProfileContent({
 						<Card>
 							<CardHeader>
 								<CardTitle className="flex items-center gap-2">
-									<TrendingUp className="w-5 h-5 text-suzuka-500" />
+									<TrendingUp className="w-5 h-5 text-primary" />
 									アクティビティ
 								</CardTitle>
 							</CardHeader>

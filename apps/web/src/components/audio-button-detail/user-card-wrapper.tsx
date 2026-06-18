@@ -19,15 +19,15 @@ export async function UserCardWrapper({ createdBy, createdByName }: UserCardWrap
 				<Card className="bg-card/80 backdrop-blur-sm shadow-lg border-0">
 					<CardHeader className="pb-3">
 						<CardTitle className="text-lg flex items-center gap-2">
-							<User className="h-5 w-5 text-suzuka-600" />
+							<User className="h-5 w-5 text-primary" />
 							作成者
 						</CardTitle>
 					</CardHeader>
 					<CardContent>
 						<div className="flex items-start gap-3">
 							{/* フォールバック アバター */}
-							<div className="w-12 h-12 rounded-full bg-suzuka-100 flex items-center justify-center shrink-0">
-								<User className="h-6 w-6 text-suzuka-600" />
+							<div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center shrink-0">
+								<User className="h-6 w-6 text-primary" />
 							</div>
 
 							{/* ユーザー情報 */}
@@ -46,7 +46,7 @@ export async function UserCardWrapper({ createdBy, createdByName }: UserCardWrap
 			<Card className="bg-card/80 backdrop-blur-sm shadow-lg border-0">
 				<CardHeader className="pb-3">
 					<CardTitle className="text-lg flex items-center gap-2">
-						<User className="h-5 w-5 text-suzuka-600" />
+						<User className="h-5 w-5 text-primary" />
 						作成者
 					</CardTitle>
 				</CardHeader>
@@ -66,8 +66,8 @@ export async function UserCardWrapper({ createdBy, createdByName }: UserCardWrap
 										unoptimized
 									/>
 								) : (
-									<div className="w-full h-full bg-suzuka-100 flex items-center justify-center">
-										<User className="h-6 w-6 text-suzuka-600" />
+									<div className="w-full h-full bg-muted flex items-center justify-center">
+										<User className="h-6 w-6 text-primary" />
 									</div>
 								)}
 							</div>
@@ -93,14 +93,14 @@ export async function UserCardWrapper({ createdBy, createdByName }: UserCardWrap
 			<Card className="bg-card/80 backdrop-blur-sm shadow-lg border-0">
 				<CardHeader className="pb-3">
 					<CardTitle className="text-lg flex items-center gap-2">
-						<User className="h-5 w-5 text-suzuka-600" />
+						<User className="h-5 w-5 text-primary" />
 						作成者
 					</CardTitle>
 				</CardHeader>
 				<CardContent>
 					<div className="flex items-start gap-3">
-						<div className="w-12 h-12 rounded-full bg-suzuka-100 flex items-center justify-center shrink-0">
-							<User className="h-6 w-6 text-suzuka-600" />
+						<div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center shrink-0">
+							<User className="h-6 w-6 text-primary" />
 						</div>
 						<div className="space-y-1 flex-1">
 							<h3 className="font-medium text-foreground">{createdByName}</h3>

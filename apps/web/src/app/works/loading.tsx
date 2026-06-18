@@ -21,7 +21,7 @@ export default function WorksLoading() {
 				{Array.from({ length: 9 }, (_, i) => `work-skeleton-${i}`).map((key) => (
 					<Card key={key} className="overflow-hidden animate-pulse">
 						{/* サムネイルエリア */}
-						<div className="relative aspect-[3/4] bg-gradient-to-br from-suzuka-100 to-minase-100">
+						<div className="relative aspect-[3/4] bg-muted">
 							<Skeleton className="absolute inset-0" />
 							{/* 価格バッジ */}
 							<div className="absolute top-2 right-2">

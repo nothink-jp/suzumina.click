@@ -128,7 +128,7 @@ export function AudioButtonTagEditorDetail({
 			<CardHeader className="pb-3">
 				<CardTitle className="text-lg flex items-center justify-between">
 					<div className="flex items-center gap-2">
-						<Tag className="h-5 w-5 text-suzuka-600" />
+						<Tag className="h-5 w-5 text-primary" />
 						タグ
 					</div>
 					{canEdit && !isEditing && (

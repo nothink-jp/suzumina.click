@@ -113,8 +113,8 @@ export function AgeVerificationOverlay() {
 			>
 				<Card className="w-full max-w-md mx-auto shadow-xl">
 					<CardHeader className="text-center pb-4">
-						<div className="mx-auto w-16 h-16 bg-suzuka-100 rounded-full flex items-center justify-center mb-4">
-							<Shield className="h-8 w-8 text-suzuka-600" />
+						<div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+							<Shield className="h-8 w-8 text-primary" />
 						</div>
 						<CardTitle
 							id="age-verification-minor-title"
@@ -131,7 +131,7 @@ export function AgeVerificationOverlay() {
 								<br />
 								コンテンツのみご利用いただけます。
 							</p>
-							<div className="flex items-center justify-center gap-2 text-xs text-suzuka-600">
+							<div className="flex items-center justify-center gap-2 text-xs text-primary">
 								<Heart className="h-3 w-3" />
 								<span>全年齢対象のコンテンツをお楽しみください</span>
 							</div>
@@ -179,13 +179,13 @@ export function AgeVerificationOverlay() {
 						<Button
 							variant="outline"
 							onClick={() => handleAgeConfirmation(false)}
-							className="w-full border-suzuka-200 text-suzuka-700 hover:bg-suzuka-50"
+							className="w-full border-border text-primary hover:bg-accent"
 						>
 							18歳未満
 						</Button>
 						<Button
 							onClick={() => handleAgeConfirmation(true)}
-							className="w-full bg-suzuka-600 hover:bg-suzuka-700 text-white"
+							className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
 						>
 							18歳以上
 						</Button>

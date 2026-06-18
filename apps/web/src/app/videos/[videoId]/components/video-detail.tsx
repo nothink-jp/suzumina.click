@@ -188,7 +188,7 @@ export default function VideoDetail({
 				{/* 左側：メインコンテンツ（2/3幅） */}
 				<div className="lg:col-span-2 space-y-6">
 					{/* 動画プレイヤーカード */}
-					<Card className="overflow-hidden border-suzuka-200 dark:border-suzuka-800">
+					<Card className="overflow-hidden border-border">
 						{/* サムネイル/プレイヤー */}
 						<div className="relative aspect-[16/9] bg-black overflow-hidden">
 							<ThumbnailImage
@@ -294,7 +294,7 @@ export default function VideoDetail({
 							<div className="flex flex-wrap gap-2 mb-6">
 								<Button
 									size="lg"
-									className="bg-suzuka-500 hover:bg-suzuka-600 text-white"
+									className="bg-primary hover:bg-primary/90 text-primary-foreground"
 									disabled={!canCreateButton}
 									asChild={canCreateButton}
 									title={canCreateButton ? undefined : canCreateButtonData.reason || undefined}
@@ -356,7 +356,7 @@ export default function VideoDetail({
 														<Badge
 															key={tag}
 															variant="secondary"
-															className="bg-suzuka-100 text-suzuka-700 dark:bg-suzuka-900 dark:text-suzuka-300"
+															className="bg-muted text-muted-foreground"
 														>
 															{tag}
 														</Badge>
@@ -384,7 +384,7 @@ export default function VideoDetail({
 									<div className="grid grid-cols-2 gap-4">
 										<div className="bg-muted/30 p-4 rounded-lg">
 											<h4 className="font-semibold mb-2">視聴回数</h4>
-											<p className="text-2xl font-bold text-suzuka-600">
+											<p className="text-2xl font-bold text-primary">
 												{video.statistics?.viewCount?.toLocaleString("ja-JP") || "データなし"}
 											</p>
 											<p className="text-sm text-muted-foreground">回視聴</p>
@@ -392,7 +392,7 @@ export default function VideoDetail({
 
 										<div className="bg-muted/30 p-4 rounded-lg">
 											<h4 className="font-semibold mb-2">高評価数</h4>
-											<p className="text-2xl font-bold text-suzuka-600">
+											<p className="text-2xl font-bold text-primary">
 												{video.statistics?.likeCount?.toLocaleString("ja-JP") || "データなし"}
 											</p>
 											<p className="text-sm text-muted-foreground">いいね</p>
@@ -400,7 +400,7 @@ export default function VideoDetail({
 
 										<div className="bg-muted/30 p-4 rounded-lg">
 											<h4 className="font-semibold mb-2">コメント数</h4>
-											<p className="text-2xl font-bold text-suzuka-600">
+											<p className="text-2xl font-bold text-primary">
 												{video.statistics?.commentCount?.toLocaleString("ja-JP") || "データなし"}
 											</p>
 											<p className="text-sm text-muted-foreground">コメント</p>
@@ -410,7 +410,7 @@ export default function VideoDetail({
 										{video.statistics?.viewCount && video.statistics?.likeCount && (
 											<div className="bg-muted/30 p-4 rounded-lg">
 												<h4 className="font-semibold mb-2">エンゲージメント率</h4>
-												<p className="text-2xl font-bold text-suzuka-600">
+												<p className="text-2xl font-bold text-primary">
 													{(
 														(video.statistics.likeCount / video.statistics.viewCount) *
 														100
@@ -508,7 +508,7 @@ export default function VideoDetail({
 																		href={topic}
 																		target="_blank"
 																		rel="noopener noreferrer"
-																		className="inline-flex items-center gap-1 text-suzuka-600 hover:text-suzuka-700 underline underline-offset-4 decoration-suzuka-400 hover:decoration-suzuka-600 transition-colors"
+																		className="inline-flex items-center gap-1 text-primary hover:text-primary/90 underline underline-offset-4 decoration-primary/60 hover:decoration-primary transition-colors"
 																	>
 																		{topic.length > 60 ? `${topic.substring(0, 57)}...` : topic}
 																		<ExternalLink className="h-3 w-3 flex-shrink-0" />
@@ -795,16 +795,16 @@ export default function VideoDetail({
 				{/* 右側：サイドバー（1/3幅） */}
 				<div className="space-y-6">
 					{/* この動画のボタン */}
-					<Card className="p-6 bg-suzuka-50 dark:bg-suzuka-950 border-suzuka-200 dark:border-suzuka-800">
+					<Card className="p-6 bg-muted/50 border-border">
 						<div className="flex items-center justify-between mb-4">
-							<h3 className="text-lg font-semibold text-suzuka-700 dark:text-suzuka-300">
+							<h3 className="text-lg font-semibold text-foreground">
 								🔊 この動画のボタン ({initialTotalAudioCount})
 							</h3>
 							{canCreateButton && (
 								<Button
 									size="sm"
 									variant="outline"
-									className="text-suzuka-600 border-suzuka-300 hover:bg-suzuka-100"
+									className="text-primary border-border hover:bg-accent"
 									asChild
 								>
 									<Link href={`/buttons/create?video_id=${video.videoId}`}>新規作成</Link>
@@ -821,8 +821,8 @@ export default function VideoDetail({
 						<h3 className="font-semibold text-foreground mb-4">チャンネル情報</h3>
 						<div className="space-y-3">
 							<div className="flex items-center gap-3">
-								<div className="h-12 w-12 rounded-full bg-suzuka-200 dark:bg-suzuka-800 flex items-center justify-center">
-									<span className="text-suzuka-700 dark:text-suzuka-300 font-semibold">
+								<div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+									<span className="text-muted-foreground font-semibold">
 										{video.channelTitle.charAt(0)}
 									</span>
 								</div>

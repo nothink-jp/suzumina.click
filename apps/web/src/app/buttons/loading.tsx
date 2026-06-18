@@ -27,7 +27,7 @@ export default function ButtonsLoading() {
 						<div className="space-y-3">
 							{/* ボタンエリア */}
 							<div className="relative">
-								<Skeleton className="h-20 w-full rounded-lg bg-gradient-to-br from-suzuka-100 to-minase-100" />
+								<Skeleton className="h-20 w-full rounded-lg bg-muted" />
 								<div className="absolute inset-0 flex items-center justify-center">
 									<Skeleton className="h-10 w-10 rounded-full" />
 								</div>
@@ -58,7 +58,7 @@ export default function ButtonsLoading() {
 			{/* ページネーションのスケルトン */}
 			<div className="mt-8 flex justify-center items-center gap-2">
 				<Skeleton className="h-10 w-10" />
-				<Skeleton className="h-10 w-10 bg-suzuka-100" />
+				<Skeleton className="h-10 w-10 bg-muted" />
 				<Skeleton className="h-10 w-10" />
 				<Skeleton className="h-10 w-10" />
 			</div>

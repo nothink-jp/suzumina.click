@@ -247,17 +247,17 @@ describe("VideoTagDisplay", () => {
 				/>,
 			);
 
-			// カテゴリはsuzuka-700色
+			// カテゴリは primary
 			const categoryBadge = screen.getByText("エンターテイメント");
-			expect(categoryBadge).toHaveClass("bg-suzuka-700", "text-white");
+			expect(categoryBadge).toHaveClass("bg-primary", "text-primary-foreground");
 
-			// 配信タイプはsuzuka-500色
+			// 配信タイプは primary（category と同じ solid。種別はラベル/アイコンで区別）
 			const playlistBadge = screen.getByText("配信");
-			expect(playlistBadge).toHaveClass("bg-suzuka-500", "text-white");
+			expect(playlistBadge).toHaveClass("bg-primary", "text-primary-foreground");
 
-			// ユーザータグはsuzuka-50色
+			// ユーザータグは muted
 			const userBadge = screen.getByText("可愛い");
-			expect(userBadge).toHaveClass("bg-suzuka-50", "text-suzuka-700");
+			expect(userBadge).toHaveClass("bg-muted", "text-foreground");
 		});
 
 		it("should render compact tags as a semantic list (ul/li)", () => {
@@ -356,17 +356,17 @@ describe("VideoTagDisplay", () => {
 				/>,
 			);
 
-			// 配信タイプはsuzuka-500色
+			// 配信タイプは primary（category と同じ solid。種別はラベル/アイコンで区別）
 			const playlistBadge = screen.getByText("配信");
-			expect(playlistBadge).toHaveClass("bg-suzuka-500", "text-white");
+			expect(playlistBadge).toHaveClass("bg-primary", "text-primary-foreground");
 
-			// ユーザータグはsuzuka-50色
+			// ユーザータグは muted
 			const userBadge = screen.getByText("可愛い");
-			expect(userBadge).toHaveClass("bg-suzuka-50", "text-suzuka-700");
+			expect(userBadge).toHaveClass("bg-muted", "text-foreground");
 
-			// カテゴリはsuzuka-700色
+			// カテゴリは primary
 			const categoryBadge = screen.getByText("エンターテイメント");
-			expect(categoryBadge).toHaveClass("bg-suzuka-700", "text-white");
+			expect(categoryBadge).toHaveClass("bg-primary", "text-primary-foreground");
 		});
 	});
 

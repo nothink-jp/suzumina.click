@@ -32,21 +32,21 @@ export default function ContactPage() {
 
 			<div className="space-y-8">
 				{/* 重要なお知らせ */}
-				<Card className="border-minase-200 bg-minase-50">
+				<Card className="bg-muted">
 					<CardHeader>
-						<CardTitle className="flex items-center gap-2 text-minase-700">
+						<CardTitle className="flex items-center gap-2">
 							<AlertTriangle className="h-5 w-5" />
 							重要なお知らせ
 						</CardTitle>
 					</CardHeader>
 					<CardContent className="space-y-3 text-sm">
 						<div className="space-y-2">
-							<p className="text-minase-800">
+							<p className="text-muted-foreground">
 								• 個人が趣味で運営しているため、
 								<b>返信をお約束できません</b>
 							</p>
-							<p className="text-minase-800">• 緊急性のあるお問い合わせには対応できません</p>
-							<p className="text-minase-800">
+							<p className="text-muted-foreground">• 緊急性のあるお問い合わせには対応できません</p>
+							<p className="text-muted-foreground">
 								• 涼花みなせさんご本人や関係者様への連絡手段ではありません
 							</p>
 						</div>
@@ -69,18 +69,18 @@ export default function ContactPage() {
 									</p>
 								</div>
 							</div>
-							<div className="flex items-start gap-3 p-3 rounded-lg bg-suzuka-50">
-								<Lightbulb className="h-5 w-5 text-suzuka-600 mt-0.5" />
+							<div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+								<Lightbulb className="h-5 w-5 text-primary mt-0.5" />
 								<div>
-									<h4 className="font-semibold text-suzuka-800">機能要望</h4>
-									<p className="text-sm text-suzuka-700">新機能の提案やサイト改善のご提案</p>
+									<h4 className="font-semibold text-foreground">機能要望</h4>
+									<p className="text-sm text-muted-foreground">新機能の提案やサイト改善のご提案</p>
 								</div>
 							</div>
-							<div className="flex items-start gap-3 p-3 rounded-lg bg-minase-50">
-								<HelpCircle className="h-5 w-5 text-minase-600 mt-0.5" />
+							<div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+								<HelpCircle className="h-5 w-5 text-secondary mt-0.5" />
 								<div>
-									<h4 className="font-semibold text-minase-800">使い方</h4>
-									<p className="text-sm text-minase-700">サイトの使用方法に関するご質問</p>
+									<h4 className="font-semibold text-foreground">使い方</h4>
+									<p className="text-sm text-muted-foreground">サイトの使用方法に関するご質問</p>
 								</div>
 							</div>
 							<div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
@@ -101,21 +101,21 @@ export default function ContactPage() {
 					</CardHeader>
 					<CardContent className="space-y-4">
 						<div className="space-y-3">
-							<div className="border-l-4 border-suzuka-500 pl-4">
+							<div className="border-l-4 border-primary pl-4">
 								<h4 className="font-semibold text-foreground">Q: 音声ボタンが再生されません</h4>
 								<p className="text-sm text-muted-foreground mt-1">
 									A:
 									ブラウザの音声自動再生設定を確認してください。一度ページをクリックしてから再生すると動作する場合があります。
 								</p>
 							</div>
-							<div className="border-l-4 border-minase-500 pl-4">
+							<div className="border-l-4 border-secondary pl-4">
 								<h4 className="font-semibold text-foreground">Q: ログインできません</h4>
 								<p className="text-sm text-muted-foreground mt-1">
 									A:
 									現状、すずみなふぁみりーDiscordサーバーのメンバーのみご利用いただけます。先にDiscordサーバーにご参加してからお試しください。
 								</p>
 							</div>
-							<div className="border-l-4 border-suzuka-500 pl-4">
+							<div className="border-l-4 border-primary pl-4">
 								<h4 className="font-semibold text-foreground">Q: 作成したボタンが表示されません</h4>
 								<p className="text-sm text-muted-foreground mt-1">
 									A:

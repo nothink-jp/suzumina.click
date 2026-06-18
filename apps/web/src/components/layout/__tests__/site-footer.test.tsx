@@ -89,7 +89,7 @@ describe("SiteFooter", () => {
 
 		// 説明文
 		const description = screen.getByText("ファンによる、ファンのためのコミュニティサイト");
-		expect(description).toHaveClass("text-minase-200", "text-sm");
+		expect(description).toHaveClass("text-muted-foreground", "text-sm");
 
 		// フッターリンクとコピーライトの存在確認
 		const aboutLink = screen.getByText("このサイトについて");

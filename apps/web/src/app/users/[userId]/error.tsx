@@ -22,7 +22,7 @@ export default function UserProfileError({
 	}, [error]);
 
 	return (
-		<div className="min-h-screen bg-gradient-to-br from-suzuka-50/30 to-minase-50/30 flex items-center justify-center">
+		<div className="min-h-screen bg-background flex items-center justify-center">
 			<div className="container mx-auto px-4 py-8 max-w-2xl">
 				<Card className="border-destructive/50">
 					<CardHeader className="text-center">
@@ -77,7 +77,7 @@ export default function UserProfileError({
 						<div className="pt-4 border-t">
 							<p className="text-sm text-muted-foreground">
 								問題が解決しない場合は{" "}
-								<Link href="/contact" className="text-suzuka-600 hover:text-suzuka-700 underline">
+								<Link href="/contact" className="text-primary hover:text-primary/90 underline">
 									お問い合わせ
 								</Link>{" "}
 								からご連絡ください。

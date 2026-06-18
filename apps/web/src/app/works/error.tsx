@@ -21,7 +21,7 @@ export default function WorksError({
 				<CardContent className="p-8 text-center space-y-6">
 					{/* エラーアイコン */}
 					<div className="mx-auto w-16 h-16 bg-gradient-to-br from-suzuka-100 to-minase-100 rounded-full flex items-center justify-center">
-						<AlertCircle className="w-8 h-8 text-suzuka-600" />
+						<AlertCircle className="w-8 h-8 text-primary" />
 					</div>
 
 					{/* エラーメッセージ */}
@@ -88,7 +88,7 @@ export default function WorksError({
 							href="https://www.dlsite.com/home/fsr/=/keyword_creater_name/%E6%B6%BC%E8%8A%B1%E3%81%BF%E3%81%AA%E3%81%9B/order/cstart_d/from/work.voice"
 							target="_blank"
 							rel="noopener noreferrer"
-							className="text-suzuka-500 hover:underline"
+							className="text-primary hover:underline"
 						>
 							DLsiteで直接ご確認
 						</a>

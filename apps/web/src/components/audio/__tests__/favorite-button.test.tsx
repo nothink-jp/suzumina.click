@@ -232,7 +232,7 @@ describe("FavoriteButton - Touch Optimization", () => {
 			);
 
 			button = screen.getByLabelText("お気に入りから削除");
-			expect(button).toHaveClass("bg-suzuka-500", "hover:bg-suzuka-600");
+			expect(button).toHaveClass("bg-primary", "hover:bg-primary/90");
 		});
 
 		it("should maintain visual consistency across sizes", () => {

@@ -122,7 +122,7 @@ export function VideoTagDisplay({
 			icon={Play}
 			tags={playlistTags}
 			layer="playlist"
-			badgeClassName="bg-suzuka-500 text-white border-suzuka-500 hover:bg-suzuka-600"
+			badgeClassName="bg-primary text-primary-foreground border-primary hover:bg-primary/90"
 			displayData={playlistDisplay}
 			sizeClasses={sizeClasses}
 			showEmptyLayers={showEmptyLayers}
@@ -139,7 +139,7 @@ export function VideoTagDisplay({
 			icon={Users}
 			tags={userTags}
 			layer="user"
-			badgeClassName="bg-suzuka-50 text-suzuka-700 border-suzuka-200 hover:bg-suzuka-100"
+			badgeClassName="bg-muted text-foreground border-border hover:bg-accent"
 			displayData={userDisplay}
 			sizeClasses={sizeClasses}
 			showEmptyLayers={showEmptyLayers}

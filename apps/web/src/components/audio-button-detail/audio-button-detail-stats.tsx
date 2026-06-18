@@ -13,12 +13,12 @@ export function AudioButtonDetailStats({
 }: AudioButtonDetailStatsProps) {
 	return (
 		<div className="grid grid-cols-3 gap-4 mb-6">
-			<div className="text-center p-3 bg-suzuka-50 rounded-lg border border-suzuka-100">
+			<div className="text-center p-3 bg-muted rounded-lg border border-border">
 				<div className="flex items-center justify-center mb-1">
-					<Play className="h-4 w-4 text-suzuka-600" />
+					<Play className="h-4 w-4 text-primary" />
 				</div>
-				<div className="text-lg font-bold text-suzuka-700">{playCount.toLocaleString("ja-JP")}</div>
-				<div className="text-xs text-suzuka-600">再生回数</div>
+				<div className="text-lg font-bold text-foreground">{playCount.toLocaleString("ja-JP")}</div>
+				<div className="text-xs text-muted-foreground">再生回数</div>
 			</div>
 			<div className="text-center p-3 bg-rose-50 rounded-lg border border-rose-100">
 				<div className="flex items-center justify-center mb-1">

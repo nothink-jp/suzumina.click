@@ -21,7 +21,7 @@ export default function VideosError({
 				<CardContent className="p-8 text-center space-y-6">
 					{/* エラーアイコン */}
 					<div className="mx-auto w-16 h-16 bg-gradient-to-br from-suzuka-100 to-minase-100 rounded-full flex items-center justify-center">
-						<AlertCircle className="w-8 h-8 text-suzuka-600" />
+						<AlertCircle className="w-8 h-8 text-primary" />
 					</div>
 
 					{/* エラーメッセージ */}

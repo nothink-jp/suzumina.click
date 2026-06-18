@@ -25,7 +25,7 @@ export function AudioButtonListItem({
 			audioButton={audioButton}
 			className="shadow-sm hover:shadow-md transition-all duration-200"
 			searchQuery={searchQuery}
-			highlightClassName="bg-suzuka-200 text-suzuka-900 px-0.5 rounded"
+			highlightClassName="bg-primary/20 text-foreground px-0.5 rounded"
 			initialIsFavorited={isFavorited}
 			initialIsLiked={isLiked}
 			initialIsDisliked={isDisliked}
