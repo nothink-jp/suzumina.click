@@ -31,6 +31,10 @@ font-family: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", Meiryo, system-ui
 
 ## Font Weights
 
+ロードされるのは **400 / 500 / 700 の 3 ウェイトのみ**です（next/font・styles.css の指定）。
+600（Semibold）は未ロードのため使用しません（指定するとブラウザの擬似ボールドにフォールバックし、
+実フォントの字形と一致しません）。見出しは 700（Bold）、ラベル・強調は 500（Medium）を使います。
+
 <Typeset
   fontSizes={[20]}
   fontWeight={400}
@@ -40,19 +44,13 @@ font-family: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", Meiryo, system-ui
 <Typeset
   fontSizes={[20]}
   fontWeight={500}
-  sampleText="Medium (500) — 強調・ラベル"
-  fontFamily="'M PLUS Rounded 1c', sans-serif"
-/>
-<Typeset
-  fontSizes={[20]}
-  fontWeight={600}
-  sampleText="Semibold (600) — セクション見出し"
+  sampleText="Medium (500) — 強調・ラベル・中見出し"
   fontFamily="'M PLUS Rounded 1c', sans-serif"
 />
 <Typeset
   fontSizes={[20]}
   fontWeight={700}
-  sampleText="Bold (700) — ページタイトル"
+  sampleText="Bold (700) — 見出し・ページタイトル"
   fontFamily="'M PLUS Rounded 1c', sans-serif"
 />
 
@@ -63,8 +61,8 @@ font-family: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", Meiryo, system-ui
 | Display Large   | `text-4xl font-bold`         | 36 / 44            | ページの主要タイトル                |
 | Display Medium  | `text-3xl font-bold`         | 30 / 36            | セクションの大見出し                |
 | Display Small   | `text-2xl font-bold`         | 24 / 32            | カードタイトル                      |
-| Heading Large   | `text-xl font-semibold`      | 20 / 28            | コンポーネントタイトル              |
-| Heading Medium  | `text-lg font-semibold`      | 18 / 28            | リスト項目見出し、フォームラベル    |
+| Heading Large   | `text-xl font-bold`          | 20 / 28            | コンポーネントタイトル              |
+| Heading Medium  | `text-lg font-medium`        | 18 / 28            | リスト項目見出し、フォームラベル    |
 | Heading Small   | `text-base font-medium`      | 16 / 24            | カード内タイトル、ボタンテキスト    |
 | Body Large      | `text-base`                  | 16 / 24            | 標準的な本文                        |
 | Body Medium     | `text-sm`                    | 14 / 20            | 説明文・キャプション                |

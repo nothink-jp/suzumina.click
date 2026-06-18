@@ -20,8 +20,8 @@ import { Meta, Title, Subtitle } from "@storybook/addon-docs/blocks";
         style={{
           width: 80,
           height: 60,
-          border: `${b.width}px solid #ff4785`,
-          background: "#fff5fa",
+          border: `${b.width}px solid hsl(var(--suzuka-500))`,
+          background: "hsl(var(--suzuka-50))",
           marginBottom: 8,
         }}
       />
@@ -34,23 +34,22 @@ import { Meta, Title, Subtitle } from "@storybook/addon-docs/blocks";
 
 <div style={{ display: "flex", gap: 24, flexWrap: "wrap", marginBottom: 24 }}>
   {[
-    { name: "rounded-none", radius: 0 },
-    { name: "rounded-sm", radius: 2 },
-    { name: "rounded", radius: 4 },
-    { name: "rounded-md", radius: 6 },
-    { name: "rounded-lg", radius: 8 },
-    { name: "rounded-xl", radius: 12 },
-    { name: "rounded-2xl", radius: 16 },
-    { name: "rounded-3xl", radius: 24 },
-    { name: "rounded-full", radius: 9999 },
+    { name: "rounded-none", radius: "0" },
+    { name: "rounded-sm", radius: "var(--radius-sm)" },
+    { name: "rounded-md", radius: "var(--radius-md)" },
+    { name: "rounded-lg", radius: "var(--radius-lg)" },
+    { name: "rounded-xl", radius: "var(--radius-xl)" },
+    { name: "rounded-2xl", radius: "16px" },
+    { name: "rounded-3xl", radius: "24px" },
+    { name: "rounded-full", radius: "9999px" },
   ].map((r) => (
     <div key={r.name} style={{ textAlign: "center" }}>
       <div
         style={{
           width: 80,
           height: 60,
-          background: "#ffc2d9",
-          border: "2px solid #ff4785",
+          background: "hsl(var(--suzuka-200))",
+          border: "2px solid hsl(var(--suzuka-500))",
           borderRadius: r.radius,
           marginBottom: 8,
         }}
@@ -60,9 +59,14 @@ import { Meta, Title, Subtitle } from "@storybook/addon-docs/blocks";
   ))}
 </div>
 
+角丸トークンは `globals.css` の `@theme`（`--radius: 0.5rem` 基準）から算出される v4 実効値です:
+`rounded-sm = calc(--radius - 4px) = 4px`、`rounded-md = 6px`、`rounded-lg = --radius = 8px`、
+`rounded-xl = calc(--radius + 4px) = 12px`。`rounded-2xl`(16px) / `rounded-3xl`(24px) は Tailwind v4 既定値。
+コンポーネントの既定は `rounded-md`〜`rounded-lg`。
+
 ## Shadows
 
-<div style={{ display: "flex", gap: 32, flexWrap: "wrap", background: "#f3f4f6", padding: 24, borderRadius: 8 }}>
+<div style={{ display: "flex", gap: 32, flexWrap: "wrap", background: "hsl(var(--muted))", padding: 24, borderRadius: 8 }}>
   {[
     { name: "shadow-sm", shadow: "0 1px 2px 0 rgb(0 0 0 / 0.05)" },
     { name: "shadow", shadow: "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)" },
@@ -76,7 +80,7 @@ import { Meta, Title, Subtitle } from "@storybook/addon-docs/blocks";
         style={{
           width: 100,
           height: 70,
-          background: "#fff",
+          background: "hsl(var(--card))",
           borderRadius: 8,
           boxShadow: s.shadow,
           marginBottom: 12,
@@ -100,26 +104,29 @@ import { Meta, Title, Subtitle } from "@storybook/addon-docs/blocks";
 
 ## ボーダーカラー
 
-| 用途             | クラス例                                                |
+境界線は **semantic トークン優先**。システムの境界色は暖色ニュートラル（`--border: 20 6% 90%`）で、
+冷色系の `gray-*` / `red-*` / `green-*` の直書きは使いません（成功色は本システムにトークンが無い）。
+
+| 用途             | クラス例（semantic 優先）                               |
 | ---------------- | ------------------------------------------------------- |
-| デフォルト       | `border-gray-200`                                       |
-| 強調             | `border-gray-300`                                       |
+| デフォルト境界   | `border-border`（暖色ニュートラル 20 6% 90%）           |
+| 入力フィールド   | `border-input`                                          |
 | ブランド境界     | `border-suzuka-200` / `border-suzuka-300`               |
 | アクティブ       | `border-suzuka-500`                                     |
-| エラー           | `border-red-300` / `border-red-500`                     |
-| 成功             | `border-green-300` / `border-green-500`                 |
+| フォーカス       | `ring-ring`                                             |
+| エラー           | `border-destructive`                                    |
 
 ## 組み合わせ例
 
 ```tsx
 // 標準カード
-<div className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">…</div>
+<div className="border border-border rounded-lg p-6 bg-card shadow-sm">…</div>
 
 // 強調カード
 <div className="border-2 border-suzuka-200 rounded-lg p-6 bg-suzuka-50 shadow-md">…</div>
 
 // プレミアムカード
-<div className="border border-suzuka-300 rounded-xl p-6 bg-white shadow-lg">…</div>
+<div className="border border-suzuka-300 rounded-xl p-6 bg-card shadow-lg">…</div>
 
 // ホバーインタラクション
 <div className="shadow-sm hover:shadow-md transition-shadow duration-200 …">…</div>
