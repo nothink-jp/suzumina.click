@@ -80,3 +80,11 @@ secretlint-results.sarif
 
 # Claude Code worktrees（各 worktree は独立チェックアウト / ADR-008）
 .claude/worktrees/
+
+# design-sync (claude.ai/design 連携) — 生成物/作業状態は除外、durable set は追跡
+.ds-sync/
+ds-bundle/
+.design-sync/sb-reference/
+.design-sync/learnings/
+.design-sync/.cache/
+.design-sync/node_modules
