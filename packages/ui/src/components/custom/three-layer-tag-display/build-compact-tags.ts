@@ -44,7 +44,7 @@ export function buildCompactTags({
 		allTags.push({
 			text: tag,
 			type: "playlist",
-			className: "bg-primary/75 text-primary-foreground border-primary/75 hover:bg-primary",
+			className: "bg-primary text-primary-foreground border-primary hover:bg-primary/90",
 		});
 	}
 

@@ -122,7 +122,7 @@ export function VideoTagDisplay({
 			icon={Play}
 			tags={playlistTags}
 			layer="playlist"
-			badgeClassName="bg-primary/75 text-primary-foreground border-primary/75 hover:bg-primary"
+			badgeClassName="bg-primary text-primary-foreground border-primary hover:bg-primary/90"
 			displayData={playlistDisplay}
 			sizeClasses={sizeClasses}
 			showEmptyLayers={showEmptyLayers}

@@ -251,9 +251,9 @@ describe("VideoTagDisplay", () => {
 			const categoryBadge = screen.getByText("エンターテイメント");
 			expect(categoryBadge).toHaveClass("bg-primary", "text-primary-foreground");
 
-			// 配信タイプは primary/75
+			// 配信タイプは primary（category と同じ solid。種別はラベル/アイコンで区別）
 			const playlistBadge = screen.getByText("配信");
-			expect(playlistBadge).toHaveClass("bg-primary/75", "text-primary-foreground");
+			expect(playlistBadge).toHaveClass("bg-primary", "text-primary-foreground");
 
 			// ユーザータグは muted
 			const userBadge = screen.getByText("可愛い");
@@ -356,9 +356,9 @@ describe("VideoTagDisplay", () => {
 				/>,
 			);
 
-			// 配信タイプは primary/75
+			// 配信タイプは primary（category と同じ solid。種別はラベル/アイコンで区別）
 			const playlistBadge = screen.getByText("配信");
-			expect(playlistBadge).toHaveClass("bg-primary/75", "text-primary-foreground");
+			expect(playlistBadge).toHaveClass("bg-primary", "text-primary-foreground");
 
 			// ユーザータグは muted
 			const userBadge = screen.getByText("可愛い");
