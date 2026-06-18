@@ -62,7 +62,8 @@ import { Meta, Title, Subtitle } from "@storybook/addon-docs/blocks";
 角丸トークンは `globals.css` の `@theme`（`--radius: 0.5rem` 基準）から算出される v4 実効値です:
 `rounded-sm = calc(--radius - 4px) = 4px`、`rounded-md = 6px`、`rounded-lg = --radius = 8px`、
 `rounded-xl = calc(--radius + 4px) = 12px`。`rounded-2xl`(16px) / `rounded-3xl`(24px) は Tailwind v4 既定値。
-コンポーネントの既定は `rounded-md`〜`rounded-lg`。
+コンポーネントの既定は `rounded-md`〜`rounded-lg`。役割の目安: カード = `rounded-lg`、ピル・アバター = `rounded-full`、
+タイル・大きな面 = `rounded-xl`。`rounded-2xl` / `rounded-3xl` は現状コンポーネントで未使用のため独自トークン化はしない（Tailwind 既定のまま）。
 
 ## Shadows
 
@@ -101,6 +102,11 @@ import { Meta, Title, Subtitle } from "@storybook/addon-docs/blocks";
 | Level 2 - Hover     | `shadow-md`   | カードのホバー浮上効果     |
 | Level 3 - Dropdown  | `shadow-lg`   | ドロップダウン、ポップオーバー |
 | Level 4 - Modal     | `shadow-2xl`  | モーダルダイアログ         |
+
+影は **Tailwind 既定のスケール（`shadow-sm`〜`shadow-2xl`）をそのまま採用**し、独自の elevation トークン層
+（`--shadow-1..4` 等）は意図的に設けない。上の4段階を正本とし、二重定義による drift を避けるため。
+唯一の例外が `.hover-lift`（`globals.css`）で、`translateY(-2px)` + ブランド色を帯びた影
+（`0 8px 25px hsl(var(--primary) / 0.15)`）によるインタラクティブな浮上演出。通常の階層表現には使わない。
 
 ## ボーダーカラー
 
