@@ -1,0 +1,10 @@
+{
+	"compilerOptions": {
+		"baseUrl": ".",
+		"paths": {
+			"@suzumina.click/ui/*": ["../packages/ui/src/*"],
+			"next/navigation": ["../packages/ui/.storybook/mocks/next-navigation.ts"],
+			"next/link": ["./shims/next-link.tsx"]
+		}
+	}
+}
