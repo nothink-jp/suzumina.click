@@ -33,7 +33,7 @@ export function AudioButtonDetailHeader({ title }: AudioButtonDetailHeaderProps)
 				</ol>
 			</nav>
 			<Button variant="ghost" size="sm" asChild>
-				<Link href="/buttons" className="flex items-center gap-2 hover:text-suzuka-600">
+				<Link href="/buttons" className="flex items-center gap-2 hover:text-primary">
 					<ArrowLeft className="h-4 w-4" />
 					音声ボタン一覧に戻る
 				</Link>

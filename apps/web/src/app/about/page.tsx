@@ -45,7 +45,7 @@ export default function AboutPage() {
 				<Card>
 					<CardHeader>
 						<CardTitle className="flex items-center gap-2">
-							<Heart className="h-5 w-5 text-suzuka-500" />
+							<Heart className="h-5 w-5 text-primary" />
 							サイトの目的
 						</CardTitle>
 					</CardHeader>
@@ -55,15 +55,15 @@ export default function AboutPage() {
 						</p>
 						<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 							<div className="flex items-center gap-3 p-3 rounded-lg bg-muted">
-								<Music className="h-5 w-5 text-suzuka-500" />
+								<Music className="h-5 w-5 text-primary" />
 								<span className="text-sm">YouTube再生ボタンの作成・共有</span>
 							</div>
 							<div className="flex items-center gap-3 p-3 rounded-lg bg-muted">
-								<Play className="h-5 w-5 text-minase-500" />
+								<Play className="h-5 w-5 text-secondary" />
 								<span className="text-sm">YouTube動画の整理・検索</span>
 							</div>
 							<div className="flex items-center gap-3 p-3 rounded-lg bg-muted">
-								<Play className="h-5 w-5 text-suzuka-500" />
+								<Play className="h-5 w-5 text-primary" />
 								<span className="text-sm">DLsite作品情報の参照・表示</span>
 							</div>
 						</div>

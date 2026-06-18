@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 export default function NotFound() {
 	return (
-		<div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-suzuka-50 to-minase-50 px-4">
+		<div className="min-h-screen flex items-center justify-center bg-background px-4">
 			<Card className="max-w-md w-full shadow-xl animate-in fade-in-0 zoom-in-95 duration-500">
 				<CardContent className="p-8 text-center space-y-6">
 					{/* 404 デザイン */}

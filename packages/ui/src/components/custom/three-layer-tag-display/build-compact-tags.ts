@@ -32,7 +32,7 @@ export function buildCompactTags({
 		allTags.push({
 			text: categoryName,
 			type: "category",
-			className: "bg-suzuka-700 text-white border-suzuka-700 hover:bg-suzuka-800",
+			className: "bg-primary text-primary-foreground border-primary hover:bg-primary/90",
 		});
 	}
 
@@ -44,7 +44,7 @@ export function buildCompactTags({
 		allTags.push({
 			text: tag,
 			type: "playlist",
-			className: "bg-suzuka-500 text-white border-suzuka-500 hover:bg-suzuka-600",
+			className: "bg-primary/75 text-primary-foreground border-primary/75 hover:bg-primary",
 		});
 	}
 
@@ -57,7 +57,7 @@ export function buildCompactTags({
 		allTags.push({
 			text: tag,
 			type: "user",
-			className: "bg-suzuka-50 text-suzuka-700 border-suzuka-200 hover:bg-suzuka-100",
+			className: "bg-muted text-foreground border-border hover:bg-accent",
 		});
 	}
 

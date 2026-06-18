@@ -8,7 +8,7 @@ interface ListWrapperProps {
 export function ListWrapper({ children, className = "" }: ListWrapperProps) {
 	return (
 		<div
-			className={`bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-suzuka-100 p-6 ${className}`}
+			className={`bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-border p-6 ${className}`}
 		>
 			{children}
 		</div>

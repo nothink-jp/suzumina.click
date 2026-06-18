@@ -193,7 +193,7 @@ export default function CharacteristicEvaluation({
 					<CardContent>
 						<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 							<div className="text-center">
-								<div className="text-2xl font-bold text-suzuka-600">
+								<div className="text-2xl font-bold text-primary">
 									{characteristics.overall.averageRating.toFixed(1)}
 								</div>
 								<div className="text-sm text-muted-foreground">平均評価</div>
@@ -205,7 +205,7 @@ export default function CharacteristicEvaluation({
 								<div className="text-sm text-muted-foreground">総評価数</div>
 							</div>
 							<div className="text-center">
-								<div className="text-2xl font-bold text-minase-600">
+								<div className="text-2xl font-bold text-secondary">
 									{(characteristics.overall.recommendationRate * 100).toFixed(0)}%
 								</div>
 								<div className="text-sm text-muted-foreground">推奨率</div>

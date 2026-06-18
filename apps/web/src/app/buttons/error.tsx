@@ -21,7 +21,7 @@ export default function ButtonsError({
 				<CardContent className="p-8 text-center space-y-6">
 					{/* エラーアイコン */}
 					<div className="mx-auto w-16 h-16 bg-gradient-to-br from-suzuka-100 to-minase-100 rounded-full flex items-center justify-center">
-						<AlertCircle className="w-8 h-8 text-suzuka-600" />
+						<AlertCircle className="w-8 h-8 text-primary" />
 					</div>
 
 					{/* エラーメッセージ */}
@@ -86,7 +86,7 @@ export default function ButtonsError({
 					{/* ログイン案内 */}
 					<div className="text-xs text-muted-foreground pt-2 border-t">
 						<p>音声ボタンの作成には</p>
-						<Link href="/auth/signin" className="text-suzuka-500 hover:underline">
+						<Link href="/auth/signin" className="text-primary hover:underline">
 							ログイン
 						</Link>
 						<p>が必要です</p>

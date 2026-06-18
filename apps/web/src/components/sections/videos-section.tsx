@@ -15,7 +15,7 @@ interface VideosSectionProps {
 export function VideosSection({ videos = [], loading = true, error = null }: VideosSectionProps) {
 	if (loading) {
 		return (
-			<section className="py-8 sm:py-12 bg-suzuka-100">
+			<section className="py-8 sm:py-12 bg-muted">
 				<div className="container mx-auto px-4 sm:px-6 lg:px-8">
 					<div className="flex items-center justify-between mb-6 sm:mb-8">
 						<div>
@@ -40,7 +40,7 @@ export function VideosSection({ videos = [], loading = true, error = null }: Vid
 
 	if (error) {
 		return (
-			<section className="py-8 sm:py-12 bg-suzuka-100">
+			<section className="py-8 sm:py-12 bg-muted">
 				<div className="container mx-auto px-4 sm:px-6 lg:px-8">
 					<div className="text-center py-12 text-muted-foreground">
 						<div className="text-lg">動画の読み込みに失敗しました</div>
@@ -52,7 +52,7 @@ export function VideosSection({ videos = [], loading = true, error = null }: Vid
 	}
 
 	return (
-		<section className="py-8 sm:py-12 bg-suzuka-100">
+		<section className="py-8 sm:py-12 bg-muted">
 			<div className="container mx-auto px-4 sm:px-6 lg:px-8">
 				<div className="flex items-center justify-between mb-6 sm:mb-8">
 					<div>

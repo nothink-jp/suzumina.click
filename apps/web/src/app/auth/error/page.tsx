@@ -69,11 +69,11 @@ async function ErrorContent({ searchParams }: AuthErrorPageProps) {
 	const errorInfo = getErrorMessage(error);
 
 	return (
-		<div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-suzuka-50 to-minase-50 px-4">
+		<div className="min-h-screen flex items-center justify-center bg-background px-4">
 			<Card className="max-w-md w-full shadow-xl animate-in fade-in-0 zoom-in-95 duration-500">
 				<CardContent className="p-8 text-center space-y-6">
 					<div className="mx-auto w-16 h-16 bg-gradient-to-br from-suzuka-100 to-minase-100 rounded-full flex items-center justify-center">
-						<AlertTriangle className="w-8 h-8 text-suzuka-600" />
+						<AlertTriangle className="w-8 h-8 text-primary" />
 					</div>
 
 					<div className="space-y-2">
@@ -82,7 +82,7 @@ async function ErrorContent({ searchParams }: AuthErrorPageProps) {
 					</div>
 
 					{errorInfo.showDiscordInfo && (
-						<div className="p-4 bg-minase-50 border border-minase-200 rounded-lg text-left">
+						<div className="p-4 bg-muted border border-border rounded-lg text-left">
 							<p className="text-sm font-medium text-foreground mb-1">
 								すずみなふぁみりー Discord サーバーについて
 							</p>
@@ -137,9 +137,9 @@ export default function AuthErrorPage({ searchParams }: AuthErrorPageProps) {
 	return (
 		<Suspense
 			fallback={
-				<div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-suzuka-50 to-minase-50">
+				<div className="min-h-screen flex items-center justify-center bg-background">
 					<div className="text-center">
-						<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-suzuka-600 mx-auto" />
+						<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
 						<p className="mt-4 text-muted-foreground">読み込み中...</p>
 					</div>
 				</div>

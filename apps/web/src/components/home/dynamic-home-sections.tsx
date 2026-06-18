@@ -110,7 +110,7 @@ export async function WorksSectionAsync() {
 /** コミュニティ CTA は完全静的。データ取得なし。 */
 export function CommunitySection() {
 	return (
-		<section className="py-8 sm:py-12 bg-suzuka-100">
+		<section className="py-8 sm:py-12 bg-muted">
 			<div className="container mx-auto px-4 sm:px-6 lg:px-8">
 				<div className="text-center mb-6 sm:mb-8">
 					<h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-2 sm:mb-4">

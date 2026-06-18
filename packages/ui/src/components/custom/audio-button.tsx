@@ -87,7 +87,7 @@ function PopoverTitle({
 		<HighlightText
 			text={text}
 			searchQuery={searchQuery}
-			highlightClassName={highlightClassName || "bg-suzuka-200 text-suzuka-900 px-1 rounded"}
+			highlightClassName={highlightClassName || "bg-primary/20 text-foreground px-1 rounded"}
 		/>
 	);
 }
@@ -131,7 +131,7 @@ function PopoverMetadata({
 				<User className="h-4 w-4" />
 				<a
 					href={`/users/${audioButton.creatorId}`}
-					className="text-suzuka-600 hover:text-suzuka-700 hover:underline transition-colors"
+					className="text-primary hover:text-primary/90 hover:underline transition-colors"
 					onClick={(e) => e.stopPropagation()}
 				>
 					{audioButton.creatorName}
@@ -146,7 +146,7 @@ function PopoverMetadata({
 					<Video className="h-4 w-4" />
 					<a
 						href={`/videos/${audioButton.videoId}`}
-						className="text-suzuka-600 hover:text-suzuka-700 hover:underline transition-colors text-xs truncate"
+						className="text-primary hover:text-primary/90 hover:underline transition-colors text-xs truncate"
 						onClick={(e: React.MouseEvent) => e.stopPropagation()}
 						title={audioButton.videoTitle}
 					>
@@ -177,7 +177,7 @@ function PopoverTags({
 				variant="outline"
 				showIcon={true}
 				searchQuery={searchQuery}
-				highlightClassName={highlightClassName || "bg-suzuka-200 text-suzuka-900 px-1 rounded"}
+				highlightClassName={highlightClassName || "bg-primary/20 text-foreground px-1 rounded"}
 				size="default"
 			/>
 		</div>
@@ -209,8 +209,8 @@ function FavoriteButton({
 			className={cn(
 				"flex items-center justify-center w-10 h-10 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors",
 				isFavorite
-					? "text-suzuka-600 hover:text-suzuka-700"
-					: "text-muted-foreground hover:text-suzuka-600",
+					? "text-primary hover:text-primary/90"
+					: "text-muted-foreground hover:text-primary",
 				!isAuthenticated && "opacity-50 cursor-not-allowed hover:bg-background",
 			)}
 		>
@@ -250,8 +250,8 @@ function LikeDislikeButtons({
 				className={cn(
 					"flex items-center gap-1 px-3 py-2 text-sm font-medium border-0 rounded-l-md rounded-r-none border-r border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors",
 					isLiked
-						? "text-suzuka-600 hover:text-suzuka-700"
-						: "text-muted-foreground hover:text-suzuka-600",
+						? "text-primary hover:text-primary/90"
+						: "text-muted-foreground hover:text-primary",
 					!isAuthenticated && "opacity-50 cursor-not-allowed hover:bg-background",
 				)}
 			>
@@ -539,7 +539,7 @@ export function AudioButton({
 									text={displayTitle}
 									searchQuery={searchQuery}
 									highlightClassName={
-										highlightClassName || "bg-suzuka-200 text-suzuka-900 px-1 rounded"
+										highlightClassName || "bg-primary/20 text-foreground px-1 rounded"
 									}
 								/>
 							) : (
@@ -561,7 +561,7 @@ export function AudioButton({
 				</div>
 
 				<PopoverContent
-					className="w-96 p-0 border-suzuka-200"
+					className="w-96 p-0 border-border"
 					align="start"
 					aria-label={`${audioButton.buttonText} の詳細`}
 				>

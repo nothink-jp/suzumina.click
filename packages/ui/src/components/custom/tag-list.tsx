@@ -100,9 +100,9 @@ export function TagList({
 	const getDefaultTagClassName = () => {
 		switch (variant) {
 			case "outline":
-				return "bg-background/80 text-suzuka-700 border-suzuka-300 hover:bg-suzuka-50 transition-colors";
+				return "bg-background/80 text-foreground border-border hover:bg-accent transition-colors";
 			case "secondary":
-				return "bg-suzuka-100 text-suzuka-700 hover:bg-suzuka-200 transition-colors";
+				return "bg-muted text-foreground hover:bg-accent transition-colors";
 			default:
 				return "";
 		}
@@ -128,7 +128,7 @@ export function TagList({
 							text={tag}
 							searchQuery={searchQuery}
 							highlightClassName={
-								highlightClassName || "bg-suzuka-200 text-suzuka-900 px-1 rounded"
+								highlightClassName || "bg-primary/20 text-foreground px-1 rounded"
 							}
 						/>
 					) : (

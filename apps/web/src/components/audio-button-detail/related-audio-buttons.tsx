@@ -40,7 +40,7 @@ export async function RelatedAudioButtons({
 					<Card className="bg-card/80 backdrop-blur-sm shadow-lg border-0">
 						<CardHeader>
 							<CardTitle className="flex items-center gap-2 text-lg">
-								<YoutubeIcon className="h-5 w-5 text-suzuka-600" />
+								<YoutubeIcon className="h-5 w-5 text-primary" />
 								同じ動画の音声ボタン
 							</CardTitle>
 						</CardHeader>
@@ -62,7 +62,7 @@ export async function RelatedAudioButtons({
 										variant="outline"
 										size="sm"
 										asChild
-										className="border-suzuka-200 text-suzuka-600 hover:bg-suzuka-50"
+										className="border-border text-primary hover:bg-accent"
 									>
 										<Link href={`/buttons?videoId=${videoId}`}>
 											この動画の音声ボタンをもっと見る

@@ -3,11 +3,11 @@ import { Skeleton } from "@suzumina.click/ui/components/ui/skeleton";
 
 export default function UserProfileLoading() {
 	return (
-		<div className="min-h-screen bg-gradient-to-br from-suzuka-50/30 to-minase-50/30">
+		<div className="min-h-screen bg-background">
 			<div className="container mx-auto px-4 py-8 max-w-6xl">
 				{/* プロフィールヘッダー スケルトン */}
 				<Card className="mb-8 overflow-hidden">
-					<div className="bg-gradient-to-r from-suzuka-500/10 to-minase-500/10 p-6">
+					<div className="bg-muted/50 p-6">
 						<div className="flex flex-col md:flex-row items-start md:items-center gap-6">
 							{/* アバター スケルトン */}
 							<Skeleton className="w-30 h-30 rounded-full" />

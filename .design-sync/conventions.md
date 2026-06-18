@@ -46,9 +46,10 @@ so if a specific shade's utility isn't styled, use the variable directly.
 
 **Raw scales invert in dark mode** (`suzuka-50 ↔ 950`), so always pair a raw-scale class with a
 `dark:` variant (`bg-suzuka-50 dark:bg-suzuka-950`); for ordinary surfaces prefer the semantic
-tokens above, which already carry dark values. `minase` is the **secondary** accent (footer
-surfaces, special-feature emphasis) — keep it limited, and never put white text on orange
-(it fails AA at 2.3:1; use dark or `minase-50` text).
+tokens above, which already carry dark values. Structural surfaces (footers, section backgrounds)
+use the semantic tokens; reserve raw scales for deliberate brand moments (hero, gradient CTA).
+`minase` is the **secondary** accent (special-feature emphasis) — keep it limited, and never put
+white text on orange (it fails AA at 2.3:1; use dark or `minase-50` text).
 
 **Radius:** `rounded-sm | rounded-md | rounded-lg | rounded-xl | rounded-full` (from the `--radius` token, 0.5rem).
 

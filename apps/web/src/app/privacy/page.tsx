@@ -17,7 +17,7 @@ export default function PrivacyPage() {
 				<Card>
 					<CardHeader>
 						<CardTitle className="flex items-center gap-2">
-							<Shield className="h-5 w-5 text-suzuka-500" />
+							<Shield className="h-5 w-5 text-primary" />
 							1. 基本方針
 						</CardTitle>
 					</CardHeader>
@@ -26,9 +26,9 @@ export default function PrivacyPage() {
 							suzumina.clickは、ユーザーの皆様の個人情報保護を重要と考え、
 							個人情報保護法およびその他関連法令を遵守し、適切な取扱いに努めます。
 						</p>
-						<div className="bg-minase-50 p-4 rounded-lg">
-							<h4 className="font-semibold text-minase-800 mb-2">重要なお知らせ</h4>
-							<p className="text-sm text-minase-700">
+						<div className="bg-muted p-4 rounded-lg">
+							<h4 className="font-semibold text-foreground mb-2">重要なお知らせ</h4>
+							<p className="text-sm text-muted-foreground">
 								個人運営のため、企業レベルの完全な保護は保証できません。
 								最小限の情報収集に留め、可能な限り安全な管理に努めています。
 							</p>
@@ -40,7 +40,7 @@ export default function PrivacyPage() {
 				<Card>
 					<CardHeader>
 						<CardTitle className="flex items-center gap-2">
-							<Eye className="h-5 w-5 text-minase-500" />
+							<Eye className="h-5 w-5 text-secondary" />
 							2. 収集する情報
 						</CardTitle>
 					</CardHeader>
@@ -61,19 +61,19 @@ export default function PrivacyPage() {
 							<div>
 								<h4 className="font-semibold text-foreground">ユーザー提供情報</h4>
 								<div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-									<div className="bg-suzuka-50 p-3 rounded-lg">
-										<h5 className="font-semibold text-suzuka-800 text-sm">Discord認証情報</h5>
-										<ul className="text-xs text-suzuka-700 mt-1 space-y-1">
+									<div className="bg-muted p-3 rounded-lg">
+										<h5 className="font-semibold text-foreground text-sm">Discord認証情報</h5>
+										<ul className="text-xs text-muted-foreground mt-1 space-y-1">
 											<li>• DiscordユーザーID</li>
 											<li>• ユーザー名</li>
 											<li>• ギルドメンバーシップ状況</li>
 										</ul>
 									</div>
-									<div className="bg-minase-50 p-3 rounded-lg">
-										<h5 className="font-semibold text-minase-800 text-sm">
+									<div className="bg-muted p-3 rounded-lg">
+										<h5 className="font-semibold text-foreground text-sm">
 											ユーザー作成コンテンツ
 										</h5>
-										<ul className="text-xs text-minase-700 mt-1 space-y-1">
+										<ul className="text-xs text-muted-foreground mt-1 space-y-1">
 											<li>• 作成した音声ボタンデータ</li>
 											<li>• お問い合わせ内容（任意）</li>
 											<li>• メールアドレス（任意）</li>
@@ -89,7 +89,7 @@ export default function PrivacyPage() {
 				<Card>
 					<CardHeader>
 						<CardTitle className="flex items-center gap-2">
-							<UserCheck className="h-5 w-5 text-suzuka-500" />
+							<UserCheck className="h-5 w-5 text-primary" />
 							3. 利用目的
 						</CardTitle>
 					</CardHeader>
@@ -123,7 +123,7 @@ export default function PrivacyPage() {
 				<Card>
 					<CardHeader>
 						<CardTitle className="flex items-center gap-2">
-							<Server className="h-5 w-5 text-minase-500" />
+							<Server className="h-5 w-5 text-secondary" />
 							4. 第三者サービス・データ共有
 						</CardTitle>
 					</CardHeader>
@@ -131,7 +131,7 @@ export default function PrivacyPage() {
 						<p className="text-foreground">以下の第三者サービスを利用しています：</p>
 						<div className="space-y-4">
 							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-								<div className="border border-suzuka-200 p-4 rounded-lg">
+								<div className="border border-border p-4 rounded-lg">
 									<h4 className="font-semibold text-foreground flex items-center gap-2">
 										<Badge variant="outline">Google Cloud Platform</Badge>
 									</h4>
@@ -150,7 +150,7 @@ export default function PrivacyPage() {
 										</p>
 									</div>
 								</div>
-								<div className="border border-suzuka-200 p-4 rounded-lg">
+								<div className="border border-border p-4 rounded-lg">
 									<h4 className="font-semibold text-foreground flex items-center gap-2">
 										<Badge variant="outline">Discord OAuth</Badge>
 									</h4>
@@ -169,7 +169,7 @@ export default function PrivacyPage() {
 										</p>
 									</div>
 								</div>
-								<div className="border border-suzuka-200 p-4 rounded-lg">
+								<div className="border border-border p-4 rounded-lg">
 									<h4 className="font-semibold text-foreground flex items-center gap-2">
 										<Badge variant="outline">YouTube Data API</Badge>
 									</h4>
@@ -188,7 +188,7 @@ export default function PrivacyPage() {
 										</p>
 									</div>
 								</div>
-								<div className="border border-suzuka-200 p-4 rounded-lg">
+								<div className="border border-border p-4 rounded-lg">
 									<h4 className="font-semibold text-foreground flex items-center gap-2">
 										<Badge variant="outline">DLsite</Badge>
 									</h4>
@@ -207,7 +207,7 @@ export default function PrivacyPage() {
 										</p>
 									</div>
 								</div>
-								<div className="border border-suzuka-200 p-4 rounded-lg">
+								<div className="border border-border p-4 rounded-lg">
 									<h4 className="font-semibold text-foreground flex items-center gap-2">
 										<Badge variant="outline">Google Analytics 4</Badge>
 									</h4>
@@ -226,7 +226,7 @@ export default function PrivacyPage() {
 										</p>
 									</div>
 								</div>
-								<div className="border border-suzuka-200 p-4 rounded-lg">
+								<div className="border border-border p-4 rounded-lg">
 									<h4 className="font-semibold text-foreground flex items-center gap-2">
 										<Badge variant="outline">Google Tag Manager</Badge>
 									</h4>
@@ -254,7 +254,7 @@ export default function PrivacyPage() {
 				<Card>
 					<CardHeader>
 						<CardTitle className="flex items-center gap-2">
-							<Globe className="h-5 w-5 text-suzuka-500" />
+							<Globe className="h-5 w-5 text-primary" />
 							5. Cookie・分析ツール
 						</CardTitle>
 					</CardHeader>
@@ -276,9 +276,9 @@ export default function PrivacyPage() {
 							</div>
 							<div>
 								<h4 className="font-semibold text-foreground">分析Cookie</h4>
-								<div className="bg-suzuka-50 p-3 rounded-lg mt-2">
-									<h5 className="font-semibold text-suzuka-800 text-sm mb-2">Google Analytics 4</h5>
-									<ul className="text-xs text-suzuka-700 space-y-1">
+								<div className="bg-muted p-3 rounded-lg mt-2">
+									<h5 className="font-semibold text-foreground text-sm mb-2">Google Analytics 4</h5>
+									<ul className="text-xs text-muted-foreground space-y-1">
 										<li>• サイト利用状況の匿名化分析</li>
 										<li>• ユーザー体験の改善目的</li>
 										<li>• 同意管理により制御可能</li>
@@ -302,7 +302,7 @@ export default function PrivacyPage() {
 										• <strong>Google設定:</strong>
 										<a
 											href="https://myaccount.google.com/data-and-privacy"
-											className="text-suzuka-500 hover:underline"
+											className="text-primary hover:underline"
 											target="_blank"
 											rel="noopener noreferrer"
 										>
@@ -319,7 +319,7 @@ export default function PrivacyPage() {
 				<Card>
 					<CardHeader>
 						<CardTitle className="flex items-center gap-2">
-							<Lock className="h-5 w-5 text-minase-500" />
+							<Lock className="h-5 w-5 text-secondary" />
 							6. データ管理・保護
 						</CardTitle>
 					</CardHeader>
@@ -336,8 +336,8 @@ export default function PrivacyPage() {
 							</div>
 							<div>
 								<h4 className="font-semibold text-foreground">保存期間</h4>
-								<div className="bg-minase-50 p-3 rounded-lg mt-2">
-									<ul className="text-sm text-minase-800 space-y-1">
+								<div className="bg-muted p-3 rounded-lg mt-2">
+									<ul className="text-sm text-foreground space-y-1">
 										<li>
 											• <strong>アカウント情報:</strong> アカウント削除まで
 										</li>
@@ -391,7 +391,7 @@ export default function PrivacyPage() {
 							<div>
 								<h4 className="font-semibold text-foreground">権利行使の方法</h4>
 								<p className="text-sm text-muted-foreground mt-2">
-									<a href="/contact" className="text-suzuka-500 hover:underline">
+									<a href="/contact" className="text-primary hover:underline">
 										お問い合わせページ
 									</a>
 									から、具体的な要望をお送りください。
@@ -451,7 +451,7 @@ export default function PrivacyPage() {
 					<CardContent>
 						<p className="text-sm text-muted-foreground">
 							本ポリシーに関するご質問、個人情報の取扱いに関するお問い合わせは、
-							<a href="/contact" className="text-suzuka-500 hover:underline mx-1">
+							<a href="/contact" className="text-primary hover:underline mx-1">
 								お問い合わせページ
 							</a>
 							からご連絡ください。

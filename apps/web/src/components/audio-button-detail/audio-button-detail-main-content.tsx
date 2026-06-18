@@ -108,7 +108,7 @@ export function AudioButtonDetailMainContent({
 					{/* 説明文 */}
 					{audioButton.description?.trim() && (
 						<div className="mb-6">
-							<div className="bg-gradient-to-r from-minase-50 to-suzuka-50 p-4 rounded-lg border border-minase-100">
+							<div className="bg-muted p-4 rounded-lg border border-border">
 								<p className="text-foreground leading-relaxed whitespace-pre-wrap">
 									{audioButton.description}
 								</p>
@@ -131,7 +131,7 @@ export function AudioButtonDetailMainContent({
 						<AudioButtonWithPlayCount
 							audioButton={audioButton}
 							showFavorite={true}
-							className="border-2 border-suzuka-200 hover:border-suzuka-300"
+							className="border-2 border-border hover:border-border"
 						/>
 					</div>
 
@@ -147,7 +147,7 @@ export function AudioButtonDetailMainContent({
 					/>
 
 					{/* YouTube動画情報 */}
-					<div className="bg-gradient-to-r from-suzuka-50 to-minase-50 p-6 rounded-lg border border-suzuka-100">
+					<div className="bg-muted p-6 rounded-lg border border-border">
 						<h3 className="font-medium text-sm text-muted-foreground mb-3 flex items-center gap-2">
 							<YoutubeIcon className="h-4 w-4" />
 							切り抜き範囲

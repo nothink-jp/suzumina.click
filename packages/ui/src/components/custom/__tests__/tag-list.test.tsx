@@ -30,7 +30,7 @@ describe("TagList", () => {
 			render(<TagList tags={tags} variant="secondary" />);
 
 			const badge = screen.getByText("Test");
-			expect(badge).toHaveClass("bg-suzuka-100", "text-suzuka-700");
+			expect(badge).toHaveClass("bg-muted", "text-foreground");
 		});
 	});
 
@@ -226,7 +226,7 @@ describe("TagList", () => {
 			render(<TagList tags={tags} variant="outline" />);
 
 			const badge = screen.getByText("Test");
-			expect(badge).toHaveClass("bg-background/80", "text-suzuka-700", "border-suzuka-300");
+			expect(badge).toHaveClass("bg-background/80", "text-foreground", "border-border");
 		});
 	});
 

@@ -88,7 +88,7 @@ export function FavoriteButton({
 				size="icon"
 				className={cn(
 					sizeClasses[size],
-					isFavorited && "bg-suzuka-500 hover:bg-suzuka-600",
+					isFavorited && "bg-primary hover:bg-primary/90",
 					"transition-all duration-200",
 				)}
 				onClick={handleToggle}

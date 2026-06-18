@@ -5,7 +5,7 @@ import Link from "next/link";
 
 export default function UserNotFound() {
 	return (
-		<div className="min-h-screen bg-gradient-to-br from-suzuka-50/30 to-minase-50/30 flex items-center justify-center">
+		<div className="min-h-screen bg-background flex items-center justify-center">
 			<div className="container mx-auto px-4 py-8 max-w-2xl">
 				<Card>
 					<CardHeader className="text-center">
@@ -58,7 +58,7 @@ export default function UserNotFound() {
 						<div className="pt-4 border-t">
 							<p className="text-sm text-muted-foreground">
 								URLが正しいかご確認ください。問題が続く場合は{" "}
-								<Link href="/contact" className="text-suzuka-600 hover:text-suzuka-700 underline">
+								<Link href="/contact" className="text-primary hover:text-primary/90 underline">
 									お問い合わせ
 								</Link>{" "}
 								からご連絡ください。

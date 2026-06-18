@@ -33,7 +33,7 @@ export function linkifyText(text: string): ReactNode {
 					target: "_blank",
 					rel: "noopener noreferrer",
 					className:
-						"inline-flex items-center gap-1 text-suzuka-600 hover:text-suzuka-700 underline underline-offset-4 decoration-suzuka-400 hover:decoration-suzuka-600 transition-colors",
+						"inline-flex items-center gap-1 text-primary hover:text-primary/90 underline underline-offset-4 decoration-primary/60 hover:decoration-primary transition-colors",
 				},
 				React.createElement("span", { className: "break-all" }, displayUrl),
 				React.createElement(ExternalLink, { className: "h-3 w-3 flex-shrink-0" }),

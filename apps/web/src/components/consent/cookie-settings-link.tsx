@@ -49,7 +49,7 @@ export function CookieSettingsLink() {
 				variant="ghost"
 				size="sm"
 				onClick={handleOpenSettings}
-				className="text-xs text-minase-300 hover:text-minase-50 p-0 h-auto hover:bg-minase-700/50 transition-colors"
+				className="text-xs text-muted-foreground hover:text-foreground p-0 h-auto hover:bg-accent transition-colors"
 			>
 				<Settings className="h-3 w-3 mr-1" />
 				クッキー設定

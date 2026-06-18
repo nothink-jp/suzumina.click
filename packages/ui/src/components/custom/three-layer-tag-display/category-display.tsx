@@ -42,7 +42,7 @@ export function CategoryDisplay({
 
 	const badgeClassName = cn(
 		sizeClasses.badge,
-		"bg-suzuka-700 text-white border-suzuka-700 hover:bg-suzuka-800",
+		"bg-primary text-primary-foreground border-primary hover:bg-primary/90",
 		(tagHref || onTagClick) && "cursor-pointer",
 		"transition-all duration-200",
 	);

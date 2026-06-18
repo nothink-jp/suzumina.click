@@ -165,7 +165,7 @@ export function VideoTagEditor({
 						<h4 className="text-sm font-medium text-muted-foreground mb-2">配信タイプ</h4>
 						<div className="flex flex-wrap gap-2">
 							{playlistTags.map((tag) => (
-								<Badge key={tag} variant="default" className="bg-suzuka-600">
+								<Badge key={tag} variant="default" className="bg-primary">
 									{tag}
 								</Badge>
 							))}
@@ -177,9 +177,7 @@ export function VideoTagEditor({
 				{categoryId && (
 					<div>
 						<h4 className="text-sm font-medium text-muted-foreground mb-2">ジャンル</h4>
-						<Badge variant="secondary" className="bg-minase-600 text-white">
-							{getCategoryLabel(categoryId)}
-						</Badge>
+						<Badge variant="secondary">{getCategoryLabel(categoryId)}</Badge>
 					</div>
 				)}
 
@@ -245,7 +243,7 @@ export function VideoTagEditor({
 							{userTags.length > 0 ? (
 								<div className="flex flex-wrap gap-2">
 									{userTags.map((tag) => (
-										<Badge key={tag} variant="outline" className="bg-suzuka-50 border-suzuka-200">
+										<Badge key={tag} variant="outline" className="bg-muted border-border">
 											{tag}
 										</Badge>
 									))}

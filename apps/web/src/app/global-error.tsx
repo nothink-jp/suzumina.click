@@ -21,13 +21,13 @@ export default function GlobalError({
 				<title>エラーが発生しました | すずみなくりっく！</title>
 			</head>
 			<body>
-				<div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-suzuka-50 via-red-50 to-minase-50 px-4">
+				<div className="min-h-screen flex items-center justify-center bg-background px-4">
 					<Card className="max-w-md w-full shadow-xl animate-in fade-in-0 zoom-in-95 duration-500">
 						<CardContent className="p-8 text-center space-y-6">
 							{/* エラーアイコン */}
 							<div className="relative">
 								<div className="mx-auto w-16 h-16 bg-gradient-to-br from-suzuka-100 to-minase-100 rounded-full flex items-center justify-center animate-pulse">
-									<AlertTriangle className="w-8 h-8 text-suzuka-600" />
+									<AlertTriangle className="w-8 h-8 text-primary" />
 								</div>
 								<div className="absolute inset-0 mx-auto w-16 h-16 bg-gradient-to-br from-suzuka-100 to-minase-100 rounded-full blur-xl opacity-50" />
 							</div>

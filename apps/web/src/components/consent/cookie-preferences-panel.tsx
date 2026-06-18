@@ -38,7 +38,7 @@ const COOKIE_CATEGORIES: CookieCategory[] = [
 		name: "必須クッキー",
 		description: "サイトの基本機能に必要",
 		details: "ログイン状態の維持、セキュリティ機能の提供に使用。",
-		icon: <Shield className="h-4 w-4 text-minase-600" />,
+		icon: <Shield className="h-4 w-4 text-secondary" />,
 		required: true,
 		examples: ["セッション管理", "セキュリティ", "設定の保存"],
 	},
@@ -47,7 +47,7 @@ const COOKIE_CATEGORIES: CookieCategory[] = [
 		name: "分析クッキー",
 		description: "サイト改善のための分析",
 		details: "Google Analyticsによるサイト利用状況の分析。",
-		icon: <BarChart3 className="h-4 w-4 text-suzuka-600" />,
+		icon: <BarChart3 className="h-4 w-4 text-primary" />,
 		required: false,
 		examples: ["Google Analytics", "ページビュー分析", "ユーザー行動分析"],
 	},
@@ -56,7 +56,7 @@ const COOKIE_CATEGORIES: CookieCategory[] = [
 		name: "パーソナライゼーション",
 		description: "カスタマイズ体験",
 		details: "お気に入りやテーマ設定などの個人化機能。",
-		icon: <User className="h-4 w-4 text-suzuka-700" />,
+		icon: <User className="h-4 w-4 text-primary" />,
 		required: false,
 		examples: ["テーマ設定", "言語設定", "カスタム表示"],
 	},
@@ -222,7 +222,7 @@ export function CookiePreferencesPanel({
 							<li>設定の変更は、サイト下部の「クッキー設定」からいつでも可能です</li>
 							<li>
 								詳細は
-								<a href="/privacy" className="text-suzuka-600 hover:underline ml-1">
+								<a href="/privacy" className="text-primary hover:underline ml-1">
 									プライバシーポリシー
 								</a>
 								をご確認ください
@@ -249,7 +249,7 @@ export function CookiePreferencesPanel({
 							<Button
 								size="sm"
 								onClick={handleSaveCustom}
-								className="bg-suzuka-600 hover:bg-suzuka-700 text-white"
+								className="bg-primary hover:bg-primary/90 text-primary-foreground"
 							>
 								設定を保存
 							</Button>

@@ -21,7 +21,7 @@ export default function VideosLoading() {
 				{Array.from({ length: 6 }, (_, i) => `video-skeleton-${i}`).map((key) => (
 					<Card key={key} className="overflow-hidden animate-pulse">
 						{/* サムネイルエリア */}
-						<div className="relative aspect-video bg-gradient-to-br from-suzuka-100 to-minase-100">
+						<div className="relative aspect-video bg-muted">
 							<Skeleton className="absolute inset-0" />
 							<div className="absolute bottom-2 right-2">
 								<Skeleton className="h-5 w-12" />
