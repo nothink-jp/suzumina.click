@@ -3,6 +3,21 @@
 claude.ai/design への同期に関する、リポジトリ固有の前提と落とし穴。次回 sync が
 ここを読めば今回のデバッグを再現せずに済む。
 
+## コマンド規約（pnpm-only / CLAUDE.md §1）
+
+このリポジトリは **pnpm のみ**。`npm` / `npx` は禁止（`npx` も npm ランタイム）。design-sync skill の
+既定コマンドは `npx storybook build` / `.ds-sync` での `npm i` / `npx playwright install` を使うが、
+本リポジトリでは以下の pnpm 等価に置換すること（PR #668 レビュー指摘）:
+
+- **sb-reference 再ビルド**: `cfg.buildCmd` は
+  `pnpm --filter @suzumina.click/ui exec storybook build -c .storybook -o ../../.design-sync/sb-reference`
+  （`storybook` bin は packages/ui のみ・root に hoist されないため `pnpm exec`(root) では解決不可 →
+  `--filter ... exec` が必須。cwd が packages/ui になるのでパスはパッケージ相対）。
+- **`.ds-sync` の converter deps**: `npm i esbuild ts-morph @types/react playwright` の代わりに
+  `(cd .ds-sync && pnpm add esbuild ts-morph @types/react playwright)`、chromium は
+  `(cd .ds-sync && pnpm exec playwright install chromium)`。`.ds-sync` は独自 package.json + gitignore で
+  リポジトリの lockfile から隔離されている。
+
 ## 前提（このリポジトリの特殊性）
 
 - **dist を持たない / TSX ソース直配布**: `packages/ui` の `build` は no-op（`echo`）。

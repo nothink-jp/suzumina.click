@@ -41,5 +41,5 @@
 		"Toaster": { "cardMode": "column" },
 		"NotImplementedOverlay": { "cardMode": "column" }
 	},
-	"buildCmd": "npx storybook build -c packages/ui/.storybook -o .design-sync/sb-reference"
+	"buildCmd": "pnpm --filter @suzumina.click/ui exec storybook build -c .storybook -o ../../.design-sync/sb-reference"
 }
