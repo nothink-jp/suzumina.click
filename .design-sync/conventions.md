@@ -22,7 +22,7 @@ system has its own vocabulary; use the names below.
 **Variants are props, not classes.** Examples (check each component's `<Name>.d.ts` for the exact union):
 - `<Button variant="default | secondary | destructive | outline | ghost | link" size="default | sm | lg | icon">`
 - `<Badge variant="default | secondary | destructive | outline">`
-- `<Alert variant="default | destructive">`
+- `<Alert variant="default | destructive | info | success | warning">`
 
 **Semantic color utilities** (pair a `bg-*` surface with its matching `*-foreground` text):
 
