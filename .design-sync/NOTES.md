@@ -48,6 +48,37 @@ claude.ai/design への同期に関する、リポジトリ固有の前提と落
 - CSS は Tailwind v4（`@import "tailwindcss"`）。converter は sb-reference から
   コンパイル済み CSS を scrape する（[CSS_FROM_STORYBOOK]）想定。
 
+## トークン抽出スコープ（[TOKEN_SCOPE]・要遵守 / Claude Design 指示 2026-06-18）
+
+converter は sb-reference の**コンパイル済み CSS** を scrape する（上記 [CSS_FROM_STORYBOOK]）。
+放置すると Tailwind v4 が生成した内部変数・ユーティリティ定義まで「トークン」として拾い、
+component-style 配下／未分類が大量に出る（報告値: 89 件 component-style 配下・141 件 未分類）。
+**トークン抽出はオーサリングされた実トークンに限定する**こと。
+
+- **含める（design token）**: `packages/ui/src/styles/globals.css` の `:root` / `.dark` / `@theme`
+  配下で宣言された、色・角丸・ブランドスケール・モーションの実トークン:
+  `--background, --foreground, --card*, --popover*, --primary*, --secondary*, --muted*, --accent*,
+  --destructive*, --border, --input, --ring, --focus-ring*, --radius*, --suzuka-{50..950},
+  --minase-{50..950}, --animate-*`（`--chart-*` / `--font-size-a11y-*` は #670 で削除済み）。
+- **除外する**:
+  - Tailwind 内部変数 `--tw-*` 全般。
+  - ユーティリティセレクタ配下で宣言される変数（`:where(.space-y-*…)` / `.translate-x-*` 等の
+    クラススコープで宣言される変数）。
+  - フレームワーク設定変数（`:root` にあるが design token ではない）:
+    `--color-scheme, --container-center, --container-padding, --container-screens-2xl,
+    --default-border-radius`。layout config を design pane に出したい場合のみ Claude Design 判断で含める。
+- **`@theme` の `--color-*` は `:root` 実トークンの別形（重複させない）**: `@theme` は `:root`/`.dark` を
+  Tailwind 用に再エクスポートする層で、`--color-primary: hsl(var(--primary))` のように `:root --primary`
+  を hsl ラップしただけ。`--color-X`（@theme）と `--X`（:root）は**同一の論理トークン**なので、コンパイル済み
+  CSS から両方拾っても**別トークンとして二重に出さない**（論理トークン単位で 1 回。どちらの form を key に
+  するかは converter の選択 — `:root` form は生値 `340 75% 48%`、`@theme --color-*` form は utility 名
+  `bg-primary` 等に対応）。`@theme` 固有の純粋な追加は `--radius-xl`（radius スケール補完・`:root` 未定義）のみ。
+- 正本は globals.css の `:root`/`.dark`/`@theme`。`@kind` 注釈をコンパイル済みバンドルに手書き
+  しても再同期で消えるため不可 → **抽出段でこのスコープ規則を適用する**。
+- 補助: root の `pnpm lint:tokens`（`scripts/lint-css-tokens.mjs`）が `:root` 実トークンの
+  「定義あり・参照なし」を別途守る。母集合はこの `:root` 実トークン（フレームワーク設定変数を除く）
+  ＋ `@theme` 固有分（`--radius-xl`）。
+
 ## solo phase の知見（[GENERAL] 含む）
 
 - **[GENERAL] next.js が IIFE 初期化時に "process is not defined" で全バンドルを落とす**:
