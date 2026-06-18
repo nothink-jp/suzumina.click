@@ -175,7 +175,10 @@ export function UnifiedSettingsContent({ user }: UnifiedSettingsContentProps) {
 											<div className="flex items-center gap-2">
 												<span className="font-medium">18歳以上として認証</span>
 												{isAdult ? (
-													<Badge variant="default" className="bg-success/10 text-success">
+													<Badge
+														variant="outline"
+														className="bg-success/10 text-success border-success/30"
+													>
 														認証済み
 													</Badge>
 												) : (
@@ -222,15 +225,22 @@ export function UnifiedSettingsContent({ user }: UnifiedSettingsContentProps) {
 									<div className="space-y-3">
 										<div className="flex items-center justify-between">
 											<span className="text-sm font-medium">必須Cookie</span>
-											<Badge variant="default" className="bg-success/10 text-success">
+											<Badge
+												variant="outline"
+												className="bg-success/10 text-success border-success/30"
+											>
 												有効
 											</Badge>
 										</div>
 										<div className="flex items-center justify-between">
 											<span className="text-sm font-medium">分析Cookie</span>
 											<Badge
-												variant={consentState.analytics ? "default" : "secondary"}
-												className={consentState.analytics ? "bg-success/10 text-success" : ""}
+												variant={consentState.analytics ? "outline" : "secondary"}
+												className={
+													consentState.analytics
+														? "bg-success/10 text-success border-success/30"
+														: ""
+												}
 											>
 												{consentState.analytics ? "有効" : "無効"}
 											</Badge>
@@ -238,8 +248,12 @@ export function UnifiedSettingsContent({ user }: UnifiedSettingsContentProps) {
 										<div className="flex items-center justify-between">
 											<span className="text-sm font-medium">パーソナライゼーション</span>
 											<Badge
-												variant={consentState.personalization ? "default" : "secondary"}
-												className={consentState.personalization ? "bg-success/10 text-success" : ""}
+												variant={consentState.personalization ? "outline" : "secondary"}
+												className={
+													consentState.personalization
+														? "bg-success/10 text-success border-success/30"
+														: ""
+												}
 											>
 												{consentState.personalization ? "有効" : "無効"}
 											</Badge>
@@ -393,7 +407,10 @@ export function UnifiedSettingsContent({ user }: UnifiedSettingsContentProps) {
 											<div className="flex items-center gap-2">
 												<span className="font-medium">プロフィールを公開</span>
 												{isPublicProfile ? (
-													<Badge variant="default" className="bg-success/10 text-success">
+													<Badge
+														variant="outline"
+														className="bg-success/10 text-success border-success/30"
+													>
 														<Eye className="w-3 h-3 mr-1" />
 														公開
 													</Badge>

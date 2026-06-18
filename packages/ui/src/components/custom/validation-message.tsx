@@ -5,7 +5,7 @@ export interface ValidationMessageProps {
 	/**
 	 * バリデーションメッセージの種類
 	 * - 'error': エラーメッセージ（赤色）
-	 * - 'warning': 警告メッセージ（オレンジ色）
+	 * - 'warning': 警告メッセージ（琥珀色）
 	 * - 'info': 情報メッセージ（青色）
 	 */
 	variant: "error" | "warning" | "info";
