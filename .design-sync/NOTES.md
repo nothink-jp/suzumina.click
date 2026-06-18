@@ -158,6 +158,22 @@ component-style 配下／未分類が大量に出る（報告値: 89 件 compone
   fallback。self-host したい場合は `cfg.extraFonts` で woff2 を同梱する余地あり（現状未対応）。
 - **interaction story の grade**: skip した play story は将来 storybook 側の story 構成が変わると
   story-id がズレる可能性。再 sync で [TITLE_UNMAPPED]/pairing 警告が出たら skip リストを見直す。
+- **⚠️ アンカー(`_ds_sync.json`)を `remote-sync.json` に保存するときは全フィールドを欠落させない
+  （2026-06-18 再 sync #3 で踏んだ）**: `DesignSync(get_file, _ds_sync.json)` の content を
+  `.design-sync/.cache/remote-sync.json` に書き写す際、envelope の必須フィールド（特に `sourceHashes`＝
+  41×3=123 件）を 1 つでも落とすと driver が `! remote sidecar malformed — treating as no anchor` と判定し、
+  **全 41 component を added/pendingGrade 扱いで full 再検証**してしまう（anchor:"malformed"）。手書き転記で
+  端折らず、`{shape,styleSha,renderHashes,sourceKeys,keyRecipe,scriptsSha,sourceHashes,auxSha,bundleSha12}`
+  を完全に保存すること。保存後 `node -e` で 9 フィールド presence + renderHashes/sourceKeys=41 /
+  sourceHashes=123 を検証してから driver を回すと一撃で気づける。
+- **styling だけ変えた再 sync（例: DS Phase 2 のトークン semantic 化）の正常な振る舞い**: sourceKeys は
+  全 41 unchanged（story ソース不変）で carried-forward、styleSha 変化で render は full tier・bundle/styling/aux
+  が再 ship、`verification.canary`（trigger: render_churn/both）が render が動いた数件を grades-kept で spot-check
+  する。今回 churn したのは suzuka/minase 色を直接出す **AudioButton / TagList / VideoTagDisplay** の 3 件。
+  canary pick が「fully-graded carried-forward でない」component（STORY_CAP tail や primary-only sampling 由来）
+  だと grades-kept でなく fresh capture → pendingGrade になるので、その分だけ画像 grade して driver を再走し
+  pendingGrade を空にする（#3 では churn 3 + 初回 canary の余分 4 = Alert/HighlightText/NotImplementedOverlay/
+  ListPageLayout を grade、全 match だった）。
 
 ## conventions.md 検証メモ（2026-06-18 再 sync #2）
 
@@ -172,7 +188,10 @@ component-style 配下／未分類が大量に出る（報告値: 89 件 compone
   正しい（inherit で丸ゴシックは得られる）が、bound 成果物では M PLUS そのものは適用されない。
   正確を期すなら「ブランドフォントは M PLUS（ロード済）／body は丸ゴシックフォールバックを継承／
   厳密に M PLUS を出すなら `font-family:"M PLUS Rounded 1c",…` を明示」。
-- **`var(--color-suzuka-950)` は bound CSS に出ない**: Tailwind v4 は未参照の `--color-*` を tree-shake
-  するため scraped CSS の `--color-suzuka-*` は 50–900 のみ（minase も使用分のみ）。raw 形 `--suzuka-50..950`
-  は :root に全段あり常に出る。conventions の例 `var(--color-suzuka-700)` は検証 OK。最高段を直接参照
-  するなら raw 形 `var(--suzuka-950)` を使う。
+- **`--color-suzuka-950` は DS Phase 2(#673)以降 bound CSS に出る（旧記述を訂正・2026-06-18 再 sync #3）**:
+  Tailwind v4 は未参照の `--color-*` を tree-shake するため、以前（#672 時点）は scraped CSS の
+  `--color-suzuka-*` が 50–900 のみだった。DS Phase 2 のブランド役割明文化で `suzuka-950` が参照されるように
+  なり、現在は `--color-suzuka-50..950`（100 を除く各段）が出る。`--color-minase-*` は依然使用分のみ（200,400,
+  500,600,700,800,950）。raw 形 `--suzuka-50..950`/`--minase-50..950` は :root に全段あり常に出る。
+  conventions の例 `var(--color-suzuka-700)` は検証 OK。tree-shake は参照状況で変動するので、特定 shade の
+  utility が無い場合は conventions の指示どおり raw 形 `var(--suzuka-XXX)` を使う（この方針自体は不変）。
