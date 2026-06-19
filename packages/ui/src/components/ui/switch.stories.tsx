@@ -174,9 +174,9 @@ export const AgeRatingFilter: Story = {
 						</div>
 					</div>
 				) : (
-					<div className="flex items-center gap-3 px-3 py-2 border border-blue-200 rounded-md bg-blue-50">
-						<Shield className="h-4 w-4 text-blue-600" />
-						<span className="text-sm text-blue-700 font-medium">全年齢対象作品のみ表示中</span>
+					<div className="flex items-center gap-3 px-3 py-2 border border-success/30 rounded-md bg-success/10">
+						<Shield className="h-4 w-4 text-success" />
+						<span className="text-sm text-success font-medium">全年齢対象作品のみ表示中</span>
 					</div>
 				)}
 
