@@ -1,6 +1,6 @@
 {
 	"$schema": "https://unpkg.com/knip@6/schema.json",
-	"ignore": ["terraform/**"],
+	"ignore": ["terraform/**", ".design-sync/**"],
 	"ignoreDependencies": [
 		"@secretlint/secretlint-formatter-sarif",
 		"@secretlint/secretlint-rule-pattern",
@@ -11,10 +11,15 @@
 			"entry": ["src/endpoints/index.ts"]
 		},
 		"apps/web": {
-			"ignore": ["vitest-mocks/**", "vitest.d.ts"]
+			"ignore": ["vitest-mocks/**"],
+			"ignoreBinaries": ["tsx"]
 		},
 		"packages/ui": {
-			"ignore": [".storybook/mocks/**"]
+			"ignore": [".storybook/mocks/**", "ds-entry.tsx"],
+			"ignoreDependencies": ["postcss-load-config"]
+		},
+		"packages/typescript-config": {
+			"ignoreDependencies": ["next"]
 		}
 	}
 }
