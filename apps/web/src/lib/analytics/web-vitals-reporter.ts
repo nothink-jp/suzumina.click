@@ -85,14 +85,3 @@ export function initWebVitals(): void {
 	onFCP(sendToGA4);
 	onTTFB(sendToGA4);
 }
-
-/**
- * Web Vitals thresholds for reference
- */
-export const WEB_VITALS_THRESHOLDS = {
-	LCP: { good: 2500, poor: 4000 },
-	INP: { good: 200, poor: 500 },
-	CLS: { good: 0.1, poor: 0.25 },
-	FCP: { good: 1800, poor: 3000 },
-	TTFB: { good: 800, poor: 1800 },
-} as const;
