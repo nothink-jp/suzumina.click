@@ -230,7 +230,7 @@
 	--color-suzuka-900: hsl(var(--suzuka-900));
 	--color-suzuka-950: hsl(var(--suzuka-950));
 
-	/* Minase brand palette - 涼花みなせ サブテーマ (オレンジ・ウォーム系) */
+	/* Minase brand palette - 涼花みなせ サブテーマ（ミルクティー暖色） */
 	--color-minase-50: hsl(var(--minase-50));
 	--color-minase-100: hsl(var(--minase-100));
 	--color-minase-200: hsl(var(--minase-200));
