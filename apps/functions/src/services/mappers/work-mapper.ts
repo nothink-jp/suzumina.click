@@ -39,7 +39,7 @@ interface ImageObject {
 /**
  * Raw APIレスポンスからWorkエンティティに変換
  */
-export function toWork(raw: DLsiteApiResponse): WorkDocument {
+function toWork(raw: DLsiteApiResponse): WorkDocument {
 	const productId = raw.workno || raw.product_id || "";
 
 	return {
@@ -128,7 +128,7 @@ export function toWork(raw: DLsiteApiResponse): WorkDocument {
 /**
  * 価格情報への変換
  */
-export function toPrice(raw: DLsiteApiResponse): PriceInfo | undefined {
+function toPrice(raw: DLsiteApiResponse): PriceInfo | undefined {
 	const current = raw.price ?? 0;
 	const basePrice: PriceInfo = {
 		current,
@@ -154,7 +154,7 @@ export function toPrice(raw: DLsiteApiResponse): PriceInfo | undefined {
  * 評価情報への変換
  * APIが提供する評価分布をそのまま保持
  */
-export function toRating(raw: DLsiteApiResponse): RatingInfo | undefined {
+function toRating(raw: DLsiteApiResponse): RatingInfo | undefined {
 	const avgRating = raw.rate_average_star ?? raw.rate_average ?? 0;
 	const count = raw.rate_count ?? 0;
 	if (!avgRating || !count) return undefined;

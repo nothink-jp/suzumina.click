@@ -407,13 +407,6 @@ export function getUserAgentManager(): UserAgentManager {
 }
 
 /**
- * User-Agentを取得するヘルパー関数
- */
-export function getNextUserAgent(): string {
-	return getUserAgentManager().getNextUserAgent();
-}
-
-/**
  * 完全なHTTPヘッダーセットを生成するヘルパー関数
  */
 export function generateDLsiteHeaders(referer?: string): Record<string, string> {

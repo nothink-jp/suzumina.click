@@ -198,14 +198,6 @@ export interface PlaylistInfo {
 }
 
 /**
- * プレイリスト→動画マッピングの型定義
- */
-export interface PlaylistVideoMapping {
-	videoId: string;
-	playlistTitles: string[];
-}
-
-/**
  * チャンネルのプレイリスト一覧を取得
  * 既存のクォータ管理システムを活用
  *
