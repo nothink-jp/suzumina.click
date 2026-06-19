@@ -427,7 +427,7 @@ function normalizeUrl(url: string): string {
 	return url.startsWith("//") ? `https:${url}` : url;
 }
 
-// WorkMapperクラスとの互換性のため、名前付きエクスポートも提供
+// マッパー関数を集約した公開 API（呼び出しは WorkMapper.toWork 等で統一）
 export const WorkMapper = {
 	toWork,
 	toPrice,
