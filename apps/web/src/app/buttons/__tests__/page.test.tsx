@@ -108,15 +108,6 @@ vi.mock("./components/AudioButtonsListSkeleton", () => ({
 	AudioButtonsListSkeleton: () => <div data-testid="audio-buttons-list-skeleton">Loading...</div>,
 }));
 
-// Mock Pagination component
-vi.mock("@/components/pagination/url-pagination", () => ({
-	default: ({ currentPage, totalPages }: any) => (
-		<div data-testid="pagination">
-			Pagination: {currentPage} / {totalPages}
-		</div>
-	),
-}));
-
 // Mock Next.js navigation
 vi.mock("next/navigation", () => ({
 	useSearchParams: () => ({
