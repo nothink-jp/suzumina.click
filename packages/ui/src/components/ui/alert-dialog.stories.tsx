@@ -87,7 +87,7 @@ export const DeleteConfirmation: Story = {
 			<AlertDialogContent>
 				<AlertDialogHeader>
 					<AlertDialogTitle className="flex items-center gap-2">
-						<AlertTriangleIcon className="h-5 w-5 text-red-500" />
+						<AlertTriangleIcon className="h-5 w-5 text-destructive" />
 						項目の削除
 					</AlertDialogTitle>
 					<AlertDialogDescription>
@@ -97,7 +97,7 @@ export const DeleteConfirmation: Story = {
 				</AlertDialogHeader>
 				<AlertDialogFooter>
 					<AlertDialogCancel>キャンセル</AlertDialogCancel>
-					<AlertDialogAction className="bg-red-600 hover:bg-red-700">削除する</AlertDialogAction>
+					<AlertDialogAction variant="destructive">削除する</AlertDialogAction>
 				</AlertDialogFooter>
 			</AlertDialogContent>
 		</AlertDialog>
@@ -135,7 +135,7 @@ export const SaveChanges: Story = {
 			<AlertDialogContent>
 				<AlertDialogHeader>
 					<AlertDialogTitle className="flex items-center gap-2">
-						<InfoIcon className="h-5 w-5 text-blue-500" />
+						<InfoIcon className="h-5 w-5 text-info" />
 						変更を保存
 					</AlertDialogTitle>
 					<AlertDialogDescription>
@@ -161,7 +161,7 @@ export const PublishContent: Story = {
 			<AlertDialogContent>
 				<AlertDialogHeader>
 					<AlertDialogTitle className="flex items-center gap-2">
-						<CheckCircleIcon className="h-5 w-5 text-green-500" />
+						<CheckCircleIcon className="h-5 w-5 text-success" />
 						記事の公開
 					</AlertDialogTitle>
 					<AlertDialogDescription>
@@ -171,7 +171,7 @@ export const PublishContent: Story = {
 				</AlertDialogHeader>
 				<AlertDialogFooter>
 					<AlertDialogCancel>下書きのまま</AlertDialogCancel>
-					<AlertDialogAction className="bg-green-600 hover:bg-green-700">
+					<AlertDialogAction className="bg-success text-success-foreground hover:bg-success/90">
 						公開する
 					</AlertDialogAction>
 				</AlertDialogFooter>
@@ -188,7 +188,7 @@ export const AccountDeletion: Story = {
 			</AlertDialogTrigger>
 			<AlertDialogContent className="max-w-md">
 				<AlertDialogHeader>
-					<AlertDialogTitle className="flex items-center gap-2 text-red-600">
+					<AlertDialogTitle className="flex items-center gap-2 text-destructive">
 						<AlertTriangleIcon className="h-5 w-5" />
 						アカウントの削除
 					</AlertDialogTitle>
@@ -201,12 +201,12 @@ export const AccountDeletion: Story = {
 							<li>メッセージ履歴</li>
 							<li>購入履歴</li>
 						</ul>
-						<p className="font-medium text-red-600">この操作は取り消すことができません。</p>
+						<p className="font-medium text-destructive">この操作は取り消すことができません。</p>
 					</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>
 					<AlertDialogCancel>キャンセル</AlertDialogCancel>
-					<AlertDialogAction className="bg-red-600 hover:bg-red-700">削除する</AlertDialogAction>
+					<AlertDialogAction variant="destructive">削除する</AlertDialogAction>
 				</AlertDialogFooter>
 			</AlertDialogContent>
 		</AlertDialog>
@@ -259,6 +259,8 @@ export const ResetSettings: Story = {
 	),
 };
 
+// NOTE: 任意の Tailwind クラスで自由にテーマ付けできることの実演。
+// 生の blue/purple は status 意味ではなく装飾の意図的な指定（semantic トークン化しない）。
 export const CustomStyling: Story = {
 	render: () => (
 		<AlertDialog>
