@@ -88,7 +88,7 @@ export function FavoriteButton({
 				size="icon"
 				className={cn(
 					sizeClasses[size],
-					isFavorited && "bg-primary hover:bg-primary/90",
+					isFavorited && "bg-heart text-heart-foreground hover:bg-heart/90", // 桜霞: お気に入り active は heart 差し色（semantic role）
 					"transition-all duration-200",
 				)}
 				onClick={handleToggle}
