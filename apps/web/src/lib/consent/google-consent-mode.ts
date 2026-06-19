@@ -40,74 +40,6 @@ export interface ConsentState {
 }
 
 /**
- * Initialize Google Consent Mode with default denied state
- * This must be called before any Google tags load
- */
-export function initializeGoogleConsentMode() {
-	if (typeof window === "undefined") return;
-
-	// Initialize dataLayer if not exists
-	window.dataLayer = window.dataLayer || [];
-	window.gtag =
-		window.gtag ||
-		((command: GtagCommand, ...args: unknown[]) => {
-			window.dataLayer.push([command, ...args] as DataLayerEvent);
-		});
-
-	// Set default consent state (deny all until user chooses)
-	window.gtag("consent", "default", {
-		ad_storage: "denied",
-		ad_user_data: "denied",
-		ad_personalization: "denied",
-		analytics_storage: "denied",
-		functionality_storage: "denied",
-		personalization_storage: "denied",
-		security_storage: "granted", // Always granted for security
-		wait_for_update: 2000, // Wait 2 seconds for consent update
-	});
-
-	// Set up region-specific settings (for GDPR regions)
-	window.gtag("consent", "default", {
-		region: [
-			"AT",
-			"BE",
-			"BG",
-			"HR",
-			"CY",
-			"CZ",
-			"DK",
-			"EE",
-			"FI",
-			"FR",
-			"DE",
-			"GR",
-			"HU",
-			"IE",
-			"IT",
-			"LV",
-			"LT",
-			"LU",
-			"MT",
-			"NL",
-			"PL",
-			"PT",
-			"RO",
-			"SK",
-			"SI",
-			"ES",
-			"SE",
-		],
-		ad_storage: "denied",
-		ad_user_data: "denied",
-		ad_personalization: "denied",
-		analytics_storage: "denied",
-		functionality_storage: "denied",
-		personalization_storage: "denied",
-		wait_for_update: 2000,
-	});
-}
-
-/**
  * Update consent choices and notify Google services
  */
 export function updateGoogleConsent(consentState: ConsentState) {
@@ -128,25 +60,6 @@ export function updateGoogleConsent(consentState: ConsentState) {
 		consent_analytics: consentState.analytics,
 		consent_advertising: consentState.advertising,
 		consent_personalization: consentState.personalization,
-	});
-}
-
-/**
- * Load Google Analytics with consent mode
- */
-export function loadGoogleAnalytics(measurementId: string) {
-	if (typeof window === "undefined") return;
-
-	// Load gtag script
-	const script = document.createElement("script");
-	script.async = true;
-	script.src = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`;
-	document.head.appendChild(script);
-
-	// Configure Google Analytics
-	window.gtag("config", measurementId, {
-		// Wait for consent before initializing
-		send_page_view: false,
 	});
 }
 
@@ -173,24 +86,6 @@ export function getCurrentConsentState(): ConsentState | null {
 	}
 
 	return null;
-}
-
-/**
- * Apply saved consent state on page load
- */
-export function applySavedConsentState() {
-	const consentState = getCurrentConsentState();
-
-	if (consentState) {
-		updateGoogleConsent(consentState);
-
-		// Load appropriate services based on consent
-		const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
-
-		if (consentState.analytics && GA_MEASUREMENT_ID) {
-			loadGoogleAnalytics(GA_MEASUREMENT_ID);
-		}
-	}
 }
 
 /**

@@ -26,10 +26,3 @@ export function createBasicToParams(
 		return { ...base, ...extra };
 	};
 }
-
-/**
- * 標準的なfromResult関数
- */
-export const standardFromResult = (result: unknown) => {
-	return result as { items: unknown[]; total: number };
-};

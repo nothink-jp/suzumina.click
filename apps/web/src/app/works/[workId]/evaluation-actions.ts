@@ -462,26 +462,3 @@ export async function getUserTop10List(): Promise<FrontendUserTop10List | null> 
 export async function removeWorkEvaluation(workId: string): Promise<EvaluationResult> {
 	return updateWorkEvaluation(workId, { type: "remove" });
 }
-
-/**
- * ユーザーの全評価を取得（マイページ用）
- */
-export async function getUserEvaluations(): Promise<FrontendWorkEvaluation[]> {
-	try {
-		const user = await getCurrentUser();
-		if (!user?.discordId) return [];
-
-		const firestore = getFirestore();
-		const snapshot = await firestore
-			.collection("evaluations")
-			.where("userId", "==", user.discordId)
-			.orderBy("updatedAt", "desc")
-			.get();
-
-		return snapshot.docs.map((doc) =>
-			convertToFrontendEvaluation(doc.data() as FirestoreWorkEvaluation),
-		);
-	} catch (_error) {
-		return [];
-	}
-}
