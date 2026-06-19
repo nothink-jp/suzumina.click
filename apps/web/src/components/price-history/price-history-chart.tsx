@@ -13,6 +13,21 @@ import {
 	YAxis,
 } from "recharts";
 
+/**
+ * チャート配色。recharts は色を SVG の stroke/fill 「属性」として渡すため Tailwind クラスや
+ * CSS var() が解決できない。そこで globals.css の状態色トークンに対応する hex をここへ集約する（点3）。
+ * 値はライトモードのトークンと一致させており、トークンを変更したらここも更新する。
+ * 注: 現状アプリにダークトグルは無い。ダークモードを実装する際は、この定数を getComputedStyle で
+ * `--info` 等を実読み出しする方式（+ .dark クラス監視）に差し替える。
+ */
+const CHART_COLORS = {
+	price: "#1264ce", // --info
+	discount: "#c52020", // --destructive
+	warning: "#9d5207", // --warning
+	axis: "#706a66", // --muted-foreground
+	grid: "#e7e5e4", // --border
+} as const;
+
 interface PriceHistoryChartProps {
 	priceHistory: PriceHistoryDocument[];
 	currency?: "JPY" | "USD" | "EUR" | "CNY" | "TWD" | "KRW";
@@ -242,12 +257,12 @@ export function PriceHistoryChart({
 						bottom: 5,
 					}}
 				>
-					<CartesianGrid strokeDasharray="3 3" stroke="#e0e7ff" />
-					<XAxis dataKey="formattedDate" tick={{ fontSize: 12 }} stroke="#6b7280" />
+					<CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} />
+					<XAxis dataKey="formattedDate" tick={{ fontSize: 12 }} stroke={CHART_COLORS.axis} />
 					<YAxis
 						domain={[minPrice, maxPrice]}
 						tick={{ fontSize: 12 }}
-						stroke="#6b7280"
+						stroke={CHART_COLORS.axis}
 						tickFormatter={(value) => {
 							// 日本円の場合は整数のみ表示
 							if (currency === "JPY") {
@@ -279,7 +294,7 @@ export function PriceHistoryChart({
 					<Tooltip
 						contentStyle={{
 							backgroundColor: "white",
-							border: "1px solid #e5e7eb",
+							border: `1px solid ${CHART_COLORS.grid}`,
 							borderRadius: "8px",
 							boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
 						}}
@@ -297,10 +312,10 @@ export function PriceHistoryChart({
 					<Line
 						type="monotone"
 						dataKey="regularPrice"
-						stroke="#3b82f6"
+						stroke={CHART_COLORS.price}
 						strokeWidth={2}
-						dot={{ r: 3, fill: "#3b82f6" }}
-						activeDot={{ r: 5, fill: "#3b82f6" }}
+						dot={{ r: 3, fill: CHART_COLORS.price }}
+						activeDot={{ r: 5, fill: CHART_COLORS.price }}
 						name="定価"
 						connectNulls={false}
 					/>
@@ -310,11 +325,11 @@ export function PriceHistoryChart({
 						<Line
 							type="monotone"
 							dataKey="discountPrice"
-							stroke="#ef4444"
+							stroke={CHART_COLORS.discount}
 							strokeWidth={2}
 							strokeDasharray="5 5"
-							dot={{ r: 3, fill: "#ef4444" }}
-							activeDot={{ r: 5, fill: "#ef4444" }}
+							dot={{ r: 3, fill: CHART_COLORS.discount }}
+							activeDot={{ r: 5, fill: CHART_COLORS.discount }}
 							name="セール価格"
 							connectNulls={false}
 						/>
@@ -337,7 +352,7 @@ export function PriceHistoryChart({
 									month: "short",
 									day: "numeric",
 								})}
-								stroke="#fbbf24"
+								stroke={CHART_COLORS.warning}
 								strokeDasharray="2 2"
 								opacity={0.6}
 							/>
