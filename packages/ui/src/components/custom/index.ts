@@ -10,7 +10,9 @@ export type {
 	FilterConfig,
 	ListController,
 	ListDataSource,
+	ListDisplayProps,
 	ListError,
+	ListQueryProps,
 	SortConfig,
 	StandardListParams,
 } from "./configurable-list/types";
