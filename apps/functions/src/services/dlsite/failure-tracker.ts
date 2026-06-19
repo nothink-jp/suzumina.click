@@ -10,7 +10,7 @@ import * as logger from "../../shared/logger";
 /**
  * 失敗作品追跡データ
  */
-export interface FailedWorkTracker {
+interface FailedWorkTracker {
 	workId: string;
 	failureCount: number;
 	lastFailedAt: Timestamp;

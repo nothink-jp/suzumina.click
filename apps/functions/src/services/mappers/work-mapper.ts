@@ -39,7 +39,7 @@ interface ImageObject {
 /**
  * Raw APIレスポンスからWorkエンティティに変換
  */
-export function toWork(raw: DLsiteApiResponse): WorkDocument {
+function toWork(raw: DLsiteApiResponse): WorkDocument {
 	const productId = raw.workno || raw.product_id || "";
 
 	return {
@@ -128,7 +128,7 @@ export function toWork(raw: DLsiteApiResponse): WorkDocument {
 /**
  * 価格情報への変換
  */
-export function toPrice(raw: DLsiteApiResponse): PriceInfo | undefined {
+function toPrice(raw: DLsiteApiResponse): PriceInfo | undefined {
 	const current = raw.price ?? 0;
 	const basePrice: PriceInfo = {
 		current,
@@ -154,7 +154,7 @@ export function toPrice(raw: DLsiteApiResponse): PriceInfo | undefined {
  * 評価情報への変換
  * APIが提供する評価分布をそのまま保持
  */
-export function toRating(raw: DLsiteApiResponse): RatingInfo | undefined {
+function toRating(raw: DLsiteApiResponse): RatingInfo | undefined {
 	const avgRating = raw.rate_average_star ?? raw.rate_average ?? 0;
 	const count = raw.rate_count ?? 0;
 	if (!avgRating || !count) return undefined;
@@ -427,7 +427,7 @@ function normalizeUrl(url: string): string {
 	return url.startsWith("//") ? `https:${url}` : url;
 }
 
-// WorkMapperクラスとの互換性のため、名前付きエクスポートも提供
+// マッパー関数を集約した公開 API（呼び出しは WorkMapper.toWork 等で統一）
 export const WorkMapper = {
 	toWork,
 	toPrice,
