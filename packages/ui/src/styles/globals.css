@@ -58,12 +58,14 @@
 		--destructive-foreground: 60 9% 98%;
 
 		/* 状態色（情報=青 / 成功=緑 / 注意=琥珀）— 素の blue/green/amber 直書きの置換先（点3）。
-		 * いずれも text-on-white と white-on-bg の相互で WCAG AA 4.5:1 を満たすよう darken。危険=destructive を流用。 */
-		--info: 214 84% 44%; /* ≈ #1267ca */
+		 * 色相は Claude Design の桜霞提案（info 210 / success 150 / warning 38）に寄せつつ、
+		 * text-on-white・white-on-bg・text on bg-{status}/10 の3用途で WCAG AA 4.5:1 を満たすよう L を darken。
+		 * 危険=destructive を流用。 */
+		--info: 210 70% 42%; /* 青（提案 hue 210）。3用途とも ≈5.1:1↑ ✓ */
 		--info-foreground: 0 0% 100%;
-		--success: 142 70% 29%; /* ≈ #15803d (green-700) */
+		--success: 150 50% 30%; /* 緑（提案 hue 150）。3用途とも ≈5.4:1↑ ✓ */
 		--success-foreground: 0 0% 100%;
-		--warning: 30 92% 32%; /* ≈ #9c4f0a (amber-700/800)。琥珀は明色のため darken: text-warning on bg-warning/10 も 4.5:1（点3 で実測） */
+		--warning: 38 85% 32%; /* 琥珀（提案 hue 38。明色のため darken）。text on bg-warning/10 も ≈4.7:1 ✓ */
 		--warning-foreground: 0 0% 100%;
 
 		--border: 330 20% 91%; /* 桜霞: faint rose-grey */
@@ -141,11 +143,11 @@
 		--destructive: 0 62.8% 30.6%;
 		--destructive-foreground: 60 9% 98%;
 
-		/* 状態色 ダーク: text-* がダーク面で読めるよう明るめ。bg-* 用に foreground は暗色 */
-		--info: 214 90% 66%;
-		--info-foreground: 214 84% 14%;
-		--success: 142 60% 52%;
-		--success-foreground: 142 70% 10%;
+		/* 状態色 ダーク: text-* がダーク面で読めるよう明るめ。bg-* 用に foreground は暗色（hue は light と整合: info 210 / success 150 / warning 38） */
+		--info: 210 90% 66%;
+		--info-foreground: 210 84% 14%;
+		--success: 150 60% 52%;
+		--success-foreground: 150 70% 10%;
 		--warning: 38 95% 60%;
 		--warning-foreground: 32 90% 12%;
 
