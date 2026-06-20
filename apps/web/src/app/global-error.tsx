@@ -49,7 +49,7 @@ export default function GlobalError({
 							<div className="space-y-3">
 								<Button
 									onClick={reset}
-									className="w-full bg-gradient-to-r from-suzuka-500 to-minase-700 hover:from-suzuka-600 hover:to-minase-800 text-white flex items-center gap-2 group"
+									className="w-full bg-gradient-to-r from-suzuka-500 to-suzuka-700 hover:from-suzuka-600 hover:to-suzuka-800 text-white flex items-center gap-2 group"
 								>
 									<RefreshCw className="h-4 w-4 group-hover:rotate-180 transition-transform duration-500" />
 									再試行する
