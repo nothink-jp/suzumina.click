@@ -522,7 +522,7 @@ export function AudioButton({
 						aria-label={isPlaying ? "一時停止" : "再生"}
 					>
 						{/* 再生アイコン */}
-						<div className="flex h-8 w-8 items-center justify-center rounded-full bg-black/10 text-minase-950 dark:text-minase-50 hover:bg-black/15 transition-colors">
+						<div className="flex h-8 w-8 items-center justify-center rounded-full bg-black/10 text-minase-950 dark:text-minase-50 hover:bg-black/20 transition-colors">
 							{isLoading ? (
 								<Loader2 className="h-4 w-4 animate-spin" />
 							) : isPlaying ? (
