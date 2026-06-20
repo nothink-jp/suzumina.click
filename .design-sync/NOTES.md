@@ -195,7 +195,8 @@ component-style 配下／未分類が大量に出る（報告値: 89 件 compone
   500,600,700,800,950）。raw 形 `--suzuka-50..950`/`--minase-50..950` は :root に全段あり常に出る。
   conventions の例 `var(--color-suzuka-700)` は検証 OK。tree-shake は参照状況で変動するので、特定 shade の
   utility が無い場合は conventions の指示どおり raw 形 `var(--suzuka-XXX)` を使う（この方針自体は不変）。
-- **桜霞パレット(#685)で新設された `--heart` / `--color-heart`（+ `-foreground`）accent が conventions.md に未記載（2026-06-20 再 sync #4）**:
+- **【#690 で解決済み・2026-06-20 再 sync #5】桜霞パレット(#685)で新設された `--heart` / `--color-heart`（+ `-foreground`）accent が conventions.md に未記載だった（2026-06-20 再 sync #4 時点）**:
+  ユーザーが #690 で conventions.md に heart 行（`bg-heart`/`text-heart`/`text-heart-foreground` = お気に入り/共感/新着の差し色）と minase=ミルクティー表記を追記済み。再 sync #5 の validation で heart の token/utility がすべて bound CSS に存在し検証 OK（下記 #5 知見）。**この穴は閉じた**。以下は当時の記録（履歴）:
   bound CSS には `--heart` / `--heart-foreground` / `--color-heart` / `--color-heart-foreground` が出る（heart 差し色＝
   お気に入り/共感の専用アクセント）。conventions.md は suzuka/minase しか列挙しておらず、**列挙済みの名前はすべて検証 OK
   （stale name なし）だが heart accent は未カバー**＝完全性の穴。バリデーション失敗ではないので skill は conventions.md を
@@ -219,3 +220,15 @@ component-style 配下／未分類が大量に出る（報告値: 89 件 compone
   grade 書き込み後の driver 再走で **canary=null・pendingGrade=[]** になり closing receipt クリーン。
 - **remote anchor は前回 sync が upload した版**（disk の remote-sync.json は前々回 = pre-#3 の残骸で renderHashes がズレていた）。
   §7.2 どおり毎回 `get_file _ds_sync.json` で取り直すこと（disk 残骸を信用しない）。
+
+## 再 sync #5（2026-06-20・#690 桜霞整合性修正）の知見
+
+- **styling churn + story-source churn + component-source churn の複合**（前回 #4 と同型だが churn 対象が違う）。#690 の変更:
+  - `globals.css`: suzuka-600 42%→40% / suzuka-700 35%→33%（hover 段深化・白文字 AA 向上）＋ dark ミラー(300/400)。→ **styleSha 変化で bundle/styling/aux 全 re-ship**。
+  - `audio-button.tsx`: AudioButton の白文字(text-white/bg-white/*)→暗文字(text-minase-950 dark:text-minase-50/bg-black/*) で AA 化。→ component source 変化で **AudioButton の renderHash churn**（canary churned=[AudioButton]）。
+  - `button.stories.tsx`（CustomMinase のコメント・className 注釈のみ／視覚不変）＋ `switch.stories.tsx`（BrandColors の swatch を minase-500→**700** + コピー更新）。→ **changed/pendingGrade = Button, Switch**（[STORY_CHANGED]）。
+- **disk の remote-sync.json は #4 upload 版の styleSha(8105d6…) が残っていた**＝stale（#4 の knowledge どおり）。`get_file _ds_sync.json` で取り直すと styleSha=8c08cf…（これが #690 前のアンカー＝正）。**毎回取り直しを順守**して回避。
+- **grade 結果（全 match）**: Button 全 14 story / Switch 全 9 story を image-judge で match（新パレットが storybook/preview 両側で一致）。変更された swatch（Button `Custom Minase` = minase milk-tea + 暗文字, Switch `Brand Colors` = minase-700）は **STORY_CAP の先頭 6 の外**にあるため、`compare.mjs --components Button,Switch --max-stories 14` で一度だけ全 story を撮り直して目視確認した（cap は config 据え置き＝既定 6 のまま。tail 確認は手動 one-off）。
+- **canary**: 1 回目の driver は sb-reference 再ビルド併発で trigger=both・5 picks（AudioButton/ConfigurableList/NotImplementedOverlay/AlertDialog/HighlightText）→ 全件 grades-kept で sheet 確認し recorded match を維持（AudioButton の白→暗文字は両側一緒に動いて一致＝「両側が一緒に動いた」パターン）。grade 確定後の closing driver は trigger=render_churn・picks=[AudioButton] のみ・**pendingGrade=[]** でクリーン。
+- **conventions.md validation = drift なし**: #690 で追記された heart 行・minase=ミルクティー・AA 規則がすべて bound 成果物と一致（`--color-heart`/`--color-heart-foreground`・`.bg-heart`/`.text-heart`/`.text-heart-foreground`・`--color-info/success/warning`・`--color-suzuka-700`・`--color-minase-700/950`・`--radius-xl` すべて存在）。書き換え不要（作者所有）。**#4 で開いていた heart 完全性の穴は #690 で閉じた**。
+- **upload**: atomic（pinned 再 sync）・deletePaths=[]・bundle/styling/aux=true・components=[AudioButton,Button,Switch]。プロジェクトには design agent の作成物（home/・proposals/・review/・uploads/・CLAUDE_CODE_palette-fix-brief.md・_adherence.oxlintrc.json 等）が同居するが sync 対象外で**触らない**（plan の writes/deletes glob 外）。
