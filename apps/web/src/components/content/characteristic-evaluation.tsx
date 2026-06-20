@@ -205,7 +205,7 @@ export default function CharacteristicEvaluation({
 								<div className="text-sm text-muted-foreground">総評価数</div>
 							</div>
 							<div className="text-center">
-								<div className="text-2xl font-bold text-secondary">
+								<div className="text-2xl font-bold text-primary">
 									{(characteristics.overall.recommendationRate * 100).toFixed(0)}%
 								</div>
 								<div className="text-sm text-muted-foreground">推奨率</div>

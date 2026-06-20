@@ -40,7 +40,7 @@ export default function PrivacyPage() {
 				<Card>
 					<CardHeader>
 						<CardTitle className="flex items-center gap-2">
-							<Eye className="h-5 w-5 text-secondary" />
+							<Eye className="h-5 w-5 text-primary" />
 							2. 収集する情報
 						</CardTitle>
 					</CardHeader>
@@ -123,7 +123,7 @@ export default function PrivacyPage() {
 				<Card>
 					<CardHeader>
 						<CardTitle className="flex items-center gap-2">
-							<Server className="h-5 w-5 text-secondary" />
+							<Server className="h-5 w-5 text-primary" />
 							4. 第三者サービス・データ共有
 						</CardTitle>
 					</CardHeader>
@@ -319,7 +319,7 @@ export default function PrivacyPage() {
 				<Card>
 					<CardHeader>
 						<CardTitle className="flex items-center gap-2">
-							<Lock className="h-5 w-5 text-secondary" />
+							<Lock className="h-5 w-5 text-primary" />
 							6. データ管理・保護
 						</CardTitle>
 					</CardHeader>

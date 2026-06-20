@@ -27,39 +27,20 @@ packages/ui/src/components/
 
 ## 🎨 デザイントークン
 
-### ブランドカラーパレット
+### ブランドカラーパレット（桜霞パレット）
 
-#### suzuka colors (メインテーマ)
-```css
-/* 涼花みなせメインピンク - 10段階 */
---suzuka-50: #fff5fa;
---suzuka-100: #ffe0ed;
---suzuka-200: #ffc2d9;
---suzuka-300: #ff9ebf;
---suzuka-400: #ff6b9d;
---suzuka-500: #ff4785;  /* ブランドメイン */
---suzuka-600: #e0266e;
---suzuka-700: #b81d5b;
---suzuka-800: #8f1447;
---suzuka-900: #660d33;
---suzuka-950: #3d0820;
-```
+正本は [`src/styles/globals.css`](src/styles/globals.css) の `:root` / `.dark`（HSL・50〜950 の全段、
+ダークは 50↔950 反転）。ここに値を転記しない（drift 防止 / SPR-205）。役割の概要のみ:
 
-#### minase colors (サブテーマ)
-```css
-/* 涼花みなせオレンジ - 10段階 */
---minase-50: #fff8f3;
---minase-100: #ffedd5;
---minase-200: #fed7aa;
---minase-300: #fdba74;
---minase-400: #fb923c;
---minase-500: #ff7e2d;  /* ブランドサブ */
---minase-600: #ea5a0b;
---minase-700: #c2410c;
---minase-800: #9a3412;
---minase-900: #7c2d12;
---minase-950: #431407;
-```
+| スケール | 役割 | アンカー(500) | 備考 |
+|---|---|---|---|
+| `suzuka` | メイン（primary）= **くすみローズ** | `#B9315F`（白文字 ≈5.7:1） | dusty rose。`--primary` / `--ring` が指す |
+| `minase` | サブ（secondary）= **ミルクティー暖色** | `#C9A887`（明色・暗文字専用） | 淡い暖色*サーフェス*。前景/アクセントには使わない |
+| `heart`  | アクセント差し色 = **鮮やかピンクレッド** | `#DC1840`（白文字 ≈4.9:1） | favorite / like / 新着強調**専用**。`bg-heart` / `text-heart-foreground` |
+
+AA の使い分け: minase は明色のため**塗りには暗文字**（`bg-minase-50…200 text-minase-900` /
+`bg-minase-500 text-minase-950` ≈6:1）、白文字は `minase-800`+ のみ。`text-minase-{400…600}` /
+`text-secondary` を明色背景の文字色に使わない（≈2.2 で AA 未満）。鮮やかな差し色が要るときは `heart` を使う。
 
 ### デザイントークン構成
 
@@ -154,8 +135,8 @@ import { AudioButton } from "@suzumina.click/ui/components/custom/audio-button";
   メインCTA
 </Button>
 
-<Button className="bg-minase-500 hover:bg-minase-600">
-  セカンダリCTA
+<Button className="bg-minase-500 hover:bg-minase-600 text-minase-950">
+  セカンダリCTA（ミルクティーは明色のため暗文字）
 </Button>
 ```
 

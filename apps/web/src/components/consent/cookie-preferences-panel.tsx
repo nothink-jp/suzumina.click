@@ -38,7 +38,7 @@ const COOKIE_CATEGORIES: CookieCategory[] = [
 		name: "必須クッキー",
 		description: "サイトの基本機能に必要",
 		details: "ログイン状態の維持、セキュリティ機能の提供に使用。",
-		icon: <Shield className="h-4 w-4 text-secondary" />,
+		icon: <Shield className="h-4 w-4 text-primary" />,
 		required: true,
 		examples: ["セッション管理", "セキュリティ", "設定の保存"],
 	},

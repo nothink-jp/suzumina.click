@@ -518,11 +518,11 @@ export function AudioButton({
 						type="button"
 						onClick={handlePlayClick}
 						disabled={isLoading}
-						className="flex items-center gap-2 px-3 py-2 text-white min-h-[44px] flex-1 min-w-0 cursor-pointer hover:bg-black/10 transition-colors"
+						className="flex items-center gap-2 px-3 py-2 text-minase-950 dark:text-minase-50 min-h-[44px] flex-1 min-w-0 cursor-pointer hover:bg-black/10 transition-colors"
 						aria-label={isPlaying ? "一時停止" : "再生"}
 					>
 						{/* 再生アイコン */}
-						<div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 transition-colors">
+						<div className="flex h-8 w-8 items-center justify-center rounded-full bg-black/10 text-minase-950 dark:text-minase-50 hover:bg-black/15 transition-colors">
 							{isLoading ? (
 								<Loader2 className="h-4 w-4 animate-spin" />
 							) : isPlaying ? (
@@ -552,7 +552,7 @@ export function AudioButton({
 					<PopoverTrigger asChild>
 						<button
 							type="button"
-							className="flex items-center justify-center px-3 py-2 min-h-[44px] min-w-[44px] bg-white/10 text-white hover:bg-white/20 transition-colors cursor-pointer"
+							className="flex items-center justify-center px-3 py-2 min-h-[44px] min-w-[44px] bg-black/5 text-minase-950 dark:text-minase-50 hover:bg-black/10 transition-colors cursor-pointer"
 							aria-label="詳細を表示"
 						>
 							<Info className="h-4 w-4" />

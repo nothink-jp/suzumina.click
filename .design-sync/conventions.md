@@ -35,12 +35,15 @@ system has its own vocabulary; use the names below.
 | `bg-muted` / `text-muted-foreground` | subdued surfaces / hint text |
 | `bg-accent` | hover / active surface |
 | `bg-destructive` / `text-destructive` / `text-destructive-foreground` | danger |
+| `bg-heart` / `text-heart` / `text-heart-foreground` | favorite / like active, new-item emphasis — the vivid pink-red 差し色 accent |
 | `bg-popover` / `text-popover-foreground` | overlays (menus, popovers) |
 | `border-border`, `ring-ring` | borders, focus rings |
 
-**Brand scales:** `*-suzuka-{50,100,200,500,600,700,…}` (pink — the brand) and `*-minase-{…}`
-(warm orange accent), e.g. `bg-suzuka-500`, `text-suzuka-700`, `border-suzuka-200`, `bg-minase-500`.
-Prefer `primary` for ordinary brand actions; reach for the raw scales for bespoke brand surfaces.
+**Brand scales:** `*-suzuka-{50,100,200,500,600,700,…}` (くすみローズ / dusty rose — the brand) and
+`*-minase-{…}` (warm **milk-tea** — a soft secondary surface, NOT a loud accent), e.g. `bg-suzuka-500`,
+`text-suzuka-700`, `border-suzuka-200`, `bg-minase-100`. There is also a dedicated `heart` accent (vivid
+pink-red, favorite/like/new emphasis) — see the semantic table above; reach for `heart`, not minase, when
+you want a vivid 差し色. Prefer `primary` for ordinary brand actions; reach for raw scales for bespoke surfaces.
 The full 50–950 range is defined as CSS variables in `styles.css` (`var(--color-suzuka-700)` etc.),
 so if a specific shade's utility isn't styled, use the variable directly.
 
@@ -48,8 +51,11 @@ so if a specific shade's utility isn't styled, use the variable directly.
 `dark:` variant (`bg-suzuka-50 dark:bg-suzuka-950`); for ordinary surfaces prefer the semantic
 tokens above, which already carry dark values. Structural surfaces (footers, section backgrounds)
 use the semantic tokens; reserve raw scales for deliberate brand moments (hero, gradient CTA).
-`minase` is the **secondary** accent (special-feature emphasis) — keep it limited, and never put
-white text on orange (it fails AA at 2.3:1; use dark or `minase-50` text).
+`minase` is the warm **milk-tea secondary** — a light *surface*, not a foreground/accent. Because it is
+light: pair fills with DARK text (`bg-minase-50…200 text-minase-900`, or `bg-minase-500 text-minase-950`
+≈6:1); put white text only on `minase-800`+ (≈6:1); and **never** use `text-minase-{400…600}` or
+`text-secondary` as a text/border color on light backgrounds (≈2.2 — fails AA). For a vivid accent
+(favorite / like / new emphasis) use `heart`, not minase.
 
 **Radius:** `rounded-sm | rounded-md | rounded-lg | rounded-xl | rounded-full` (from the `--radius` token, 0.5rem).
 
