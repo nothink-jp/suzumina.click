@@ -195,3 +195,27 @@ component-style 配下／未分類が大量に出る（報告値: 89 件 compone
   500,600,700,800,950）。raw 形 `--suzuka-50..950`/`--minase-50..950` は :root に全段あり常に出る。
   conventions の例 `var(--color-suzuka-700)` は検証 OK。tree-shake は参照状況で変動するので、特定 shade の
   utility が無い場合は conventions の指示どおり raw 形 `var(--suzuka-XXX)` を使う（この方針自体は不変）。
+- **桜霞パレット(#685)で新設された `--heart` / `--color-heart`（+ `-foreground`）accent が conventions.md に未記載（2026-06-20 再 sync #4）**:
+  bound CSS には `--heart` / `--heart-foreground` / `--color-heart` / `--color-heart-foreground` が出る（heart 差し色＝
+  お気に入り/共感の専用アクセント）。conventions.md は suzuka/minase しか列挙しておらず、**列挙済みの名前はすべて検証 OK
+  （stale name なし）だが heart accent は未カバー**＝完全性の穴。バリデーション失敗ではないので skill は conventions.md を
+  書き換えない（文面の正本は作者）。ユーザーが heart 行（例: `bg-heart`/`text-heart-foreground` を「お気に入り/共感の差し色」）を
+  追記したいかは作者判断。`var(--heart)` 直参照も可。
+- **suzuka/minase の名前は桜霞パレット後も不変**: 桜霞は色味（くすみローズ × ミルクティー）の hsl 値を差し替えただけで
+  token 名（suzuka=ブランドローズ / minase=セカンダリ accent）は維持。conventions の「suzuka pink」表記は色味としては
+  「くすみローズ」が正確だが token 名失効ではない（プロズの正確さの問題で validation 対象外）。
+
+## 再 sync #4（2026-06-20・桜霞パレット）の知見
+
+- **styling churn + story-source churn の複合 re-sync**: 桜霞パレット(#685-687)で globals.css の状態色/ブランド色 hsl が
+  全面差し替え → styleSha 変化で **bundle/styling/aux 全 re-ship**（upload.styling/bundle/aux=true・deletePaths=[]）。
+  加えて story ソース変更が 3 件 → **changed/pendingGrade = Alert / AlertDialog / Switch**:
+  - Alert: #677(DS Phase 4 で info/success/warning status variant 追加) + #681(stories の status 色 semantic 化)。
+  - AlertDialog / Switch: #681 の semantic トークン置換で story ソースが動いた（[STORY_CHANGED]）。
+  3 件とも全 story image-judge で **match**（status 色は storybook/preview 両側が新パレットで一致）。
+- **canary trigger は `reference_drift`**（render_churn でなく）: sb-reference を桜霞で再ビルドしたため carried-forward 組の
+  reference 描画が anchor renderHashes とズレ → grades-kept で 5 件 spot-check（AudioButton / NotImplementedOverlay /
+  ConfigurableList / VideoTagDisplay / TagList）。全件 fresh sheet が recorded grade(match)を維持＝両側が一緒に動いた。
+  grade 書き込み後の driver 再走で **canary=null・pendingGrade=[]** になり closing receipt クリーン。
+- **remote anchor は前回 sync が upload した版**（disk の remote-sync.json は前々回 = pre-#3 の残骸で renderHashes がズレていた）。
+  §7.2 どおり毎回 `get_file _ds_sync.json` で取り直すこと（disk 残骸を信用しない）。
