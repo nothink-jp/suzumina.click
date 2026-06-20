@@ -258,11 +258,13 @@ export const BrandColors: Story = {
 							aria-label="スイッチ"
 							checked={minaseChecked}
 							onCheckedChange={setMinaseChecked}
-							className="data-[state=checked]:bg-minase-500"
+							className="data-[state=checked]:bg-minase-700"
 						/>
 						<div>
-							<span className="text-sm font-medium">minase-500 (Secondary)</span>
-							<p className="text-xs text-muted-foreground">セカンダリカラーでのカスタマイズ例</p>
+							<span className="text-sm font-medium">minase-700 (Secondary)</span>
+							<p className="text-xs text-muted-foreground">
+								ミルクティーの secondary（白つまみが見える深い段。-500 は淡すぎ AA 未満）
+							</p>
 						</div>
 					</div>
 				</div>
@@ -274,7 +276,7 @@ export const BrandColors: Story = {
 							• <strong>suzuka-500</strong>: メインの設定項目
 						</li>
 						<li>
-							• <strong>minase-500</strong>: 特別な機能（R18フィルターなど）
+							• <strong>minase-700</strong>: 特別な機能（R18フィルターなど。ミルクティーは深い段で）
 						</li>
 					</ul>
 				</div>

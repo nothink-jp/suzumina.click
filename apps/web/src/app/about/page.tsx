@@ -59,7 +59,7 @@ export default function AboutPage() {
 								<span className="text-sm">YouTube再生ボタンの作成・共有</span>
 							</div>
 							<div className="flex items-center gap-3 p-3 rounded-lg bg-muted">
-								<Play className="h-5 w-5 text-secondary" />
+								<Play className="h-5 w-5 text-primary" />
 								<span className="text-sm">YouTube動画の整理・検索</span>
 							</div>
 							<div className="flex items-center gap-3 p-3 rounded-lg bg-muted">

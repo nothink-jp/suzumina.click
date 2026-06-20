@@ -77,7 +77,7 @@ export default function ContactPage() {
 								</div>
 							</div>
 							<div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-								<HelpCircle className="h-5 w-5 text-secondary mt-0.5" />
+								<HelpCircle className="h-5 w-5 text-primary mt-0.5" />
 								<div>
 									<h4 className="font-semibold text-foreground">使い方</h4>
 									<p className="text-sm text-muted-foreground">サイトの使用方法に関するご質問</p>
@@ -108,7 +108,7 @@ export default function ContactPage() {
 									ブラウザの音声自動再生設定を確認してください。一度ページをクリックしてから再生すると動作する場合があります。
 								</p>
 							</div>
-							<div className="border-l-4 border-secondary pl-4">
+							<div className="border-l-4 border-primary pl-4">
 								<h4 className="font-semibold text-foreground">Q: ログインできません</h4>
 								<p className="text-sm text-muted-foreground mt-1">
 									A:

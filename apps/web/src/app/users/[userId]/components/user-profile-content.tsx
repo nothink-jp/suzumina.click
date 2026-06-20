@@ -200,7 +200,7 @@ export function UserProfileContent({
 								<div className="text-sm text-muted-foreground">作成ボタン</div>
 							</div>
 							<div className="text-center">
-								<div className="text-2xl font-bold text-secondary">
+								<div className="text-2xl font-bold text-primary">
 									{totalPlayCount.toLocaleString("ja-JP")}
 								</div>
 								<div className="text-sm text-muted-foreground">総再生数</div>
@@ -210,7 +210,7 @@ export function UserProfileContent({
 								<div className="text-sm text-muted-foreground">平均再生数</div>
 							</div>
 							<div className="text-center">
-								<div className="text-2xl font-bold text-secondary">{favoritesCount || 0}</div>
+								<div className="text-2xl font-bold text-heart">{favoritesCount || 0}</div>
 								<div className="text-sm text-muted-foreground">お気に入り</div>
 							</div>
 						</div>
@@ -297,7 +297,7 @@ export function UserProfileContent({
 						<Card>
 							<CardHeader>
 								<CardTitle className="flex items-center gap-2">
-									<Play className="w-5 h-5 text-secondary" />
+									<Play className="w-5 h-5 text-primary" />
 									再生統計
 								</CardTitle>
 							</CardHeader>
