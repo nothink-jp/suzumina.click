@@ -232,7 +232,8 @@ describe("FavoriteButton - Touch Optimization", () => {
 			);
 
 			button = screen.getByLabelText("お気に入りから削除");
-			expect(button).toHaveClass("bg-primary", "hover:bg-primary/90");
+			// heart は status と同型の semantic role（生スケール直書きを避ける）。お気に入り active の面色
+			expect(button).toHaveClass("bg-heart", "hover:bg-heart/90");
 		});
 
 		it("should maintain visual consistency across sizes", () => {

@@ -32,27 +32,27 @@
 		--radius-md: calc(var(--radius) - 2px);
 		--radius-sm: calc(var(--radius) - 4px);
 
-		/* Theme colors - WCAG AA compliant (Stone palette) */
-		--background: 0 0% 100%;
-		--foreground: 28 25% 8%;
+		/* Theme colors - WCAG AA compliant（桜霞パレット: くすみローズ × ミルクティー × パール白） */
+		--background: 340 40% 99%; /* 桜霞: パール白（僅かに血色） */
+		--foreground: 326 16% 13%; /* 桜霞: ニュートラル墨（sumi 役割を foreground に折込。旧 茶寄り黒 28°25%8% から中立化） */
 
-		--card: 0 0% 100%;
-		--card-foreground: 28 25% 8%;
+		--card: 0 0% 100%; /* blush 地(background)に対しカードが僅かに浮く */
+		--card-foreground: 326 16% 13%;
 
 		--popover: 0 0% 100%;
-		--popover-foreground: 28 25% 8%;
+		--popover-foreground: 326 16% 13%;
 
-		--primary: 340 75% 48%; /* suzuka(AA調整) - 白文字で 4.5:1 を満たすよう L55%→48%（SPR-129 Phase1） */
-		--primary-foreground: 60 9% 98%;
+		--primary: 340 58% 46%; /* = suzuka-500（桜霞: くすみローズ）。白文字 ≈5.7:1 ✓（SPR-129 の AA 維持しつつ彩度 75%→58%） */
+		--primary-foreground: 344 50% 99%; /* rose 寄り白。primary 上 ≈5.5:1 ✓ */
 
-		--secondary: 27 100% 59%; /* minase-500 - オレンジは不変。明色のため文字は暗色（下記）で AA を取る */
-		--secondary-foreground: 28 25% 8%; /* オレンジ上は暗色文字で AA（白文字は 2.22 で不適合のため。SPR-129 Phase1） */
+		--secondary: 30 38% 66%; /* = minase-500（桜霞: ミルクティー暖色。旧オレンジ 27°100%59%）。明色のため暗文字で AA を取る */
+		--secondary-foreground: 326 16% 13%; /* ミルクティー上は暗墨文字で ≈7.4:1 ✓（白文字は不適合のため） */
 
-		--muted: 60 5% 96%;
-		--muted-foreground: 25 5% 42%; /* WCAG AA: 微淡色背景(muted/suzuka-50)上でも 4.5:1（L45%→42%。SPR-129 Phase1） */
+		--muted: 34 30% 96%; /* 桜霞: 暖色寄りミルクティー地に */
+		--muted-foreground: 324 8% 40%; /* WCAG AA: 微淡色背景(muted/suzuka-50)上でも 4.5:1（L≤42% を維持。SPR-129） */
 
-		--accent: 24 6% 94%; /* 暖色ニュートラル - border(20°)/foreground(28°) と整合（旧値は青系デフォルト残り） */
-		--accent-foreground: 28 25% 8%; /* foreground と同値（旧値は青系 navy 残り） */
+		--accent: 330 24% 95%; /* 桜霞: ホバー面を faint rose に（border/foreground と整合） */
+		--accent-foreground: 326 16% 13%; /* foreground と同値 */
 
 		--destructive: 0 72% 45%; /* WCAG AA: 白との相互で 4.5:1（旧 50% は 4.36 で未満。fg/bg 両用のため SPR-131 で darken） */
 		--destructive-foreground: 60 9% 98%;
@@ -66,39 +66,45 @@
 		--warning: 30 92% 32%; /* ≈ #9c4f0a (amber-700/800)。琥珀は明色のため darken: text-warning on bg-warning/10 も 4.5:1（点3 で実測） */
 		--warning-foreground: 0 0% 100%;
 
-		--border: 20 6% 90%;
-		--input: 20 6% 90%;
-		--ring: 340 75% 48%; /* primary に一致（SPR-129 Phase1 で primary を 48% に） */
+		--border: 330 20% 91%; /* 桜霞: faint rose-grey */
+		--input: 330 20% 91%;
+		--ring: 340 58% 46%; /* primary に一致 */
 
 		/* フォーカス状態 */
-		--focus-ring: 340 75% 48%; /* primary/--ring に一致 */
+		--focus-ring: 340 58% 46%; /* primary/--ring に一致 */
 		--focus-ring-offset: 0 0% 100%;
 
-		/* Suzuka color palette - 涼花みなせ theme */
-		--suzuka-50: 340 100% 98%;  /* #fff5fa - 最も薄い桜色 */
-		--suzuka-100: 340 95% 95%;   /* #ffe0ed - 薄い桜色 */
-		--suzuka-200: 340 90% 88%;   /* #ffc2d9 - 淡い桜色 */
-		--suzuka-300: 340 85% 78%;   /* #ff9ebf - 桜色 */
-		--suzuka-400: 340 80% 65%;   /* #ff6b9d - 濃い桜色 */
-		--suzuka-500: 340 75% 48%;   /* #d61f5c - 基準の桜色（AA 調整: 白文字 4.5:1。直書き bg-suzuka-500 も対象） */
-		--suzuka-600: 340 70% 45%;   /* #e0266e - 濃い目の桜色 */
-		--suzuka-700: 340 65% 38%;   /* #b81d5b - より濃い桜色 */
-		--suzuka-800: 340 60% 30%;   /* #8f1447 - かなり濃い桜色 */
-		--suzuka-900: 340 55% 23%;   /* #660d33 - 最も濃い桜色 */
-		--suzuka-950: 340 50% 15%;   /* #3d0820 - ほぼ黒に近い桜色 */
+		/* Suzuka color palette - 涼花みなせ theme（桜霞: くすみローズ。彩度を落とした dusty rose） */
+		--suzuka-50: 342 70% 97%;   /* 最も薄いくすみ桜 */
+		--suzuka-100: 341 62% 94%;  /* 薄いくすみ桜 */
+		--suzuka-200: 340 54% 88%;  /* 淡いくすみ桜 */
+		--suzuka-300: 339 50% 79%;  /* くすみ桜 */
+		--suzuka-400: 339 54% 64%;  /* 濃いめくすみ桜 */
+		--suzuka-500: 340 58% 46%;  /* 基準のくすみローズ = primary（白文字 ≈5.7:1 ✓。直書き bg-suzuka-500 も対象） */
+		--suzuka-600: 340 56% 42%;  /* 濃いくすみローズ */
+		--suzuka-700: 339 54% 35%;  /* より濃い（text-suzuka-700 on light も可） */
+		--suzuka-800: 338 52% 28%;  /* かなり濃い */
+		--suzuka-900: 337 50% 21%;  /* 最も濃い */
+		--suzuka-950: 336 48% 14%;  /* ほぼ黒に近いローズ墨 */
 
-		/* Minase color palette - 涼花みなせ サブテーマ (オレンジ・ウォーム系) */
-		--minase-50: 33 100% 97%;    /* #fff8f3 - 最も薄いウォーム色 */
-		--minase-100: 31 90% 91%;    /* #ffedd5 - 薄いクリーム色 */
-		--minase-200: 30 85% 82%;    /* #fed7aa - 淡いピーチ色 */
-		--minase-300: 29 80% 73%;    /* #fdba74 - ソフトオレンジ */
-		--minase-400: 28 75% 62%;    /* #fb923c - ライトオレンジ */
-		--minase-500: 27 100% 59%;   /* #ff7e2d - メインオレンジ */
-		--minase-600: 23 89% 49%;    /* #ea5a0b - 濃いオレンジ */
-		--minase-700: 23 78% 40%;    /* #c2410c - ディープオレンジ */
-		--minase-800: 23 75% 34%;    /* #9a3412 - ダークオレンジ */
-		--minase-900: 23 71% 27%;    /* #7c2d12 - 最も濃いオレンジ */
-		--minase-950: 23 69% 16%;    /* #431407 - ブラウンオレンジ */
+		/* Minase color palette - 涼花みなせ サブテーマ（桜霞: ミルクティー暖色。旧オレンジから cream/beige へ） */
+		--minase-50: 36 50% 97%;    /* 最も薄いクリーム */
+		--minase-100: 34 44% 93%;   /* 薄いミルクティー */
+		--minase-200: 33 40% 86%;   /* 淡いミルクティー */
+		--minase-300: 32 38% 79%;   /* ソフトミルクティー */
+		--minase-400: 31 38% 73%;   /* ライトミルクティー */
+		--minase-500: 30 38% 66%;   /* 基準のミルクティー = secondary（暗文字 ≈7.4:1 ✓。明色のため暗文字で AA） */
+		--minase-600: 29 36% 56%;   /* 濃いミルクティー */
+		--minase-700: 28 34% 46%;   /* ディープミルクティー */
+		--minase-800: 27 32% 37%;   /* ダークミルクティー */
+		--minase-900: 26 30% 28%;   /* 最も濃いミルクティー */
+		--minase-950: 25 28% 18%;   /* ミルクティー墨 */
+
+		/* Heart accent - 桜霞: 瞳・ハートの鮮やかピンクレッド。くすませた suzuka に対する差し色。
+		 * status（info/success/…）と同じ semantic role として消費する（bg-heart / text-heart /
+		 * text-heart-foreground、hover は /90 不透明度）。favorite/like の active・新着強調に限定。 */
+		--heart: 348 80% 48%;            /* 白文字 ≈4.9:1 ✓・text-heart on white / bg-heart/10 も ≈4.5:1 ✓ */
+		--heart-foreground: 344 50% 99%; /* heart 面上の文字（≒白）。bg-heart 上 ≈4.8:1 ✓ */
 
 		/* Animation keyframes */
 		--animate-accordion-down: accordion-down 0.2s ease-out;
@@ -111,26 +117,26 @@
 	.dark {
 		--color-scheme: dark;
 
-		--background: 20 14% 4%;
-		--foreground: 60 9% 98%;
+		--background: 326 16% 7%; /* 桜霞 dark: ローズ寄り墨地 */
+		--foreground: 340 30% 96%;
 
-		--card: 24 10% 10%;
-		--card-foreground: 60 9% 98%;
+		--card: 326 14% 11%;
+		--card-foreground: 340 30% 96%;
 
-		--popover: 20 14% 4%;
-		--popover-foreground: 60 9% 98%;
+		--popover: 326 16% 7%;
+		--popover-foreground: 340 30% 96%;
 
-		--primary: 340 75% 65%; /* suzuka-400 - ダークモードでは明るめ */
-		--primary-foreground: 340 100% 98%;
+		--primary: 340 58% 64%; /* くすみローズ - dark では明るめ */
+		--primary-foreground: 336 40% 12%;
 
-		--secondary: 27 90% 65%; /* minase - ダークモードでは明るめ */
-		--secondary-foreground: 27 100% 97%;
+		--secondary: 28 24% 24%; /* ミルクティー - dark では沈めた暖色面 */
+		--secondary-foreground: 34 40% 92%;
 
-		--muted: 12 6% 15%;
-		--muted-foreground: 24 5% 64%;
+		--muted: 326 10% 16%;
+		--muted-foreground: 330 8% 64%;
 
-		--accent: 12 6% 15%;
-		--accent-foreground: 60 9% 98%;
+		--accent: 326 12% 16%;
+		--accent-foreground: 340 30% 96%;
 
 		--destructive: 0 62.8% 30.6%;
 		--destructive-foreground: 60 9% 98%;
@@ -143,39 +149,43 @@
 		--warning: 38 95% 60%;
 		--warning-foreground: 32 90% 12%;
 
-		--border: 12 6% 15%;
-		--input: 12 6% 15%;
-		--ring: 340 75% 65%;
+		--border: 326 10% 16%;
+		--input: 326 10% 16%;
+		--ring: 340 58% 64%;
 
 		/* ダークモードでのフォーカス状態 */
-		--focus-ring: 340 75% 65%;
-		--focus-ring-offset: 20 14% 4%;
+		--focus-ring: 340 58% 64%;
+		--focus-ring-offset: 326 16% 7%;
 
-		/* Dark mode Suzuka color palette - 涼花みなせ theme */
-		--suzuka-50: 340 50% 15%;    /* ダークモードでは反転 */
-		--suzuka-100: 340 55% 23%;
-		--suzuka-200: 340 60% 30%;
-		--suzuka-300: 340 65% 38%;
-		--suzuka-400: 340 70% 45%;
-		--suzuka-500: 340 75% 55%;
-		--suzuka-600: 340 80% 65%;
-		--suzuka-700: 340 85% 78%;
-		--suzuka-800: 340 90% 88%;
-		--suzuka-900: 340 95% 95%;
-		--suzuka-950: 340 100% 98%;
+		/* Dark mode Suzuka color palette - 桜霞: くすみローズを反転 */
+		--suzuka-50: 336 48% 14%;    /* ダークモードでは反転 */
+		--suzuka-100: 337 50% 21%;
+		--suzuka-200: 338 52% 28%;
+		--suzuka-300: 339 54% 35%;
+		--suzuka-400: 340 56% 42%;
+		--suzuka-500: 340 58% 55%;
+		--suzuka-600: 339 54% 64%;
+		--suzuka-700: 339 50% 79%;
+		--suzuka-800: 340 54% 88%;
+		--suzuka-900: 341 62% 94%;
+		--suzuka-950: 342 70% 97%;
 
-		/* Dark mode Minase color palette - 涼花みなせ サブテーマ (オレンジ・ウォーム系) */
-		--minase-50: 23 69% 16%;     /* ダークモードでは反転 */
-		--minase-100: 23 71% 27%;
-		--minase-200: 23 75% 34%;
-		--minase-300: 23 78% 40%;
-		--minase-400: 23 89% 49%;
-		--minase-500: 27 100% 59%;
-		--minase-600: 28 75% 62%;
-		--minase-700: 29 80% 73%;
-		--minase-800: 30 85% 82%;
-		--minase-900: 31 90% 91%;
-		--minase-950: 33 100% 97%;
+		/* Dark mode Minase color palette - 桜霞: ミルクティー暖色を反転 */
+		--minase-50: 25 28% 18%;     /* ダークモードでは反転 */
+		--minase-100: 26 30% 28%;
+		--minase-200: 27 32% 37%;
+		--minase-300: 28 34% 46%;
+		--minase-400: 29 36% 56%;
+		--minase-500: 30 38% 66%;
+		--minase-600: 31 38% 73%;
+		--minase-700: 32 38% 79%;
+		--minase-800: 33 40% 86%;
+		--minase-900: 34 44% 93%;
+		--minase-950: 36 50% 97%;
+
+		/* Dark mode Heart accent - 桜霞: dark では明るめ */
+		--heart: 348 78% 62%;
+		--heart-foreground: 336 40% 12%;
 	}
 }
 
@@ -220,7 +230,7 @@
 	--color-suzuka-900: hsl(var(--suzuka-900));
 	--color-suzuka-950: hsl(var(--suzuka-950));
 
-	/* Minase brand palette - 涼花みなせ サブテーマ (オレンジ・ウォーム系) */
+	/* Minase brand palette - 涼花みなせ サブテーマ（ミルクティー暖色） */
 	--color-minase-50: hsl(var(--minase-50));
 	--color-minase-100: hsl(var(--minase-100));
 	--color-minase-200: hsl(var(--minase-200));
@@ -232,6 +242,10 @@
 	--color-minase-800: hsl(var(--minase-800));
 	--color-minase-900: hsl(var(--minase-900));
 	--color-minase-950: hsl(var(--minase-950));
+
+	/* Heart accent - 桜霞（semantic role: bg-heart / text-heart / text-heart-foreground） */
+	--color-heart: hsl(var(--heart));
+	--color-heart-foreground: hsl(var(--heart-foreground));
 
 	--radius-sm: calc(var(--radius) - 4px);
 	--radius-md: calc(var(--radius) - 2px);

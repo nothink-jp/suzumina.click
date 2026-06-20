@@ -20,14 +20,12 @@ export function AudioButtonDetailStats({
 				<div className="text-lg font-bold text-foreground">{playCount.toLocaleString("ja-JP")}</div>
 				<div className="text-xs text-muted-foreground">再生回数</div>
 			</div>
-			<div className="text-center p-3 bg-primary/10 rounded-lg border border-primary/20">
+			<div className="text-center p-3 bg-heart/10 rounded-lg border border-heart/20">
 				<div className="flex items-center justify-center mb-1">
-					<Heart className="h-4 w-4 text-primary" />
+					<Heart className="h-4 w-4 text-heart" />
 				</div>
-				<div className="text-lg font-bold text-primary">
-					{favoriteCount.toLocaleString("ja-JP")}
-				</div>
-				<div className="text-xs text-primary">お気に入り</div>
+				<div className="text-lg font-bold text-heart">{favoriteCount.toLocaleString("ja-JP")}</div>
+				<div className="text-xs text-heart">お気に入り</div>
 			</div>
 			<div className="text-center p-3 bg-warning/10 rounded-lg border border-warning/30">
 				<div className="flex items-center justify-center mb-1">

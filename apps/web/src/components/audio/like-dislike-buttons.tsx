@@ -152,9 +152,7 @@ export function LikeDislikeButtons({
 				onClick={handleLikeToggle}
 				disabled={isPending || !isAuthenticated}
 				className={`flex items-center gap-1 border-0 rounded-l-md rounded-r-none border-r border-input ${
-					isLiked
-						? "text-primary hover:text-primary/90"
-						: "text-muted-foreground hover:text-primary"
+					isLiked ? "text-heart hover:text-heart/90" : "text-muted-foreground hover:text-heart"
 				}`}
 				title={
 					!isAuthenticated

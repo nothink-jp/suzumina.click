@@ -167,9 +167,14 @@ export const AudioButtonCard = memo(function AudioButtonCard({
 
 				<Button
 					size="sm"
-					variant={isFavorited ? "secondary" : "outline"}
+					variant="outline"
 					onClick={onFavoriteToggle}
 					disabled={!isAuthenticated}
+					className={
+						isFavorited
+							? "border-heart/40 bg-heart/10 text-heart hover:bg-heart/20" // 桜霞: お気に入り active は heart 差し色（semantic role）
+							: undefined
+					}
 					aria-label={isFavorited ? "お気に入りから削除" : "お気に入りに追加"}
 				>
 					<Heart className={`h-4 w-4 ${isFavorited ? "fill-current" : ""}`} />
@@ -177,9 +182,14 @@ export const AudioButtonCard = memo(function AudioButtonCard({
 
 				<Button
 					size="sm"
-					variant={isLiked ? "secondary" : "outline"}
+					variant="outline"
 					onClick={onLikeToggle}
 					disabled={!isAuthenticated}
+					className={
+						isLiked
+							? "border-heart/40 bg-heart/10 text-heart hover:bg-heart/20" // 桜霞: いいね active も heart 差し色（LikeDislikeButtons と統一）
+							: undefined
+					}
 					aria-label={isLiked ? "いいねを取り消す" : "いいね"}
 				>
 					<ThumbsUp className={`h-4 w-4 ${isLiked ? "fill-current" : ""}`} />
