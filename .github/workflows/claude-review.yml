@@ -36,7 +36,7 @@ jobs:
     # fork からの PR では OAuth Secret を渡さない（漏洩防止）。draft は対象外。
     if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.draft == false
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
