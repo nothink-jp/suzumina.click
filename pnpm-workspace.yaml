@@ -3,26 +3,20 @@ packages:
   - packages/*
 
 overrides:
+  # 以下は「override を外すと自然解決が floor を下回る＝今も実際に引き上げている」もののみ残す。
+  # floor 以上に自然到達するようになった override（vite / path-to-regexp / @tootallnate/once /
+  # qs / esbuild / @grpc/grpc-js / js-yaml）は依存元が追従済みのため撤去した（解決値は不変）。
   # protobufjs <= 8.5.0: schema 由来の名前が runtime プロパティを shadow（CVE-2026-54269）/
   # binary decode の unknown fields 保持によるメモリ増幅（CVE-2026-54270）。8.6.0 で修正。
-  # 直接の依存元（google-gax 等）は ^7.5.3 を要求するが override で 8.x に引き上げる。
+  # 直接の依存元（google-gax 等）は ^7.5.3 を要求し、override を外すと 7.6.4 に落ちるため維持。
   protobufjs: ">=8.6.0"
-  # vite < 8.0.16: server.fs.deny の Windows alternate path バイパス（GHSA-fx2h-pf6j-xcff）・
-  # 同梱 launch-editor の UNC path 経由 NTLMv2 ハッシュ漏洩（GHSA-v6wh-96g9-6wx3）。8.0.16 で修正。
-  vite: ">=8.0.16"
-  path-to-regexp: ">=8.4.0"
+  # uuid: override を外すと transitive が 8.3.2（deprecated）に落ちる。11.x に統一して維持。
   uuid: ">=11.1.1"
   # ws < 8.21.0: 小さな fragment/data chunk によるメモリ枯渇 DoS（GHSA-96hv-2xvq-fx4p）。8.21.0 で修正。
+  # override を外すと 7.5.11 が混在するため維持。
   ws: ">=8.21.0"
-  "@tootallnate/once": ">=2.0.1"
+  # postcss: override を外すと 8.4.31 が混在する。8.5.10 以上に揃えて維持。
   postcss: ">=8.5.10"
-  qs: ">=6.15.2"
-  # esbuild < 0.28.1: バイナリ整合性未検証で RCE（GHSA-gv7w-rqvm-qjhr）・dev server 任意ファイル読み取り（GHSA-g7r4-m6w7-qqqr）
-  esbuild: ">=0.28.1"
-  # @grpc/grpc-js < 1.14.4: malformed request/圧縮メッセージでクラッシュ（CVE-2026-48068 / CVE-2026-48069）
-  "@grpc/grpc-js": ">=1.14.4"
-  # js-yaml <= 4.1.1: merge key の繰り返し alias による二次計算量 DoS（CVE-2026-53550 / GHSA-h67p-54hq-rp68）。4.2.0 で修正。
-  "js-yaml": ">=4.2.0"
   # better-auth(@better-auth/kysely-adapter) は kysely 0.28 系の DEFAULT_MIGRATION_LOCK_TABLE を要求するが
   # 0.29.x で削除されており、0.29.2 が解決されると認証ルートが ESM import で 500 になる。0.28 系にピン（SPR-156）。
   kysely: "0.28.17"

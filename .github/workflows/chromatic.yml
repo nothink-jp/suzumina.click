@@ -30,7 +30,7 @@ jobs:
     outputs:
       ui: ${{ steps.changes.outputs.ui }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dorny/paths-filter@v4
         id: changes
         with:
@@ -50,7 +50,7 @@ jobs:
     if: needs.changes.outputs.ui == 'true' && github.actor != 'dependabot[bot]'
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           # TurboSnap は変更検出に git 履歴を使うため全履歴を取得する
           fetch-depth: 0
