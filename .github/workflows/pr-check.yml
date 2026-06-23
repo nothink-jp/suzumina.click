@@ -86,7 +86,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '24.16.0'
+          node-version: '24.17.0'
           cache: 'pnpm'
       
       - name: Install dependencies
@@ -210,7 +210,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '24.16.0'
+          node-version: '24.17.0'
           cache: 'pnpm'
 
       # gcloud 版 Firestore Emulator は JVM 上で動くため Java が必要（firebase CLI は使わない）
@@ -287,7 +287,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '24.16.0'
+          node-version: '24.17.0'
           cache: 'pnpm'
       
       - name: Install dependencies
@@ -314,7 +314,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '24.16.0'
+          node-version: '24.17.0'
           cache: 'pnpm'
 
       - name: Install dependencies
