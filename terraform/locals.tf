@@ -18,7 +18,6 @@ locals {
       cloud_run_cpu_idle = true     # アイドル時はCPU課金を停止（min_instances=1 でウォームは維持）
       cloud_run_memory   = "1024Mi" # メモリ増強（1GB）でGC改善
       # functions_* は ADR-009/SPR-92 で Actions 専管化。spec の正本は deploy-functions.yml
-      budget_amount        = 5000 # 月額5000円制限
       enable_monitoring    = true # フル監視
       enable_custom_domain = true # 本番ドメイン
     }
