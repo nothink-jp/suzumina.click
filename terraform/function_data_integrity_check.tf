@@ -8,12 +8,11 @@
 # ==============================================================================
 
 # データ整合性チェック関数の設定
+# 関数 spec（runtime / entry_point / memory / timeout）の正本は GitHub Actions（deploy-functions.yml）。
+# ADR-009 原則2: Cloud Functions の spec は terraform が持たない。かつてここに置いていた spec local は
+# 未参照のまま実体（runtime=nodejs24）と drift していた（nodejs22）ため撤去。output で使う関数名のみ残す。
 locals {
   data_integrity_check_function_name = "checkDataIntegrity"
-  data_integrity_check_runtime       = "nodejs22"
-  data_integrity_check_entry_point   = "checkDataIntegrity"
-  data_integrity_check_memory        = "512Mi" # 整合性チェックは軽量処理
-  data_integrity_check_timeout       = 540     # 9分タイムアウト
 }
 
 # データ整合性チェック関数（Gen2）
