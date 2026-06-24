@@ -36,7 +36,9 @@ resource "google_monitoring_alert_policy" "firestore_missing_index" {
     display_name = "Firestore で index 要求エラー（FAILED_PRECONDITION）検出"
 
     condition_threshold {
-      filter = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.firestore_missing_index.id}\""
+      # .name（メトリクス名のみ）を使う。.id は provider バージョンで projects/.../metrics/ の
+      # フルパスになり得て無効 metric type になるため、曖昧さのない .name に揃える（#703 レビュー）。
+      filter = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.firestore_missing_index.name}\""
 
       aggregations {
         alignment_period   = "300s"
