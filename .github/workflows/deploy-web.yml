@@ -141,16 +141,23 @@ jobs:
           context: .
           file: apps/web/Dockerfile
           push: true
+          # SPR-219: provenance/SBOM の attestation マニフェスト生成を無効化。
+          # Cloud Run へのデプロイに attestation は不要で、push のたびに untagged 子マニフェストが
+          # 増えて Artifact Registry を肥大させる（cleanup policy が untagged 子の回収に弱い）ため。
+          provenance: false
+          sbom: false
           tags: |
             ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
             ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:latest
+          # SPR-219: build cache を AR registry(:buildcache,mode=max) から GitHub Actions キャッシュへ移行。
+          # registry cache は web repo 内に全中間レイヤを溜め AR を肥大させていた（buildcache タグ移動で
+          # 旧 cache が untagged 化）。gha は GitHub 側(無料枠/LRU)に持つので AR から完全に外れる。
+          # 併せて BUILDKIT_INLINE_CACHE=1 を撤去（registry/inline cache 前提の設定で push image を肥大させるため）。
           cache-from: |
-            type=registry,ref=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:buildcache
+            type=gha
           cache-to: |
-            type=registry,ref=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
+            type=gha,mode=max,ignore-error=true
           platforms: linux/amd64
-          build-args: |
-            BUILDKIT_INLINE_CACHE=1
       
       # Deploy to Cloud Run
       - name: Deploy to Cloud Run
