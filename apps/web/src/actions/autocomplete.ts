@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 import { getFirestore } from "@/lib/firestore";
+import * as logger from "@/lib/logger";
 
 const AutocompleteQuerySchema = z.object({
 	q: z.string().min(1).max(100),
@@ -98,7 +99,11 @@ async function getTagSuggestions(
 		);
 
 		return uniqueSuggestions.slice(0, limit);
-	} catch (_error) {
+	} catch (error) {
+		// index 欠落/フィールド drift を silent に握りつぶさない（CLAUDE.md / SPR-213 Tier3 監視に効かせる）
+		logger.error("autocomplete: タグ候補の取得に失敗", {
+			error: error instanceof Error ? error.message : String(error),
+		});
 		return [];
 	}
 }
@@ -113,7 +118,7 @@ async function getTitleSuggestions(
 		const audioButtonsRef = firestore.collection("audioButtons");
 		const audioButtonsSnapshot = await audioButtonsRef
 			.where("isPublic", "==", true)
-			.orderBy("playCount", "desc")
+			.orderBy("stats.playCount", "desc")
 			.limit(200)
 			.get();
 
@@ -121,12 +126,14 @@ async function getTitleSuggestions(
 
 		audioButtonsSnapshot.docs.forEach((doc) => {
 			const data = doc.data();
-			if (data.title?.toLowerCase().includes(query.toLowerCase())) {
+			// audioButtons の表示テキストは buttonText（title フィールドは存在しない）。
+			// 再生数は stats.playCount（旧 playCount から移行済み）。
+			if (data.buttonText?.toLowerCase().includes(query.toLowerCase())) {
 				titleSuggestions.push({
 					id: `audio-title-${doc.id}`,
-					text: data.title,
+					text: data.buttonText,
 					type: "title",
-					count: data.playCount || 0,
+					count: data.stats?.playCount || 0,
 				});
 			}
 		});
@@ -135,7 +142,10 @@ async function getTitleSuggestions(
 		return titleSuggestions
 			.sort((a, b) => (b.count || 0) - (a.count || 0))
 			.slice(0, Math.floor(limit / 2));
-	} catch (_error) {
+	} catch (error) {
+		logger.error("autocomplete: タイトル候補の取得に失敗", {
+			error: error instanceof Error ? error.message : String(error),
+		});
 		return [];
 	}
 }
@@ -164,7 +174,10 @@ async function getVideoSuggestions(
 		});
 
 		return videoSuggestions.slice(0, Math.floor(limit / 4));
-	} catch (_error) {
+	} catch (error) {
+		logger.error("autocomplete: 動画候補の取得に失敗", {
+			error: error instanceof Error ? error.message : String(error),
+		});
 		return [];
 	}
 }

@@ -45,7 +45,14 @@ describe("getAutocompleteSuggestions", () => {
 				audioButtons: [
 					{
 						id: "b1",
-						data: { isPublic: true, tags: ["ゲーム", "実況"], title: "ゲーム配信", playCount: 50 },
+						// 実スキーマのフィールド名で mock する（buttonText / stats.playCount）。
+						// 旧 title / playCount は存在せず、タイトル候補が常に空になっていた（SPR-214）。
+						data: {
+							isPublic: true,
+							tags: ["ゲーム", "実況"],
+							buttonText: "ゲーム配信",
+							stats: { playCount: 50 },
+						},
 					},
 				],
 				videos: [{ id: "v1", data: { title: "ゲーム実況動画" } }],
