@@ -141,16 +141,21 @@ jobs:
           context: .
           file: apps/web/Dockerfile
           push: true
+          # SPR-219: attestation を無効化。これが AR cleanup policy の効かない oci.image.index 構造を生み、
+          # untagged マニフェスト蓄積の根本原因だった（Cloud Run デプロイに attestation は不要）。
+          provenance: false
+          sbom: false
           tags: |
             ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
             ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:latest
+          # SPR-219: build cache を AR registry → gha へ（AR 肥大回避）。
+          # mode=min は GHA 10GB 共有プール（CI の pnpm cache で逼迫）への影響を抑えるため（max は CI cache を退避させる）。
+          # BUILDKIT_INLINE_CACHE=1 は registry cache 前提のため撤去。
           cache-from: |
-            type=registry,ref=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:buildcache
+            type=gha
           cache-to: |
-            type=registry,ref=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
+            type=gha,mode=min,ignore-error=true
           platforms: linux/amd64
-          build-args: |
-            BUILDKIT_INLINE_CACHE=1
       
       # Deploy to Cloud Run
       - name: Deploy to Cloud Run
