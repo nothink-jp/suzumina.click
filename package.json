@@ -12,6 +12,7 @@
 		"lint": "pnpm -r lint",
 		"lint:docs": "node scripts/lint-docs.mjs",
 		"lint:tokens": "node scripts/lint-css-tokens.mjs",
+		"check:index-drift": "node scripts/check-firestore-index-drift.mjs",
 		"format": "pnpm -r format",
 		"check": "pnpm -r check",
 		"secretlint": "secretlint \"**/*\"",

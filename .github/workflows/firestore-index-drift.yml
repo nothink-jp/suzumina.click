@@ -1,0 +1,58 @@
+name: Firestore Index Drift
+
+# live Firestore 複合インデックスと terraform 定義（firestore_indexes*.tf）の drift を検出する（SPR-213）。
+# 方針: 非ブロッキング（continue-on-error）。手動棚卸しを自動ガード化し、管理外/未適用 index を早期可視化する。
+# 削除/追加の判断はツール任せにせず人=LLM が行う（CLAUDE.md 軸1）。実体は scripts/check-firestore-index-drift.mjs。
+
+on:
+  schedule:
+    - cron: '0 0 * * 1' # 毎週月曜 00:00 UTC
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'terraform/firestore_indexes.tf'
+      - 'terraform/firestore_indexes_audiobuttons_update.tf'
+      - 'scripts/check-firestore-index-drift.mjs'
+      - '.github/workflows/firestore-index-drift.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  drift:
+    name: Index drift report
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v7
+
+      # 読み取り専用。terraform plan と同じ SA を流用（firestore index の list 権限を持つ）。
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+          service_account: 'terraform-plan-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com'
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24.17.0'
+
+      # 非ブロッキング: drift があっても PR を落とさない。結果はこのステップのログで確認する。
+      - name: Check index drift
+        continue-on-error: true
+        run: node scripts/check-firestore-index-drift.mjs
