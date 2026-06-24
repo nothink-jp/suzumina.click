@@ -141,20 +141,16 @@ jobs:
           context: .
           file: apps/web/Dockerfile
           push: true
-          # SPR-219: provenance/SBOM の attestation マニフェスト生成を無効化。
-          # Cloud Run へのデプロイに attestation は不要で、push のたびに untagged 子マニフェストが
-          # 増えて Artifact Registry を肥大させる（cleanup policy が untagged 子の回収に弱い）ため。
+          # SPR-219: attestation を無効化。これが AR cleanup policy の効かない oci.image.index 構造を生み、
+          # untagged マニフェスト蓄積の根本原因だった（Cloud Run デプロイに attestation は不要）。
           provenance: false
           sbom: false
           tags: |
             ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
             ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:latest
-          # SPR-219: build cache を AR registry(:buildcache) から GitHub Actions キャッシュへ移行。
-          # registry cache は web repo 内に全中間レイヤを溜め AR を肥大させていたが、gha は GitHub 側に持つので AR から外れる。
-          # mode=min を採用: GHA cache は repo 共有10GB上限で既に CI の pnpm cache 等で逼迫しており、
-          # mode=max（全中間レイヤ）だと CI cache を LRU 退避させ全PRのCIを遅くする副作用が出るため。
-          # public repo で Actions 分は無料・deploy は main push のみで低頻度なので、ビルドが多少冷えても許容。
-          # 併せて BUILDKIT_INLINE_CACHE=1 を撤去（registry/inline cache 前提で push image を肥大させるため）。
+          # SPR-219: build cache を AR registry → gha へ（AR 肥大回避）。
+          # mode=min は GHA 10GB 共有プール（CI の pnpm cache で逼迫）への影響を抑えるため（max は CI cache を退避させる）。
+          # BUILDKIT_INLINE_CACHE=1 は registry cache 前提のため撤去。
           cache-from: |
             type=gha
           cache-to: |
