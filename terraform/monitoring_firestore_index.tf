@@ -32,13 +32,32 @@ resource "google_monitoring_alert_policy" "firestore_missing_index" {
   project      = var.gcp_project_id
   combiner     = "OR"
 
+  # log-based metric は web(cloud_run_revision) と functions(cloud_function) の両ログから時系列を生成する。
+  # monitoring の alert filter は単一 resource.type の制約が必須（OR 不可）なため resource.type ごとに
+  # condition を分け、combiner=OR でいずれかが発火したら通知する。
+  # metric type は .name（メトリクス名のみ）で参照する（.id は provider 差でフルパス化し得るため・#703 レビュー）。
   conditions {
-    display_name = "Firestore で index 要求エラー（FAILED_PRECONDITION）検出"
+    display_name = "Firestore index 要求エラー（Cloud Run / web）"
 
     condition_threshold {
-      # .name（メトリクス名のみ）を使う。.id は provider バージョンで projects/.../metrics/ の
-      # フルパスになり得て無効 metric type になるため、曖昧さのない .name に揃える（#703 レビュー）。
-      filter = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.firestore_missing_index.name}\""
+      filter = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.firestore_missing_index.name}\" resource.type=\"cloud_run_revision\""
+
+      aggregations {
+        alignment_period   = "300s"
+        per_series_aligner = "ALIGN_SUM"
+      }
+
+      comparison      = "COMPARISON_GT"
+      threshold_value = 0
+      duration        = "0s"
+    }
+  }
+
+  conditions {
+    display_name = "Firestore index 要求エラー（Cloud Functions）"
+
+    condition_threshold {
+      filter = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.firestore_missing_index.name}\" resource.type=\"cloud_function\""
 
       aggregations {
         alignment_period   = "300s"
