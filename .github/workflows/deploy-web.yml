@@ -149,14 +149,16 @@ jobs:
           tags: |
             ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
             ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:latest
-          # SPR-219: build cache を AR registry(:buildcache,mode=max) から GitHub Actions キャッシュへ移行。
-          # registry cache は web repo 内に全中間レイヤを溜め AR を肥大させていた（buildcache タグ移動で
-          # 旧 cache が untagged 化）。gha は GitHub 側(無料枠/LRU)に持つので AR から完全に外れる。
-          # 併せて BUILDKIT_INLINE_CACHE=1 を撤去（registry/inline cache 前提の設定で push image を肥大させるため）。
+          # SPR-219: build cache を AR registry(:buildcache) から GitHub Actions キャッシュへ移行。
+          # registry cache は web repo 内に全中間レイヤを溜め AR を肥大させていたが、gha は GitHub 側に持つので AR から外れる。
+          # mode=min を採用: GHA cache は repo 共有10GB上限で既に CI の pnpm cache 等で逼迫しており、
+          # mode=max（全中間レイヤ）だと CI cache を LRU 退避させ全PRのCIを遅くする副作用が出るため。
+          # public repo で Actions 分は無料・deploy は main push のみで低頻度なので、ビルドが多少冷えても許容。
+          # 併せて BUILDKIT_INLINE_CACHE=1 を撤去（registry/inline cache 前提で push image を肥大させるため）。
           cache-from: |
             type=gha
           cache-to: |
-            type=gha,mode=max,ignore-error=true
+            type=gha,mode=min,ignore-error=true
           platforms: linux/amd64
       
       # Deploy to Cloud Run
