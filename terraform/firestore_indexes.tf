@@ -195,18 +195,15 @@ resource "google_firestore_index" "audiobuttons_ispublic_createdat_desc" {
 # videos_livestreamingdetails_null_publishedat_asc: 削除完了
 
 # ===================================================================
-# ℹ️  NOTES - 自動作成・外部管理インデックス
+# ℹ️  NOTES - Firestore 自動作成（single-field）インデックス
 # ===================================================================
-# 
-# works コレクション:
-# - category×releaseDateISO: 既存インデックス使用 (Terraform外管理)
-# - price.current, rating.stars: Single-field自動作成
-# 
-# favorites コレクション:
-# - Single-fieldインデックス: Firestore自動作成
-
-# dlsite_timeseries_raw コレクション - 既存インデックス使用
-# date×workId×timestamp インデックスは外部で作成済み (Terraform外管理)
+#
+# - works: price.current / rating.stars / rating.count / releaseDateISO の単一フィールド
+#   orderBy は single-field index で自動対応（category との複合のみ上で明示定義）
+# - favorites（users/{uid}/favorites サブコレクション）: addedAt 等の単一フィールドは自動作成
+#
+# 旧 dlsite_timeseries_raw / dlsite_timeseries_daily コレクションと収集関数は統合アーキテクチャ移行で
+# 廃止済み（価格履歴の正本は works/{workId}/priceHistory）。残存していた孤立複合インデックスも SPR-213 で削除。
 
 # ===================================================================
 # 📈 PRICE HISTORY INDEXES - 価格履歴サブコレクション用
