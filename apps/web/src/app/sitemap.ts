@@ -5,11 +5,14 @@ import { getFirestore } from "@/lib/firestore";
 import { warn as logWarn } from "@/lib/logger";
 
 // build 時の Firestore アクセスを避け、リクエスト時に Cloud Run の SA credentials で生成する (SPR-60)
-// Firestore 取得部分は unstable_cache で 1 時間キャッシュし、毎リクエストでクエリが走らないようにする
+// Firestore 取得部分は unstable_cache でキャッシュし、毎リクエストでクエリが走らないようにする
 // cacheComponents 有効下では route segment config `dynamic` が使えないため、
 // `await connection()` でリクエストスコープに入り build-time prerender を回避する
-
-const SITEMAP_REVALIDATE_SECONDS = 3600;
+//
+// SPR-218: works+videos+buttons の全件スキャンが Firestore QUERY reads の一因（reads の96%がQUERY）。
+// sitemap に時間単位の鮮度は不要（クローラの再取得は低頻度・新規コンテンツは数時間〜1日内で十分）なため、
+// TTL を 1h→24h に延長して全件 read 頻度を 24分の1 に抑える。
+const SITEMAP_REVALIDATE_SECONDS = 86400;
 
 const getDynamicSitemapPages = unstable_cache(
 	async (baseUrl: string): Promise<MetadataRoute.Sitemap> => {

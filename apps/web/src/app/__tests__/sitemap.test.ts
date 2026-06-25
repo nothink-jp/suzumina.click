@@ -381,12 +381,12 @@ describe("sitemap", () => {
 		expect(urls).toContain("https://suzumina.click/buttons/create");
 	});
 
-	// 動的部分は unstable_cache で 1h キャッシュされる前提 (#416)。
+	// 動的部分は unstable_cache で 24h キャッシュされる前提 (#416 / SPR-218 で 1h→24h)。
 	// キャッシュキー / revalidate / tags が意図せず変わったら検知する。
-	it("回帰検知: unstable_cache が固定キー・revalidate=3600・tag=sitemap で登録される", () => {
+	it("回帰検知: unstable_cache が固定キー・revalidate=86400・tag=sitemap で登録される", () => {
 		expect(unstableCacheCalls).toContainEqual({
 			keys: ["sitemap-dynamic-pages"],
-			options: expect.objectContaining({ revalidate: 3600, tags: ["sitemap"] }),
+			options: expect.objectContaining({ revalidate: 86400, tags: ["sitemap"] }),
 		});
 	});
 });
