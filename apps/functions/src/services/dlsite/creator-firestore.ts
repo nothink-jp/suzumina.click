@@ -14,6 +14,13 @@ import type {
 import { isValidCreatorId } from "@suzumina.click/shared-types";
 import firestore, { Timestamp } from "../../infrastructure/database/firestore";
 import * as logger from "../../shared/logger";
+import {
+	recordCreatorExistenceLookup,
+	recordExistingMappingQuery,
+	recordRecompute,
+	recordRelationDeletes,
+	recordRelationWrites,
+} from "./creator-sync-metrics";
 
 const CREATORS_COLLECTION = "creators";
 
@@ -171,6 +178,8 @@ async function getExistingCreatorMappings(
 			.where("workId", "==", workId)
 			.get();
 
+		recordExistingMappingQuery(worksSnapshot.docs.length);
+
 		worksSnapshot.docs.forEach((doc) => {
 			// 親ドキュメントのIDがクリエイターID
 			const creatorId = doc.ref.parent.parent?.id;
@@ -223,6 +232,7 @@ export async function updateCreatorWorkMapping(
 
 			// 新規作成の場合はcreatedAtも設定
 			const creatorDoc = await creatorRef.get();
+			recordCreatorExistenceLookup();
 			if (!creatorDoc.exists) {
 				creatorData.createdAt = Timestamp.now();
 			}
@@ -263,6 +273,11 @@ export async function updateCreatorWorkMapping(
 		const removedCount =
 			existingMappings.size -
 			Array.from(existingMappings.keys()).filter((id) => processedCreators.has(id)).length;
+
+		// 計測（実変更の代理値）は commit 成功後に確定値で記録する。
+		// batch に積んだ直後に数えると commit 失敗時に「書き込んだ」と誤計上するため。
+		recordRelationWrites(addedCount);
+		recordRelationDeletes(removedCount);
 
 		if (addedCount > 0 || removedCount > 0) {
 			logger.debug(`クリエイターマッピング更新完了: ${workId}`, {
@@ -372,6 +387,8 @@ export async function recomputeCreatorStats(creatorId: string): Promise<void> {
 		.doc(creatorId)
 		.collection("works")
 		.get();
+
+	recordRecompute(worksSnapshot.size);
 
 	if (worksSnapshot.empty) {
 		await firestore.collection(CREATORS_COLLECTION).doc(creatorId).update({

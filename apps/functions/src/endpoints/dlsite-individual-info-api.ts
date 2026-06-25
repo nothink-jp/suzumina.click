@@ -12,6 +12,10 @@ import type {
 	WorkDocument,
 } from "@suzumina.click/shared-types";
 import firestore, { Timestamp } from "../infrastructure/database/firestore";
+import {
+	getCreatorSyncMetrics,
+	resetCreatorSyncMetrics,
+} from "../services/dlsite/creator-sync-metrics";
 import { getExistingWorksMap } from "../services/dlsite/dlsite-firestore";
 import { batchFetchIndividualInfo } from "../services/dlsite/individual-info-api-client";
 import {
@@ -532,6 +536,9 @@ async function prepareNewBatchProcessing(metadata: CollectionMetadata): Promise<
  * 統合データ収集処理の実行
  */
 async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
+	// SPR-225 Stage 0: creator 同期 reads の内訳をこの run の分だけ計測する（挙動は変えない）。
+	resetCreatorSyncMetrics();
+
 	try {
 		// メタデータから処理状態を確認
 		const metadata = await getOrCreateUnifiedMetadata();
@@ -618,6 +625,11 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 			basicDataUpdated: 0,
 			error: error instanceof Error ? error.message : "不明なエラー",
 		};
+	} finally {
+		// この run の creator 同期 reads 内訳を 1 行で出す（type=QUERY の主因を分解）。
+		// 完走・中断・例外いずれの経路でも必ず記録する。Cloud Monitoring の絞り込みキーにする
+		// ため、メッセージは Stage を含めない恒久キーにする（Stage 1 以降も同じキーに値が流れる）。
+		logger.info("creator同期reads計測", { ...getCreatorSyncMetrics() });
 	}
 }
 
