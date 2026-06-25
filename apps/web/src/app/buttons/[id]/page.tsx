@@ -3,7 +3,6 @@ import { Eye } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { getFavoritesStatusAction } from "@/actions/favorites";
 import { getAudioButtonById } from "@/app/buttons/actions";
 import {
 	AudioButtonDetailHeader,
@@ -11,7 +10,6 @@ import {
 	AudioButtonDetailSidebar,
 	RelatedAudioButtons,
 } from "@/components/audio-button-detail";
-import { getCurrentUser } from "@/lib/auth/server";
 
 interface AudioButtonDetailPageProps {
 	params: Promise<{
@@ -101,40 +99,9 @@ export default async function AudioButtonDetailPage({ params }: AudioButtonDetai
 
 	const audioButton = result.data;
 
-	// ユーザーのセッションを取得
-	const user = await getCurrentUser();
-	const isAuthenticated = !!user;
-
-	// お気に入り状態を取得（認証済みの場合のみ）
-	let isFavorited = false;
-	let isLiked = false;
-	let isDisliked = false;
-
-	if (isAuthenticated && user?.discordId) {
-		try {
-			const favoritesStatusMap = await getFavoritesStatusAction([audioButton.id]);
-			isFavorited = favoritesStatusMap.get(audioButton.id) || false;
-		} catch (_error) {
-			// お気に入り状態の取得に失敗した場合はfalse
-			isFavorited = false;
-		}
-
-		// 高評価・低評価状態を取得
-		try {
-			const { getLikeDislikeStatusAction } = await import("@/actions/dislikes");
-			const likeDislikeStatusMap = await getLikeDislikeStatusAction([audioButton.id]);
-			const status = likeDislikeStatusMap.get(audioButton.id) || {
-				isLiked: false,
-				isDisliked: false,
-			};
-			isLiked = status.isLiked;
-			isDisliked = status.isDisliked;
-		} catch (_error) {
-			// 高評価・低評価状態の取得に失敗した場合はfalse
-			isLiked = false;
-			isDisliked = false;
-		}
-	}
+	// per-user 状態（お気に入り/高低評価/編集権限）はここで取得しない。
+	// 純公開 shell として session を読まず、各 client island が自分の状態を解決する（SPR-223）。
+	// これにより詳細ページを共有キャッシュ可（public）へ戻せる（SPR-222/226 の per-user SSR 漏洩を解消）。
 
 	return (
 		<div className="min-h-screen">
@@ -145,14 +112,7 @@ export default async function AudioButtonDetailPage({ params }: AudioButtonDetai
 				{/* メインコンテンツ: グリッドレイアウト */}
 				<div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
 					{/* 左側: 音声ボタン詳細 */}
-					<AudioButtonDetailMainContent
-						audioButton={audioButton}
-						user={user}
-						isAuthenticated={isAuthenticated}
-						isFavorited={isFavorited}
-						isLiked={isLiked}
-						isDisliked={isDisliked}
-					/>
+					<AudioButtonDetailMainContent audioButton={audioButton} />
 
 					{/* 右側: 動画カード + ユーザーカード */}
 					<AudioButtonDetailSidebar
