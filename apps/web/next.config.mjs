@@ -287,17 +287,19 @@ const nextConfig = {
 					},
 				],
 			},
-			// videos/works の「詳細」は per-user 状態を SSR に焼くため private, no-store（SPR-226 stopgap）:
-			//   - /works/[id]:  作品評価（星/10選）を getWorkEvaluation で SSR に焼く
-			//   - /videos/[id]: 関連音声ボタンのお気に入り/高低評価を SSR に焼く（RelatedAudioButtonsServer）
-			// leaf の client が実状態を取り直さないため、public だと User A の状態が User B に漏れる。
-			// 恒久解（per-user を client island へ隔離して public に戻す）は SPR-226 の恒久解節。
+			// videos/works の「詳細」は SPR-226 恒久解で per-user 状態を client island へ隔離し
+			// session を SSR で読まなくなったため public へ復帰（SPR-221 のエッジキャッシュ効果を回復）:
+			//   - /works/[id]:  WorkEvaluation が getWorkEvaluation を client self-fetch
+			//   - /videos/[id]: RelatedAudioButtons が useAudioButtonStatuses で client 一括取得
+			// CF 側（terraform/cloudflare.tf rule#5）は既に /works/・/videos/ を respect_origin で含むため
+			// origin を public に戻すだけで自動キャッシュされる（CF 無変更）。
+			// 前提: これら詳細は session-free を維持すること（origin ヘッダが唯一の防御線）。
 			{
 				source: "/(videos|works)/:path+",
 				headers: [
 					{
 						key: "Cache-Control",
-						value: "private, no-store",
+						value: "public, s-maxage=120, stale-while-revalidate=300",
 					},
 				],
 			},

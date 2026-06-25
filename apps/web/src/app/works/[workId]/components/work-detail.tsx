@@ -2,7 +2,6 @@
 
 import type { WorkPlainObject } from "@suzumina.click/shared-types";
 import {
-	type FrontendWorkEvaluation,
 	getWorkCategoryDisplayText,
 	getWorkLanguageDisplayName,
 } from "@suzumina.click/shared-types";
@@ -45,7 +44,6 @@ import { WorkEvaluation } from "./work-evaluation";
 
 interface WorkDetailProps {
 	work: WorkPlainObject;
-	initialEvaluation?: FrontendWorkEvaluation | null;
 }
 
 // スターレーティングコンポーネント
@@ -80,7 +78,7 @@ function handleShare(work: WorkPlainObject) {
 }
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Complex UI component with multiple tabs and conditional rendering
-export default function WorkDetail({ work, initialEvaluation = null }: WorkDetailProps) {
+export default function WorkDetail({ work }: WorkDetailProps) {
 	// モック特性評価データを生成（作品IDに基づいて一意）
 	const characteristicData = useMemo(
 		() => generateMockCharacteristicData(work.productId),
@@ -541,12 +539,8 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 
 				{/* 右側: サイドバー */}
 				<div className="space-y-6">
-					{/* 評価システム */}
-					<WorkEvaluation
-						workId={work.productId}
-						workTitle={work.title}
-						initialEvaluation={initialEvaluation}
-					/>
+					{/* 評価システム（per-user 評価は client island が self-fetch・SPR-226） */}
+					<WorkEvaluation workId={work.productId} workTitle={work.title} />
 
 					{/* サークル情報 */}
 					<Card>

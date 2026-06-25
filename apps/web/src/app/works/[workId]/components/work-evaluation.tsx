@@ -3,25 +3,41 @@
 import type { EvaluationInput, FrontendWorkEvaluation } from "@suzumina.click/shared-types";
 import { cn } from "@suzumina.click/ui/lib/utils";
 import { AlertCircle, Loader2, Star } from "lucide-react";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useSession } from "@/lib/auth/client";
-import { removeWorkEvaluation, updateWorkEvaluation } from "../evaluation-actions";
+import {
+	getWorkEvaluation,
+	removeWorkEvaluation,
+	updateWorkEvaluation,
+} from "../evaluation-actions";
 import { EvaluationRadioGroup } from "./evaluation-radio-group";
 import { Top10RankModal } from "./top10-rank-modal";
 
 interface WorkEvaluationProps {
 	workId: string;
 	workTitle: string;
-	initialEvaluation: FrontendWorkEvaluation | null;
 }
 
-export function WorkEvaluation({ workId, workTitle, initialEvaluation }: WorkEvaluationProps) {
+export function WorkEvaluation({ workId, workTitle }: WorkEvaluationProps) {
 	const user = useSession();
-	const [evaluation, setEvaluation] = useState(initialEvaluation);
+	const [evaluation, setEvaluation] = useState<FrontendWorkEvaluation | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const [isPending, startTransition] = useTransition();
 	const [showTop10Modal, setShowTop10Modal] = useState(false);
 	const [pendingRank, setPendingRank] = useState<number | null>(null);
+
+	// per-user の評価は SSR に焼かず、認証済みなら client で自分の評価を取得する（純公開 shell・SPR-226）。
+	// これにより /works/[id] を共有キャッシュ可（public）へ戻しても A の評価が B に漏れない。
+	useEffect(() => {
+		if (!user?.discordId) return;
+		let cancelled = false;
+		void getWorkEvaluation(workId).then((result) => {
+			if (!cancelled) setEvaluation(result);
+		});
+		return () => {
+			cancelled = true;
+		};
+	}, [user?.discordId, workId]);
 
 	const handleEvaluationChange = (input: EvaluationInput) => {
 		setError(null);
