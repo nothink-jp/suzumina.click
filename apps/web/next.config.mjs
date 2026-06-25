@@ -267,24 +267,9 @@ const nextConfig = {
 					},
 				],
 			},
-			// videos/works は詳細も session を読まない純公開 shell なので一覧・詳細とも public。
+			// 公開コンテンツの「一覧」ページはエッジキャッシュ可（SPR-221）。
 			{
-				source: "/(videos|works)/:path*",
-				headers: [
-					{
-						key: "Cache-Control",
-						value: "public, s-maxage=120, stale-while-revalidate=300",
-					},
-				],
-			},
-			// buttons は一覧のみ public。/buttons/[id] は per-user 状態（お気に入り/高低評価）を
-			// SSR に焼くため、また /buttons/[id]/edit・/buttons/create は認証必須のため、
-			// 配下を public にすると共有キャッシュ漏洩になる（SPR-222 footgun）。
-			// CDN 側（terraform/cloudflare.tf）の設計（一覧のみキャッシュ・/buttons/* はバイパス）に
-			// origin の Cache-Control も揃え、CF 設定ドリフトや別プロキシ前段でも構造的に漏れないようにする。
-			// 恒久解（/buttons/[id] を純公開 shell + client island 化）は SPR-223。それが入れば public に戻せる。
-			{
-				source: "/buttons",
+				source: "/(buttons|videos|works)",
 				headers: [
 					{
 						key: "Cache-Control",
@@ -293,7 +278,6 @@ const nextConfig = {
 				],
 			},
 			// 認証必須・セッション依存ページは CDN エッジでキャッシュさせない
-			// （/buttons/:path+ は /buttons 一覧に一致せず詳細・編集・作成のみを対象にする）
 			{
 				source: "/(admin|settings|favorites|users)/:path*",
 				headers: [
@@ -303,8 +287,18 @@ const nextConfig = {
 					},
 				],
 			},
+			// 公開コンテンツの「詳細」ページ（:path+ ＝ 1 セグメント以上）は private, no-store。
+			// 3 詳細とも per-user 状態を SSR に焼く設計のため、public だと共有キャッシュ漏洩になる:
+			//   - /buttons/[id]: お気に入り/高低評価を SSR に焼く（SPR-222）。/edit・/create は認証必須
+			//   - /works/[id]:   作品評価（星/10選）を getWorkEvaluation で SSR に焼く
+			//   - /videos/[id]:  関連音声ボタンのお気に入り/高低評価を SSR に焼く（RelatedAudioButtonsServer）
+			// いずれも leaf の client が実状態を取り直さない（自己補正しない）ため、
+			// 共有キャッシュに乗ると User A の状態が User B に配信されうる。
+			// :path+ は一覧（/buttons・/videos・/works）に一致しないため public ルールと競合しない。
+			// これは stopgap で SPR-221 の詳細ページキャッシュを一時的に諦める取引。
+			// 恒久解は per-user を client island へ隔離して public に戻す（SPR-223 系）。
 			{
-				source: "/buttons/:path+",
+				source: "/(buttons|videos|works)/:path+",
 				headers: [
 					{
 						key: "Cache-Control",
