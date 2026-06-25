@@ -29,65 +29,11 @@ resource "google_cloud_scheduler_job" "fetch_youtube_videos_hourly" {
 
 
 # 旧 collectDLsiteTimeseries 関連スケジューラーは統合アーキテクチャにより削除済み
-
-# ==============================================================================
-# Cloud Runウォームアップスケジューラー
-# ==============================================================================
-# 目的:
-#   1. コールドスタートを防ぐために定期的にエンドポイントを呼び出す
-#   2. Next.js App Router の SSR path (Server Components + Firestore unstable_cache)
-#      を実際に exercise し、V8 JIT を `/` route handler 側で warm に保つ
 #
-# `/api/health` ではなく `/` を ping する理由 (SPR-71 Workstream A):
-#   - /api/health は static JSON で Next.js app handler を warm にしない
-#   - PSI の warm sample で TTFB が間欠的に 1s 超に跳ねる現象 (sample #4) は、
-#     instance は生きているが `/` route の handler が deoptimize されている
-#     "JIT warmth degradation" が疑われたため、実 route を直接 ping する
-#   - 直 Cloud Run URL 経由なので Cloudflare CDN cache は bypass される
-#
-# 実行時間: 日中（8-20時）の5分ごと
-# コスト: ~50円/月 (Firestore 取得は unstable_cache 60s でほぼ cache hit)
-# ==============================================================================
-resource "google_cloud_scheduler_job" "cloud_run_warmup" {
-  project     = var.gcp_project_id
-  region      = var.region
-  name        = "cloud-run-warmup"
-  description = "Cloud Run のコールドスタート防止 + `/` route handler の JIT warmth 維持"
-
-  # 日本時間8-20時の間、5分ごとに実行
-  # この時間帯が主要なアクセス時間と想定
-  schedule  = "*/5 8-20 * * *"
-  time_zone = "Asia/Tokyo"
-
-  # HTTPターゲット設定
-  http_target {
-    # 実 SSR path (`/`) を ping することで Next.js handler の JIT を維持する
-    uri         = google_cloud_run_v2_service.nextjs_app.uri
-    http_method = "GET"
-
-    # User-Agent ヘッダは指定しない: "Google-Cloud-Scheduler" は Scheduler の既定 UA で
-    # API が headers に保存せず、明示すると毎 plan で恒久 diff になるため（ADR-009 / SPR-98）。
-
-    # Cloud Runサービスへのアクセス認証
-    oidc_token {
-      service_account_email = google_service_account.cloud_run_service_account.email
-      audience              = google_cloud_run_v2_service.nextjs_app.uri
-    }
-  }
-
-  # リトライポリシー（ヘルスチェックなので最小限）
-  retry_config {
-    retry_count          = 1
-    min_backoff_duration = "5s"
-    max_backoff_duration = "10s"
-  }
-
-  # 実行タイムアウト
-  attempt_deadline = "30s"
-
-  depends_on = [
-    google_cloud_run_v2_service.nextjs_app,
-    google_service_account.cloud_run_service_account,
-    google_project_service.cloudscheduler
-  ]
-}
+# Cloud Run warm-up スケジューラー（cloud-run-warmup）は SPR-217 で撤去。
+#   - 元目的（SPR-71）は PSI の `/` warm sample で TTFB が跳ねる JIT warmth degradation 対策として
+#     オリジンを直接 ping してウォーム維持することだった。
+#   - SPR-221 で `/` 含むコンテンツページをエッジキャッシュ化（stale-while-revalidate）したため、
+#     PSI/公開ページはエッジ HIT＝オリジンの JIT warmth に依存しなくなり、元目的は陳腐化。
+#   - min_instances=0（SPR-217）と併せ、オリジンを温め続ける warm-up を残すと節約が半減するため撤去。
+#   - 動的/ログイン系ページはアイドル後初回のみ cold start を許容（低トラフィックのため実害小）。
