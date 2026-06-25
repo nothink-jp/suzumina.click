@@ -76,6 +76,19 @@ resource "cloudflare_ruleset" "cache_rules" {
     enabled     = true
   }
 
+  # 1b. 個人化/認証ページ: キャッシュ完全無効（多重防御 / SPR-221）
+  #   下の #5 公開コンテンツ rule は respect_origin で origin の no-store を尊重するため
+  #   個人化ページは本来キャッシュされないが、念のため個人化セクションを明示バイパスする。
+  rules {
+    action = "set_cache_settings"
+    action_parameters {
+      cache = false
+    }
+    expression  = "(starts_with(http.request.uri.path, \"/settings\") or starts_with(http.request.uri.path, \"/favorites\") or starts_with(http.request.uri.path, \"/users\") or starts_with(http.request.uri.path, \"/auth\"))"
+    description = "個人化/認証: キャッシュ無効"
+    enabled     = true
+  }
+
   # 2. Next.js 静的アセット: 1年キャッシュ（ビルドハッシュで immutable）
   rules {
     action = "set_cache_settings"
@@ -147,6 +160,37 @@ resource "cloudflare_ruleset" "cache_rules" {
     }
     expression  = "(http.request.uri.path eq \"/\")"
     description = "ホームページ: PPR 動的鮮度確保のため 60 秒キャッシュ"
+    enabled     = true
+  }
+
+  # 5. 公開コンテンツページ: origin の Cache-Control を尊重してエッジキャッシュ（SPR-221）
+  #
+  #   prerender 済み・公開のコンテンツ一覧/詳細をエッジ配信し、min_instances=0 時の
+  #   オリジン cold start をユーザーから不可視にする。origin が出す stale-while-revalidate=300 を
+  #   respect_origin で尊重 → 再検証はバックグラウンドで行われ、ユーザーは常に即座にキャッシュ応答を得る
+  #   （ホームページ #4 が override_origin=60 なのは min=1 前提で鮮度を固定する設計。こちらは min=0 を
+  #   狙うため swr を活かす respect_origin を採用する点が異なる）。
+  #
+  #   安全性: respect_origin は origin の Cache-Control を尊重するため、private/no-store を返す
+  #   個人化ページは自動でキャッシュされない。ただし origin が誤って public を返す例外
+  #   （/buttons/[id] = per-user 状態を SSR に焼くのに public; SPR-222）があるため、
+  #   /buttons は一覧（path eq "/buttons"）のみ対象とし /buttons/* 詳細は含めない。
+  #   SPR-223 で /buttons/[id] を純公開化したら starts_with("/buttons") へ拡張可能。
+  #
+  #   RSC ナビゲーションは Next.js が ?_rsc= クエリを付けるため cache key で自然に分離される。
+  rules {
+    action = "set_cache_settings"
+    action_parameters {
+      cache = true
+      edge_ttl {
+        mode = "respect_origin"
+      }
+      browser_ttl {
+        mode = "respect_origin"
+      }
+    }
+    expression  = "(starts_with(http.request.uri.path, \"/works\") or starts_with(http.request.uri.path, \"/videos\") or starts_with(http.request.uri.path, \"/circles\") or starts_with(http.request.uri.path, \"/creators\") or http.request.uri.path eq \"/buttons\")"
+    description = "公開コンテンツ: origin Cache-Control 尊重でエッジキャッシュ（/buttons は一覧のみ）"
     enabled     = true
   }
 }
