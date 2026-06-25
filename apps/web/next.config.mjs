@@ -267,8 +267,24 @@ const nextConfig = {
 					},
 				],
 			},
+			// videos/works は詳細も session を読まない純公開 shell なので一覧・詳細とも public。
 			{
-				source: "/(buttons|videos|works)/:path*",
+				source: "/(videos|works)/:path*",
+				headers: [
+					{
+						key: "Cache-Control",
+						value: "public, s-maxage=120, stale-while-revalidate=300",
+					},
+				],
+			},
+			// buttons は一覧のみ public。/buttons/[id] は per-user 状態（お気に入り/高低評価）を
+			// SSR に焼くため、また /buttons/[id]/edit・/buttons/create は認証必須のため、
+			// 配下を public にすると共有キャッシュ漏洩になる（SPR-222 footgun）。
+			// CDN 側（terraform/cloudflare.tf）の設計（一覧のみキャッシュ・/buttons/* はバイパス）に
+			// origin の Cache-Control も揃え、CF 設定ドリフトや別プロキシ前段でも構造的に漏れないようにする。
+			// 恒久解（/buttons/[id] を純公開 shell + client island 化）は SPR-223。それが入れば public に戻せる。
+			{
+				source: "/buttons",
 				headers: [
 					{
 						key: "Cache-Control",
@@ -277,8 +293,18 @@ const nextConfig = {
 				],
 			},
 			// 認証必須・セッション依存ページは CDN エッジでキャッシュさせない
+			// （/buttons/:path+ は /buttons 一覧に一致せず詳細・編集・作成のみを対象にする）
 			{
 				source: "/(admin|settings|favorites|users)/:path*",
+				headers: [
+					{
+						key: "Cache-Control",
+						value: "private, no-store",
+					},
+				],
+			},
+			{
+				source: "/buttons/:path+",
 				headers: [
 					{
 						key: "Cache-Control",
