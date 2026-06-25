@@ -79,15 +79,18 @@ resource "cloudflare_ruleset" "cache_rules" {
   # 1b. 個人化/認証ページ: キャッシュ完全無効（多重防御 / SPR-221）
   #   #5 公開コンテンツ rule は respect_origin で origin の no-store を尊重するため個人化ページは
   #   本来キャッシュされない（Cloudflare は HTML をデフォルトでキャッシュしないことも実測で確認）が、
-  #   念のため明示バイパスする。/buttons/ を含めるのは /buttons/[id] が per-user 状態を SSR に焼くのに
-  #   public を返す footgun（SPR-222）のため＝origin ヘッダを信用せず CDN 側で明示除外（多重防御）。
-  #   /buttons 一覧は末尾スラッシュ無しなのでここに一致せず #5 でキャッシュされる。
+  #   念のため明示バイパスする。
+  #   SPR-223 で /buttons/[id] を純公開 shell 化（session を SSR で読まず origin が public を返す）した
+  #   ため、ここから /buttons/ を除去し #5 でエッジキャッシュさせる。/buttons/create・/buttons/[id]/edit
+  #   は認証必須で origin が private, no-store を返すため、#5 の respect_origin が自動で BYPASS する
+  #   （明示バイパス不要）。前提: /buttons/[id] の origin は session-free を維持すること（再び SSR で
+  #   per-user を焼くと public キャッシュに乗り漏洩する。SPR-222/223）。
   rules {
     action = "set_cache_settings"
     action_parameters {
       cache = false
     }
-    expression  = "(starts_with(http.request.uri.path, \"/settings\") or starts_with(http.request.uri.path, \"/favorites\") or starts_with(http.request.uri.path, \"/users\") or starts_with(http.request.uri.path, \"/auth\") or starts_with(http.request.uri.path, \"/buttons/\"))"
+    expression  = "(starts_with(http.request.uri.path, \"/settings\") or starts_with(http.request.uri.path, \"/favorites\") or starts_with(http.request.uri.path, \"/users\") or starts_with(http.request.uri.path, \"/auth\"))"
     description = "個人化/認証: キャッシュ無効"
     enabled     = true
   }
@@ -175,10 +178,13 @@ resource "cloudflare_ruleset" "cache_rules" {
   #   狙うため swr を活かす respect_origin を採用する点が異なる）。
   #
   #   安全性: respect_origin は origin の Cache-Control を尊重するため、private/no-store を返す
-  #   個人化ページは自動でキャッシュされない。ただし origin が誤って public を返す例外
-  #   （/buttons/[id] = per-user 状態を SSR に焼くのに public; SPR-222）があるため、
-  #   /buttons は一覧（path eq "/buttons"）のみ対象とし /buttons/* 詳細は含めない。
-  #   SPR-223 で /buttons/[id] を純公開化したら starts_with("/buttons") へ拡張可能。
+  #   個人化ページは自動でキャッシュされない。これにより詳細ページの出し分けを origin の Cache-Control
+  #   1 点に集約できる:
+  #     - /buttons/[id]      : SPR-223 で純公開 shell 化し origin が public → エッジキャッシュ
+  #     - /buttons/create, /buttons/[id]/edit : 認証必須で origin が private, no-store → respect_origin が BYPASS
+  #     - /works/[id], /videos/[id] : per-user を SSR に焼く間は origin が private（SPR-226 stopgap）→ BYPASS。
+  #       恒久解で origin を public に戻せば CF 無変更で自動キャッシュされる。
+  #   前提: public を返す詳細は session-free を維持すること（origin ヘッダが唯一の防御線）。
   #
   #   RSC ナビゲーションは Next.js が ?_rsc= クエリを付けるため cache key で自然に分離される。
   rules {
@@ -193,8 +199,8 @@ resource "cloudflare_ruleset" "cache_rules" {
       }
     }
     # 前方一致を「ちょうど一致 or サブパス」に厳密化し、将来 /workspace 等が誤マッチするのを防ぐ（minor）
-    expression  = "(http.request.uri.path eq \"/works\" or starts_with(http.request.uri.path, \"/works/\") or http.request.uri.path eq \"/videos\" or starts_with(http.request.uri.path, \"/videos/\") or http.request.uri.path eq \"/circles\" or starts_with(http.request.uri.path, \"/circles/\") or http.request.uri.path eq \"/creators\" or starts_with(http.request.uri.path, \"/creators/\") or http.request.uri.path eq \"/buttons\")"
-    description = "公開コンテンツ: origin Cache-Control 尊重でエッジキャッシュ（/buttons は一覧のみ）"
+    expression  = "(http.request.uri.path eq \"/works\" or starts_with(http.request.uri.path, \"/works/\") or http.request.uri.path eq \"/videos\" or starts_with(http.request.uri.path, \"/videos/\") or http.request.uri.path eq \"/circles\" or starts_with(http.request.uri.path, \"/circles/\") or http.request.uri.path eq \"/creators\" or starts_with(http.request.uri.path, \"/creators/\") or http.request.uri.path eq \"/buttons\" or starts_with(http.request.uri.path, \"/buttons/\"))"
+    description = "公開コンテンツ: origin Cache-Control 尊重でエッジキャッシュ（詳細は origin が出し分け）"
     enabled     = true
   }
 }
