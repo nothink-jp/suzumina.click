@@ -24,6 +24,7 @@ vi.mock("../../evaluation-actions", () => ({
 	updateWorkEvaluation: vi.fn(),
 	removeWorkEvaluation: vi.fn(),
 	getUserTop10List: vi.fn(),
+	getWorkEvaluation: vi.fn(),
 }));
 
 // Mock lucide-react icons
@@ -41,6 +42,7 @@ vi.mock("lucide-react", () => ({
 // Import the mocked functions
 import {
 	getUserTop10List,
+	getWorkEvaluation,
 	removeWorkEvaluation,
 	updateWorkEvaluation,
 } from "../../evaluation-actions";
@@ -58,11 +60,12 @@ describe("WorkEvaluation", () => {
 	const defaultProps = {
 		workId: "RJ12345678",
 		workTitle: "Test Work Title",
-		initialEvaluation: null,
 	};
 
 	beforeEach(() => {
 		vi.clearAllMocks();
+		// 既定: 自分の評価なし（client island の self-fetch デフォルト・SPR-226）
+		vi.mocked(getWorkEvaluation).mockResolvedValue(null);
 	});
 
 	it("renders login prompt when not authenticated", () => {
@@ -76,21 +79,22 @@ describe("WorkEvaluation", () => {
 		expect(screen.getByText("ログイン")).toBeInTheDocument();
 	});
 
-	it("renders evaluation options when authenticated", () => {
+	it("renders evaluation options when authenticated", async () => {
 		render(
 			<SessionProvider session={mockSession}>
 				<WorkEvaluation {...defaultProps} />
 			</SessionProvider>,
 		);
 
-		expect(screen.getByText("作品の評価")).toBeInTheDocument();
+		// 初回 self-fetch 完了後に評価 UI が描画される（SPR-226 skeleton）
+		expect(await screen.findByText("作品の評価")).toBeInTheDocument();
 		expect(screen.getByText("10選に追加")).toBeInTheDocument();
 		expect(screen.getByText("星評価")).toBeInTheDocument();
 		expect(screen.getByText("NG登録")).toBeInTheDocument();
 	});
 
-	it("displays existing top10 evaluation", () => {
-		const initialEvaluation = {
+	it("displays existing top10 evaluation", async () => {
+		vi.mocked(getWorkEvaluation).mockResolvedValue({
 			id: "test-user-id_RJ12345678",
 			workId: "RJ12345678",
 			userId: "test-user-id",
@@ -98,15 +102,15 @@ describe("WorkEvaluation", () => {
 			top10Rank: 3,
 			createdAt: new Date().toISOString(),
 			updatedAt: new Date().toISOString(),
-		};
+		});
 
 		render(
 			<SessionProvider session={mockSession}>
-				<WorkEvaluation {...defaultProps} initialEvaluation={initialEvaluation} />
+				<WorkEvaluation {...defaultProps} />
 			</SessionProvider>,
 		);
 
-		expect(screen.getByText("10選 3位")).toBeInTheDocument();
+		expect(await screen.findByText("10選 3位")).toBeInTheDocument();
 		expect(screen.getByText("順位変更")).toBeInTheDocument();
 	});
 
@@ -131,6 +135,8 @@ describe("WorkEvaluation", () => {
 			</SessionProvider>,
 		);
 
+		// 評価 UI の描画を待つ（初回 self-fetch 完了後・SPR-226 skeleton）
+		await screen.findByText("作品の評価");
 		// Find all buttons in the component
 		const allButtons = screen.getAllByRole("button");
 
@@ -156,7 +162,7 @@ describe("WorkEvaluation", () => {
 		const mockRemove = vi.mocked(removeWorkEvaluation);
 		mockRemove.mockResolvedValue({ success: true });
 
-		const initialEvaluation = {
+		vi.mocked(getWorkEvaluation).mockResolvedValue({
 			id: "test-user-id_RJ12345678",
 			workId: "RJ12345678",
 			userId: "test-user-id",
@@ -164,15 +170,15 @@ describe("WorkEvaluation", () => {
 			starRating: 2 as const,
 			createdAt: new Date().toISOString(),
 			updatedAt: new Date().toISOString(),
-		};
+		});
 
 		render(
 			<SessionProvider session={mockSession}>
-				<WorkEvaluation {...defaultProps} initialEvaluation={initialEvaluation} />
+				<WorkEvaluation {...defaultProps} />
 			</SessionProvider>,
 		);
 
-		const removeButton = screen.getByText("評価を削除");
+		const removeButton = await screen.findByText("評価を削除");
 		fireEvent.click(removeButton);
 
 		await waitFor(() => {
@@ -193,7 +199,7 @@ describe("WorkEvaluation", () => {
 			</SessionProvider>,
 		);
 
-		const ngButton = screen.getByText("NG登録").closest("button");
+		const ngButton = (await screen.findByText("NG登録")).closest("button");
 		fireEvent.click(ngButton!);
 
 		await waitFor(() => {
@@ -212,7 +218,7 @@ describe("WorkEvaluation", () => {
 				</SessionProvider>,
 			);
 
-			const top10Button = screen.getByText("10選に追加").closest("button");
+			const top10Button = (await screen.findByText("10選に追加")).closest("button");
 			fireEvent.click(top10Button!);
 
 			await waitFor(() => {
@@ -238,7 +244,7 @@ describe("WorkEvaluation", () => {
 				</SessionProvider>,
 			);
 
-			const top10Button = screen.getByText("10選に追加").closest("button");
+			const top10Button = (await screen.findByText("10選に追加")).closest("button");
 			fireEvent.click(top10Button!);
 
 			// Wait for the modal to load data and render content
@@ -315,7 +321,7 @@ describe("WorkEvaluation", () => {
 			);
 
 			// Open modal
-			const top10Button = screen.getByText("10選に追加").closest("button");
+			const top10Button = (await screen.findByText("10選に追加")).closest("button");
 			fireEvent.click(top10Button!);
 
 			// Wait for modal and content to load
@@ -372,7 +378,7 @@ describe("WorkEvaluation", () => {
 				</SessionProvider>,
 			);
 
-			const top10Button = screen.getByText("10選に追加").closest("button");
+			const top10Button = (await screen.findByText("10選に追加")).closest("button");
 			fireEvent.click(top10Button!);
 
 			await waitFor(() => {
@@ -384,7 +390,7 @@ describe("WorkEvaluation", () => {
 		});
 
 		it("allows changing rank for existing top10 evaluation", async () => {
-			const initialEvaluation = {
+			vi.mocked(getWorkEvaluation).mockResolvedValue({
 				id: "test-user-id_RJ12345678",
 				workId: "RJ12345678",
 				userId: "test-user-id",
@@ -392,7 +398,7 @@ describe("WorkEvaluation", () => {
 				top10Rank: 3,
 				createdAt: new Date().toISOString(),
 				updatedAt: new Date().toISOString(),
-			};
+			});
 
 			const mockGetTop10 = vi.mocked(getUserTop10List);
 			mockGetTop10.mockResolvedValue({
@@ -410,12 +416,12 @@ describe("WorkEvaluation", () => {
 
 			render(
 				<SessionProvider session={mockSession}>
-					<WorkEvaluation {...defaultProps} initialEvaluation={initialEvaluation} />
+					<WorkEvaluation {...defaultProps} />
 				</SessionProvider>,
 			);
 
-			// Click rank change button
-			const changeButton = screen.getByText("順位変更");
+			// Click rank change button (評価の self-fetch 完了を待つ)
+			const changeButton = await screen.findByText("順位変更");
 			fireEvent.click(changeButton);
 
 			await waitFor(() => {

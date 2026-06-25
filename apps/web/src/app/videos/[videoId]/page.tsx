@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { getAudioButtonCount, getAudioButtonsList } from "@/app/buttons/actions";
 import { getVideoById } from "../actions";
-import { RelatedAudioButtonsServer } from "./components/related-audio-buttons-server";
+import { RelatedAudioButtons } from "./components/related-audio-buttons";
 import VideoDetail from "./components/video-detail";
 
 interface VideoDetailPageProps {
@@ -39,7 +39,7 @@ export default async function VideoDetailPage({ params }: VideoDetailPageProps) 
 					video={video}
 					initialTotalAudioCount={audioButtonCount}
 					relatedAudioButtonsSlot={
-						<RelatedAudioButtonsServer
+						<RelatedAudioButtons
 							audioButtons={audioButtons}
 							totalCount={audioButtonCount}
 							videoId={videoId}

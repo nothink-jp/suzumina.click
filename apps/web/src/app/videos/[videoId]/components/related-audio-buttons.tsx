@@ -2,11 +2,12 @@
 
 import type { AudioButton, VideoPlainObject } from "@suzumina.click/shared-types";
 import { canCreateAudioButton } from "@suzumina.click/shared-types";
-import { LoadingSkeleton } from "@suzumina.click/ui/components/custom/loading-skeleton";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { ArrowRight, Plus } from "lucide-react";
 import Link from "next/link";
+import { useMemo } from "react";
 import { AudioButtonWithPlayCount } from "@/components/audio/audio-button-with-play-count";
+import { useAudioButtonStatuses } from "@/hooks/use-audio-button-statuses";
 import { useSession } from "@/lib/auth/client";
 
 interface RelatedAudioButtonsProps {
@@ -14,9 +15,6 @@ interface RelatedAudioButtonsProps {
 	totalCount: number;
 	videoId: string;
 	video: VideoPlainObject;
-	loading?: boolean;
-	initialLikeDislikeStatuses?: Record<string, { isLiked: boolean; isDisliked: boolean }>;
-	initialFavoriteStatuses?: Record<string, boolean>;
 }
 
 export function RelatedAudioButtons({
@@ -24,15 +22,13 @@ export function RelatedAudioButtons({
 	totalCount,
 	videoId,
 	video,
-	loading = false,
-	initialLikeDislikeStatuses = {},
-	initialFavoriteStatuses = {},
 }: RelatedAudioButtonsProps) {
 	const user = useSession();
+	// per-user 状態（お気に入り/高低評価）は SSR に焼かず client で一括取得する（純公開 shell・SPR-226）。
+	// 公開リスト（/buttons）と同じ pattern。これにより /videos/[id] を public キャッシュへ戻せる。
+	const audioButtonIds = useMemo(() => audioButtons.map((button) => button.id), [audioButtons]);
+	const { likeDislikeStatuses, favoriteStatuses } = useAudioButtonStatuses(audioButtonIds);
 	const canCreateButton = user && canCreateAudioButton(video) && video.status?.embeddable !== false;
-	if (loading) {
-		return <LoadingSkeleton count={3} height={60} />;
-	}
 
 	if (audioButtons.length === 0) {
 		return (
@@ -55,8 +51,8 @@ export function RelatedAudioButtons({
 			{/* 音声ボタン一覧 */}
 			<div className="flex flex-wrap gap-2">
 				{audioButtons.map((audioButton) => {
-					const likeDislikeStatus = initialLikeDislikeStatuses[audioButton.id];
-					const isFavorited = initialFavoriteStatuses[audioButton.id] || false;
+					const likeDislikeStatus = likeDislikeStatuses[audioButton.id];
+					const isFavorited = favoriteStatuses[audioButton.id] || false;
 
 					return (
 						<AudioButtonWithPlayCount
