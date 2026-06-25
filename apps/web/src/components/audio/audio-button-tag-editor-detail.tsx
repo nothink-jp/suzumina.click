@@ -14,14 +14,13 @@ import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { type AutocompleteSuggestion, getAutocompleteSuggestions } from "@/actions/autocomplete";
 import { updateAudioButtonTags } from "@/app/buttons/actions";
+import { useSession } from "@/lib/auth/client";
 
 export interface AudioButtonTagEditorDetailProps {
 	/** 音声ボタンID */
 	audioButtonId: string;
 	/** 現在のタグ配列 */
 	tags: string[];
-	/** 現在のユーザーのDiscord ID */
-	currentUserId?: string;
 	/** 追加のクラス名 */
 	className?: string;
 }
@@ -29,17 +28,18 @@ export interface AudioButtonTagEditorDetailProps {
 export function AudioButtonTagEditorDetail({
 	audioButtonId,
 	tags,
-	currentUserId,
 	className,
 }: AudioButtonTagEditorDetailProps) {
 	const router = useRouter();
+	// 認証状態は client の session から解決し、per-user 状態を SSR に焼かない（純公開 shell・SPR-223）
+	const user = useSession();
 	const [isEditing, setIsEditing] = useState(false);
 	const [editingTags, setEditingTags] = useState<string[]>(tags);
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
 	// 編集権限チェック（ログインユーザーなら誰でも編集可能）
-	const canEdit = !!currentUserId;
+	const canEdit = !!user?.discordId;
 
 	/**
 	 * AutocompleteSuggestion を TagSuggestion に変換
@@ -224,7 +224,7 @@ export function AudioButtonTagEditorDetail({
 
 				{!canEdit && !isEditing && (
 					<p className="text-xs text-muted-foreground mt-2 pt-2 border-t">
-						※ タグを編集するには、ボタンの作成者としてログインする必要があります
+						※ タグを編集するにはログインが必要です
 					</p>
 				)}
 			</CardContent>

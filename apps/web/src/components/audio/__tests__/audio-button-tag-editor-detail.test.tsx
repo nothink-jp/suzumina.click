@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
+import { useSession } from "@/lib/auth/client";
 import { AudioButtonTagEditorDetail } from "../audio-button-tag-editor-detail";
 
 // モック
@@ -8,60 +9,60 @@ vi.mock("@/app/buttons/actions", () => ({
 	updateAudioButtonTags: vi.fn(),
 }));
 
+// 認証は client session で解決（SPR-223）。ログインユーザーなら誰でもタグ編集可。
+vi.mock("@/lib/auth/client", () => ({
+	useSession: vi.fn(),
+}));
+const mockUseSession = vi.mocked(useSession);
+
 // useRouter is mocked in vitest.setup.ts
 
 describe("AudioButtonTagEditorDetail", () => {
 	const defaultProps = {
 		audioButtonId: "test-button-id",
 		tags: [],
-		currentUserId: undefined,
 	};
 
 	beforeEach(() => {
 		vi.clearAllMocks();
+		// 既定はログイン済み（編集可）。未認証ケースは個別に null を設定する。
+		mockUseSession.mockReturnValue({ discordId: "creator-id" } as never);
 	});
 
 	describe("権限チェック", () => {
 		it("未認証ユーザーには編集権限がない", () => {
+			mockUseSession.mockReturnValue(null);
 			render(<AudioButtonTagEditorDetail {...defaultProps} />);
 
 			expect(screen.queryByText("編集")).not.toBeInTheDocument();
-			expect(
-				screen.getByText("※ タグを編集するには、ボタンの作成者としてログインする必要があります"),
-			).toBeInTheDocument();
+			expect(screen.getByText("※ タグを編集するにはログインが必要です")).toBeInTheDocument();
 		});
 
 		it("作成者には編集権限がある", () => {
-			render(<AudioButtonTagEditorDetail {...defaultProps} currentUserId="creator-id" />);
+			render(<AudioButtonTagEditorDetail {...defaultProps} />);
 
 			expect(screen.getByText("編集")).toBeInTheDocument();
-			expect(
-				screen.queryByText("※ タグを編集するには、ボタンの作成者としてログインする必要があります"),
-			).not.toBeInTheDocument();
+			expect(screen.queryByText("※ タグを編集するにはログインが必要です")).not.toBeInTheDocument();
 		});
 
 		it("管理者には編集権限がある", () => {
-			render(<AudioButtonTagEditorDetail {...defaultProps} currentUserId="admin-id" />);
+			render(<AudioButtonTagEditorDetail {...defaultProps} />);
 
 			expect(screen.getByText("編集")).toBeInTheDocument();
-			expect(
-				screen.queryByText("※ タグを編集するには、ボタンの作成者としてログインする必要があります"),
-			).not.toBeInTheDocument();
+			expect(screen.queryByText("※ タグを編集するにはログインが必要です")).not.toBeInTheDocument();
 		});
 
 		it("ログインユーザーなら誰でも編集権限がある", () => {
-			render(<AudioButtonTagEditorDetail {...defaultProps} currentUserId="other-user-id" />);
+			render(<AudioButtonTagEditorDetail {...defaultProps} />);
 
 			expect(screen.getByText("編集")).toBeInTheDocument();
-			expect(
-				screen.queryByText("※ タグを編集するには、ボタンの作成者としてログインする必要があります"),
-			).not.toBeInTheDocument();
+			expect(screen.queryByText("※ タグを編集するにはログインが必要です")).not.toBeInTheDocument();
 		});
 	});
 
 	describe("タグ表示", () => {
 		it("タグが存在しない場合の表示", () => {
-			render(<AudioButtonTagEditorDetail {...defaultProps} currentUserId="creator-id" />);
+			render(<AudioButtonTagEditorDetail {...defaultProps} />);
 
 			expect(
 				screen.getByText("タグを追加して音声ボタンを見つけやすくしましょう"),
@@ -70,6 +71,7 @@ describe("AudioButtonTagEditorDetail", () => {
 		});
 
 		it("タグが存在しない場合の未認証ユーザー表示", () => {
+			mockUseSession.mockReturnValue(null);
 			render(<AudioButtonTagEditorDetail {...defaultProps} />);
 
 			expect(screen.getByText("タグはまだ設定されていません")).toBeInTheDocument();
@@ -81,7 +83,6 @@ describe("AudioButtonTagEditorDetail", () => {
 				<AudioButtonTagEditorDetail
 					{...defaultProps}
 					tags={["React", "TypeScript", "音声ボタン"]}
-					currentUserId="creator-id"
 				/>,
 			);
 
@@ -95,13 +96,7 @@ describe("AudioButtonTagEditorDetail", () => {
 	describe("編集機能", () => {
 		it("編集モードに入ることができる", async () => {
 			const user = userEvent.setup();
-			render(
-				<AudioButtonTagEditorDetail
-					{...defaultProps}
-					tags={["既存タグ"]}
-					currentUserId="creator-id"
-				/>,
-			);
+			render(<AudioButtonTagEditorDetail {...defaultProps} tags={["既存タグ"]} />);
 
 			const editButton = screen.getByText("編集");
 			await user.click(editButton);
@@ -116,13 +111,7 @@ describe("AudioButtonTagEditorDetail", () => {
 
 		it("編集をキャンセルできる", async () => {
 			const user = userEvent.setup();
-			render(
-				<AudioButtonTagEditorDetail
-					{...defaultProps}
-					tags={["既存タグ"]}
-					currentUserId="creator-id"
-				/>,
-			);
+			render(<AudioButtonTagEditorDetail {...defaultProps} tags={["既存タグ"]} />);
 
 			// 編集モードに入る
 			const editButton = screen.getByText("編集");
@@ -151,13 +140,7 @@ describe("AudioButtonTagEditorDetail", () => {
 				success: true,
 			});
 
-			render(
-				<AudioButtonTagEditorDetail
-					{...defaultProps}
-					tags={["既存タグ"]}
-					currentUserId="creator-id"
-				/>,
-			);
+			render(<AudioButtonTagEditorDetail {...defaultProps} tags={["既存タグ"]} />);
 
 			// 編集モードに入る
 			const editButton = screen.getByText("編集");
@@ -194,7 +177,7 @@ describe("AudioButtonTagEditorDetail", () => {
 				error: "保存に失敗しました",
 			});
 
-			render(<AudioButtonTagEditorDetail {...defaultProps} tags={[]} currentUserId="creator-id" />);
+			render(<AudioButtonTagEditorDetail {...defaultProps} tags={[]} />);
 
 			// 編集モードに入る
 			const editButton = screen.getByText("タグを追加");
@@ -229,7 +212,7 @@ describe("AudioButtonTagEditorDetail", () => {
 			});
 			vi.mocked(updateAudioButtonTags).mockReturnValue(promise);
 
-			render(<AudioButtonTagEditorDetail {...defaultProps} tags={[]} currentUserId="creator-id" />);
+			render(<AudioButtonTagEditorDetail {...defaultProps} tags={[]} />);
 
 			// 編集モードに入る
 			const editButton = screen.getByText("タグを追加");
@@ -258,25 +241,13 @@ describe("AudioButtonTagEditorDetail", () => {
 
 	describe("アクセシビリティ", () => {
 		it("適切なセクション構造を持つ", () => {
-			render(
-				<AudioButtonTagEditorDetail
-					{...defaultProps}
-					tags={["テストタグ"]}
-					currentUserId="creator-id"
-				/>,
-			);
+			render(<AudioButtonTagEditorDetail {...defaultProps} tags={["テストタグ"]} />);
 
 			expect(screen.getByText("タグ")).toBeInTheDocument();
 		});
 
 		it("編集ボタンが適切にラベル付けされている", () => {
-			render(
-				<AudioButtonTagEditorDetail
-					{...defaultProps}
-					tags={["テストタグ"]}
-					currentUserId="creator-id"
-				/>,
-			);
+			render(<AudioButtonTagEditorDetail {...defaultProps} tags={["テストタグ"]} />);
 
 			const editButton = screen.getByText("編集");
 			expect(editButton).toBeInTheDocument();

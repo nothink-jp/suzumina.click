@@ -1,11 +1,11 @@
-import type { AudioButtonPlainObject, UserSession } from "@suzumina.click/shared-types";
+import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
 import { TimeDisplay } from "@suzumina.click/ui/components/custom/time-display";
 import { YoutubeIcon } from "@suzumina.click/ui/components/custom/youtube-icon";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent } from "@suzumina.click/ui/components/ui/card";
-import { Calendar, Clock, Pencil } from "lucide-react";
-import Link from "next/link";
+import { Calendar, Clock } from "lucide-react";
 import { AudioButtonDeleteButton } from "@/components/audio/audio-button-delete-button";
+import { AudioButtonEditButton } from "@/components/audio/audio-button-edit-button";
 import { AudioButtonTagEditorDetail } from "@/components/audio/audio-button-tag-editor-detail";
 import { AudioButtonWithPlayCount } from "@/components/audio/audio-button-with-play-count";
 import { AudioButtonDetailActions } from "./audio-button-detail-actions";
@@ -36,21 +36,9 @@ function formatRelativeTime(dateString: string): string {
 
 interface AudioButtonDetailMainContentProps {
 	audioButton: AudioButtonPlainObject;
-	user: UserSession | null;
-	isAuthenticated: boolean;
-	isFavorited: boolean;
-	isLiked: boolean;
-	isDisliked: boolean;
 }
 
-export function AudioButtonDetailMainContent({
-	audioButton,
-	user,
-	isAuthenticated,
-	isFavorited,
-	isLiked,
-	isDisliked,
-}: AudioButtonDetailMainContentProps) {
+export function AudioButtonDetailMainContent({ audioButton }: AudioButtonDetailMainContentProps) {
 	return (
 		<div className="lg:col-span-2">
 			<Card className="bg-card/80 backdrop-blur-sm shadow-lg border-0">
@@ -77,15 +65,11 @@ export function AudioButtonDetailMainContent({
 						</div>
 						{/* 編集・削除ボタン */}
 						<div className="flex items-center gap-2">
-							{/* 編集ボタン */}
-							{user && audioButton.creatorId === user.discordId && (
-								<Button variant="outline" size="sm" asChild className="flex items-center gap-1">
-									<Link href={`/buttons/${audioButton.id}/edit`}>
-										<Pencil className="h-4 w-4" />
-										編集
-									</Link>
-								</Button>
-							)}
+							{/* 編集ボタン（作成者のみ・client island で session 解決） */}
+							<AudioButtonEditButton
+								audioButtonId={audioButton.id}
+								createdBy={audioButton.creatorId}
+							/>
 							{/* 削除ボタン */}
 							<AudioButtonDeleteButton
 								audioButtonId={audioButton.id}
@@ -121,7 +105,6 @@ export function AudioButtonDetailMainContent({
 						<AudioButtonTagEditorDetail
 							audioButtonId={audioButton.id}
 							tags={audioButton.tags || []}
-							currentUserId={user?.discordId}
 						/>
 					</div>
 
@@ -138,12 +121,8 @@ export function AudioButtonDetailMainContent({
 					{/* アクションボタン */}
 					<AudioButtonDetailActions
 						audioButtonId={audioButton.id}
-						isFavorited={isFavorited}
 						favoriteCount={audioButton.stats.favoriteCount || 0}
 						likeCount={audioButton.stats.likeCount}
-						isLiked={isLiked}
-						isDisliked={isDisliked}
-						isAuthenticated={isAuthenticated}
 					/>
 
 					{/* YouTube動画情報 */}

@@ -26,6 +26,13 @@ vi.mock("sonner", () => ({
 // Server actions mock
 vi.mock("@/actions/favorites", () => ({
 	toggleFavoriteAction: vi.fn().mockResolvedValue({ success: true, isFavorited: true }),
+	getFavoritesStatusAction: vi.fn().mockResolvedValue(new Map()),
+}));
+
+// 認証は client session で解決する（SPR-223）。未認証なら self-fetch effect は発火せず、
+// isFavorited prop 駆動の描画が保たれる。
+vi.mock("@/lib/auth/client", () => ({
+	useSession: () => null,
 }));
 
 describe("FavoriteButton - Touch Optimization", () => {
@@ -40,12 +47,7 @@ describe("FavoriteButton - Touch Optimization", () => {
 
 			sizes.forEach((size) => {
 				const { container } = render(
-					<FavoriteButton
-						audioButtonId="test"
-						isFavorited={false}
-						size={size}
-						isAuthenticated={true}
-					/>,
+					<FavoriteButton audioButtonId="test" isFavorited={false} size={size} />,
 				);
 
 				const button = container.querySelector("button");
@@ -73,28 +75,14 @@ describe("FavoriteButton - Touch Optimization", () => {
 		it("should have minimum 44px touch target on mobile", () => {
 			mockViewport(375, 667); // Mobile viewport
 
-			render(
-				<FavoriteButton
-					audioButtonId="test"
-					isFavorited={false}
-					size="sm"
-					isAuthenticated={true}
-				/>,
-			);
+			render(<FavoriteButton audioButtonId="test" isFavorited={false} size="sm" />);
 
 			const button = screen.getByLabelText("お気に入りに追加");
 			expect(button).toHaveClass("h-11"); // 44px minimum on mobile
 		});
 
 		it("should maintain touch target size when favorited", () => {
-			render(
-				<FavoriteButton
-					audioButtonId="test"
-					isFavorited={true}
-					size="default"
-					isAuthenticated={true}
-				/>,
-			);
+			render(<FavoriteButton audioButtonId="test" isFavorited={true} size="default" />);
 
 			const button = screen.getByLabelText("お気に入りから削除");
 			validateResponsiveClasses(button, {
@@ -105,14 +93,7 @@ describe("FavoriteButton - Touch Optimization", () => {
 
 	describe("Responsive Behavior", () => {
 		testAcrossViewports("should maintain proper sizing", (viewport) => {
-			render(
-				<FavoriteButton
-					audioButtonId="test"
-					isFavorited={false}
-					size="default"
-					isAuthenticated={true}
-				/>,
-			);
+			render(<FavoriteButton audioButtonId="test" isFavorited={false} size="default" />);
 
 			const button = screen.getByLabelText("お気に入りに追加");
 
@@ -129,14 +110,7 @@ describe("FavoriteButton - Touch Optimization", () => {
 			const sizes = ["sm", "default", "lg"] as const;
 
 			sizes.forEach((size) => {
-				render(
-					<FavoriteButton
-						audioButtonId="test"
-						isFavorited={false}
-						size={size}
-						isAuthenticated={true}
-					/>,
-				);
+				render(<FavoriteButton audioButtonId="test" isFavorited={false} size={size} />);
 
 				const icon = document.querySelector("svg");
 				expect(icon).toBeInTheDocument();
@@ -153,14 +127,7 @@ describe("FavoriteButton - Touch Optimization", () => {
 
 	describe("Touch Interaction", () => {
 		it("should be accessible for touch interaction", async () => {
-			render(
-				<FavoriteButton
-					audioButtonId="test"
-					isFavorited={false}
-					size="default"
-					isAuthenticated={true}
-				/>,
-			);
+			render(<FavoriteButton audioButtonId="test" isFavorited={false} size="default" />);
 
 			const button = screen.getByLabelText("お気に入りに追加");
 
@@ -181,14 +148,7 @@ describe("FavoriteButton - Touch Optimization", () => {
 		it("should handle mobile touch interactions correctly", () => {
 			mockViewport(375, 667); // Mobile
 
-			render(
-				<FavoriteButton
-					audioButtonId="test"
-					isFavorited={false}
-					size="sm"
-					isAuthenticated={true}
-				/>,
-			);
+			render(<FavoriteButton audioButtonId="test" isFavorited={false} size="sm" />);
 
 			const button = screen.getByLabelText("お気に入りに追加");
 
@@ -209,12 +169,7 @@ describe("FavoriteButton - Touch Optimization", () => {
 		it("should show different visual states for favorited/unfavorited", () => {
 			// Unfavorited state
 			const { rerender } = render(
-				<FavoriteButton
-					audioButtonId="test"
-					isFavorited={false}
-					size="default"
-					isAuthenticated={true}
-				/>,
+				<FavoriteButton audioButtonId="test" isFavorited={false} size="default" />,
 			);
 
 			let button = screen.getByLabelText("お気に入りに追加");
@@ -222,14 +177,7 @@ describe("FavoriteButton - Touch Optimization", () => {
 			expect(button).toHaveClass("border", "bg-background");
 
 			// Favorited state
-			rerender(
-				<FavoriteButton
-					audioButtonId="test"
-					isFavorited={true}
-					size="default"
-					isAuthenticated={true}
-				/>,
-			);
+			rerender(<FavoriteButton audioButtonId="test" isFavorited={true} size="default" />);
 
 			button = screen.getByLabelText("お気に入りから削除");
 			// heart は status と同型の semantic role（生スケール直書きを避ける）。お気に入り active の面色
@@ -241,12 +189,7 @@ describe("FavoriteButton - Touch Optimization", () => {
 
 			sizes.forEach((size) => {
 				const { container } = render(
-					<FavoriteButton
-						audioButtonId="test"
-						isFavorited={true}
-						size={size}
-						isAuthenticated={true}
-					/>,
+					<FavoriteButton audioButtonId="test" isFavorited={true} size={size} />,
 				);
 
 				const buttons = screen.getAllByLabelText("お気に入りから削除");
@@ -261,39 +204,20 @@ describe("FavoriteButton - Touch Optimization", () => {
 	describe("Accessibility", () => {
 		it("should have proper ARIA labels", () => {
 			const { rerender } = render(
-				<FavoriteButton
-					audioButtonId="test"
-					isFavorited={false}
-					size="default"
-					isAuthenticated={true}
-				/>,
+				<FavoriteButton audioButtonId="test" isFavorited={false} size="default" />,
 			);
 
 			// Unfavorited state
 			expect(screen.getByLabelText("お気に入りに追加")).toBeInTheDocument();
 
 			// Favorited state
-			rerender(
-				<FavoriteButton
-					audioButtonId="test"
-					isFavorited={true}
-					size="default"
-					isAuthenticated={true}
-				/>,
-			);
+			rerender(<FavoriteButton audioButtonId="test" isFavorited={true} size="default" />);
 
 			expect(screen.getByLabelText("お気に入りから削除")).toBeInTheDocument();
 		});
 
 		it("should be keyboard navigable", () => {
-			render(
-				<FavoriteButton
-					audioButtonId="test"
-					isFavorited={false}
-					size="default"
-					isAuthenticated={true}
-				/>,
-			);
+			render(<FavoriteButton audioButtonId="test" isFavorited={false} size="default" />);
 
 			const button = screen.getByLabelText("お気に入りに追加");
 
@@ -308,14 +232,7 @@ describe("FavoriteButton - Touch Optimization", () => {
 		});
 
 		it("should handle unauthenticated state properly", () => {
-			render(
-				<FavoriteButton
-					audioButtonId="test"
-					isFavorited={false}
-					size="default"
-					isAuthenticated={false}
-				/>,
-			);
+			render(<FavoriteButton audioButtonId="test" isFavorited={false} size="default" />);
 
 			// ログインが必要な状態でも適切なサイズを保持
 			const button = screen.getByLabelText("お気に入りに追加");
@@ -329,14 +246,7 @@ describe("FavoriteButton - Touch Optimization", () => {
 
 			const TestWrapper = ({ isFavorited }: { isFavorited: boolean }) => {
 				renderSpy();
-				return (
-					<FavoriteButton
-						audioButtonId="test"
-						isFavorited={isFavorited}
-						size="default"
-						isAuthenticated={true}
-					/>
-				);
+				return <FavoriteButton audioButtonId="test" isFavorited={isFavorited} size="default" />;
 			};
 
 			const { rerender } = render(<TestWrapper isFavorited={false} />);

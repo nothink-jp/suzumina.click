@@ -287,22 +287,50 @@ const nextConfig = {
 					},
 				],
 			},
-			// 公開コンテンツの「詳細」ページ（:path+ ＝ 1 セグメント以上）は private, no-store。
-			// 3 詳細とも per-user 状態を SSR に焼く設計のため、public だと共有キャッシュ漏洩になる:
-			//   - /buttons/[id]: お気に入り/高低評価を SSR に焼く（SPR-222）。/edit・/create は認証必須
-			//   - /works/[id]:   作品評価（星/10選）を getWorkEvaluation で SSR に焼く
-			//   - /videos/[id]:  関連音声ボタンのお気に入り/高低評価を SSR に焼く（RelatedAudioButtonsServer）
-			// いずれも leaf の client が実状態を取り直さない（自己補正しない）ため、
-			// 共有キャッシュに乗ると User A の状態が User B に配信されうる。
-			// :path+ は一覧（/buttons・/videos・/works）に一致しないため public ルールと競合しない。
-			// これは stopgap で SPR-221 の詳細ページキャッシュを一時的に諦める取引。
-			// 恒久解は per-user を client island へ隔離して public に戻す（SPR-223 系）。
+			// videos/works の「詳細」は per-user 状態を SSR に焼くため private, no-store（SPR-226 stopgap）:
+			//   - /works/[id]:  作品評価（星/10選）を getWorkEvaluation で SSR に焼く
+			//   - /videos/[id]: 関連音声ボタンのお気に入り/高低評価を SSR に焼く（RelatedAudioButtonsServer）
+			// leaf の client が実状態を取り直さないため、public だと User A の状態が User B に漏れる。
+			// 恒久解（per-user を client island へ隔離して public に戻す）は SPR-226 の恒久解節。
 			{
-				source: "/(buttons|videos|works)/:path+",
+				source: "/(videos|works)/:path+",
 				headers: [
 					{
 						key: "Cache-Control",
 						value: "private, no-store",
+					},
+				],
+			},
+			// buttons の認証必須ページは CDN エッジでキャッシュさせない:
+			//   - /buttons/create:   音声ボタン作成（ProtectedRoute）
+			//   - /buttons/[id]/edit: 音声ボタン編集（認証必須）
+			{
+				source: "/buttons/create",
+				headers: [
+					{
+						key: "Cache-Control",
+						value: "private, no-store",
+					},
+				],
+			},
+			{
+				source: "/buttons/:id/edit",
+				headers: [
+					{
+						key: "Cache-Control",
+						value: "private, no-store",
+					},
+				],
+			},
+			// buttons の「詳細」は SPR-223 で純公開 shell + client island 化し session を SSR で読まなくなったため
+			// public へ復帰（SPR-222 stopgap を解除し SPR-221 のエッジキャッシュ効果を回復）。
+			// :id((?!create$)[^/]+) ＝ 1 セグメント詳細から create を除外し、create-private と二重一致させない。
+			{
+				source: "/buttons/:id((?!create$)[^/]+)",
+				headers: [
+					{
+						key: "Cache-Control",
+						value: "public, s-maxage=120, stale-while-revalidate=300",
 					},
 				],
 			},

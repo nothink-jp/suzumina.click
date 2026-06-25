@@ -6,28 +6,30 @@ import { Heart } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { toggleFavoriteAction } from "@/actions/favorites";
+import { getFavoritesStatusAction, toggleFavoriteAction } from "@/actions/favorites";
+import { useSession } from "@/lib/auth/client";
 
 interface FavoriteButtonProps {
 	audioButtonId: string;
-	isFavorited: boolean;
+	isFavorited?: boolean;
 	favoriteCount?: number;
 	showCount?: boolean;
 	size?: "sm" | "default" | "lg";
 	className?: string;
-	isAuthenticated?: boolean;
 }
 
 export function FavoriteButton({
 	audioButtonId,
-	isFavorited: initialIsFavorited,
+	isFavorited: initialIsFavorited = false,
 	favoriteCount = 0,
 	showCount = true,
 	size = "default",
 	className,
-	isAuthenticated = false,
 }: FavoriteButtonProps) {
 	const router = useRouter();
+	// 認証状態は client の session から解決（per-user 状態を SSR に焼かない・SPR-223）
+	const user = useSession();
+	const isAuthenticated = !!user;
 	const [isPending, startTransition] = useTransition();
 	const [isFavorited, setIsFavorited] = useState(initialIsFavorited);
 
@@ -35,6 +37,19 @@ export function FavoriteButton({
 	useEffect(() => {
 		setIsFavorited(initialIsFavorited);
 	}, [initialIsFavorited]);
+
+	// お気に入り状態は SSR に焼かず、認証済みなら client で自分の状態を取得する（純公開 shell・SPR-223）。
+	// これにより詳細ページを共有キャッシュ可（public）に戻しても A の状態が B に漏れない。
+	useEffect(() => {
+		if (!isAuthenticated) return;
+		let cancelled = false;
+		void getFavoritesStatusAction([audioButtonId]).then((statusMap) => {
+			if (!cancelled) setIsFavorited(statusMap.get(audioButtonId) ?? false);
+		});
+		return () => {
+			cancelled = true;
+		};
+	}, [audioButtonId, isAuthenticated]);
 
 	const handleToggle = () => {
 		if (!isAuthenticated) {
