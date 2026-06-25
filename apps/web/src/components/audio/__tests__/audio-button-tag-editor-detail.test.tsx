@@ -35,36 +35,28 @@ describe("AudioButtonTagEditorDetail", () => {
 			render(<AudioButtonTagEditorDetail {...defaultProps} />);
 
 			expect(screen.queryByText("編集")).not.toBeInTheDocument();
-			expect(
-				screen.getByText("※ タグを編集するには、ボタンの作成者としてログインする必要があります"),
-			).toBeInTheDocument();
+			expect(screen.getByText("※ タグを編集するにはログインが必要です")).toBeInTheDocument();
 		});
 
 		it("作成者には編集権限がある", () => {
 			render(<AudioButtonTagEditorDetail {...defaultProps} />);
 
 			expect(screen.getByText("編集")).toBeInTheDocument();
-			expect(
-				screen.queryByText("※ タグを編集するには、ボタンの作成者としてログインする必要があります"),
-			).not.toBeInTheDocument();
+			expect(screen.queryByText("※ タグを編集するにはログインが必要です")).not.toBeInTheDocument();
 		});
 
 		it("管理者には編集権限がある", () => {
 			render(<AudioButtonTagEditorDetail {...defaultProps} />);
 
 			expect(screen.getByText("編集")).toBeInTheDocument();
-			expect(
-				screen.queryByText("※ タグを編集するには、ボタンの作成者としてログインする必要があります"),
-			).not.toBeInTheDocument();
+			expect(screen.queryByText("※ タグを編集するにはログインが必要です")).not.toBeInTheDocument();
 		});
 
 		it("ログインユーザーなら誰でも編集権限がある", () => {
 			render(<AudioButtonTagEditorDetail {...defaultProps} />);
 
 			expect(screen.getByText("編集")).toBeInTheDocument();
-			expect(
-				screen.queryByText("※ タグを編集するには、ボタンの作成者としてログインする必要があります"),
-			).not.toBeInTheDocument();
+			expect(screen.queryByText("※ タグを編集するにはログインが必要です")).not.toBeInTheDocument();
 		});
 	});
 

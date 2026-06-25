@@ -224,7 +224,7 @@ export function AudioButtonTagEditorDetail({
 
 				{!canEdit && !isEditing && (
 					<p className="text-xs text-muted-foreground mt-2 pt-2 border-t">
-						※ タグを編集するには、ボタンの作成者としてログインする必要があります
+						※ タグを編集するにはログインが必要です
 					</p>
 				)}
 			</CardContent>
