@@ -25,14 +25,24 @@ export function WorkEvaluation({ workId, workTitle }: WorkEvaluationProps) {
 	const [isPending, startTransition] = useTransition();
 	const [showTop10Modal, setShowTop10Modal] = useState(false);
 	const [pendingRank, setPendingRank] = useState<number | null>(null);
+	// 初回 self-fetch 中はスケルトンを出し、「評価なし → 実評価」のチラつきを防ぐ（SPR-226 レビュー minor）。
+	// 既定 true で、user 解決後に評価が描画されるまでの空状態フラッシュを避ける。
+	const [isInitialFetching, setIsInitialFetching] = useState(true);
 
 	// per-user の評価は SSR に焼かず、認証済みなら client で自分の評価を取得する（純公開 shell・SPR-226）。
 	// これにより /works/[id] を共有キャッシュ可（public）へ戻しても A の評価が B に漏れない。
 	useEffect(() => {
-		if (!user?.discordId) return;
+		if (!user?.discordId) {
+			setIsInitialFetching(false);
+			return;
+		}
 		let cancelled = false;
+		setIsInitialFetching(true);
 		void getWorkEvaluation(workId).then((result) => {
-			if (!cancelled) setEvaluation(result);
+			if (!cancelled) {
+				setEvaluation(result);
+				setIsInitialFetching(false);
+			}
 		});
 		return () => {
 			cancelled = true;
@@ -119,6 +129,16 @@ export function WorkEvaluation({ workId, workTitle }: WorkEvaluationProps) {
 					</button>
 					が必要です
 				</p>
+			</div>
+		);
+	}
+
+	// 初回 self-fetch 中はスケルトン（「評価なし」状態の誤表示を避ける・SPR-226 レビュー minor）
+	if (isInitialFetching) {
+		return (
+			<div className="rounded-lg border border-border bg-white p-4" aria-busy="true">
+				<div className="h-5 w-24 animate-pulse rounded bg-muted" />
+				<div className="mt-3 h-24 animate-pulse rounded-md bg-muted" />
 			</div>
 		);
 	}

@@ -79,14 +79,15 @@ describe("WorkEvaluation", () => {
 		expect(screen.getByText("ログイン")).toBeInTheDocument();
 	});
 
-	it("renders evaluation options when authenticated", () => {
+	it("renders evaluation options when authenticated", async () => {
 		render(
 			<SessionProvider session={mockSession}>
 				<WorkEvaluation {...defaultProps} />
 			</SessionProvider>,
 		);
 
-		expect(screen.getByText("作品の評価")).toBeInTheDocument();
+		// 初回 self-fetch 完了後に評価 UI が描画される（SPR-226 skeleton）
+		expect(await screen.findByText("作品の評価")).toBeInTheDocument();
 		expect(screen.getByText("10選に追加")).toBeInTheDocument();
 		expect(screen.getByText("星評価")).toBeInTheDocument();
 		expect(screen.getByText("NG登録")).toBeInTheDocument();
@@ -134,6 +135,8 @@ describe("WorkEvaluation", () => {
 			</SessionProvider>,
 		);
 
+		// 評価 UI の描画を待つ（初回 self-fetch 完了後・SPR-226 skeleton）
+		await screen.findByText("作品の評価");
 		// Find all buttons in the component
 		const allButtons = screen.getAllByRole("button");
 
@@ -196,7 +199,7 @@ describe("WorkEvaluation", () => {
 			</SessionProvider>,
 		);
 
-		const ngButton = screen.getByText("NG登録").closest("button");
+		const ngButton = (await screen.findByText("NG登録")).closest("button");
 		fireEvent.click(ngButton!);
 
 		await waitFor(() => {
@@ -215,7 +218,7 @@ describe("WorkEvaluation", () => {
 				</SessionProvider>,
 			);
 
-			const top10Button = screen.getByText("10選に追加").closest("button");
+			const top10Button = (await screen.findByText("10選に追加")).closest("button");
 			fireEvent.click(top10Button!);
 
 			await waitFor(() => {
@@ -241,7 +244,7 @@ describe("WorkEvaluation", () => {
 				</SessionProvider>,
 			);
 
-			const top10Button = screen.getByText("10選に追加").closest("button");
+			const top10Button = (await screen.findByText("10選に追加")).closest("button");
 			fireEvent.click(top10Button!);
 
 			// Wait for the modal to load data and render content
@@ -318,7 +321,7 @@ describe("WorkEvaluation", () => {
 			);
 
 			// Open modal
-			const top10Button = screen.getByText("10選に追加").closest("button");
+			const top10Button = (await screen.findByText("10選に追加")).closest("button");
 			fireEvent.click(top10Button!);
 
 			// Wait for modal and content to load
@@ -375,7 +378,7 @@ describe("WorkEvaluation", () => {
 				</SessionProvider>,
 			);
 
-			const top10Button = screen.getByText("10選に追加").closest("button");
+			const top10Button = (await screen.findByText("10選に追加")).closest("button");
 			fireEvent.click(top10Button!);
 
 			await waitFor(() => {

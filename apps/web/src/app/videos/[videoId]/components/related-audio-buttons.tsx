@@ -2,7 +2,6 @@
 
 import type { AudioButton, VideoPlainObject } from "@suzumina.click/shared-types";
 import { canCreateAudioButton } from "@suzumina.click/shared-types";
-import { LoadingSkeleton } from "@suzumina.click/ui/components/custom/loading-skeleton";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { ArrowRight, Plus } from "lucide-react";
 import Link from "next/link";
@@ -16,7 +15,6 @@ interface RelatedAudioButtonsProps {
 	totalCount: number;
 	videoId: string;
 	video: VideoPlainObject;
-	loading?: boolean;
 }
 
 export function RelatedAudioButtons({
@@ -24,7 +22,6 @@ export function RelatedAudioButtons({
 	totalCount,
 	videoId,
 	video,
-	loading = false,
 }: RelatedAudioButtonsProps) {
 	const user = useSession();
 	// per-user 状態（お気に入り/高低評価）は SSR に焼かず client で一括取得する（純公開 shell・SPR-226）。
@@ -32,9 +29,6 @@ export function RelatedAudioButtons({
 	const audioButtonIds = useMemo(() => audioButtons.map((button) => button.id), [audioButtons]);
 	const { likeDislikeStatuses, favoriteStatuses } = useAudioButtonStatuses(audioButtonIds);
 	const canCreateButton = user && canCreateAudioButton(video) && video.status?.embeddable !== false;
-	if (loading) {
-		return <LoadingSkeleton count={3} height={60} />;
-	}
 
 	if (audioButtons.length === 0) {
 		return (
