@@ -77,14 +77,17 @@ resource "cloudflare_ruleset" "cache_rules" {
   }
 
   # 1b. 個人化/認証ページ: キャッシュ完全無効（多重防御 / SPR-221）
-  #   下の #5 公開コンテンツ rule は respect_origin で origin の no-store を尊重するため
-  #   個人化ページは本来キャッシュされないが、念のため個人化セクションを明示バイパスする。
+  #   #5 公開コンテンツ rule は respect_origin で origin の no-store を尊重するため個人化ページは
+  #   本来キャッシュされない（Cloudflare は HTML をデフォルトでキャッシュしないことも実測で確認）が、
+  #   念のため明示バイパスする。/buttons/ を含めるのは /buttons/[id] が per-user 状態を SSR に焼くのに
+  #   public を返す footgun（SPR-222）のため＝origin ヘッダを信用せず CDN 側で明示除外（多重防御）。
+  #   /buttons 一覧は末尾スラッシュ無しなのでここに一致せず #5 でキャッシュされる。
   rules {
     action = "set_cache_settings"
     action_parameters {
       cache = false
     }
-    expression  = "(starts_with(http.request.uri.path, \"/settings\") or starts_with(http.request.uri.path, \"/favorites\") or starts_with(http.request.uri.path, \"/users\") or starts_with(http.request.uri.path, \"/auth\"))"
+    expression  = "(starts_with(http.request.uri.path, \"/settings\") or starts_with(http.request.uri.path, \"/favorites\") or starts_with(http.request.uri.path, \"/users\") or starts_with(http.request.uri.path, \"/auth\") or starts_with(http.request.uri.path, \"/buttons/\"))"
     description = "個人化/認証: キャッシュ無効"
     enabled     = true
   }
@@ -189,7 +192,8 @@ resource "cloudflare_ruleset" "cache_rules" {
         mode = "respect_origin"
       }
     }
-    expression  = "(starts_with(http.request.uri.path, \"/works\") or starts_with(http.request.uri.path, \"/videos\") or starts_with(http.request.uri.path, \"/circles\") or starts_with(http.request.uri.path, \"/creators\") or http.request.uri.path eq \"/buttons\")"
+    # 前方一致を「ちょうど一致 or サブパス」に厳密化し、将来 /workspace 等が誤マッチするのを防ぐ（minor）
+    expression  = "(http.request.uri.path eq \"/works\" or starts_with(http.request.uri.path, \"/works/\") or http.request.uri.path eq \"/videos\" or starts_with(http.request.uri.path, \"/videos/\") or http.request.uri.path eq \"/circles\" or starts_with(http.request.uri.path, \"/circles/\") or http.request.uri.path eq \"/creators\" or starts_with(http.request.uri.path, \"/creators/\") or http.request.uri.path eq \"/buttons\")"
     description = "公開コンテンツ: origin Cache-Control 尊重でエッジキャッシュ（/buttons は一覧のみ）"
     enabled     = true
   }
