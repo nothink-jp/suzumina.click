@@ -12,6 +12,7 @@ import {
 	removeCreatorMappings,
 	updateCreatorWorkMapping,
 } from "../creator-firestore";
+import { resetCreatorRecomputeQueue, takeQueuedCreators } from "../creator-recompute-queue";
 
 // Firestoreモジュールのモック（モック定義より先に記述）
 vi.mock("../../../infrastructure/database/firestore", () => {
@@ -118,6 +119,9 @@ describe("creator-firestore", () => {
 
 		// コミット成功
 		mockCommit.mockResolvedValue(undefined);
+
+		// SPR-225 Stage 1: 各テストを独立させるため recompute キューをクリア
+		resetCreatorRecomputeQueue();
 	});
 
 	afterEach(() => {
@@ -271,6 +275,119 @@ describe("creator-firestore", () => {
 			expect(result.success).toBe(false);
 			expect(result.error).toBe("Commit failed");
 			expect(logger.error).toHaveBeenCalled();
+		});
+	});
+
+	describe("updateCreatorWorkMapping recompute キュー連携 (SPR-225 Stage 1)", () => {
+		// 既存マッピングなしを返す collectionGroup query モック
+		const mockNoExistingMappings = () => {
+			mockCollectionGroup.mockReturnValueOnce({ where: mockWhere });
+			mockWhere.mockReturnValueOnce({ get: mockGet });
+			mockGet.mockResolvedValueOnce({ docs: [] });
+		};
+
+		// 既存マッピングを返す collectionGroup query モック
+		const mockExistingMappings = (
+			entries: { creatorId: string; roles: string[]; circleId?: string }[],
+		) => {
+			mockCollectionGroup.mockReturnValueOnce({ where: mockWhere });
+			mockWhere.mockReturnValueOnce({ get: mockGet });
+			mockGet.mockResolvedValueOnce({
+				docs: entries.map((e) => ({
+					ref: { parent: { parent: { id: e.creatorId } } },
+					data: () => ({ workId: "RJ1", roles: e.roles, circleId: e.circleId ?? "RG1" }),
+				})),
+			});
+		};
+
+		it("新規 creator は全員キューに積まれ、inline recompute（update）は走らない", async () => {
+			mockNoExistingMappings();
+			mockGet.mockResolvedValue({ exists: false, data: () => null });
+
+			const result = await updateCreatorWorkMapping(
+				{
+					workno: "RJ1",
+					maker_id: "RG1",
+					creaters: {
+						voice_by: [
+							{ id: "VA001", name: "声優A" },
+							{ id: "VA002", name: "声優B" },
+						],
+					},
+				} as any,
+				"RJ1",
+			);
+
+			expect(result.success).toBe(true);
+			expect(new Set(takeQueuedCreators())).toEqual(new Set(["VA001", "VA002"]));
+			// per-work の inline recompute は廃止 → creator doc の update は呼ばれない
+			expect(mockUpdate).not.toHaveBeenCalled();
+		});
+
+		it("roles 不変（name のみ変更）はキューに積まない", async () => {
+			mockExistingMappings([{ creatorId: "VA001", roles: ["voice"] }]);
+			mockGet.mockResolvedValueOnce({
+				exists: true,
+				data: () => ({ creatorId: "VA001", name: "声優A" }),
+			});
+
+			const result = await updateCreatorWorkMapping(
+				{
+					workno: "RJ1",
+					maker_id: "RG1",
+					creaters: { voice_by: [{ id: "VA001", name: "声優A更新" }] },
+				} as any,
+				"RJ1",
+			);
+
+			expect(result.success).toBe(true);
+			expect(takeQueuedCreators()).toEqual([]);
+		});
+
+		it("roles が変わった creator はキューに積む", async () => {
+			mockExistingMappings([{ creatorId: "VA001", roles: ["voice"] }]);
+			mockGet.mockResolvedValue({
+				exists: true,
+				data: () => ({ creatorId: "VA001", name: "声優A" }),
+			});
+
+			const result = await updateCreatorWorkMapping(
+				{
+					workno: "RJ1",
+					maker_id: "RG1",
+					creaters: {
+						voice_by: [{ id: "VA001", name: "声優A" }],
+						scenario_by: [{ id: "VA001", name: "声優A" }],
+					},
+				} as any,
+				"RJ1",
+			);
+
+			expect(result.success).toBe(true);
+			expect(takeQueuedCreators()).toEqual(["VA001"]);
+		});
+
+		it("API から消えた creator（関連削除）はキューに積む。roles 不変の継続 creator は積まない", async () => {
+			mockExistingMappings([
+				{ creatorId: "VA001", roles: ["voice"] },
+				{ creatorId: "VA002", roles: ["illustration"] },
+			]);
+			mockGet.mockResolvedValue({
+				exists: true,
+				data: () => ({ creatorId: "VA001", name: "声優A" }),
+			});
+
+			const result = await updateCreatorWorkMapping(
+				{
+					workno: "RJ1",
+					maker_id: "RG1",
+					creaters: { voice_by: [{ id: "VA001", name: "声優A" }] },
+				} as any,
+				"RJ1",
+			);
+
+			expect(result.success).toBe(true);
+			expect(takeQueuedCreators()).toEqual(["VA002"]);
 		});
 	});
 

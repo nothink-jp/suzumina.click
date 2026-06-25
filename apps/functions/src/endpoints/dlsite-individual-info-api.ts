@@ -12,6 +12,11 @@ import type {
 	WorkDocument,
 } from "@suzumina.click/shared-types";
 import firestore, { Timestamp } from "../infrastructure/database/firestore";
+import { recomputeCreatorStats } from "../services/dlsite/creator-firestore";
+import {
+	resetCreatorRecomputeQueue,
+	takeQueuedCreators,
+} from "../services/dlsite/creator-recompute-queue";
 import {
 	getCreatorSyncMetrics,
 	resetCreatorSyncMetrics,
@@ -533,11 +538,42 @@ async function prepareNewBatchProcessing(metadata: CollectionMetadata): Promise<
 }
 
 /**
+ * SPR-225 Stage 1: この run で stat 変化のあった creator を 1 回ずつ recompute する。
+ *
+ * `updateCreatorWorkMapping` が per-work で積んだ変更 creator を run 末尾で dedup 取り出しし、
+ * creator ごと 1 回だけ `recomputeCreatorStats`（全作品スキャン）を実行する。完走・中断・例外の
+ * いずれの経路でも呼ばれる前提（finally）。recompute 失敗は集計の denormalize ズレに留まり、
+ * 週次 `checkDataIntegrity` でも修復されるためログのみで握る。
+ */
+async function recomputeQueuedCreators(): Promise<void> {
+	const creatorIds = takeQueuedCreators();
+	if (creatorIds.length === 0) {
+		return;
+	}
+
+	const results = await Promise.allSettled(
+		creatorIds.map((creatorId) => recomputeCreatorStats(creatorId)),
+	);
+	// 失敗時はどの creator が denormalize ズレのまま残ったかを ID で残す
+	// （デプロイ直後の観測で追えるように。週次 cron で最終的に修復される）。
+	const failedIds = results
+		.map((r, i) => (r.status === "rejected" ? creatorIds[i] : undefined))
+		.filter((id): id is string => id !== undefined);
+	logger.info("creator集計recompute(SPR-225 Stage1・dedup後)", {
+		対象creator数: creatorIds.length,
+		失敗: failedIds.length,
+		...(failedIds.length > 0 && { 失敗creatorIds: failedIds }),
+	});
+}
+
+/**
  * 統合データ収集処理の実行
  */
 async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 	// SPR-225 Stage 0: creator 同期 reads の内訳をこの run の分だけ計測する（挙動は変えない）。
 	resetCreatorSyncMetrics();
+	// SPR-225 Stage 1: 変更 creator の recompute キューを run 開始でクリアする。
+	resetCreatorRecomputeQueue();
 
 	try {
 		// メタデータから処理状態を確認
@@ -626,9 +662,12 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 			error: error instanceof Error ? error.message : "不明なエラー",
 		};
 	} finally {
-		// この run の creator 同期 reads 内訳を 1 行で出す（type=QUERY の主因を分解）。
-		// 完走・中断・例外いずれの経路でも必ず記録する。Cloud Monitoring の絞り込みキーにする
-		// ため、メッセージは Stage を含めない恒久キーにする（Stage 1 以降も同じキーに値が流れる）。
+		// SPR-225 Stage 1: 変更のあった creator を run 末尾で creator ごと 1 回だけ recompute。
+		// 中断/例外時も、それまでに処理済みのバッチ分は recompute される（次 run へ持ち越さない）。
+		await recomputeQueuedCreators();
+		// この run の creator 同期 reads 内訳を 1 行で出す（type=QUERY の主因を分解）。recompute(drain)
+		// の読み取りも計上するため recompute の後に出す。Cloud Monitoring の絞り込みキーにするため、
+		// メッセージは Stage を含めない恒久キーにする（Stage 1 以降も同じキーに値が流れる）。
 		logger.info("creator同期reads計測", { ...getCreatorSyncMetrics() });
 	}
 }
