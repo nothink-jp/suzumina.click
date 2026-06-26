@@ -21,7 +21,7 @@ import {
 	recordRecompute,
 	recordRelationDeletes,
 	recordRelationWrites,
-} from "./creator-sync-metrics";
+} from "./dlsite-read-metrics";
 
 const CREATORS_COLLECTION = "creators";
 
