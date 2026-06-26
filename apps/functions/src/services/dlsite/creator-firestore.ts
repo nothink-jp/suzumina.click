@@ -14,6 +14,7 @@ import type {
 import { isValidCreatorId } from "@suzumina.click/shared-types";
 import firestore, { Timestamp } from "../../infrastructure/database/firestore";
 import * as logger from "../../shared/logger";
+import { enqueueChangedCreators } from "./creator-recompute-queue";
 import {
 	recordCreatorExistenceLookup,
 	recordExistingMappingQuery,
@@ -198,7 +199,119 @@ async function getExistingCreatorMappings(
 }
 
 /**
+ * 2 つの役割集合が（順不同で）同一かを判定する。
+ *
+ * roles は重複なし（{@link addOrUpdateCreatorMapping} で集約済み）の前提なので、
+ * 長さ一致 + 片側包含で集合一致を判定できる。
+ */
+function isSameRoleSet(a: CreatorType[], b: CreatorType[]): boolean {
+	if (a.length !== b.length) {
+		return false;
+	}
+	const setA = new Set(a);
+	return b.every((role) => setA.has(role));
+}
+
+type WorkBatch = ReturnType<typeof firestore.batch>;
+
+/**
+ * API 由来の新マッピングを batch に書き込み、stat 影響変化のあった creator を集める。
+ *
+ * 副作用: `processedCreators` に処理済み creatorId を、`changedCreators` に stat 影響変化
+ * （新規関連 or roles 変化）のあった creatorId を追加する。
+ */
+async function applyNewCreatorMappings(
+	batch: WorkBatch,
+	workId: string,
+	circleId: string,
+	newMappings: Map<string, ExtractedCreator>,
+	existingMappings: Map<string, CreatorWorkRelation>,
+	processedCreators: Set<string>,
+	changedCreators: Set<string>,
+): Promise<void> {
+	for (const [creatorId, mapping] of newMappings) {
+		const creatorRef = firestore.collection(CREATORS_COLLECTION).doc(creatorId);
+		const mappingRef = creatorRef.collection("works").doc(workId);
+
+		// クリエイター基本情報の更新（merge: true で部分更新）
+		const creatorData: Partial<CreatorDocument> = {
+			creatorId,
+			name: mapping.name,
+			updatedAt: Timestamp.now(),
+		};
+
+		// 新規作成の場合はcreatedAtも設定
+		const creatorDoc = await creatorRef.get();
+		recordCreatorExistenceLookup();
+		if (!creatorDoc.exists) {
+			creatorData.createdAt = Timestamp.now();
+		}
+
+		batch.set(creatorRef, creatorData, { merge: true });
+
+		// 作品との関連情報を設定
+		const relationData: CreatorWorkRelation = {
+			workId,
+			roles: mapping.roles,
+			circleId,
+			updatedAt: Timestamp.now(),
+		};
+
+		batch.set(mappingRef, relationData);
+
+		// stat 影響変化の検出: 新規関連 or roles が変わったときのみ recompute 対象。
+		// circleId/name のみの変更は workCount/types/primaryRole に影響しないため対象外。
+		const existing = existingMappings.get(creatorId);
+		if (!existing || !isSameRoleSet(existing.roles, mapping.roles)) {
+			changedCreators.add(creatorId);
+		}
+
+		processedCreators.add(creatorId);
+	}
+}
+
+/**
+ * API から消えた creator の関連を batch から削除し、stat 影響変化として集める。
+ *
+ * @returns 削除した関連の件数（計測は commit 成功後に呼び出し側で記録する）
+ */
+function deleteStaleCreatorMappings(
+	batch: WorkBatch,
+	workId: string,
+	existingMappings: Map<string, CreatorWorkRelation>,
+	processedCreators: Set<string>,
+	changedCreators: Set<string>,
+): number {
+	let deleted = 0;
+	for (const [creatorId] of existingMappings) {
+		if (processedCreators.has(creatorId)) {
+			continue;
+		}
+		const mappingRef = firestore
+			.collection(CREATORS_COLLECTION)
+			.doc(creatorId)
+			.collection("works")
+			.doc(workId);
+
+		batch.delete(mappingRef);
+		// 関連削除は workCount/types を変えるため recompute 対象。
+		changedCreators.add(creatorId);
+		deleted += 1;
+
+		logger.debug(`クリエイターマッピング削除: ${creatorId} - ${workId}`);
+	}
+	return deleted;
+}
+
+/**
  * クリエイターと作品のマッピングを更新（差分更新）
+ *
+ * SPR-225 Stage 1: relation の書き込みは従来どおり行うが、**creator 集計（workCount/types/
+ * primaryRole）の再計算はこの関数では行わない**。stat に影響する mapping 変化（relation の
+ * 追加/削除/roles 変化）のあった creator だけを run-scoped キューへ enqueue し、エンドポイントが
+ * run 末尾で creator ごと 1 回だけ recompute する（per-work・dedup なしの全スキャン反復＝
+ * SPR-224 の 6k〜60k QUERY を解消）。name のみの変更は relation/creator doc を書き直すが
+ * stat には影響しないため enqueue しない。
  *
  * @param apiData DLsite APIレスポンス
  * @param workId 作品ID
@@ -211,94 +324,47 @@ export async function updateCreatorWorkMapping(
 	try {
 		const batch = firestore.batch();
 		const processedCreators = new Set<string>();
+		// stat（workCount/types/primaryRole）に影響する mapping 変化のあった creator。
+		// run 末尾で 1 回ずつ recompute するためにキューへ積む（per-work recompute は廃止）。
+		const changedCreators = new Set<string>();
 
 		// 現在のマッピングを取得
 		const existingMappings = await getExistingCreatorMappings(workId);
 
 		// APIデータから新しいマッピングを構築
 		const newMappings = extractCreatorMappings(apiData);
+		const circleId = apiData.maker_id || "UNKNOWN";
 
-		// 追加・更新
-		for (const [creatorId, mapping] of newMappings) {
-			const creatorRef = firestore.collection(CREATORS_COLLECTION).doc(creatorId);
-			const mappingRef = creatorRef.collection("works").doc(workId);
-
-			// クリエイター基本情報の更新（merge: true で部分更新）
-			const creatorData: Partial<CreatorDocument> = {
-				creatorId,
-				name: mapping.name,
-				updatedAt: Timestamp.now(),
-			};
-
-			// 新規作成の場合はcreatedAtも設定
-			const creatorDoc = await creatorRef.get();
-			recordCreatorExistenceLookup();
-			if (!creatorDoc.exists) {
-				creatorData.createdAt = Timestamp.now();
-			}
-
-			batch.set(creatorRef, creatorData, { merge: true });
-
-			// 作品との関連情報を設定
-			const relationData: CreatorWorkRelation = {
-				workId,
-				roles: mapping.roles,
-				circleId: apiData.maker_id || "UNKNOWN",
-				updatedAt: Timestamp.now(),
-			};
-
-			batch.set(mappingRef, relationData);
-
-			processedCreators.add(creatorId);
-		}
-
-		// 削除（APIデータに存在しないマッピング）
-		for (const [creatorId] of existingMappings) {
-			if (!processedCreators.has(creatorId)) {
-				const mappingRef = firestore
-					.collection(CREATORS_COLLECTION)
-					.doc(creatorId)
-					.collection("works")
-					.doc(workId);
-
-				batch.delete(mappingRef);
-
-				logger.debug(`クリエイターマッピング削除: ${creatorId} - ${workId}`);
-			}
-		}
+		// 追加・更新 → 削除（APIデータに存在しないマッピング）
+		await applyNewCreatorMappings(
+			batch,
+			workId,
+			circleId,
+			newMappings,
+			existingMappings,
+			processedCreators,
+			changedCreators,
+		);
+		const removedCount = deleteStaleCreatorMappings(
+			batch,
+			workId,
+			existingMappings,
+			processedCreators,
+			changedCreators,
+		);
 
 		await batch.commit();
 
-		const addedCount = processedCreators.size;
-		const removedCount =
-			existingMappings.size -
-			Array.from(existingMappings.keys()).filter((id) => processedCreators.has(id)).length;
-
 		// 計測（実変更の代理値）は commit 成功後に確定値で記録する。
 		// batch に積んだ直後に数えると commit 失敗時に「書き込んだ」と誤計上するため。
-		recordRelationWrites(addedCount);
+		recordRelationWrites(processedCreators.size);
 		recordRelationDeletes(removedCount);
 
-		if (addedCount > 0 || removedCount > 0) {
-			logger.debug(`クリエイターマッピング更新完了: ${workId}`, {
-				added: addedCount,
-				removed: removedCount,
-			});
-		}
-
-		// SPR-74 Phase B: 影響を受けたクリエイターの workCount/types/primaryRole を再計算。
-		// マッピングの batch.commit は成功しているので、失敗しても処理結果は success のまま。
-		const affectedCreators = new Set<string>([
-			...processedCreators,
-			...Array.from(existingMappings.keys()),
-		]);
-		const results = await Promise.allSettled(
-			Array.from(affectedCreators).map((creatorId) => recomputeCreatorStats(creatorId)),
-		);
-		const failed = results.filter((r) => r.status === "rejected").length;
-		if (failed > 0) {
-			logger.warn(`クリエイター集計再計算で ${failed} 件失敗`, { workId });
-		}
+		// SPR-225 Stage 1: 影響を受けた creator の workCount/types/primaryRole 再計算は
+		// ここでは行わず（per-work・dedup なしの全スキャン反復が SPR-224 の reads 主因だった）、
+		// stat 影響変化のあった creator だけを run-scoped キューへ積む。エンドポイントが run 末尾で
+		// creator ごと 1 回だけ recompute する（SPR-74 Phase B の denormalize 同期はそこで担保）。
+		enqueueChangedCreators(changedCreators);
 
 		return { success: true };
 	} catch (error) {
