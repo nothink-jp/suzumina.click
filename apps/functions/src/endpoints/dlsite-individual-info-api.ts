@@ -28,6 +28,7 @@ import {
 	processBatchUnifiedDLsiteData,
 } from "../services/dlsite/unified-data-processor";
 import { collectWorkIdsForProduction } from "../services/dlsite/work-id-collector";
+import { orderNewWorksFirst } from "../services/dlsite/work-ordering";
 import { chunkArray } from "../shared/array-utils";
 import { withClearedUndefined } from "../shared/firestore-write";
 import * as logger from "../shared/logger";
@@ -508,10 +509,17 @@ async function finalizeCompletedProcessing(
 
 /**
  * 新規バッチ処理の準備
+ *
+ * SPR-225 Stage 3a: 既存 works を読み、新作（`works` 不在）をサイクル先頭へ並べ替える。
+ * 最新作は scrape 順で末尾に来るため、並べ替えないと末尾バッチ（タイムアウトで次 tick 待ち）
+ * になり「登録直後にページに出ない」原因になる。先頭へ置くことで run がタイムアウトしても
+ * 最初のバッチで作成される。取得した `existingWorksMap` は後段の skip 判定で再利用する
+ * （二重読みを避ける）。
  */
 async function prepareNewBatchProcessing(metadata: CollectionMetadata): Promise<{
 	allWorkIds: string[];
 	batches: string[][];
+	existingWorksMap: Map<string, WorkDocument>;
 } | null> {
 	const currentWorkIds = await collectWorkIdsWithFallback();
 
@@ -531,10 +539,19 @@ async function prepareNewBatchProcessing(metadata: CollectionMetadata): Promise<
 		return null;
 	}
 
-	const batches = chunkArray(currentWorkIds, BATCH_SIZE);
-	await initializeNewBatchProcessing(currentWorkIds, batches);
+	// 既存 works を取得し、新作を先頭へ並べ替える（fast-lane）。
+	const existingWorksMap = await getExistingWorksMap(currentWorkIds);
+	const { ordered: allWorkIds, newCount } = orderNewWorksFirst(currentWorkIds, existingWorksMap);
+	logger.info("新規バッチ: 新作を先頭へ並べ替え（SPR-225 Stage 3a・fast-lane）", {
+		総数: currentWorkIds.length,
+		新作: newCount,
+		既存: currentWorkIds.length - newCount,
+	});
 
-	return { allWorkIds: currentWorkIds, batches };
+	const batches = chunkArray(allWorkIds, BATCH_SIZE);
+	await initializeNewBatchProcessing(allWorkIds, batches);
+
+	return { allWorkIds, batches, existingWorksMap };
 }
 
 /**
@@ -585,6 +602,8 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 		let allWorkIds: string[];
 		let batches: string[][];
 		let startBatch = 0;
+		// 新規処理時は prepareNewBatchProcessing で取得済みの既存マップを再利用する（二重読み回避）。
+		let preparedExistingWorksMap: Map<string, WorkDocument> | undefined;
 
 		if (continuationInfo.isContinuation === true) {
 			// 継続処理: 保存済みの作品IDを使用（作品ID収集をスキップして時間を節約）
@@ -607,13 +626,17 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 			}
 			allWorkIds = prepared.allWorkIds;
 			batches = prepared.batches;
+			preparedExistingWorksMap = prepared.existingWorksMap;
 		}
 
-		// 継続処理の場合は残りのバッチの作品IDのみを対象にする
-		const remainingWorkIds = startBatch > 0 ? batches.slice(startBatch).flat() : allWorkIds;
+		// この run が対象とする作品ID（継続時は残りバッチ分・新規時は全件＝startBatch=0）。
+		const remainingWorkIds = batches.slice(startBatch).flat();
 
-		// 既存データの取得（残りのバッチ分のみ）
-		const existingWorksMap = await getExistingWorksMap(remainingWorkIds);
+		// 既存 works マップ: 新規処理は prepareNewBatchProcessing で並べ替え時に取得済みのものを
+		// 再利用する（二重読み回避）。残りバッチ分を改めて取得するのは継続処理のときだけ
+		// （preparedExistingWorksMap が未設定なのは継続時のみ）。
+		const existingWorksMap =
+			preparedExistingWorksMap ?? (await getExistingWorksMap(remainingWorkIds));
 		logger.info(
 			`既存作品マップ取得完了: ${existingWorksMap.size}件（対象: ${remainingWorkIds.length}件）`,
 		);
