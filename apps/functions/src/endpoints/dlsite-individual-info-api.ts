@@ -17,11 +17,11 @@ import {
 	resetCreatorRecomputeQueue,
 	takeQueuedCreators,
 } from "../services/dlsite/creator-recompute-queue";
-import {
-	getCreatorSyncMetrics,
-	resetCreatorSyncMetrics,
-} from "../services/dlsite/creator-sync-metrics";
 import { getExistingWorksMap } from "../services/dlsite/dlsite-firestore";
+import {
+	getDlsiteReadMetrics,
+	resetDlsiteReadMetrics,
+} from "../services/dlsite/dlsite-read-metrics";
 import { batchFetchIndividualInfo } from "../services/dlsite/individual-info-api-client";
 import {
 	type ProcessingResult,
@@ -570,8 +570,8 @@ async function recomputeQueuedCreators(): Promise<void> {
  * 統合データ収集処理の実行
  */
 async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
-	// SPR-225 Stage 0: creator 同期 reads の内訳をこの run の分だけ計測する（挙動は変えない）。
-	resetCreatorSyncMetrics();
+	// SPR-225 Stage 0/P0: dlsite 同期 reads の内訳をこの run の分だけ計測する（挙動は変えない）。
+	resetDlsiteReadMetrics();
 	// SPR-225 Stage 1: 変更 creator の recompute キューを run 開始でクリアする。
 	resetCreatorRecomputeQueue();
 
@@ -665,10 +665,10 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 		// SPR-225 Stage 1: 変更のあった creator を run 末尾で creator ごと 1 回だけ recompute。
 		// 中断/例外時も、それまでに処理済みのバッチ分は recompute される（次 run へ持ち越さない）。
 		await recomputeQueuedCreators();
-		// この run の creator 同期 reads 内訳を 1 行で出す（type=QUERY の主因を分解）。recompute(drain)
-		// の読み取りも計上するため recompute の後に出す。Cloud Monitoring の絞り込みキーにするため、
-		// メッセージは Stage を含めない恒久キーにする（Stage 1 以降も同じキーに値が流れる）。
-		logger.info("creator同期reads計測", { ...getCreatorSyncMetrics() });
+		// この run の dlsite 同期 reads 内訳を 1 行で出す（type=QUERY の主因を分解。worksMap /
+		// creator-sync / recompute を網羅）。recompute(drain) の読み取りも計上するため recompute の
+		// 後に出す。Cloud Monitoring の絞り込みキーにするため、メッセージは Stage を含めない恒久キー。
+		logger.info("dlsite reads計測(run)", { ...getDlsiteReadMetrics() });
 	}
 }
 

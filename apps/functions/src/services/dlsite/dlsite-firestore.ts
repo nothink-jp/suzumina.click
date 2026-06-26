@@ -9,6 +9,7 @@ import type { WorkDocument } from "@suzumina.click/shared-types";
 import firestore from "../../infrastructure/database/firestore";
 import { chunkArray } from "../../shared/array-utils";
 import * as logger from "../../shared/logger";
+import { recordWorksMapRead } from "./dlsite-read-metrics";
 import { FAILURE_REASONS, trackMultipleFailedWorks } from "./failure-tracker";
 
 // Note: 最適化構造では mapToFirestoreData, filterWorksForUpdate, validateWorkData は不要
@@ -240,6 +241,10 @@ export async function getExistingWorksMap(
 				existingWorksMap.set(productId, data);
 			}
 		}
+
+		// SPR-225 P0: 全件 skip-check の QUERY を run 計測へ計上（type=QUERY の主因候補の分解）。
+		// productId は一意なので返却 docs 数 ≒ 既存件数。クエリ回数（チャンク数）も記録する。
+		recordWorksMapRead(chunks.length, existingWorksMap.size);
 
 		logger.info(
 			`既存作品データ取得完了: ${existingWorksMap.size}/${productIds.length}件が既存 (読み取り数: ${chunks.length}クエリ)`,
