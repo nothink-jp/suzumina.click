@@ -388,6 +388,51 @@ describe("AudioButtonCreator - Refactored Architecture", () => {
 		});
 	});
 
+	describe("フォーム残留対策（再訪時のリセット）", () => {
+		// App Router は同一セグメント再訪で page instance を使い回すため、create フローを
+		// 抜けるたびに key で内部フォームを作り直し、次に作成を始めたときまっさらにする。
+		it("作成成功後にフォームが初期状態へ作り直される", async () => {
+			const user = userEvent.setup();
+			render(<AudioButtonCreator {...defaultProps} />);
+
+			// タイトルと有効な時間範囲を入力（前回作成したボタンの入力を再現）
+			const titleInput = screen.getByPlaceholderText("例: おはようございます");
+			await user.type(titleInput, "前回のタイトル");
+
+			const timeInputs = screen.getAllByPlaceholderText("0:00.0");
+			await user.clear(timeInputs[1]!);
+			await user.type(timeInputs[1]!, "0:05.0");
+			await user.tab();
+
+			const createButton = screen.getByRole("button", { name: /音声ボタンを作成/ });
+			await waitFor(() => expect(createButton).toBeEnabled());
+			await user.click(createButton);
+
+			// 詳細ページへ遷移しつつ、保持された instance はリセットされる
+			await waitFor(() => {
+				expect(mockPush).toHaveBeenCalledWith("/buttons/new-audio-button-id");
+			});
+			await waitFor(() => {
+				expect(screen.getByPlaceholderText("例: おはようございます")).toHaveValue("");
+			});
+		});
+
+		it("キャンセル後にフォームが初期状態へ作り直される", async () => {
+			const user = userEvent.setup();
+			render(<AudioButtonCreator {...defaultProps} />);
+
+			const titleInput = screen.getByPlaceholderText("例: おはようございます");
+			await user.type(titleInput, "入力途中のタイトル");
+
+			await user.click(screen.getByRole("button", { name: "キャンセル" }));
+
+			expect(mockBack).toHaveBeenCalled();
+			await waitFor(() => {
+				expect(screen.getByPlaceholderText("例: おはようございます")).toHaveValue("");
+			});
+		});
+	});
+
 	describe("Accessibility", () => {
 		it("キーボードナビゲーションが機能する", async () => {
 			const user = userEvent.setup();

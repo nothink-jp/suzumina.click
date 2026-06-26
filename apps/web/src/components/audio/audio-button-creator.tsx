@@ -5,7 +5,7 @@ import { YouTubePlayer } from "@suzumina.click/ui/components/custom/youtube-play
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Loader2, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { createAudioButton } from "@/app/buttons/actions";
 import { useAudioButtonEditor } from "@/hooks/use-audio-button-editor";
 import { useSession } from "@/lib/auth/client";
@@ -21,12 +21,33 @@ interface AudioButtonCreatorProps {
 	initialStartTime?: number;
 }
 
-export function AudioButtonCreator({
+/**
+ * フォーム残留対策のラッパー。
+ * /buttons/create は `private, no-store`（bfcache 非対象）だが、App Router は同一
+ * ページセグメントを再訪したとき page コンポーネントの instance を使い回すため、
+ * 純粋 useState で持つフォーム値（タイトル/説明/タグ/開始・終了時刻）が前回作成した
+ * ボタンのまま残ることがある。作成完了・キャンセルで create フローを抜けるたびに key を
+ * 更新して内部フォームを丸ごと作り直し、次に作成を始めたときは必ずまっさらにする。
+ */
+export function AudioButtonCreator(props: AudioButtonCreatorProps) {
+	const [formKey, setFormKey] = useState(0);
+	const resetForm = useCallback(() => setFormKey((key) => key + 1), []);
+
+	return <AudioButtonCreatorInner key={formKey} onLeave={resetForm} {...props} />;
+}
+
+interface AudioButtonCreatorInnerProps extends AudioButtonCreatorProps {
+	/** create フローを抜ける直前に呼び、保持された instance の入力値をリセットする */
+	onLeave: () => void;
+}
+
+function AudioButtonCreatorInner({
 	videoId,
 	videoTitle,
 	videoDuration = 600,
 	initialStartTime = 0,
-}: AudioButtonCreatorProps) {
+	onLeave,
+}: AudioButtonCreatorInnerProps) {
 	const router = useRouter();
 	const user = useSession();
 
@@ -71,6 +92,7 @@ export function AudioButtonCreator({
 
 			if (result.success) {
 				router.push(`/buttons/${result.data.id}`);
+				onLeave();
 			} else {
 				setError(result.error || "作成に失敗しました");
 			}
@@ -90,6 +112,7 @@ export function AudioButtonCreator({
 		setIsCreating,
 		setError,
 		videoTitle,
+		onLeave,
 	]);
 
 	// 時間調整用のハンドラーは共通フックから取得
@@ -171,7 +194,10 @@ export function AudioButtonCreator({
 							<div className="flex flex-col sm:flex-row gap-3 w-full lg:justify-end">
 								<Button
 									variant="outline"
-									onClick={() => router.back()}
+									onClick={() => {
+										router.back();
+										onLeave();
+									}}
 									disabled={isCreating}
 									className="w-full sm:w-auto min-h-[44px] order-2 sm:order-1"
 								>
