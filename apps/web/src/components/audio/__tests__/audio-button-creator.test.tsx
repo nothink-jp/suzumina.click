@@ -388,16 +388,17 @@ describe("AudioButtonCreator - Refactored Architecture", () => {
 		});
 	});
 
-	describe("フォーム残留対策（再訪時のリセット）", () => {
-		// App Router は同一セグメント再訪で page instance を使い回すため、create フローを
-		// 抜けるたびに key で内部フォームを作り直し、次に作成を始めたときまっさらにする。
-		it("作成成功後にフォームが初期状態へ作り直される", async () => {
+	describe("作成完了・キャンセルの遷移", () => {
+		// 成功・キャンセルはいずれも create セグメント外へ遷移し instance が unmount されるため、
+		// 遷移先が描画されるまでフォームを空白化せず「作成中…」を維持する（ちらつき防止）。
+		// 同一セグメント別動画の値残留は page 側の key（videoId+startTime）で remount して防ぐ。
+		it("作成成功で詳細ページへ遷移し、遷移中はフォームを空白化せず作成中表示を維持する", async () => {
 			const user = userEvent.setup();
 			render(<AudioButtonCreator {...defaultProps} />);
 
-			// タイトルと有効な時間範囲を入力（前回作成したボタンの入力を再現）
+			// タイトルと有効な時間範囲を入力
 			const titleInput = screen.getByPlaceholderText("例: おはようございます");
-			await user.type(titleInput, "前回のタイトル");
+			await user.type(titleInput, "作成するタイトル");
 
 			const timeInputs = screen.getAllByPlaceholderText("0:00.0");
 			await user.clear(timeInputs[1]!);
@@ -408,16 +409,17 @@ describe("AudioButtonCreator - Refactored Architecture", () => {
 			await waitFor(() => expect(createButton).toBeEnabled());
 			await user.click(createButton);
 
-			// 詳細ページへ遷移しつつ、保持された instance はリセットされる
+			// 詳細ページへ遷移する
 			await waitFor(() => {
 				expect(mockPush).toHaveBeenCalledWith("/buttons/new-audio-button-id");
 			});
-			await waitFor(() => {
-				expect(screen.getByPlaceholderText("例: おはようございます")).toHaveValue("");
-			});
+
+			// 遷移完了まで「作成中…」を維持し、フォームは空白化しない（ちらつき防止）
+			expect(screen.getByRole("button", { name: /作成中/ })).toBeInTheDocument();
+			expect(screen.getByPlaceholderText("例: おはようございます")).toHaveValue("作成するタイトル");
 		});
 
-		it("キャンセル後にフォームが初期状態へ作り直される", async () => {
+		it("キャンセルで前のページへ戻る", async () => {
 			const user = userEvent.setup();
 			render(<AudioButtonCreator {...defaultProps} />);
 
@@ -427,9 +429,20 @@ describe("AudioButtonCreator - Refactored Architecture", () => {
 			await user.click(screen.getByRole("button", { name: "キャンセル" }));
 
 			expect(mockBack).toHaveBeenCalled();
-			await waitFor(() => {
-				expect(screen.getByPlaceholderText("例: おはようございます")).toHaveValue("");
-			});
+		});
+
+		it("別動画で再訪（key 変更）するとフォームが初期状態へ作り直される", async () => {
+			const user = userEvent.setup();
+			const { rerender } = render(<AudioButtonCreator key="video-a" {...defaultProps} />);
+
+			const titleInput = screen.getByPlaceholderText("例: おはようございます");
+			await user.type(titleInput, "前回のタイトル");
+			expect(titleInput).toHaveValue("前回のタイトル");
+
+			// page 側の key 変更（別動画への遷移）を模した remount
+			rerender(<AudioButtonCreator key="video-b" {...defaultProps} videoId="other-video" />);
+
+			expect(screen.getByPlaceholderText("例: おはようございます")).toHaveValue("");
 		});
 	});
 

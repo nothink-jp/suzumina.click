@@ -5,7 +5,7 @@ import { YouTubePlayer } from "@suzumina.click/ui/components/custom/youtube-play
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Loader2, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
 import { createAudioButton } from "@/app/buttons/actions";
 import { useAudioButtonEditor } from "@/hooks/use-audio-button-editor";
 import { useSession } from "@/lib/auth/client";
@@ -22,32 +22,19 @@ interface AudioButtonCreatorProps {
 }
 
 /**
- * フォーム残留対策のラッパー。
- * /buttons/create は `private, no-store`（bfcache 非対象）だが、App Router は同一
- * ページセグメントを再訪したとき page コンポーネントの instance を使い回すため、
- * 純粋 useState で持つフォーム値（タイトル/説明/タグ/開始・終了時刻）が前回作成した
- * ボタンのまま残ることがある。作成完了・キャンセルで create フローを抜けるたびに key を
- * 更新して内部フォームを丸ごと作り直し、次に作成を始めたときは必ずまっさらにする。
+ * 音声ボタン作成フォーム。
+ * フォーム値（タイトル/説明/タグ/開始・終了時刻）は useState で保持する。
+ * 作成成功・キャンセルはいずれも create セグメント外（詳細ページ / 戻り先）へ遷移するため
+ * この instance は unmount され、次に作成画面へ来たときは必ずまっさらに mount される。
+ * 同一セグメントを別動画で再訪したときの値残留は page 側の `key`（videoId+startTime）で
+ * remount して防ぐ（apps/web/src/app/buttons/create/page.tsx）。
  */
-export function AudioButtonCreator(props: AudioButtonCreatorProps) {
-	const [formKey, setFormKey] = useState(0);
-	const resetForm = useCallback(() => setFormKey((key) => key + 1), []);
-
-	return <AudioButtonCreatorInner key={formKey} onLeave={resetForm} {...props} />;
-}
-
-interface AudioButtonCreatorInnerProps extends AudioButtonCreatorProps {
-	/** create フローを抜ける直前に呼び、保持された instance の入力値をリセットする */
-	onLeave: () => void;
-}
-
-function AudioButtonCreatorInner({
+export function AudioButtonCreator({
 	videoId,
 	videoTitle,
 	videoDuration = 600,
 	initialStartTime = 0,
-	onLeave,
-}: AudioButtonCreatorInnerProps) {
+}: AudioButtonCreatorProps) {
 	const router = useRouter();
 	const user = useSession();
 
@@ -91,14 +78,18 @@ function AudioButtonCreatorInner({
 			const result = await createAudioButton(input);
 
 			if (result.success) {
+				// 詳細ページへ遷移。create セグメントを離れるためこの instance は破棄される。
+				// 遷移完了まで「作成中…」を維持し、フォームを空白化しない（ちらつき防止）。
+				// 既知の制約: router.push に完了コールバックが無いため、遷移が完了しない異常時
+				// （ネットワーク断・SSR エラー等）は「作成中…」のまま固着しうる。ちらつき防止を優先。
 				router.push(`/buttons/${result.data.id}`);
-				onLeave();
-			} else {
-				setError(result.error || "作成に失敗しました");
+				return;
 			}
+
+			setError(result.error || "作成に失敗しました");
+			setIsCreating(false);
 		} catch (_error) {
 			setError("予期しないエラーが発生しました");
-		} finally {
 			setIsCreating(false);
 		}
 	}, [
@@ -112,7 +103,6 @@ function AudioButtonCreatorInner({
 		setIsCreating,
 		setError,
 		videoTitle,
-		onLeave,
 	]);
 
 	// 時間調整用のハンドラーは共通フックから取得
@@ -196,7 +186,6 @@ function AudioButtonCreatorInner({
 									variant="outline"
 									onClick={() => {
 										router.back();
-										onLeave();
 									}}
 									disabled={isCreating}
 									className="w-full sm:w-auto min-h-[44px] order-2 sm:order-1"
