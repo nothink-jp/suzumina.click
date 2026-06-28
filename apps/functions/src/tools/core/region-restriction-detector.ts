@@ -356,6 +356,9 @@ class RegionRestrictionDetector {
 async function main(): Promise<void> {
 	try {
 		logger.info("🚀 DLsite リージョン制限検出ツール開始");
+		logger.warn(
+			"⚠️ 判定基準は asset(dlsite-work-ids.json) との差分です。asset が stale だと誤った regionRestricted フラグを本番 works に書き込みます。実行前に check:region-equivalence で鮮度を確認してください（SPR-232）",
+		);
 
 		const detector = new RegionRestrictionDetector();
 

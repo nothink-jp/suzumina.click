@@ -36,7 +36,7 @@ async function main(): Promise<void> {
 	const F = new Set(refs.map((r) => r.id));
 	console.log(`  Firestore works F=${F.size}件`);
 
-	const A = new Set((workIdsAsset as { workIds: string[] }).workIds);
+	const A = new Set(workIdsAsset.workIds);
 
 	const intersection = [...L].filter((id) => F.has(id)).length;
 	const LminusF = [...L].filter((id) => !F.has(id)).sort();
