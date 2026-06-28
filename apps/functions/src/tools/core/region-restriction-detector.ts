@@ -4,7 +4,10 @@
  * 現在のリージョンで取得できない作品を検出し、
  * リージョン制限フラグを設定してFirestoreに記録する
  *
- * 設計: docs/DLSITE_REGION_RESTRICTION_DESIGN.md Phase 1
+ * 注意: 判定基準は asset(`dlsite-work-ids.json`)との差分。asset が stale だと誤検出して
+ *       Firestore に誤った regionRestricted フラグを書き込むため、実行前に
+ *       check:region-equivalence で asset の鮮度と region 等価性を確認すること（SPR-232）。
+ *       （旧 docs/DLSITE_REGION_RESTRICTION_DESIGN.md は不在）
  */
 
 import { readFileSync } from "node:fs";

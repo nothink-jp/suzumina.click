@@ -20,6 +20,7 @@
 		"collect:work-ids": "dotenv -e .env -- tsx src/tools/core/collect-work-ids.ts",
 		"collect:complete-local": "dotenv -e .env -- tsx src/tools/core/local-complete-collector.ts",
 		"detect:region-restrictions": "dotenv -e .env -- tsx src/tools/core/region-restriction-detector.ts",
+		"check:region-equivalence": "dotenv -e .env -- tsx src/tools/core/region-equivalence-check.ts",
 		"tools:capture": "dotenv -e .env -- tsx src/tools/core/dlsite-dryrun-capture.ts",
 		"tools:stats": "dotenv -e .env -- tsx src/tools/run-tools.ts stats",
 		"tools:report": "dotenv -e .env -- tsx src/tools/run-tools.ts report",

@@ -1,10 +1,11 @@
 /**
  * DLsite完全データローカル収集ツール
  *
- * ローカル環境（日本）で全1,488作品の完全データ収集を実行し
+ * ローカル環境（日本）で全作品の完全データ収集を実行し
  * リージョン制限作品を含む全作品情報をCloud Firestoreに安全に投入する
  *
- * 設計: docs/DLSITE_REGION_RESTRICTION_DESIGN.md Phase 2
+ * 背景: asset(`dlsite-work-ids.json`)との region 突合に依存。asset 削除の可否は SPR-232 で評価中。
+ *       region 等価性の確認は check:region-equivalence（旧 docs/DLSITE_REGION_RESTRICTION_DESIGN.md は不在）。
  */
 
 import { readFileSync } from "node:fs";
