@@ -225,6 +225,11 @@ describe("work-id-collector", () => {
 
 			expect(result.workIds).toEqual([]);
 			expect(mockFetchDLsiteAjaxResult).toHaveBeenCalledTimes(1);
+			// 0件時は自己説明的な warn を出す（旧 handleNoWorkIdsError 相当の可観測性）
+			const logger = await import("../../../shared/logger");
+			expect(logger.warn).toHaveBeenCalledWith(
+				expect.stringContaining("作品IDを1件も取得できませんでした"),
+			);
 		});
 
 		it("HTMLコンテンツが無効な場合は収集を終了する", async () => {
