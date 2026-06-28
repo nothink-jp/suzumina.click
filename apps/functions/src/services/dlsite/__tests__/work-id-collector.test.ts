@@ -36,23 +36,6 @@ vi.mock("../dlsite-ajax-fetcher", () => {
 	};
 });
 
-// Work ID Validatorのモック
-vi.mock("../work-id-validator", () => {
-	const mockValidateWorkIds = vi.fn();
-	const mockHandleNoWorkIdsError = vi.fn();
-	const mockWarnPartialSuccess = vi.fn();
-
-	return {
-		validateWorkIds: mockValidateWorkIds,
-		handleNoWorkIdsError: mockHandleNoWorkIdsError,
-		warnPartialSuccess: mockWarnPartialSuccess,
-		// テスト用にmockを外部に公開
-		__mockValidateWorkIds: mockValidateWorkIds,
-		__mockHandleNoWorkIdsError: mockHandleNoWorkIdsError,
-		__mockWarnPartialSuccess: mockWarnPartialSuccess,
-	};
-});
-
 import {
 	collectAllWorkIds,
 	collectWorkIdsForDevelopment,
@@ -61,14 +44,10 @@ import {
 
 // モックの参照を取得
 const ajaxFetcherMock = vi.mocked(await import("../dlsite-ajax-fetcher"));
-const workIdValidatorMock = vi.mocked(await import("../work-id-validator"));
 
 const mockFetchDLsiteAjaxResult = (ajaxFetcherMock as any).__mockFetchDLsiteAjaxResult;
 const mockIsLastPageFromPageInfo = (ajaxFetcherMock as any).__mockIsLastPageFromPageInfo;
 const mockValidateAjaxHtmlContent = (ajaxFetcherMock as any).__mockValidateAjaxHtmlContent;
-const mockValidateWorkIds = (workIdValidatorMock as any).__mockValidateWorkIds;
-const mockHandleNoWorkIdsError = (workIdValidatorMock as any).__mockHandleNoWorkIdsError;
-const mockWarnPartialSuccess = (workIdValidatorMock as any).__mockWarnPartialSuccess;
 
 // テスト用のサンプルデータ（実際のDLsite HTML構造に完全一致・有効な6桁作品ID使用）
 const sampleAjaxResult = {
@@ -109,10 +88,6 @@ describe("work-id-collector", () => {
 		// デフォルトのモック設定
 		mockValidateAjaxHtmlContent.mockReturnValue(true);
 		mockIsLastPageFromPageInfo.mockReturnValue(false);
-		mockValidateWorkIds.mockReturnValue({
-			regionWarning: false,
-			warnings: [],
-		});
 	});
 
 	describe("collectAllWorkIds", () => {
@@ -250,7 +225,11 @@ describe("work-id-collector", () => {
 
 			expect(result.workIds).toEqual([]);
 			expect(mockFetchDLsiteAjaxResult).toHaveBeenCalledTimes(1);
-			expect(mockHandleNoWorkIdsError).toHaveBeenCalled();
+			// 0件時は自己説明的な warn を出す（旧 handleNoWorkIdsError 相当の可観測性）
+			const logger = await import("../../../shared/logger");
+			expect(logger.warn).toHaveBeenCalledWith(
+				expect.stringContaining("作品IDを1件も取得できませんでした"),
+			);
 		});
 
 		it("HTMLコンテンツが無効な場合は収集を終了する", async () => {
@@ -314,32 +293,6 @@ describe("work-id-collector", () => {
 
 			expect(result.workIds).toEqual(["RJ258750", "RJ261600"]);
 			expect(result.totalPages).toBe(1); // エラーで停止
-		});
-
-		it("検証でリージョン差異が検出された場合は警告を設定する", async () => {
-			mockFetchDLsiteAjaxResult.mockResolvedValue(sampleAjaxResult);
-			mockIsLastPageFromPageInfo.mockReturnValue(true);
-			mockValidateWorkIds.mockReturnValue({
-				regionWarning: true,
-				warnings: ["リージョン差異あり"],
-			});
-
-			const result = await collectAllWorkIds({
-				maxPages: 1,
-				requestDelay: 0,
-				validation: {
-					minCoveragePercentage: 80,
-					maxExtraPercentage: 20,
-					logDetails: true,
-				},
-			});
-
-			expect(result.validationResult).toEqual({
-				isValid: false,
-				regionWarning: true,
-				warnings: ["リージョン差異が検出されました"],
-			});
-			expect(mockWarnPartialSuccess).toHaveBeenCalled();
 		});
 
 		it("詳細ログが有効な場合は追加ログを出力する", async () => {
