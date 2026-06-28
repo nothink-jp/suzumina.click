@@ -72,18 +72,15 @@ async function main(): Promise<void> {
 		const fixture = await dumpCollection(firestore, name, limit);
 		const file = join(FIXTURES_DIR, `${name}.json`);
 		await writeFile(file, `${JSON.stringify(fixture, null, 2)}\n`, "utf-8");
-		// biome-ignore lint/suspicious/noConsole: 開発ツールの進捗表示
 		console.log(`[dump] ${name}: ${fixture.docs.length} 件 -> ${file}`);
 	}
 
-	// biome-ignore lint/suspicious/noConsole: 開発ツールの進捗表示
 	console.log(
 		"[dump] 完了。サブコレクション(priceHistory 等)とユーザー系は対象外です。フィクスチャをコミットしてください。",
 	);
 }
 
 main().catch((err) => {
-	// biome-ignore lint/suspicious/noConsole: 開発ツールのエラー表示
 	console.error("[dump] 失敗:", err);
 	process.exit(1);
 });

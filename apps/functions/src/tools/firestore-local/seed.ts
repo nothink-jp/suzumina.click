@@ -55,26 +55,21 @@ async function main(): Promise<void> {
 
 	const fixtures = await loadFixtureFiles();
 	if (fixtures.length === 0) {
-		// biome-ignore lint/suspicious/noConsole: 開発ツールの進捗表示
 		console.log(
 			`[seed] フィクスチャがありません (${FIXTURES_DIR})。seed:dump で本番から取得するか、JSON を追加してください。`,
 		);
 		return;
 	}
 
-	// biome-ignore lint/suspicious/noConsole: 開発ツールの進捗表示
 	console.log(`[seed] Emulator ${process.env.FIRESTORE_EMULATOR_HOST} へ投入します`);
 	for (const fixture of fixtures) {
 		await seedCollection(firestore, fixture);
-		// biome-ignore lint/suspicious/noConsole: 開発ツールの進捗表示
 		console.log(`[seed] ${fixture.collection}: ${fixture.docs.length} 件`);
 	}
-	// biome-ignore lint/suspicious/noConsole: 開発ツールの進捗表示
 	console.log("[seed] 完了");
 }
 
 main().catch((err) => {
-	// biome-ignore lint/suspicious/noConsole: 開発ツールのエラー表示
 	console.error("[seed] 失敗:", err);
 	process.exit(1);
 });
