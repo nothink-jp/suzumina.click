@@ -12,7 +12,6 @@ import {
 	isLastPageFromPageInfo,
 	validateAjaxHtmlContent,
 } from "./dlsite-ajax-fetcher";
-import { handleNoWorkIdsError, validateWorkIds, warnPartialSuccess } from "./work-id-validator";
 
 // 設定を取得
 const config = getDLsiteConfig();
@@ -25,12 +24,6 @@ export interface WorkIdCollectionOptions {
 	maxPages?: number;
 	/** リクエスト間隔（ms） */
 	requestDelay?: number;
-	/** 検証設定 */
-	validation?: {
-		minCoveragePercentage?: number;
-		maxExtraPercentage?: number;
-		logDetails?: boolean;
-	};
 	/** 詳細ログ出力 */
 	enableDetailedLogging?: boolean;
 }
@@ -45,12 +38,6 @@ export interface WorkIdCollectionResult {
 	totalPages: number;
 	/** DLsiteが報告する総作品数 */
 	totalCount: number;
-	/** 検証結果 */
-	validationResult?: {
-		isValid: boolean;
-		regionWarning?: boolean;
-		warnings: string[];
-	};
 }
 
 /**
@@ -208,37 +195,6 @@ async function processSinglePage(
 }
 
 /**
- * 収集結果の検証とレポート作成
- */
-function validateAndCreateReport(
-	uniqueWorkIds: string[],
-	validationOptions: WorkIdCollectionOptions["validation"],
-): WorkIdCollectionResult["validationResult"] | undefined {
-	if (!validationOptions) {
-		return undefined;
-	}
-
-	const validationCheck = validateWorkIds(uniqueWorkIds, {
-		minCoveragePercentage: validationOptions.minCoveragePercentage,
-		maxExtraPercentage: validationOptions.maxExtraPercentage,
-		logDetails: validationOptions.logDetails,
-	});
-
-	const validationResult: WorkIdCollectionResult["validationResult"] = {
-		isValid: !validationCheck.regionWarning,
-		regionWarning: validationCheck.regionWarning,
-		warnings: validationCheck.regionWarning ? ["リージョン差異が検出されました"] : [],
-	};
-
-	// 検証結果に基づく警告
-	if (validationCheck.regionWarning) {
-		warnPartialSuccess(validationCheck);
-	}
-
-	return validationResult;
-}
-
-/**
  * DLsite AJAX APIから全作品IDを収集
  *
  * @param options - 収集オプション
@@ -250,11 +206,6 @@ export async function collectAllWorkIds(
 	const {
 		maxPages = 100,
 		requestDelay = config.requestDelay,
-		validation = {
-			minCoveragePercentage: 70,
-			maxExtraPercentage: 30,
-			logDetails: true,
-		},
 		enableDetailedLogging = false,
 	} = options;
 
@@ -294,21 +245,16 @@ export async function collectAllWorkIds(
 	// 重複除去
 	const uniqueWorkIds = [...new Set(allWorkIds)];
 
-	logger.info(`✅ 作品ID収集完了: ${uniqueWorkIds.length}件`);
-
-	// データ検証
-	const validationResult = validateAndCreateReport(uniqueWorkIds, validation);
-
-	// エラーハンドリング
 	if (uniqueWorkIds.length === 0) {
-		handleNoWorkIdsError();
+		logger.warn("⚠️ 作品IDを1件も取得できませんでした");
+	} else {
+		logger.info(`✅ 作品ID収集完了: ${uniqueWorkIds.length}件`);
 	}
 
 	return {
 		workIds: uniqueWorkIds,
 		totalPages: currentPage - 1,
 		totalCount,
-		validationResult,
 	};
 }
 
@@ -352,11 +298,6 @@ export async function collectWorkIdsForProduction(): Promise<string[]> {
 	const result = await collectAllWorkIds({
 		enableDetailedLogging: false,
 		maxPages: 50, // Cloud Functions では効率重視
-		validation: {
-			minCoveragePercentage: 70,
-			maxExtraPercentage: 30,
-			logDetails: true,
-		},
 	});
 
 	return result.workIds;
