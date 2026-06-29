@@ -38,3 +38,13 @@ export function useBetterAuthSessionState(): {
 export function useBetterAuthAppUser(): UserSession | null {
 	return useBetterAuthSessionState().user;
 }
+
+/**
+ * クライアント側サインアウト。better-auth の sign-out エンドポイントを叩いて
+ * サーバーのセッション cookie を失効させると同時に、**client セッションストアもクリア**する。
+ * これにより useSession() が反応的に null へ更新され、ヘッダー等の表示がリロード無しで切り替わる
+ * （サーバーアクションでの signOut は client ストアを無効化できずリロードまで古い状態が残っていた）。
+ */
+export async function signOutClient(): Promise<void> {
+	await authClient.signOut();
+}

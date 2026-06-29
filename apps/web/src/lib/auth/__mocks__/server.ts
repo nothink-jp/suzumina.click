@@ -9,4 +9,3 @@ import { vi } from "vitest";
 
 export const getCurrentUser = vi.fn(async () => null);
 export const signInWithDiscord = vi.fn(async () => {});
-export const signOutCurrent = vi.fn(async () => {});
