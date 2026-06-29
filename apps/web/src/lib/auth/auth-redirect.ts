@@ -29,14 +29,20 @@ export function isAuthGatedPath(pathname: string): boolean {
 
 /**
  * OAuth コールバック等に使う相対パスのサニタイズ。同一オリジンの相対パスのみ許可し、
- * それ以外（絶対 URL・プロトコル相対 `//`・バックスラッシュ細工）は "/" に倒す。
- * オープンリダイレクト対策（callbackUrl は外部から細工されうるため信頼しない）。
+ * それ以外（絶対 URL・プロトコル相対 `//`・バックスラッシュ細工・先頭セグメントのスキーム偽装）は
+ * "/" に倒す。オープンリダイレクト対策（callbackUrl は外部から細工されうるため信頼しない）。
  */
 export function sanitizeRelativePath(path: string | undefined | null): string {
 	if (!path?.startsWith("/") || path.startsWith("//")) {
 		return "/";
 	}
 	if (path.includes("\\")) {
+		return "/";
+	}
+	// 先頭セグメントに ":" を含むパス（`/javascript:...` 等のスキーム偽装）は弾く。
+	// このアプリの正規ルートに ":" を含むセグメントは無いため安全側に倒せる。
+	const firstSegment = path.split("/")[1] ?? "";
+	if (firstSegment.includes(":")) {
 		return "/";
 	}
 	return path;

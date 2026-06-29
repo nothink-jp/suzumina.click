@@ -1,5 +1,6 @@
 "use server";
 
+import { unstable_rethrow } from "next/navigation";
 import { signInWithDiscord } from "@/lib/auth/server";
 import * as logger from "@/lib/logger";
 
@@ -9,9 +10,11 @@ export async function signInAction(callbackURL = "/") {
 	logger.info("Discordサインイン開始", { action: "signInAction" });
 
 	try {
+		// 成功時は signInWithDiscord 内の redirect() が NEXT_REDIRECT を throw する（後続には到達しない）。
 		await signInWithDiscord(callbackURL);
-		logger.info("Discordサインイン成功", { action: "signInAction" });
 	} catch (error) {
+		// redirect/notFound 等のフレームワーク例外はそのまま投げ直す（エラーログに混入させない）。
+		unstable_rethrow(error);
 		logger.error("Discordサインインでエラーが発生", {
 			action: "signInAction",
 			error: error instanceof Error ? error.message : String(error),

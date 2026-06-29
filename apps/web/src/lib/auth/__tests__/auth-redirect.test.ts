@@ -43,6 +43,7 @@ describe("sanitizeRelativePath", () => {
 		["//evil.com", "/"], // プロトコル相対
 		["/\\evil.com", "/"], // バックスラッシュ細工
 		["http://example.com/path", "/"],
+		["/javascript:alert(1)", "/"], // 先頭セグメントのスキーム偽装
 		["", "/"],
 		[undefined, "/"],
 		[null, "/"],

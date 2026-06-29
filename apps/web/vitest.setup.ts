@@ -121,6 +121,16 @@ vi.mock("next/navigation", () => ({
 		has: vi.fn(),
 	}),
 	usePathname: () => "/",
+	// 実挙動の最小再現: redirect/notFound 等のフレームワーク例外（digest を持つ）だけ再 throw し、
+	// 通常のエラーは no-op（呼び出し側で握って処理を続行できる）。
+	unstable_rethrow: (error: unknown) => {
+		if (
+			typeof (error as { digest?: unknown })?.digest === "string" &&
+			/^NEXT_(REDIRECT|NOT_FOUND|HTTP_ERROR_FALLBACK)/.test((error as { digest: string }).digest)
+		) {
+			throw error;
+		}
+	},
 }));
 
 // Mock for next/image - Enhanced for better test stability
