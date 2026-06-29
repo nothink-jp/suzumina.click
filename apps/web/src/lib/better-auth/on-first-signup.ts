@@ -11,8 +11,6 @@ import { createUser, userExists } from "@/lib/user-firestore";
 import { extractAvatarHash, fetchDiscordGuildMembership } from "./discord-guild";
 import { type FirestoreOps, firestoreOps } from "./firestore-adapter";
 
-const isDev = process.env.NODE_ENV !== "production";
-
 // better-auth 標準モデル(user 等)へのアクセスはアダプタ境界(firestoreOps)を共有する。
 const ops = firestoreOps();
 
@@ -44,8 +42,9 @@ export async function provisionDiscordIdOnAuthUser(
 			update: { discordId: account.accountId },
 		});
 	} catch (err) {
-		if (isDev)
-			logError("better-auth: discordId provisioning 失敗", { discordId: account.accountId, err });
+		// 認証クリティカル: 失敗すると enrich-session が appUser を null にし新規ユーザーが認証不能になる。
+		// best-effort でサインアップは止めないが、本番でも観測可能にするため常にエラーログを残す。
+		logError("better-auth: discordId provisioning 失敗", { discordId: account.accountId, err });
 	}
 }
 
@@ -81,6 +80,8 @@ export async function createAppUserOnFirstSignup(account: FirstSignupAccount): P
 			guildMembership,
 		});
 	} catch (err) {
-		if (isDev) logError("better-auth: app user 作成失敗", { discordId, err });
+		// discordId provisioning と同じく認証クリティカル（users/{discordId} 不在も appUser を null にする）。
+		// 本番でも検知できるよう常にエラーログを残す。
+		logError("better-auth: app user 作成失敗", { discordId, err });
 	}
 }

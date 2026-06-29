@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import * as logger from "@/lib/logger";
 import { provisionDiscordIdOnAuthUser } from "../on-first-signup";
 
 /**
@@ -32,8 +33,15 @@ describe("provisionDiscordIdOnAuthUser", () => {
 		expect(update).not.toHaveBeenCalled();
 	});
 
-	it("update 失敗でも throw せずサインアップを止めない（best-effort）", async () => {
+	it("update 失敗でも throw せず、本番でも観測できるよう常にエラーログを残す（best-effort）", async () => {
 		const update = vi.fn().mockRejectedValue(new Error("firestore down"));
+		const logError = vi.spyOn(logger, "error").mockImplementation(() => {});
 		await expect(provisionDiscordIdOnAuthUser(account, { update })).resolves.toBeUndefined();
+		// 認証クリティカルな失敗は isDev ガード無しで必ずログする（サイレント握り潰し防止）。
+		expect(logError).toHaveBeenCalledWith(
+			"better-auth: discordId provisioning 失敗",
+			expect.objectContaining({ discordId: "discord-123" }),
+		);
+		logError.mockRestore();
 	});
 });
