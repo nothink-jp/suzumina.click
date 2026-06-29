@@ -12,7 +12,7 @@ import { nextCookies } from "better-auth/next-js";
 import { customSession } from "better-auth/plugins";
 import { buildAppUserForSession } from "./enrich-session";
 import { firestoreAdapter } from "./firestore-adapter";
-import { createAppUserOnFirstSignup } from "./on-first-signup";
+import { createAppUserOnFirstSignup, provisionDiscordIdOnAuthUser } from "./on-first-signup";
 
 export const auth = betterAuth({
 	appName: "suzumina.click",
@@ -25,7 +25,9 @@ export const auth = betterAuth({
 
 	user: {
 		additionalFields: {
-			// Discord ユーザー ID（アプリ `users` ドキュメント ID と一致）。API 入力では設定不可。
+			// Discord ユーザー ID（アプリ `users` ドキュメント ID と一致）。API 入力では設定不可（input:false）。
+			// better-auth 1.6.21+ は input:false フィールドへの OAuth profile 値を無視するため、
+			// 値の充填は account.create フックの provisionDiscordIdOnAuthUser で server 側から行う。
 			discordId: { type: "string", required: false, input: false },
 		},
 	},
@@ -41,15 +43,16 @@ export const auth = betterAuth({
 			clientId: process.env.DISCORD_CLIENT_ID || "",
 			clientSecret: process.env.DISCORD_CLIENT_SECRET || "",
 			scope: ["identify", "email", "guilds"],
-			mapProfileToUser: (profile) => ({ discordId: profile.id }),
 		},
 	},
 
 	databaseHooks: {
 		account: {
 			create: {
-				// 初回 Discord 連携時にアプリ users/{discordId} を自動作成する（詳細は on-first-signup.ts）。
 				after: async (account) => {
+					// better-auth user の discordId を server 側で充填（input:false のため mapProfileToUser は不可）。
+					await provisionDiscordIdOnAuthUser(account);
+					// 初回 Discord 連携時にアプリ users/{discordId} を自動作成する（詳細は on-first-signup.ts）。
 					await createAppUserOnFirstSignup(account);
 				},
 			},
