@@ -7,6 +7,7 @@
  */
 import type { UserSession } from "@suzumina.click/shared-types";
 import { cache } from "react";
+import { sanitizeRelativePath } from "./auth-redirect";
 
 /**
  * 現在のログインユーザー（アプリの UserSession）を返す。未認証/無効ユーザーは null。
@@ -24,6 +25,8 @@ export const getCurrentUser = cache(async (): Promise<UserSession | null> => {
 
 /**
  * Discord でサインイン。成功時は OAuth へリダイレクトする（redirect は例外として送出される）。
+ * callbackURL はログイン後の戻り先。query 由来など外部から細工されうるため、同一オリジンの
+ * 相対パスのみ許可するようサニタイズする（オープンリダイレクト対策・全ログイン経路の chokepoint）。
  * @throws OAuth URL が得られなかった場合（無言 return せず明示的にエラー化し、呼び出し側でログ/通知できるようにする）
  */
 export async function signInWithDiscord(callbackURL = "/"): Promise<void> {
@@ -31,7 +34,9 @@ export async function signInWithDiscord(callbackURL = "/"): Promise<void> {
 		import("@/lib/better-auth/auth"),
 		import("next/navigation"),
 	]);
-	const res = await auth.api.signInSocial({ body: { provider: "discord", callbackURL } });
+	const res = await auth.api.signInSocial({
+		body: { provider: "discord", callbackURL: sanitizeRelativePath(callbackURL) },
+	});
 	if (!res?.url) {
 		throw new Error("Discord サインインの OAuth URL を取得できませんでした");
 	}
