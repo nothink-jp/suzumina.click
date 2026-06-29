@@ -14,6 +14,7 @@ import { Heart, LogOut, Settings, User } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signOut } from "@/lib/auth/client";
+import * as logger from "@/lib/logger";
 import UserAvatar from "./user-avatar";
 
 interface UserMenuProps {
@@ -25,8 +26,17 @@ export default function UserMenu({ user }: UserMenuProps) {
 
 	// client 側 signOut で session ストアを反応的にクリアし、ヘッダー表示をリロード無しで更新する。
 	// その後ホームへ戻し、サーバーコンポーネント側の per-user 表示も再取得させる。
+	// signOut 失敗時（ネットワーク等）もログのみで遷移は続行する: 続く refresh が
+	// 実セッション状態に再同期するため、見た目だけログアウトする不整合を避けられる。
 	const handleSignOut = async () => {
-		await signOut();
+		try {
+			await signOut();
+		} catch (error) {
+			logger.error("ログアウトに失敗しました", {
+				action: "signOut",
+				error: error instanceof Error ? error.message : String(error),
+			});
+		}
 		router.push("/");
 		router.refresh();
 	};

@@ -1,7 +1,7 @@
 import type { UserSession } from "@suzumina.click/shared-types";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import UserMenu from "../user-menu";
 
 // UserAvatarコンポーネントのモック
@@ -32,6 +32,9 @@ vi.mock("next/navigation", () => ({
 	useRouter: () => ({ push: mockPush, refresh: mockRefresh }),
 }));
 
+// logger のモック（エラーパス検証用）
+vi.mock("@/lib/logger", () => ({ error: vi.fn(), info: vi.fn(), warn: vi.fn() }));
+
 // Next.js Linkコンポーネントのモック
 vi.mock("next/link", () => ({
 	default: ({ children, href }: { children: React.ReactNode; href: string }) => (
@@ -52,6 +55,10 @@ describe("UserMenu", () => {
 		},
 		isActive: true,
 	};
+
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
 
 	it("ユーザー情報を正しく表示する", () => {
 		render(<UserMenu user={mockUser} />);
@@ -102,6 +109,18 @@ describe("UserMenu", () => {
 
 		// client ストアをクリアする signOut が呼ばれ、その後ホームへ戻し refresh する
 		expect(mockSignOut).toHaveBeenCalledOnce();
+		await waitFor(() => expect(mockPush).toHaveBeenCalledWith("/"));
+		expect(mockRefresh).toHaveBeenCalledOnce();
+	});
+
+	it("signOut 失敗時もホーム遷移 + refresh で実セッション状態へ再同期する", async () => {
+		mockSignOut.mockRejectedValueOnce(new Error("network error"));
+		const user = userEvent.setup();
+		render(<UserMenu user={mockUser} />);
+
+		await user.click(screen.getByRole("button", { name: "ユーザーメニューを開く" }));
+		await user.click(screen.getByText("ログアウト"));
+
 		await waitFor(() => expect(mockPush).toHaveBeenCalledWith("/"));
 		expect(mockRefresh).toHaveBeenCalledOnce();
 	});
