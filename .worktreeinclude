@@ -3,3 +3,4 @@
 # 詳細: ADR-008 / https://code.claude.com/docs/en/worktrees
 apps/web/.env
 apps/web/.env.local
+apps/functions/.env
