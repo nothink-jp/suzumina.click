@@ -12,7 +12,8 @@ import {
 } from "@suzumina.click/ui/components/ui/dropdown-menu";
 import { Heart, LogOut, Settings, User } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { isAuthGatedPath } from "@/lib/auth/auth-redirect";
 import { signOut } from "@/lib/auth/client";
 import * as logger from "@/lib/logger";
 import UserAvatar from "./user-avatar";
@@ -23,11 +24,13 @@ interface UserMenuProps {
 
 export default function UserMenu({ user }: UserMenuProps) {
 	const router = useRouter();
+	const pathname = usePathname();
 
 	// client 側 signOut で session ストアを反応的にクリアし、ヘッダー表示をリロード無しで更新する。
-	// その後ホームへ戻し、サーバーコンポーネント側の per-user 表示も再取得させる。
-	// signOut 失敗時（ネットワーク等）もログのみで遷移は続行する: 続く refresh が
-	// 実セッション状態に再同期するため、見た目だけログアウトする不整合を避けられる。
+	// 遷移先: 認証必須ページに居たらログアウト後は留まれないのでトップへ。公開ページならその場に留まる
+	// （ログインの「現在地へ戻る」と挙動を一貫させる）。いずれも refresh でサーバー側 per-user を再取得。
+	// signOut 失敗時（ネットワーク等）もログのみで遷移は続行する: 続く refresh が実セッション状態に
+	// 再同期するため、見た目だけログアウトする不整合を避けられる。
 	const handleSignOut = async () => {
 		try {
 			await signOut();
@@ -37,7 +40,9 @@ export default function UserMenu({ user }: UserMenuProps) {
 				error: error instanceof Error ? error.message : String(error),
 			});
 		}
-		router.push("/");
+		if (isAuthGatedPath(pathname)) {
+			router.push("/");
+		}
 		router.refresh();
 	};
 

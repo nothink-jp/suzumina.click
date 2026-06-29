@@ -25,11 +25,13 @@ vi.mock("@/lib/auth/client", () => ({
 	signOut: () => mockSignOut(),
 }));
 
-// next/navigation のモック（router.push / refresh）
+// next/navigation のモック（router.push / refresh / usePathname）
 const mockPush = vi.fn();
 const mockRefresh = vi.fn();
+let mockPathname = "/buttons";
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({ push: mockPush, refresh: mockRefresh }),
+	usePathname: () => mockPathname,
 }));
 
 // logger のモック（エラーパス検証用）
@@ -58,6 +60,7 @@ describe("UserMenu", () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks();
+		mockPathname = "/buttons";
 	});
 
 	it("ユーザー情報を正しく表示する", () => {
@@ -96,30 +99,35 @@ describe("UserMenu", () => {
 		expect(myPageLink).toHaveAttribute("href", "/users/me");
 	});
 
-	it("ログアウト押下で client signOut → ホーム遷移 + refresh する", async () => {
+	async function clickLogout() {
 		const user = userEvent.setup();
 		render(<UserMenu user={mockUser} />);
-
-		// メニューを開く
-		const triggerButton = screen.getByRole("button", { name: "ユーザーメニューを開く" });
-		await user.click(triggerButton);
-
-		// ログアウト項目（menuitem）を押下
+		await user.click(screen.getByRole("button", { name: "ユーザーメニューを開く" }));
 		await user.click(screen.getByText("ログアウト"));
+	}
 
-		// client ストアをクリアする signOut が呼ばれ、その後ホームへ戻し refresh する
+	it("公開ページでのログアウトはその場に留まる（push せず refresh のみ）", async () => {
+		mockPathname = "/buttons/RJ123";
+		await clickLogout();
+
+		expect(mockSignOut).toHaveBeenCalledOnce();
+		await waitFor(() => expect(mockRefresh).toHaveBeenCalledOnce());
+		expect(mockPush).not.toHaveBeenCalled();
+	});
+
+	it("認証必須ページでのログアウトはトップへ遷移する", async () => {
+		mockPathname = "/settings";
+		await clickLogout();
+
 		expect(mockSignOut).toHaveBeenCalledOnce();
 		await waitFor(() => expect(mockPush).toHaveBeenCalledWith("/"));
 		expect(mockRefresh).toHaveBeenCalledOnce();
 	});
 
-	it("signOut 失敗時もホーム遷移 + refresh で実セッション状態へ再同期する", async () => {
+	it("signOut 失敗時も遷移処理は続行する（実セッション状態へ再同期）", async () => {
+		mockPathname = "/favorites";
 		mockSignOut.mockRejectedValueOnce(new Error("network error"));
-		const user = userEvent.setup();
-		render(<UserMenu user={mockUser} />);
-
-		await user.click(screen.getByRole("button", { name: "ユーザーメニューを開く" }));
-		await user.click(screen.getByText("ログアウト"));
+		await clickLogout();
 
 		await waitFor(() => expect(mockPush).toHaveBeenCalledWith("/"));
 		expect(mockRefresh).toHaveBeenCalledOnce();

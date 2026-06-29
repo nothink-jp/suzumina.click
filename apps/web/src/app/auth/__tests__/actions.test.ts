@@ -11,10 +11,16 @@ beforeEach(() => {
 });
 
 describe("signInAction", () => {
-	it("Discord で signInWithDiscord を呼ぶ", async () => {
+	it("既定では / を callbackURL として signInWithDiscord を呼ぶ", async () => {
 		signInWithDiscord.mockResolvedValue(undefined);
 		await signInAction();
 		expect(signInWithDiscord).toHaveBeenCalledWith("/");
+	});
+
+	it("渡された callbackURL（現在地）をそのまま signInWithDiscord へ渡す", async () => {
+		signInWithDiscord.mockResolvedValue(undefined);
+		await signInAction("/buttons/RJ123");
+		expect(signInWithDiscord).toHaveBeenCalledWith("/buttons/RJ123");
 	});
 
 	it("エラーは再 throw する", async () => {
