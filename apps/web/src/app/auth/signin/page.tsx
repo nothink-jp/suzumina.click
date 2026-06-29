@@ -33,7 +33,7 @@ async function SignInForm({ searchParams }: SignInPageProps) {
 						type="submit"
 						className="w-full flex items-center justify-center gap-3 bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-3 px-4 rounded-lg transition-colors duration-200"
 					>
-						<DiscordIcon className="w-5 h-5" title="Discordアイコン" />
+						<DiscordIcon className="w-5 h-5" />
 						Discordでログイン
 					</button>
 				</form>
