@@ -1,9 +1,6 @@
 import Link from "next/link";
-import { Suspense } from "react";
-import { getCurrentUser } from "@/lib/auth/server";
-import AuthButton from "../user/auth-button";
 import { DesktopNav } from "./desktop-nav";
-import MobileMenu from "./mobile-menu";
+import { SessionAwareControls } from "./session-aware-controls";
 
 export default function SiteHeader() {
 	return (
@@ -30,31 +27,14 @@ export default function SiteHeader() {
 
 						{/* 認証関連: wrapper の min-h で UserMenu (desktop ~52px) と
 							MobileMenu (mobile 44px) と同じ高さを常に確保する。これにより
-							Suspense リゾルブ前後でヘッダー全体の高さは変動せず CLS=0 を保てる。
-							fallback は枠確保不要なので null で十分。 */}
+							client island のセッション解決前後でヘッダー全体の高さは変動せず CLS=0 を保てる。
+							SessionAwareControls は session を client 自己取得し SSR に焼かない（CDN 漏洩防止）。 */}
 						<div className="flex items-center space-x-4 min-h-[44px] md:min-h-[52px]">
-							<Suspense fallback={null}>
-								<SessionAwareControls />
-							</Suspense>
+							<SessionAwareControls />
 						</div>
 					</div>
 				</div>
 			</header>
-		</>
-	);
-}
-
-async function SessionAwareControls() {
-	const user = await getCurrentUser();
-	return (
-		<>
-			{/* 認証ボタン */}
-			<div className="hidden md:flex">
-				<AuthButton user={user} />
-			</div>
-
-			{/* モバイルメニュー */}
-			<MobileMenu user={user} />
 		</>
 	);
 }

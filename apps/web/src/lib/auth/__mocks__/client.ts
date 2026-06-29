@@ -7,3 +7,6 @@
 import { vi } from "vitest";
 
 export const useSession = vi.fn(() => null);
+
+// 既定は「解決済み・未ログイン」。isPending を見る呼び出し側（ヘッダー island 等）向け。
+export const useSessionState = vi.fn(() => ({ user: null, isPending: false }));

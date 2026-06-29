@@ -20,10 +20,21 @@ const authClient = createAuthClient({
 });
 
 /**
+ * セッションの appUser に加えて解決中フラグ（isPending）も返す client フック。
+ * 初回ロード時の「未解決 = null」と「未認証 = null」を区別したい呼び出し側（ヘッダー等）が使う。
+ */
+export function useBetterAuthSessionState(): {
+	user: UserSession | null;
+	isPending: boolean;
+} {
+	const { data, isPending } = authClient.useSession();
+	return { user: data?.appUser ?? null, isPending };
+}
+
+/**
  * 現在のセッションの appUser（アプリ UserSession）を返す client フック。未認証は null。
- * customSession の戻り（{ user, session, appUser }）から appUser を取り出す。
+ * isPending を見ない呼び出し側向けの薄いラッパー。
  */
 export function useBetterAuthAppUser(): UserSession | null {
-	const { data } = authClient.useSession();
-	return data?.appUser ?? null;
+	return useBetterAuthSessionState().user;
 }

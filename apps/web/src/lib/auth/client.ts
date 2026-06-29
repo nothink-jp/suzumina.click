@@ -7,8 +7,16 @@
 "use client";
 
 import type { UserSession } from "@suzumina.click/shared-types";
-import { useBetterAuthAppUser } from "./better-auth-client";
+import { useBetterAuthAppUser, useBetterAuthSessionState } from "./better-auth-client";
 
 export function useSession(): UserSession | null {
 	return useBetterAuthAppUser();
+}
+
+/**
+ * `useSession()` に解決中フラグを足した版。セッション解決前（isPending）と未認証（user=null）を
+ * 区別したい呼び出し側で使う。
+ */
+export function useSessionState(): { user: UserSession | null; isPending: boolean } {
+	return useBetterAuthSessionState();
 }
