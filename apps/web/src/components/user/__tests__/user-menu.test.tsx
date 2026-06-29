@@ -1,5 +1,5 @@
 import type { UserSession } from "@suzumina.click/shared-types";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import UserMenu from "../user-menu";
@@ -19,9 +19,17 @@ vi.mock("../user-avatar", () => ({
 	),
 }));
 
-// Server Actionsのモック
-vi.mock("@/app/auth/actions", () => ({
-	signOutAction: vi.fn(),
+// client 認証抽象のモック（signOut）
+const mockSignOut = vi.fn(async () => {});
+vi.mock("@/lib/auth/client", () => ({
+	signOut: () => mockSignOut(),
+}));
+
+// next/navigation のモック（router.push / refresh）
+const mockPush = vi.fn();
+const mockRefresh = vi.fn();
+vi.mock("next/navigation", () => ({
+	useRouter: () => ({ push: mockPush, refresh: mockRefresh }),
 }));
 
 // Next.js Linkコンポーネントのモック
@@ -81,7 +89,7 @@ describe("UserMenu", () => {
 		expect(myPageLink).toHaveAttribute("href", "/users/me");
 	});
 
-	it("ログアウトボタンがサブミットボタンとして正しく設定されている", async () => {
+	it("ログアウト押下で client signOut → ホーム遷移 + refresh する", async () => {
 		const user = userEvent.setup();
 		render(<UserMenu user={mockUser} />);
 
@@ -89,9 +97,13 @@ describe("UserMenu", () => {
 		const triggerButton = screen.getByRole("button", { name: "ユーザーメニューを開く" });
 		await user.click(triggerButton);
 
-		// ログアウトボタンを確認
-		const logoutButton = screen.getByRole("button", { name: /ログアウト/i });
-		expect(logoutButton).toHaveAttribute("type", "submit");
+		// ログアウト項目（menuitem）を押下
+		await user.click(screen.getByText("ログアウト"));
+
+		// client ストアをクリアする signOut が呼ばれ、その後ホームへ戻し refresh する
+		expect(mockSignOut).toHaveBeenCalledOnce();
+		await waitFor(() => expect(mockPush).toHaveBeenCalledWith("/"));
+		expect(mockRefresh).toHaveBeenCalledOnce();
 	});
 
 	it("アクセシビリティ属性が正しく設定されている", () => {

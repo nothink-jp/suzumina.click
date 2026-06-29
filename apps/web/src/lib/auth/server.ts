@@ -37,16 +37,3 @@ export async function signInWithDiscord(callbackURL = "/"): Promise<void> {
 	}
 	redirect(res.url);
 }
-
-/**
- * 現在のセッションからサインアウトし、callbackURL へリダイレクトする。
- */
-export async function signOutCurrent(callbackURL = "/"): Promise<void> {
-	const [{ auth }, { headers }, { redirect }] = await Promise.all([
-		import("@/lib/better-auth/auth"),
-		import("next/headers"),
-		import("next/navigation"),
-	]);
-	await auth.api.signOut({ headers: await headers() });
-	redirect(callbackURL);
-}

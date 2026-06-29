@@ -7,7 +7,11 @@
 "use client";
 
 import type { UserSession } from "@suzumina.click/shared-types";
-import { useBetterAuthAppUser, useBetterAuthSessionState } from "./better-auth-client";
+import {
+	signOutClient,
+	useBetterAuthAppUser,
+	useBetterAuthSessionState,
+} from "./better-auth-client";
 
 export function useSession(): UserSession | null {
 	return useBetterAuthAppUser();
@@ -19,4 +23,12 @@ export function useSession(): UserSession | null {
  */
 export function useSessionState(): { user: UserSession | null; isPending: boolean } {
 	return useBetterAuthSessionState();
+}
+
+/**
+ * クライアント側サインアウト。サーバーのセッション cookie 失効に加えて client セッションストアも
+ * クリアするため、useSession() を参照する表示（ヘッダー等）がリロード無しで更新される。
+ */
+export async function signOut(): Promise<void> {
+	return signOutClient();
 }

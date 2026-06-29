@@ -1,3 +1,5 @@
+"use client";
+
 import type { UserSession } from "@suzumina.click/shared-types";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import {
@@ -10,7 +12,8 @@ import {
 } from "@suzumina.click/ui/components/ui/dropdown-menu";
 import { Heart, LogOut, Settings, User } from "lucide-react";
 import Link from "next/link";
-import { signOutAction } from "@/app/auth/actions";
+import { useRouter } from "next/navigation";
+import { signOut } from "@/lib/auth/client";
 import UserAvatar from "./user-avatar";
 
 interface UserMenuProps {
@@ -18,6 +21,16 @@ interface UserMenuProps {
 }
 
 export default function UserMenu({ user }: UserMenuProps) {
+	const router = useRouter();
+
+	// client 側 signOut で session ストアを反応的にクリアし、ヘッダー表示をリロード無しで更新する。
+	// その後ホームへ戻し、サーバーコンポーネント側の per-user 表示も再取得させる。
+	const handleSignOut = async () => {
+		await signOut();
+		router.push("/");
+		router.refresh();
+	};
+
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
@@ -64,13 +77,13 @@ export default function UserMenu({ user }: UserMenuProps) {
 					</Link>
 				</DropdownMenuItem>
 				<DropdownMenuSeparator />
-				<DropdownMenuItem asChild>
-					<form action={signOutAction} className="w-full">
-						<button type="submit" className="flex items-center gap-2 w-full text-left">
-							<LogOut className="h-4 w-4" />
-							<span>ログアウト</span>
-						</button>
-					</form>
+				<DropdownMenuItem
+					// asChild を使わず DropdownMenuItem 自体を押下対象にする（選択でメニューは閉じる）。
+					onSelect={() => void handleSignOut()}
+					className="flex items-center gap-2 cursor-pointer"
+				>
+					<LogOut className="h-4 w-4" />
+					<span>ログアウト</span>
 				</DropdownMenuItem>
 			</DropdownMenuContent>
 		</DropdownMenu>
