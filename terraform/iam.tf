@@ -342,6 +342,7 @@ resource "google_service_account_iam_binding" "terraform_apply_sa_wif" {
 locals {
   terraform_apply_sa_roles = [
     "roles/editor",                          # 大半のリソース CRUD（run/scheduler/firestore/monitoring/logging/pubsub/AR/functions 等）
+    "roles/logging.configWriter",            # editor は logging.sinks.get/list のみで書き込み不可（logMetrics はフル）。sink 更新（logging.tf）に必須
     "roles/resourcemanager.projectIamAdmin", # google_project_iam_member（プロジェクト IAM、32件）
     "roles/iam.serviceAccountAdmin",         # google_service_account + SA IAM binding
     "roles/iam.roleAdmin",                   # google_project_iam_custom_role（カスタムロール 2件）
