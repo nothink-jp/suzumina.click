@@ -7,7 +7,9 @@
 
 # ログベースメトリクスを作成してアラートに使用
 # per-work の一時エラー（Individual Info API取得エラー / API HTTP Error）は毎日数件出る常態の
-# ため除外し、系統障害（作品ID収集エラー・Firestore書き込み失敗等）のみを対象とする。
+# ため除外し、系統障害（作品ID収集エラー・統合データ収集エラー・予期しないエラー等）のみを対象とする。
+# API 全面停止（全 work が per-work エラー）は除外の副作用でここから漏れるが、
+# バッチ全滅を dlsite_api_batch_all_failed が独立して検知する（役割分担）。
 resource "google_logging_metric" "dlsite_error_count" {
   name    = "dlsite_function_errors"
   project = var.gcp_project_id
@@ -156,14 +158,18 @@ resource "google_monitoring_alert_policy" "dlsite_no_data_fetched" {
   ]
 }
 
-# DLsite関数の実行失敗アラート
+# DLsite関数のプラットフォーム障害アラート（OOM・タイムアウト・クラッシュ）
+# エントリポイント（dlsite-individual-info-api.ts の fetchDLsiteUnifiedData）は catch-all で
+# 例外を ERROR ログ化して正常終了（2xx）するため、アプリレベルの失敗はここでは 5xx にならず
+# dlsite_error_count 側が検知する。この alert はプロセスが応答を返せなかったケース
+# （プラットフォームによる強制終了）専用（役割分担・SPR-234）。
 resource "google_monitoring_alert_policy" "dlsite_function_failure" {
-  display_name = "DLsite Function Execution Failure"
+  display_name = "DLsite Function Platform Failure (5xx)"
   project      = var.gcp_project_id
   combiner     = "OR"
 
   conditions {
-    display_name = "関数実行の失敗"
+    display_name = "プラットフォーム強制終了(5xx)を検出"
 
     condition_threshold {
       # Gen1 の cloudfunctions.googleapis.com/function/execution_count は Gen2 では
@@ -193,21 +199,98 @@ resource "google_monitoring_alert_policy" "dlsite_function_failure" {
 
   documentation {
     content   = <<-EOT
-    # DLsite関数の実行失敗
-    
-    fetchDLsiteUnifiedData関数の実行が失敗しました。
-    
+    # DLsite関数のプラットフォーム障害（5xx）
+
+    fetchDLsiteUnifiedData の呼び出しが 5xx で終了しました。エントリポイントは例外を
+    catch して正常終了するため、これはアプリ内エラーではなく OOM・リクエストタイムアウト・
+    プロセスクラッシュ等、プラットフォームが強制終了したケースを意味します
+    （アプリ内で catch されたエラーは DLsite Function Error Alert 側で検知）。
+
     ## 確認事項
-    1. Cloud Functions のエラーログを確認
-    2. Individual Info API の応答確認
-    3. メモリ不足やタイムアウトの可能性
-    4. 権限エラーの確認
+    1. Cloud Run のログ（resource.type="cloud_run_revision", service_name="fetchdlsiteunifieddata"）を確認
+    2. メモリ使用量・リクエストタイムアウト設定の確認
+    3. 直近のデプロイ・依存更新の有無
     EOT
     mime_type = "text/markdown"
   }
 
   depends_on = [google_monitoring_notification_channel.email]
 }
+# ログベースメトリクス - バッチ全滅（Individual Info API 全面停止の兆候）
+# per-work の一時エラーは dlsite_error_count から除外しているため、「全 work が取得失敗する
+# 全面停止」はこのメトリクスが検知の正本（役割分担・SPR-234）。バッチ内 50件全てが失敗すると
+# processBatch が「バッチ N: APIレスポンスなし」を WARN 出力する（dlsite-individual-info-api.ts）。
+# 平常時は発生しない（過去30日で0件・2026-07-04 実測）ため閾値は >0 でノイズにならない。
+resource "google_logging_metric" "dlsite_api_batch_all_failed" {
+  name    = "dlsite_api_batch_all_failed"
+  project = var.gcp_project_id
+
+  filter = <<-EOT
+    resource.type="cloud_run_revision"
+    resource.labels.service_name="fetchdlsiteunifieddata"
+    jsonPayload.message:"APIレスポンスなし"
+  EOT
+
+  metric_descriptor {
+    metric_kind  = "DELTA"
+    value_type   = "INT64"
+    display_name = "DLsite API Batch All Failed"
+  }
+}
+
+# DLsite API バッチ全滅アラート
+resource "google_monitoring_alert_policy" "dlsite_api_batch_all_failed" {
+  display_name = "DLsite API Batch All Failed Alert"
+  project      = var.gcp_project_id
+  combiner     = "OR"
+
+  conditions {
+    display_name = "バッチ内全件のAPI取得失敗を検出"
+
+    condition_threshold {
+      filter = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.dlsite_api_batch_all_failed.id}\" resource.type=\"cloud_run_revision\""
+
+      aggregations {
+        alignment_period   = "300s"
+        per_series_aligner = "ALIGN_RATE"
+      }
+
+      comparison      = "COMPARISON_GT"
+      threshold_value = 0
+      duration        = "0s"
+    }
+  }
+
+  notification_channels = [
+    google_monitoring_notification_channel.email.name
+  ]
+
+  documentation {
+    content   = <<-EOT
+    # DLsite Individual Info API バッチ全滅
+
+    1バッチ（50件）の Individual Info API 取得が全件失敗しました。平常時は発生しない
+    シグナルで、API の全面停止・アクセスブロック・ネットワーク障害の兆候です
+    （個別作品の一時エラーは常態のためアラート対象外。全滅のみここで検知）。
+
+    ## 確認事項
+    1. DLsite の稼働状況を手動確認（Webサイト・Individual Info API）
+    2. レート制限・IPブロックの可能性（Cloud Run の egress IP からのアクセス可否）
+    3. ログ確認: jsonPayload.message:"APIレスポンスなし" を Cloud Logging で検索
+
+    ## 補足
+    連続する場合も works の既存データは保持され、価格履歴のみ当日分が欠落する。
+    復旧後の run で自動的に再開する（手動介入は原則不要）。
+    EOT
+    mime_type = "text/markdown"
+  }
+
+  depends_on = [
+    google_monitoring_notification_channel.email,
+    google_logging_metric.dlsite_api_batch_all_failed
+  ]
+}
+
 # ログベースメトリクス - スキーマドリフト（SPR-140 / SPR-144）
 # 本番フェッチ経路で、既知フィールド集合に無い新フィールドが出現すると
 # logger.warn が jsonPayload.alert="dlsite_schema_drift" 付きで出力される。
