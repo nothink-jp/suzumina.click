@@ -32,6 +32,8 @@ describe("KNOWN_FIELDS", () => {
 		// ベースライン由来（未モデルだが観測実績あり）
 		expect(KNOWN_FIELDS.has("workno")).toBe(true);
 		expect(KNOWN_FIELDS.has("genres")).toBe(true);
+		// 2026-06-24 から本番で観測された恒常追加フィールド（alert 沈静化の回帰ガード）
+		expect(KNOWN_FIELDS.has("is_sound_playable")).toBe(true);
 		// 254 + Zod キーの union なので相応に大きい
 		expect(KNOWN_FIELDS.size).toBeGreaterThan(200);
 	});

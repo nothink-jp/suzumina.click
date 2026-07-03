@@ -10,6 +10,7 @@
  *   → tmp/dlsite-capture/report.json の fieldUsage(presence+unknownFields) の和集合
  *
  * 最終生成: 2026-06-04 / サンプル150件で観測した 254 フィールド
+ * 手動追記: 2026-07-04 is_sound_playable（本番 drift alert 観測による）
  */
 export const KNOWN_DLSITE_API_FIELDS: readonly string[] = [
 	"age_category",
@@ -131,6 +132,8 @@ export const KNOWN_DLSITE_API_FIELDS: readonly string[] = [
 	"is_show_campaign_end_date",
 	"is_show_rate",
 	"is_smartphone_work",
+	// 音声再生可能フラグ（推測）。2026-06-24 から本番 drift alert で全バッチ観測（DLsite 恒常追加と判断）
+	"is_sound_playable",
 	"is_split_content",
 	"is_timesale_work",
 	"is_title_completed",
