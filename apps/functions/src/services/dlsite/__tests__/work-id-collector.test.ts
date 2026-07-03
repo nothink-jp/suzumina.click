@@ -36,11 +36,7 @@ vi.mock("../dlsite-ajax-fetcher", () => {
 	};
 });
 
-import {
-	collectAllWorkIds,
-	collectWorkIdsForDevelopment,
-	collectWorkIdsForProduction,
-} from "../work-id-collector";
+import { collectAllWorkIds, collectWorkIdsForProduction } from "../work-id-collector";
 
 // モックの参照を取得
 const ajaxFetcherMock = vi.mocked(await import("../dlsite-ajax-fetcher"));
@@ -308,26 +304,6 @@ describe("work-id-collector", () => {
 			// logger.infoが詳細情報で呼ばれることを確認
 			const logger = await import("../../../shared/logger");
 			expect(logger.info).toHaveBeenCalledWith(expect.stringContaining("ページ 1 を処理中"));
-		});
-	});
-
-	describe("collectWorkIdsForDevelopment", () => {
-		it("開発用の詳細情報を含む結果を返す", async () => {
-			mockFetchDLsiteAjaxResult.mockResolvedValue(sampleAjaxResult);
-			mockIsLastPageFromPageInfo.mockReturnValue(true);
-
-			const result = await collectWorkIdsForDevelopment();
-
-			expect(result).toEqual({
-				workIds: expect.arrayContaining(["RJ258750", "RJ261600"]),
-				totalCount: 150,
-				pageCount: 0, // Current implementation bug: when isLastPage=true on first page, returns currentPage-1=0
-				metadata: {
-					creatorName: "涼花みなせ",
-					searchUrl: expect.stringContaining("dlsite.com"),
-					environment: expect.any(String),
-				},
-			});
 		});
 	});
 

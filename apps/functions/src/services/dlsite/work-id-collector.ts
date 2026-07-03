@@ -259,38 +259,6 @@ export async function collectAllWorkIds(
 }
 
 /**
- * 開発ツール用の詳細作品ID収集
- * collect-work-ids.ts の機能に対応
- */
-export async function collectWorkIdsForDevelopment(): Promise<{
-	workIds: string[];
-	totalCount: number;
-	pageCount: number;
-	metadata: {
-		creatorName: string;
-		searchUrl: string;
-		environment: string;
-	};
-}> {
-	const result = await collectAllWorkIds({
-		enableDetailedLogging: true,
-		maxPages: 100,
-	});
-
-	return {
-		workIds: result.workIds,
-		totalCount: result.totalCount,
-		pageCount: result.totalPages,
-		metadata: {
-			creatorName: "涼花みなせ",
-			searchUrl:
-				"https://www.dlsite.com/maniax/fsr/=/keyword_creater/%22%E6%B6%BC%E8%8A%B1%E3%81%BF%E3%81%AA%E3%81%9B%22/order/release/",
-			environment: process.env.NODE_ENV || "development",
-		},
-	};
-}
-
-/**
  * Cloud Functions用の効率的作品ID収集
  * dlsite-individual-info-api.ts の getAllWorkIds() に対応
  */

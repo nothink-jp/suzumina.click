@@ -32,12 +32,14 @@ import { join, resolve } from "node:path";
 import { DLsiteApiResponse } from "@suzumina.click/shared-types";
 import { batchFetchIndividualInfo } from "../../services/dlsite/individual-info-api-client";
 import { KNOWN_FIELDS } from "../../services/dlsite/schema-drift";
+import { collectAllWorkIds } from "../../services/dlsite/work-id-collector";
 import * as logger from "../../shared/logger";
 
 // パッケージルート（apps/functions）基準のパス
 const PACKAGE_ROOT = resolve(__dirname, "../../..");
 const DEFAULT_OUT_DIR = join(PACKAGE_ROOT, "tmp/dlsite-capture"); // tmp/ は .gitignore 済み
-const ASSET_FILE = join(PACKAGE_ROOT, "src/assets/dlsite-work-ids.json");
+// scrape は 100件/ページ（work-id-collector の per_page）。--limit から必要ページ数を逆算する
+const SCRAPE_PAGE_SIZE = 100;
 const DEFAULT_LIMIT = 20;
 // この件数未満で baseline を書き出すと、条件付きフィールドの取りこぼしで後の比較が誤検知しやすい
 const MIN_RELIABLE_BASELINE_SAMPLE = 50;
@@ -46,9 +48,9 @@ const MIN_RELIABLE_BASELINE_SAMPLE = 50;
  * CLI オプション
  */
 export interface CaptureOptions {
-	/** 明示指定された作品ID（指定時はアセットファイルを使わない） */
+	/** 明示指定された作品ID（指定時はローカル scrape を行わない） */
 	workIds?: string[];
-	/** アセットファイルから取得する件数の上限 */
+	/** ローカル scrape（最新順）から取得する件数の上限 */
 	limit: number;
 	/** 出力ディレクトリ */
 	outDir: string;
@@ -352,27 +354,23 @@ export function formatReport(
 }
 
 /**
- * アセットファイルから作品IDを読み込む
+ * 解析対象の作品IDを決定する。
+ * --workid 未指定時はローカル scrape（最新順）から limit 件を取る
+ * （旧 asset `dlsite-work-ids.json` は stale のため SPR-232 で撤去済み）。
  */
-function loadAssetWorkIds(): string[] {
-	const data = JSON.parse(readFileSync(ASSET_FILE, "utf-8"));
-	return (data.workIds ?? []) as string[];
-}
-
-/**
- * 解析対象の作品IDを決定する
- */
-function resolveTargetWorkIds(opts: CaptureOptions): string[] {
+async function resolveTargetWorkIds(opts: CaptureOptions): Promise<string[]> {
 	if (opts.workIds && opts.workIds.length > 0) {
 		return opts.workIds;
 	}
-	const all = loadAssetWorkIds();
-	return all.slice(0, opts.limit);
+	const scraped = await collectAllWorkIds({
+		maxPages: Math.ceil(opts.limit / SCRAPE_PAGE_SIZE),
+	});
+	return scraped.workIds.slice(0, opts.limit);
 }
 
 async function main(): Promise<void> {
 	const opts = parseArgs(process.argv.slice(2));
-	const workIds = resolveTargetWorkIds(opts);
+	const workIds = await resolveTargetWorkIds(opts);
 
 	logger.info("🔍 DLsite dry-run + raw 捕捉を開始（実 API・Firestore 非書き込み）", {
 		targets: workIds.length,

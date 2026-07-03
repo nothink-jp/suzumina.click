@@ -57,14 +57,11 @@ pnpm tools:reset
 ### DLsite関連ツール
 
 ```bash
-# 作品ID収集
-pnpm collect:work-ids
+# region 等価性の定点観測（ローカル日本scrape vs 本番 works・read-only）
+pnpm check:region-equivalence
 
-# ローカル環境での完全収集
-pnpm collect:complete-local
-
-# リージョン制限検出
-pnpm detect:region-restrictions
+# dry-run + raw 捕捉（スキーマdrift観測・Firestore非書き込み）
+pnpm tools:capture -- --limit 20
 ```
 
 ### データ整合性チェック
