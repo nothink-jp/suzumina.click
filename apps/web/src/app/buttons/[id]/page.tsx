@@ -28,6 +28,7 @@ export async function generateMetadata({ params }: AudioButtonDetailPageProps): 
 		return {
 			title: "音声ボタンが見つかりません",
 			description: "指定された音声ボタンは存在しないか、削除された可能性があります。",
+			robots: { index: false, follow: false },
 		};
 	}
 
@@ -35,6 +36,7 @@ export async function generateMetadata({ params }: AudioButtonDetailPageProps): 
 		return {
 			title: "音声ボタンが見つかりません",
 			description: "指定された音声ボタンは存在しないか、削除された可能性があります。",
+			robots: { index: false, follow: false },
 		};
 	}
 

@@ -7,7 +7,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 
 export const metadata: Metadata = {
-	title: "エラー | すずみなくりっく！",
+	title: "エラー",
 	description: "認証中にエラーが発生しました。",
 };
 

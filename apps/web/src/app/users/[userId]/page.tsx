@@ -18,15 +18,17 @@ export async function generateMetadata({ params }: UserProfilePageProps): Promis
 	try {
 		const resolvedParams = await params;
 		const user = await getUserByDiscordId(resolvedParams.userId);
+		// title は layout の title.template がサフィックスを付与するため手書きしない（二重化防止）
 		if (!user) {
 			return {
-				title: "ユーザーが見つかりません | すずみなくりっく！",
+				title: "ユーザーが見つかりません",
 				description: "指定されたユーザーが見つかりません。",
+				robots: { index: false, follow: false },
 			};
 		}
 
 		return {
-			title: `${user.displayName}のプロフィール | すずみなくりっく！`,
+			title: `${user.displayName}のプロフィール`,
 			description: `${user.displayName}さんの作成した音声ボタンをチェック。涼花みなせファンコミュニティ suzumina.click`,
 			alternates: {
 				canonical: `/users/${resolvedParams.userId}`,
@@ -39,7 +41,7 @@ export async function generateMetadata({ params }: UserProfilePageProps): Promis
 		};
 	} catch {
 		return {
-			title: "プロフィール | すずみなくりっく！",
+			title: "プロフィール",
 			description: "ユーザープロフィールページ",
 		};
 	}
