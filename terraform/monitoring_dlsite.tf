@@ -303,6 +303,154 @@ resource "google_monitoring_alert_policy" "dlsite_api_batch_all_failed" {
   ]
 }
 
+# ログベースメトリクス - 定期 run の開始（無音障害検知用ハートビート）
+# Scheduler 停止 / Pub/Sub subscription・Eventarc trigger の破壊 / 関数消失では
+# 「ログが出ない」ため、ログ内容ベースのアラートは全て沈黙する（SPR-234 分類 B1）。
+# run 開始ログ（2h 毎・12回/日）を metric 化し、absence 条件で run 途絶そのものを検知する。
+resource "google_logging_metric" "dlsite_run_started" {
+  name    = "dlsite_run_started"
+  project = var.gcp_project_id
+
+  filter = <<-EOT
+    resource.type="cloud_run_revision"
+    resource.labels.service_name="fetchdlsiteunifieddata"
+    (jsonPayload.message:"統合データ収集開始" OR textPayload:"統合データ収集開始")
+  EOT
+
+  metric_descriptor {
+    metric_kind  = "DELTA"
+    value_type   = "INT64"
+    display_name = "DLsite Run Started"
+  }
+}
+
+# DLsite 定期 run 途絶アラート（dead man's switch）
+resource "google_monitoring_alert_policy" "dlsite_run_absent" {
+  display_name = "DLsite Run Absent Alert"
+  project      = var.gcp_project_id
+  combiner     = "OR"
+
+  conditions {
+    display_name = "定期runが3時間以上観測されない"
+
+    # 2h 周期 + 1h マージン。1 run 欠けの時点で異常（過去ログでは欠けゼロ）。
+    condition_absent {
+      filter   = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.dlsite_run_started.id}\" resource.type=\"cloud_run_revision\""
+      duration = "10800s"
+
+      aggregations {
+        alignment_period   = "300s"
+        per_series_aligner = "ALIGN_COUNT"
+      }
+
+      trigger {
+        count = 1
+      }
+    }
+  }
+
+  notification_channels = [
+    google_monitoring_notification_channel.email.name
+  ]
+
+  documentation {
+    content   = <<-EOT
+    # DLsite 定期 run の途絶（3時間以上）
+
+    fetchDLsiteUnifiedData の run 開始ログが3時間以上観測されていません（正常時は
+    2時間毎・12回/日）。ログ自体が出ない障害のため、他の DLsite アラートは沈黙します。
+
+    ## 考えられる原因と確認手順
+    1. Cloud Scheduler 停止/削除: gcloud scheduler jobs describe fetch-dlsite-individual-api-hourly --location=asia-northeast1
+    2. Pub/Sub topic/subscription・Eventarc trigger の破壊: gcloud eventarc triggers list --location=asia-northeast1
+    3. サービス消失/起動不能: gcloud run services describe fetchdlsiteunifieddata --region=asia-northeast1
+    4. 直近のデプロイ・terraform apply の有無を確認
+
+    ## 復旧確認
+    手動トリガで1 run 流す: gcloud scheduler jobs run fetch-dlsite-individual-api-hourly --location=asia-northeast1
+    EOT
+    mime_type = "text/markdown"
+  }
+
+  depends_on = [
+    google_monitoring_notification_channel.email,
+    google_logging_metric.dlsite_run_started
+  ]
+}
+
+# ログベースメトリクス - API 取得失敗率の上昇（部分劣化）
+# バッチ取得で失敗が 10% を超えるとクライアントが集約 WARN「API取得失敗が多数」を出す
+# （individual-info-api-client.ts）。per-work 一時エラー（常態・除外済み）と「全滅」
+# （dlsite_api_batch_all_failed）の中間帯＝部分劣化を検知する（SPR-234 分類 B2）。
+# 頻度実績は月1〜3回（直近30日で3回・失敗率12〜18%）＝低ノイズ。
+# 単一文字列 warn のため textPayload に出る点に注意（両フィールド張り）。
+resource "google_logging_metric" "dlsite_api_failure_rate_high" {
+  name    = "dlsite_api_failure_rate_high"
+  project = var.gcp_project_id
+
+  filter = <<-EOT
+    resource.type="cloud_run_revision"
+    resource.labels.service_name="fetchdlsiteunifieddata"
+    (jsonPayload.message:"API取得失敗が多数" OR textPayload:"API取得失敗が多数")
+  EOT
+
+  metric_descriptor {
+    metric_kind  = "DELTA"
+    value_type   = "INT64"
+    display_name = "DLsite API Failure Rate High"
+  }
+}
+
+# DLsite API 部分劣化アラート（失敗率 >10%）
+resource "google_monitoring_alert_policy" "dlsite_api_failure_rate_high" {
+  display_name = "DLsite API High Failure Rate Alert"
+  project      = var.gcp_project_id
+  combiner     = "OR"
+
+  conditions {
+    display_name = "バッチ取得の失敗率10%超を検出"
+
+    condition_threshold {
+      filter = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.dlsite_api_failure_rate_high.id}\" resource.type=\"cloud_run_revision\""
+
+      aggregations {
+        alignment_period   = "300s"
+        per_series_aligner = "ALIGN_RATE"
+      }
+
+      comparison      = "COMPARISON_GT"
+      threshold_value = 0
+      duration        = "0s"
+    }
+  }
+
+  notification_channels = [
+    google_monitoring_notification_channel.email.name
+  ]
+
+  documentation {
+    content   = <<-EOT
+    # DLsite API 取得失敗率の上昇（部分劣化）
+
+    バッチ取得の失敗率が 10% を超えました（実績: 月1〜3回・12〜18%）。DLsite 側の
+    部分障害・レート制限・ネットワーク不調の兆候です。単発は自己回復することが
+    多いですが、短時間に連続する場合は全面停止（DLsite API Batch All Failed）へ
+    進行する可能性があるため要調査です。
+
+    ## 確認事項
+    1. ログ確認: "API取得失敗が多数" / "Individual Info API サーバーエラー" を Cloud Logging で検索
+    2. DLsite の稼働状況を手動確認
+    3. 失敗した作品は次 run（2h後）で自動再試行される（手動介入は原則不要）
+    EOT
+    mime_type = "text/markdown"
+  }
+
+  depends_on = [
+    google_monitoring_notification_channel.email,
+    google_logging_metric.dlsite_api_failure_rate_high
+  ]
+}
+
 # ログベースメトリクス - スキーマドリフト（SPR-140 / SPR-144）
 # 本番フェッチ経路で、既知フィールド集合に無い新フィールドが出現すると
 # logger.warn が jsonPayload.alert="dlsite_schema_drift" 付きで出力される。
