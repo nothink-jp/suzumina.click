@@ -216,6 +216,7 @@ resource "google_monitoring_alert_policy" "dlsite_function_failure" {
 
   depends_on = [google_monitoring_notification_channel.email]
 }
+
 # ログベースメトリクス - バッチ全滅（Individual Info API 全面停止の兆候）
 # per-work の一時エラーは dlsite_error_count から除外しているため、「全 work が取得失敗する
 # 全面停止」はこのメトリクスが検知の正本（役割分担・SPR-234）。バッチ内 50件全てが失敗すると
