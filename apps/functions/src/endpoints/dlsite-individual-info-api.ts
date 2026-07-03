@@ -346,34 +346,6 @@ function getContinuationInfo(
 }
 
 /**
- * 作品IDを収集（エラー時はフォールバック）
- */
-async function collectWorkIdsWithFallback(): Promise<string[]> {
-	try {
-		logger.info("作品ID収集を開始します...");
-		const workIds = await collectWorkIdsForProduction();
-		logger.info(`作品ID収集完了: ${workIds.length}件`);
-		return workIds;
-	} catch (error) {
-		logger.error("作品ID収集エラー:", {
-			error: error instanceof Error ? error.message : String(error),
-			errorType: error instanceof Error ? error.name : "Unknown",
-		});
-
-		// エラー時はアセットファイルから読み込み
-		try {
-			const { default: data } = await import("../assets/dlsite-work-ids.json");
-			const workIds = data.workIds || [];
-			logger.warn(`アセットファイルから${workIds.length}件の作品IDを読み込みました`);
-			return workIds;
-		} catch (assetError) {
-			logger.error("アセットファイル読み込みエラー:", assetError);
-			return [];
-		}
-	}
-}
-
-/**
  * 新規バッチ処理を初期化
  */
 async function initializeNewBatchProcessing(
@@ -521,7 +493,20 @@ async function prepareNewBatchProcessing(metadata: CollectionMetadata): Promise<
 	batches: string[][];
 	existingWorksMap: Map<string, WorkDocument>;
 } | null> {
-	const currentWorkIds = await collectWorkIdsWithFallback();
+	// scrape 失敗時は stale な一覧でサイクルを回すより run を中断する方が安全。
+	// 次の定期実行(2h)が自然なリトライになる（SPR-232: region 等価性の確認を経て asset fallback を撤去）。
+	let currentWorkIds: string[];
+	try {
+		logger.info("作品ID収集を開始します...");
+		currentWorkIds = await collectWorkIdsForProduction();
+		logger.info(`作品ID収集完了: ${currentWorkIds.length}件`);
+	} catch (error) {
+		logger.error("作品ID収集エラー: この run を中断します（次の定期実行でリトライ）", {
+			error: error instanceof Error ? error.message : String(error),
+			errorType: error instanceof Error ? error.name : "Unknown",
+		});
+		return null;
+	}
 
 	// 作品数が変わっているかチェック
 	const isWorkCountChanged =
