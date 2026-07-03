@@ -36,14 +36,16 @@ export async function generateMetadata({ params }: WorkDetailPageProps) {
 
 	const work = await getWorkById(workId);
 
+	// title は layout の title.template がサフィックスを付与するため手書きしない（二重化防止）
 	if (!work) {
 		return {
-			title: "作品が見つかりません | すずみなくりっく！",
+			title: "作品が見つかりません",
+			robots: { index: false, follow: false },
 		};
 	}
 
 	return {
-		title: `${work.title} | すずみなくりっく！`,
+		title: work.title,
 		description:
 			work.description || `涼花みなせさんが出演する音声作品「${work.title}」の詳細ページです。`,
 		alternates: {

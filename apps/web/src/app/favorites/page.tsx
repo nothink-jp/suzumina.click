@@ -5,7 +5,7 @@ import { getFavoritesList } from "./actions";
 import FavoritesList from "./components/favorites-list";
 
 export const metadata: Metadata = {
-	title: "お気に入り | すずみなくりっく！",
+	title: "お気に入り",
 	description: "お気に入り登録した音声ボタン一覧",
 };
 

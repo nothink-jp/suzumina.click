@@ -59,14 +59,16 @@ export async function generateMetadata({ params }: VideoDetailPageProps) {
 
 	const video = await getVideoById(videoId);
 
+	// title は layout の title.template がサフィックスを付与するため手書きしない（二重化防止）
 	if (!video) {
 		return {
-			title: "動画が見つかりません | すずみなくりっく！",
+			title: "動画が見つかりません",
+			robots: { index: false, follow: false },
 		};
 	}
 
 	return {
-		title: `${video.title} | すずみなくりっく！`,
+		title: video.title,
 		description: video.description || `涼花みなせさんの動画「${video.title}」の詳細ページです。`,
 		alternates: {
 			canonical: `/videos/${videoId}`,
