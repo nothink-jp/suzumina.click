@@ -91,10 +91,15 @@ resource "google_logging_metric" "dlsite_no_data" {
   name    = "dlsite_no_data_fetched"
   project = var.gcp_project_id
 
+  # 注意: 付加フィールド無しの logger 呼び出しは Cloud Run が message を textPayload へ昇格させる
+  # （jsonPayload は残らない）ため、両フィールドを OR で張る（SPR-234）。
   filter = <<-EOT
     resource.type="cloud_run_revision"
     resource.labels.service_name="fetchdlsiteunifieddata"
-    (jsonPayload.message:"作品ID収集エラー" OR jsonPayload.message:"収集対象の作品IDが見つかりません")
+    (
+      jsonPayload.message:"作品ID収集エラー" OR textPayload:"作品ID収集エラー"
+      OR jsonPayload.message:"収集対象の作品IDが見つかりません" OR textPayload:"収集対象の作品IDが見つかりません"
+    )
   EOT
 
   metric_descriptor {
@@ -226,10 +231,12 @@ resource "google_logging_metric" "dlsite_api_batch_all_failed" {
   name    = "dlsite_api_batch_all_failed"
   project = var.gcp_project_id
 
+  # 「バッチ N: APIレスポンスなし」は付加フィールド無しの warn のため textPayload に出る
+  # （jsonPayload.message には残らない）。将来の引数追加にも耐えるよう両フィールドを張る（SPR-234）。
   filter = <<-EOT
     resource.type="cloud_run_revision"
     resource.labels.service_name="fetchdlsiteunifieddata"
-    jsonPayload.message:"APIレスポンスなし"
+    (jsonPayload.message:"APIレスポンスなし" OR textPayload:"APIレスポンスなし")
   EOT
 
   metric_descriptor {
