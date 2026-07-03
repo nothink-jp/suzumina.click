@@ -83,6 +83,8 @@ jobs:
             - 問題が無ければ「重大所見なし」とはっきり書く。
           # モデルは固定しない（版ズレ回避: CLAUDE.md 軸1）。action 既定の最新モデルに任せる。
           # 行内コメント投稿ツールと gh コマンドを明示許可（これが無いと投稿できない）。
+          # max-turns 40: CLI 更新で既定モデルが変わるとターン消費が増える（sonnet-4-6→5 で 5-15→21+ に増加し
+          #   20 では枯渇＝レビュー未投稿。run 28672455307）。モデル非固定の方針を維持するため余裕を持たせる。
           claude_args: |
-            --max-turns 20
+            --max-turns 40
             --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
