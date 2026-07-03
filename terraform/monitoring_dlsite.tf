@@ -14,12 +14,16 @@ resource "google_logging_metric" "dlsite_error_count" {
   name    = "dlsite_function_errors"
   project = var.gcp_project_id
 
+  # 除外も textPayload/jsonPayload 両張り: 呼び出しから第2引数が外れると message が
+  # textPayload へ昇格し、jsonPayload 側だけの NOT では除外が静かに効かなくなるため。
   filter = <<-EOT
     resource.type="cloud_run_revision"
     resource.labels.service_name="fetchdlsiteunifieddata"
     severity >= "ERROR"
     NOT jsonPayload.message:"Individual Info API取得エラー"
+    NOT textPayload:"Individual Info API取得エラー"
     NOT jsonPayload.message:"API HTTP Error for"
+    NOT textPayload:"API HTTP Error for"
   EOT
 
   metric_descriptor {
