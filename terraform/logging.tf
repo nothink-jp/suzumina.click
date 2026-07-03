@@ -9,10 +9,12 @@ resource "google_logging_project_sink" "application_logs" {
   destination = "storage.googleapis.com/${google_storage_bucket.log_storage.name}"
 
   # Cloud Runとフロントエンドのログをフィルタリング
+  # functions（fetch* = Gen2）のログも cloud_run_revision で出る（Gen1 形式の
+  # cloud_function フィルタは一切マッチせず、関数ログが未アーカイブだった・SPR-234）
   filter = <<-EOT
     (resource.type="cloud_run_revision" AND resource.labels.service_name="suzumina-click-web")
     OR
-    (resource.type="cloud_function" AND resource.labels.function_name=~"fetch.*")
+    (resource.type="cloud_run_revision" AND resource.labels.service_name=~"fetch.*")
     OR
     (jsonPayload.metric_type="frontend_performance" OR jsonPayload.metric_type="core_web_vitals")
   EOT
