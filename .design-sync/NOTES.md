@@ -232,3 +232,24 @@ component-style 配下／未分類が大量に出る（報告値: 89 件 compone
 - **canary**: 1 回目の driver は sb-reference 再ビルド併発で trigger=both・5 picks（AudioButton/ConfigurableList/NotImplementedOverlay/AlertDialog/HighlightText）→ 全件 grades-kept で sheet 確認し recorded match を維持（AudioButton の白→暗文字は両側一緒に動いて一致＝「両側が一緒に動いた」パターン）。grade 確定後の closing driver は trigger=render_churn・picks=[AudioButton] のみ・**pendingGrade=[]** でクリーン。
 - **conventions.md validation = drift なし**: #690 で追記された heart 行・minase=ミルクティー・AA 規則がすべて bound 成果物と一致（`--color-heart`/`--color-heart-foreground`・`.bg-heart`/`.text-heart`/`.text-heart-foreground`・`--color-info/success/warning`・`--color-suzuka-700`・`--color-minase-700/950`・`--radius-xl` すべて存在）。書き換え不要（作者所有）。**#4 で開いていた heart 完全性の穴は #690 で閉じた**。
 - **upload**: atomic（pinned 再 sync）・deletePaths=[]・bundle/styling/aux=true・components=[AudioButton,Button,Switch]。プロジェクトには design agent の作成物（home/・proposals/・review/・uploads/・CLAUDE_CODE_palette-fix-brief.md・_adherence.oxlintrc.json 等）が同居するが sync 対象外で**触らない**（plan の writes/deletes glob 外）。
+
+## 再 sync #6（2026-07-04・deps bump + DockedPanel）の知見
+
+- **churn 内容**: story/コンポーネント source は全 41 unchanged。deps bump（#697/#726）+ DockedPanel 追加（#744）で
+  bundleSha 変化 → **bundle/styling/aux? 全 re-ship・全 41 renderHash churn（trigger=render_churn）**。canary spot-check
+  で全 match（両側が一緒に動いたパターン）。deletePaths=[]・aux=false。
+- **DockedPanel（#744 新規・`custom/index` 経由で bundle には載る）は stories 未作成のため sync 対象外**（カード化されない）。
+  Claude Design のピッカーに出したければ `docked-panel.stories.tsx` を書く（storybook shape のロスターは story 起点）。
+  barrel `ds-entry.tsx` は `export * from custom/index` なので編集不要だった。
+- **[GENERAL] fresh worktree/clone では canary が収束しない**: canary pick は「capture json が `pendingGrade:false`（clean）
+  なものを優先、無ければランダム」。fresh clone は `.cache/compare/` が空なので毎 driver 実行ごとにランダム pick →
+  fresh capture → pendingGrade が新規 3-5 件ずつ湧く（#6 では run1: Alert/Button/Input/Skeleton/ConfigurableList、
+  run2: +Card/Carousel/TagInput）。**収束レシピ**: pendingGrade を grade した後、
+  `compare.mjs --components <grade済み全部> --spot-check-components <同じリスト>` を一度回して capture json を
+  clean 化（grades-kept・秒単位）→ 次の driver は clean 組から pick して pendingGrade=[] になる。
+  grade.json を書くだけでは capture json の `pendingGrade` フラグは更新されない点が罠。
+- **conventions.md validation = drift なし（書き換えず）**: 列挙名はすべて bound 成果物に存在。ただし utility の
+  tree-shake 変動で今回 `.bg-minase-*` は **500 のみ**（#5 時点から減。`--minase-{50..950}` raw は :root に全段あり）。
+  conventions 自身の「utility が無い shade は `var(--minase-XXX)` 直参照」ルールで実用上カバーされるので非 drift。
+  Button 等の `.d.ts` は `[key: string]: unknown` の緩い形だが**アンカーと byte 一致＝#5 検証時と同一**（劣化ではない。
+  variant 語彙は stories/prompt.md 側が担う）。
