@@ -29,10 +29,11 @@ test.describe("@smoke グローバルヘッダー", () => {
 });
 
 /**
- * 主要ルートが本番ビルドで 200 を返し、layout（ヘッダー）が描画されることのスモーク（SPR-126）。
- * CI は Firestore creds を持たないため、各ページの動的データは error 境界に落ちうる。
- * よってここでは「データ非依存の layout/ルーティングが壊れていない」ことのみを検証する
+ * 主要ルートが本番ビルドで 200 を返し、layout（ヘッダー）が描画されることのスモーク。
+ * ここでは「データ非依存の layout/ルーティングが壊れていない」ことのみを検証する
  * （ヘッダーは root layout 内なのでデータ取得が失敗しても描画される）。
+ * そのため Firestore 接続の有無に依存せず、PLAYWRIGHT_PROD 単体（Emulator 無し）でも成立する。
+ * CI は Emulator + fixtures 接続で実行され、データ依存の検証は e2e/data-smoke.spec.ts が担う。
  */
 test.describe("@smoke 主要ページの描画", () => {
 	for (const path of ["/", "/videos", "/buttons", "/works"]) {
