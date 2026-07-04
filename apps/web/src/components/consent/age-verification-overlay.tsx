@@ -191,7 +191,7 @@ export function AgeVerificationOverlay() {
 				</Button>
 			</div>
 			<p className="text-[11px] leading-relaxed text-muted-foreground">
-				選択は30日間このブラウザに記憶されます。右下の「表示設定」からいつでも変更できます。
+				選択は30日間このブラウザに記憶されます。設定ページからいつでも変更できます。
 			</p>
 		</DockedPanel>
 	);
