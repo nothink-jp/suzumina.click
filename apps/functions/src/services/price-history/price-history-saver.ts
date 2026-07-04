@@ -1,13 +1,17 @@
 import type { DLsiteApiResponse, PriceHistoryDocument } from "@suzumina.click/shared-types";
 import firestore from "../../infrastructure/database/firestore";
+import { chunkArray } from "../../shared/array-utils";
 import * as logger from "../../shared/logger";
 import { isValidPriceData } from "./price-extractor";
+
+/** priceHistory 存在確認のバルク読み取り（getAll）を分割するチャンクサイズ */
+const PRICE_HISTORY_EXISTS_CHUNK_SIZE = 300;
 
 /**
  * JST（日本標準時）での現在日付を YYYY-MM-DD 形式で取得
  * @returns JST日付文字列
  */
-function getJSTDate(): string {
+export function getJSTDate(): string {
 	// 現在のUTC時刻を取得
 	const now = new Date();
 	// toLocaleStringでJSTの日付を取得
@@ -148,4 +152,48 @@ export async function savePriceHistory(
 		logger.error(`価格履歴保存エラー: ${workId}`, error);
 		return false;
 	}
+}
+
+/**
+ * 指定した作品IDのうち、当日分(`today`)の priceHistory ドキュメントが
+ * 既に存在する作品IDの集合をバルクで確認する（SPR-229 Stage②）。
+ *
+ * `savePriceHistory` 内の重複防止チェック（既存データ確認）と同じ判定を、
+ * DLsite API呼び出しの**前段**でstableティア候補にだけ行うことで、
+ * 変化していないと分かっている作品のAPI呼び出しをスキップできるようにする。
+ * `firestore.getAll()` によるバルク読み取りのため、read総数は個別`get()`と同等
+ * （読み取り箇所を後段から前段に移すだけで、新規readは発生しない）。
+ *
+ * @param workIds 確認対象の作品ID（stable候補のみに絞って渡す想定）
+ * @param today JST暦日文字列（`getJSTDate()`の結果）
+ * @returns 当日分が既に存在する作品IDの集合
+ */
+export async function bulkCheckPriceHistoryExistsToday(
+	workIds: string[],
+	today: string,
+): Promise<Set<string>> {
+	const existsWorkIds = new Set<string>();
+	if (workIds.length === 0) {
+		return existsWorkIds;
+	}
+
+	const refs = workIds.map((workId) =>
+		firestore.collection("works").doc(workId).collection("priceHistory").doc(today),
+	);
+	const chunks = chunkArray(refs, PRICE_HISTORY_EXISTS_CHUNK_SIZE);
+
+	const chunkResults = await Promise.all(chunks.map((chunk) => firestore.getAll(...chunk)));
+
+	for (const docs of chunkResults) {
+		for (const doc of docs) {
+			if (doc.exists) {
+				const workId = doc.ref.parent.parent?.id;
+				if (workId) {
+					existsWorkIds.add(workId);
+				}
+			}
+		}
+	}
+
+	return existsWorkIds;
 }

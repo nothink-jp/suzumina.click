@@ -161,7 +161,7 @@ async function shouldSkipUpdate(
 		existingWork = await getWorkFromFirestore(workData.productId);
 	}
 
-	return !!(existingWork && !hasSignificantChanges(existingWork, workData));
+	return !!(existingWork && !detectChanges(existingWork, workData).hasAnyChange);
 }
 
 /**
@@ -321,21 +321,46 @@ function hasNewGenres(existing: WorkDocument, updated: WorkDocument): boolean {
 }
 
 /**
- * 重要な変更があるかチェック
+ * 変更種別の分類結果
+ *
+ * SPR-229 Stage①: 価格/販売状態の変化とメタ情報の変化を分離して集計する。
+ * 「価格のみ変化」を切り出せるようにしておくことで、後続のティア差分判定や
+ * 取りこぼし検知ログで変化の質を区別できるようにする（本Stageでは動作は変えない）。
+ */
+export interface ChangeDetectionResult {
+	/** 価格・販売状態（セール/売り切れ）の変化 */
+	priceOrSalesChanged: boolean;
+	/** タイトル・評価・ジャンルなどメタ情報の変化 */
+	metadataChanged: boolean;
+	/** いずれかの変化があるか（既存の hasSignificantChanges 相当） */
+	hasAnyChange: boolean;
+}
+
+/**
+ * 既存作品と更新後データの変更種別を分類する
  *
  * @param existing 既存のWorkDocument
  * @param updated 更新されたWorkDocument
- * @returns 重要な変更があればtrue
+ * @returns 変更種別ごとの分類結果
  */
-function hasSignificantChanges(existing: WorkDocument, updated: WorkDocument): boolean {
-	return (
+export function detectChanges(
+	existing: WorkDocument,
+	updated: WorkDocument,
+): ChangeDetectionResult {
+	const priceOrSalesChanged =
 		hasPriceChanged(existing, updated) ||
-		hasTitleChanged(existing, updated) ||
 		hasSalesStatusChanged(existing, updated) ||
+		isSoldOut(existing, updated);
+	const metadataChanged =
+		hasTitleChanged(existing, updated) ||
 		hasRatingChanged(existing, updated) ||
-		isSoldOut(existing, updated) ||
-		hasNewGenres(existing, updated)
-	);
+		hasNewGenres(existing, updated);
+
+	return {
+		priceOrSalesChanged,
+		metadataChanged,
+		hasAnyChange: priceOrSalesChanged || metadataChanged,
+	};
 }
 
 /**

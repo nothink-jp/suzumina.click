@@ -37,7 +37,7 @@ vi.mock("../../../shared/logger", () => ({
 }));
 
 // インポート（モック設定後）
-const { processUnifiedDLsiteData, processBatchUnifiedDLsiteData } = await import(
+const { processUnifiedDLsiteData, processBatchUnifiedDLsiteData, detectChanges } = await import(
 	"../unified-data-processor"
 );
 const { getWorkFromFirestore, saveWorksToFirestore } = await import("../dlsite-firestore");
@@ -373,6 +373,50 @@ describe("unified-data-processor", () => {
 
 			expect(result.success).toBe(true);
 			expect(result.updates.work).toBe(true);
+		});
+	});
+
+	describe("detectChanges", () => {
+		it("価格のみ変化した場合、priceOrSalesChangedのみtrueになる", () => {
+			const existing = { ...mockWorkData, price: { ...mockWorkData.price, current: 800 } };
+			const result = detectChanges(existing, mockWorkData);
+
+			expect(result.priceOrSalesChanged).toBe(true);
+			expect(result.metadataChanged).toBe(false);
+			expect(result.hasAnyChange).toBe(true);
+		});
+
+		it("タイトルのみ変化した場合、metadataChangedのみtrueになる", () => {
+			const existing = { ...mockWorkData, title: "旧タイトル" };
+			const result = detectChanges(existing, mockWorkData);
+
+			expect(result.priceOrSalesChanged).toBe(false);
+			expect(result.metadataChanged).toBe(true);
+			expect(result.hasAnyChange).toBe(true);
+		});
+
+		it("販売終了のみ変化した場合、priceOrSalesChangedのみtrueになる", () => {
+			const existing = {
+				...mockWorkData,
+				salesStatus: { isSale: true, isSoldOut: false },
+			};
+			const updated = {
+				...mockWorkData,
+				salesStatus: { isSale: true, isSoldOut: true },
+			};
+			const result = detectChanges(existing, updated);
+
+			expect(result.priceOrSalesChanged).toBe(true);
+			expect(result.metadataChanged).toBe(false);
+			expect(result.hasAnyChange).toBe(true);
+		});
+
+		it("変化がない場合、いずれもfalseになる", () => {
+			const result = detectChanges(mockWorkData, mockWorkData);
+
+			expect(result.priceOrSalesChanged).toBe(false);
+			expect(result.metadataChanged).toBe(false);
+			expect(result.hasAnyChange).toBe(false);
 		});
 	});
 

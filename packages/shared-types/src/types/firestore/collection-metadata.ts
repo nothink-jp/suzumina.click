@@ -29,6 +29,22 @@ export interface CollectionMetadata {
 	completedBatches?: number[];
 	// Additional fields
 	migrationVersion?: string;
+	/**
+	 * SPR-229: このサイクルのティア別内訳（観測用。バッチ処理ロジックはこれに依存しない）
+	 */
+	tierBreakdown?: {
+		newCount: number;
+		volatileCount: number;
+		stableDueCount: number;
+		stableSkippedCount: number;
+	};
+	/** SPR-229: このサイクルが週次フルスイープ実行かどうか（continuation run でも維持） */
+	isFullSweepCycle?: boolean;
+	/**
+	 * SPR-229: 週次フルスイープ中、通常runならstableとしてスキップされていたはずの作品ID一覧
+	 * （取りこぼし検知用。isFullSweepCycle=trueのサイクルでのみ設定・continuation runで再利用）
+	 */
+	fullSweepWouldSkipWorkIds?: string[];
 }
 
 /**

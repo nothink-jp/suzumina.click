@@ -87,6 +87,10 @@ const firestore = {
 	get runTransaction() {
 		return getFirestore().runTransaction.bind(getFirestore());
 	},
+	// SPR-229: 複数ドキュメント参照を1回のRPCでバルク取得する（priceHistory/{today}の存在確認等）。
+	get getAll() {
+		return getFirestore().getAll.bind(getFirestore());
+	},
 };
 
 export default firestore;
