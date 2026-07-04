@@ -145,11 +145,13 @@ describe("WorksPage", () => {
 
 		render(<AgeVerificationProvider>{await WorksPage({ searchParams })}</AgeVerificationProvider>);
 
-		// showR18がundefinedで渡される（デフォルトで全作品表示）
+		// fail-closed: showR18指定が無い場合はfalse（R18除外）で渡される。
+		// SSR HTMLはCDNエッジで全訪問者に共有キャッシュされるため、
+		// 未確認訪問者を含む全員に安全な内容のみ返す必要がある
 		expect(getWorks).toHaveBeenCalledWith(
 			expect.objectContaining({
 				search: "宮村",
-				showR18: undefined,
+				showR18: false,
 			}),
 		);
 	});
