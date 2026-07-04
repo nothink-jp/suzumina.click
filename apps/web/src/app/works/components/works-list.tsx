@@ -82,7 +82,7 @@ export default function WorksList({ initialData }: WorksListProps) {
 		<ListWrapper>
 			{!showR18Content && (
 				<p className="mb-4 text-xs text-muted-foreground">
-					R18作品は非表示です。18歳以上の方は表示モードの確認、または設定ページから表示に切り替えられます。
+					R18作品は非表示です。18歳以上の方は設定ページから表示に切り替えられます。
 				</p>
 			)}
 			<ConfigurableList<WorkPlainObject>
