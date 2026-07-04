@@ -13,6 +13,14 @@ interface AgeVerificationContextType {
 	updateAgeVerification: (isAdult: boolean) => void;
 	/** ローディング状態 */
 	isLoading: boolean;
+	/**
+	 * 年齢確認カード（ask/toast段階）が画面下部のドック位置を占有中かどうか。
+	 * Cookieバー等、同じドック位置を使うUIが狭い画面で重ならないよう調整するための
+	 * 読み取り専用シグナル。所有・更新は AgeVerificationOverlay のみが行う。
+	 */
+	isAgeCardDocked: boolean;
+	/** AgeVerificationOverlay 専用。他コンポーネントから呼ばない */
+	setAgeCardDocked: (docked: boolean) => void;
 }
 
 const AgeVerificationContext = createContext<AgeVerificationContextType | null>(null);
@@ -25,6 +33,7 @@ export function AgeVerificationProvider({ children }: AgeVerificationProviderPro
 	const [isAgeVerified, setIsAgeVerified] = useState(false);
 	const [isAdult, setIsAdult] = useState(false);
 	const [isLoading, setIsLoading] = useState(true);
+	const [isAgeCardDocked, setAgeCardDocked] = useState(false);
 
 	useEffect(() => {
 		// ローカルストレージから年齢確認状態を読み込み
@@ -71,8 +80,10 @@ export function AgeVerificationProvider({ children }: AgeVerificationProviderPro
 			showR18Content,
 			updateAgeVerification,
 			isLoading,
+			isAgeCardDocked,
+			setAgeCardDocked,
 		}),
-		[isAgeVerified, isAdult, showR18Content, updateAgeVerification, isLoading],
+		[isAgeVerified, isAdult, showR18Content, updateAgeVerification, isLoading, isAgeCardDocked],
 	);
 
 	return (

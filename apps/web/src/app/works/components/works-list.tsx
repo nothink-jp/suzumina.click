@@ -100,6 +100,11 @@ export default function WorksList({ initialData, initialParams }: WorksListProps
 
 	return (
 		<ListWrapper>
+			{!showR18Content && (
+				<p className="mb-4 text-xs text-muted-foreground">
+					R18作品は非表示です。18歳以上の方は設定ページから表示に切り替えられます。
+				</p>
+			)}
 			<ConfigurableList<WorkPlainObject>
 				// 補正フェッチ完了時に再マウントし、ConfigurableList に新しい initialItems を
 				// 信頼させる（内部の再フェッチ判定はマウント後のURL変化にしか反応しないため）。
