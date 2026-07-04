@@ -172,8 +172,9 @@ async function getExistingCreatorMappings(
 	const mappings = new Map<string, CreatorWorkRelation>();
 
 	try {
-		// Collection Group Queryを使用して効率的に検索
-		// Terraformで定義されたインデックスを使用
+		// collectionGroup("works") は creators/{id}/works を横断検索する（index は Terraform 定義）。
+		// コレクション ID がルート works と同名のため走査対象に含まれるが、ルート works に
+		// workId フィールドが無い前提で誤マッチしない（足すと混入し parent.parent=null で skip される）。
 		const worksSnapshot = await firestore
 			.collectionGroup("works")
 			.where("workId", "==", workId)

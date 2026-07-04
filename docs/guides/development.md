@@ -1509,34 +1509,10 @@ export async function fetchDLsiteWorks(page: number): Promise<WorkData[]> {
 - **統一インポートパス**: `@suzumina.click/shared-types`からの一元化
 
 ### 移行後の型構造
-```typescript
-// Entities（識別可能・状態変化あり）
-import { 
-  Work,                // DLsite作品
-  User,                // ユーザー
-  AudioButton,         // 音声ボタン
-  Video,               // YouTube動画
-  CircleData,          // サークル情報
-  CreatorData,         // クリエイター情報
-  Contact,             // お問い合わせ
-  Favorite,            // お気に入り
-  UserEvaluation,      // ユーザー評価
-  WorkEvaluation       // 作品評価
-} from '@suzumina.click/shared-types';
 
-// Value Objects（不変・ビジネスロジック内包）
-import {
-  Price,               // 価格（通貨・フォーマット・割引判定）
-  Rating,              // 評価（星数・信頼度計算）
-  DateRange,           // 日付範囲（期間計算・包含判定）
-  CreatorType          // クリエイターの種別
-} from '@suzumina.click/shared-types';
-
-// API Schemas（外部API用の薄い抽象化）
-import {
-  DLsiteRawApiResponse // DLsite Individual Info APIレスポンス
-} from '@suzumina.click/shared-types';
-```
+型名の一覧はここに転記しない（SPR-205: 転記は必ず drift する。旧記載は実在しない型名を含んでいた）。
+概念 → 型の対応の正本は [domain-model.md](../reference/domain-model.md)、
+実体は [packages/shared-types/src/](../../packages/shared-types/src/) を直接参照すること。
 
 ### 削除されたレガシーフィールド
 以下のフィールドはコードベースから完全に削除されました：

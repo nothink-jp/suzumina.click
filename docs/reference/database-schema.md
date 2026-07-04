@@ -16,16 +16,23 @@
 | `audioButtons` | 音声ボタン（動画区間参照） | 自動生成 ID | [audio-button.ts](../../packages/shared-types/src/types/audio-button.ts) `AudioButtonDocument` | Server Actions |
 | `users` | ユーザープロファイル | Discord ユーザー ID | [user.ts](../../packages/shared-types/src/entities/user.ts) `FirestoreUserData` | Server Actions / 認証 |
 | `evaluations` | 作品評価（top10 / star / ng は排他） | `{userId}_{workId}` | [work-evaluation.ts](../../packages/shared-types/src/entities/work-evaluation.ts) `FirestoreWorkEvaluation` | Server Actions |
-| `circles` | DLsite サークル | サークル ID（例 `RG23954`） | [circle-creator.ts](../../packages/shared-types/src/entities/circle-creator.ts) `CircleData` | Cloud Functions |
-| `creatorWorkMappings` | クリエイター ⇔ 作品の非正規化関連 | `{creatorId}_{workId}` | [circle-creator.ts](../../packages/shared-types/src/entities/circle-creator.ts) `CreatorWorkMapping` | Cloud Functions |
+| `circles` | DLsite サークル | サークル ID（例 `RG23954`） | [circle.ts](../../packages/shared-types/src/types/firestore/circle.ts) `CircleDocument` | Cloud Functions |
+| `creators` | DLsite クリエイター（`workCount`/`types` は非正規化統計） | クリエイター ID（Individual Info API の `creater.id`） | [creator.ts](../../packages/shared-types/src/types/firestore/creator.ts) `CreatorDocument` | Cloud Functions |
+| `contacts` | お問い合わせ（読み手は現状 GCP console のみ） | 自動生成 ID | [contact.ts](../../packages/shared-types/src/entities/contact.ts) `FirestoreContactData` | Server Actions |
+| `ba_user` / `ba_session` / `ba_account` | better-auth の認証データ（認証の正本） | better-auth 採番 | 書き込み元 [firestore-adapter.ts](../../apps/web/src/lib/better-auth/firestore-adapter.ts)（better-auth 標準モデル・prefix `ba_`） | better-auth |
 | `youtubeMetadata` | YouTube 取得処理のメタデータ | `fetch_metadata` | 書き込み元 [youtube.ts](../../apps/functions/src/endpoints/youtube.ts)（内部型 `FetchMetadata`・非 export） | Cloud Functions |
 | `dlsiteMetadata` | DLsite 収集・整合性チェックのメタデータ | `unified_data_collection_metadata` / `dataIntegrityCheck` | 書き込み元 Cloud Function（[dlsite](../../apps/functions/src/endpoints/dlsite-individual-info-api.ts) / [integrity](../../apps/functions/src/endpoints/data-integrity-check.ts)） | Cloud Functions |
+
+> **クリエイター ⇔ 作品の関連はルートコレクションではない**: 旧記載の `creatorWorkMappings` は存在せず、実体は `creators/{creatorId}/works` サブコレクション（下表）。
+> **認証の正本は `ba_*`**: `users` はアプリプロファイル（Discord ID キー）。`ba_user` はログイン時に better-auth が作成するため `users` と件数は一致しない。`_firestore_rules` はシステム生成の内部コレクションで台帳管理外。
 
 ### サブコレクション
 
 | パス | 用途 | ドキュメント ID | 型の正本 |
 |---|---|---|---|
+| `creators/{creatorId}/works` | クリエイター ⇔ 作品の非正規化関連（旧称 `creatorWorkMappings`） | 作品 ID（例 `RJ236867`） | [creator.ts](../../packages/shared-types/src/types/firestore/creator.ts) `CreatorWorkRelation` |
 | `users/{userId}/favorites` | 音声ボタンのお気に入り | 音声ボタン ID | [favorite.ts](../../packages/shared-types/src/entities/favorite.ts) `FirestoreFavoriteData` |
+| `users/{userId}/likes` / `…/dislikes` | 音声ボタンの高評価 / 低評価 | 音声ボタン ID | 書き込み元 [reaction-toggle.ts](../../apps/web/src/actions/reaction-toggle.ts)（`audioButtonId` + `createdAt` 最小スキーマ） |
 | `users/{userId}/top10` | 10 選ランキング | `ranking` | [work-evaluation.ts](../../packages/shared-types/src/entities/work-evaluation.ts) `UserTop10List` |
 | `works/{workId}/priceHistory` | 価格履歴（全履歴・多通貨） | `YYYY-MM-DD` | [price-history.ts](../../packages/shared-types/src/utilities/price-history.ts) `PriceHistoryDocument` |
 | `dlsiteMetadata/dataIntegrityCheck/history` | 整合性チェック実行履歴（最大 10 件） | 実行日時 ISO | 書き込み元 [Cloud Function](../../apps/functions/src/endpoints/data-integrity-check.ts) |
@@ -39,8 +46,9 @@
 
 **権限境界**（セキュリティルールの正本: [firestore_rules.tf](../../terraform/firestore_rules.tf)）
 - 公開読み取り: `videos` / `works` / 公開 `audioButtons` / `circles`
-- Cloud Functions のみ書き込み（自動収集）: `videos` / `works` / `circles` / `creatorWorkMappings` / `priceHistory`
-- Server Actions のみ書き込み（認証済み）: `audioButtons` / `evaluations` / `favorites` / `top10`
+- Cloud Functions のみ書き込み（自動収集）: `videos` / `works` / `circles` / `creators`（+ `creators/{id}/works`） / `priceHistory`
+- Server Actions のみ書き込み（認証済み）: `audioButtons` / `evaluations` / `favorites` / `top10` / `likes` / `dislikes` / `contacts`
+- better-auth（サーバーのみ）: `ba_user` / `ba_session` / `ba_account`
 - 本人のみ読み取り: `users` サブコレクション（`favorites` / `top10`）・`evaluations`
 
 **主な product 制約**（実装が正本）
@@ -56,7 +64,7 @@ cron の正本は Terraform の Cloud Scheduler（[`scheduler.tf`](../../terrafo
 [`function_data_integrity_check.tf`](../../terraform/function_data_integrity_check.tf)）。
 
 - `30 * * * *` → [`fetchYouTubeVideos`](../../apps/functions/src/endpoints/youtube.ts) → `videos` / `youtubeMetadata`
-- `3 */2 * * *`（2 時間ごと）→ [`fetchDLsiteUnifiedData`](../../apps/functions/src/endpoints/dlsite-individual-info-api.ts) → `works` / `circles` / `creatorWorkMappings` / `works/{workId}/priceHistory` / `dlsiteMetadata`
+- `3 */2 * * *`（2 時間ごと）→ [`fetchDLsiteUnifiedData`](../../apps/functions/src/endpoints/dlsite-individual-info-api.ts) → `works` / `circles` / `creators`（+ `creators/{id}/works`） / `works/{workId}/priceHistory` / `dlsiteMetadata`
 - `0 3 * * 0`（日曜 3:00 JST）→ [`checkDataIntegrity`](../../apps/functions/src/endpoints/data-integrity-check.ts) → `dlsiteMetadata/dataIntegrityCheck`（+ `history`）
   - Circle workIds / 孤立 Creator マッピング / Work-Circle 整合を**事後修復**。
     非正規化を増やすとこの cron の負債が増える（CLAUDE.md 軸1）。

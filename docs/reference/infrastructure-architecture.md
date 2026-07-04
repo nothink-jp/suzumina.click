@@ -169,7 +169,7 @@ graph TD
 ### 2. 自動データ収集フロー（Production環境のみ）
 `Cloud Scheduler → Pub/Sub → Cloud Functions → External APIs → Cloud Firestore`
 - **YouTube動画収集**: Production環境でのみ有効。Cloud Schedulerが毎時30分（`30 * * * *`）にPub/Subトピックへメッセージを送信し、`fetchYouTubeVideos`関数をトリガーします。関数はYouTube Data APIから動画情報を取得し、Cloud Firestoreに保存します。
-- **DLsite統合データ収集**: `fetchDLsiteUnifiedData`関数が2時間ごと（`3 */2 * * *`）にトリガーされ、Individual Info APIから作品情報を取得し、`works` / `circles` / `creatorWorkMappings` / `works/{workId}/priceHistory` に保存します。
+- **DLsite統合データ収集**: `fetchDLsiteUnifiedData`関数が2時間ごと（`3 */2 * * *`）にトリガーされ、Individual Info APIから作品情報を取得し、`works` / `circles` / `creators`（+ `creators/{id}/works`） / `works/{workId}/priceHistory` に保存します。
 - **データ整合性チェック**: `checkDataIntegrity`関数が毎週日曜3:00 JST（`0 3 * * 0`）に実行され、Circle/Work/Creator の相互参照整合性を検証・修正します。結果は `dlsiteMetadata/dataIntegrityCheck` に保存されます。
 - **コスト最適化**: Staging環境ではCloud Functions無効化により、データ収集コストを削減します。
 - **旧時系列データ収集（廃止済み）**: `dlsite_timeseries_raw` / `dlsite_timeseries_daily` コレクションおよびその収集関数は統合アーキテクチャへの移行により削除済みです。価格履歴は `works/{workId}/priceHistory` サブコレクションで管理します。
@@ -331,7 +331,7 @@ DLsite Individual Info API
         ↓
 ┌─ works コレクション（基本作品データ）
 ├─ circles コレクション（サークル情報）
-├─ creatorWorkMappings コレクション（クリエイター関連）
+├─ creators コレクション + creators/{id}/works（クリエイター関連）
 └─ works/{workId}/priceHistory（価格履歴サブコレクション）
 ```
 

@@ -182,8 +182,8 @@
 
 | 用語 | 定義 | 英語表記 | 実装詳細 |
 |------|------|----------|------------|
-| **クリエイターワークマッピング** | クリエイターと作品の関連情報を効率的にクエリするための非正規化データ | Creator Work Mapping | `creatorWorkMappings` コレクション |
-| **マッピングID** | クリエイター-作品マッピングの一意識別子 | Mapping ID | `{creatorId}_{workId}` 形式 |
+| **クリエイターワークマッピング** | クリエイターと作品の関連情報を効率的にクエリするための非正規化データ | Creator Work Relation | `creators/{creatorId}/works` サブコレクション（`CreatorWorkRelation`。ルートコレクション `creatorWorkMappings` は存在しない） |
+| **マッピングID** | クリエイター-作品マッピングの一意識別子 | Mapping ID | パス `creators/{creatorId}/works/{workId}` で一意（複合 ID は使わない） |
 | **バッチ収集** | 複数の作品からサークル・クリエイター情報を一括収集する処理 | Batch Collection | `batchCollectCircleAndCreatorInfo` 関数 |
 | **Fire-and-Forget更新** | メイン処理に影響しない非同期でのサークル・クリエイター情報更新 | Fire-and-Forget Update | エラー発生時もメイン処理継続 |
 | **非正規化データ** | クエリ効率化のための重複データ保存 | Denormalized Data | circleId, creatorName等の複製保存 |
