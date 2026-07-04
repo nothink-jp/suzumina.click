@@ -26,6 +26,7 @@
 		"ToggleGroup": { "cardMode": "column", "skip": ["ui-togglegroup--switch-selection"] },
 		"LoadingSkeleton": { "cardMode": "column", "skip": ["custom-utility-loadingskeleton--form"] },
 		"AudioButton": { "cardMode": "column" },
+		"DockedPanel": { "cardMode": "single", "primaryStory": "Default" },
 		"YouTubePlayer": { "cardMode": "column" },
 		"ListPageLayout": { "cardMode": "column" },
 		"ConfigurableList": { "cardMode": "column" },

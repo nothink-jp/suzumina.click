@@ -238,9 +238,13 @@ component-style 配下／未分類が大量に出る（報告値: 89 件 compone
 - **churn 内容**: story/コンポーネント source は全 41 unchanged。deps bump（#697/#726）+ DockedPanel 追加（#744）で
   bundleSha 変化 → **bundle/styling/aux? 全 re-ship・全 41 renderHash churn（trigger=render_churn）**。canary spot-check
   で全 match（両側が一緒に動いたパターン）。deletePaths=[]・aux=false。
-- **DockedPanel（#744 新規・`custom/index` 経由で bundle には載る）は stories 未作成のため sync 対象外**（カード化されない）。
-  Claude Design のピッカーに出したければ `docked-panel.stories.tsx` を書く（storybook shape のロスターは story 起点）。
-  barrel `ds-entry.tsx` は `export * from custom/index` なので編集不要だった。
+- **DockedPanel（#744 新規・`custom/index` 経由で bundle には載る）は当初 stories 未作成で sync 対象外だった → 同日
+  `docked-panel.stories.tsx` を追加して解消**（42 component 目として同期済み・4 story 全 match）。
+  barrel `ds-entry.tsx` は `export * from custom/index` なので編集不要だった。DockedPanel 固有の知見:
+  - **`position:fixed` コンポーネントの story は transform 付きデコレータで containing block を作る**とデモ枠内に
+    ドッキングし、storybook / preview 両側で同一に描画される（story ファイル内のデコレータは preview にもコンパイルされる）。
+  - それでも grid カードの幾何チェックは `[GRID_OVERFLOW] escape` を出すため
+    `cfg.overrides.DockedPanel = { cardMode: "single", primaryStory: "Default" }` を適用（警告の suggestedOverride どおり）。
 - **[GENERAL] fresh worktree/clone では canary が収束しない**: canary pick は「capture json が `pendingGrade:false`（clean）
   なものを優先、無ければランダム」。fresh clone は `.cache/compare/` が空なので毎 driver 実行ごとにランダム pick →
   fresh capture → pendingGrade が新規 3-5 件ずつ湧く（#6 では run1: Alert/Button/Input/Skeleton/ConfigurableList、
