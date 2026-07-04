@@ -66,7 +66,6 @@ function createMockVideo(overrides?: Partial<any>): VideoPlainObject {
 		playlistTags: [],
 		userTags: [],
 		audioButtonCount: 0,
-		hasAudioButtons: false,
 		_computed: {
 			isArchived: false,
 			isPremiere: false,

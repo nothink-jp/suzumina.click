@@ -55,22 +55,6 @@ function determineVideoType(
 }
 
 /**
- * Helper function to calculate audio button info
- */
-function calculateAudioButtonInfo(videoType: string): {
-	count: number;
-	hasButtons: boolean;
-} {
-	// 許諾により音声ボタンを作成できるのは配信アーカイブ(archived)のみ。
-	// _computed.canCreateButton / shared-types の canCreateButton と判定を一致させる。
-	const canCreate = videoType === "archived";
-	return {
-		count: 0,
-		hasButtons: canCreate,
-	};
-}
-
-/**
  * Maps YouTube API video data to VideoPlainObject
  *
  * @param youtubeVideo - Video data from YouTube API
@@ -100,9 +84,6 @@ export function mapYouTubeToVideoPlainObject(
 
 		// Determine video type using helper
 		const videoType = determineVideoType(youtubeVideo);
-
-		// Calculate audio button info
-		const audioButtonInfo = calculateAudioButtonInfo(videoType);
 
 		// Create live streaming details
 		const liveDetails: VideoPlainObject["liveStreamingDetails"] = liveStreamingDetails
@@ -151,9 +132,9 @@ export function mapYouTubeToVideoPlainObject(
 			// Keep legacy fields for backward compatibility
 			playlistTags,
 			userTags,
-			// audioButtonCountは既存の値を保持するため、YouTube更新時には設定しない
-			// audioButtonCount: audioButtonInfo.count, // この行を削除
-			hasAudioButtons: audioButtonInfo.hasButtons,
+			// audioButtonCount は web 側（ボタン作成/削除）が維持する非正規化カウンタのため
+			// YouTube 更新では書かない。hasAudioButtons は意味が二重（作成可否 vs 実在）だったため
+			// 撤去（SPR-239）。作成可否は _computed.canCreateButton、実在は audioButtonCount > 0 が正。
 			_computed: {
 				isArchived: videoType === "archived",
 				isPremiere: videoType === "premiere",

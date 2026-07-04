@@ -4,13 +4,11 @@ import {
 	formatDuration,
 	getAgeInDays,
 	getAllTags,
-	getAudioButtonCount,
 	getAudioButtonCreationErrorMessage,
 	getDisplayTitle,
 	getFormattedViewCount,
 	getThumbnailUrl,
 	getYouTubeUrl,
-	hasAudioButtons,
 	isArchived,
 	isLive,
 	isOlderThan,
@@ -139,15 +137,6 @@ describe("tags / audio buttons", () => {
 
 	it("タグが無ければ空配列", () => {
 		expect(getAllTags(video())).toEqual([]);
-	});
-
-	it("hasAudioButtons / getAudioButtonCount", () => {
-		expect(
-			hasAudioButtons(video({ audioButtonInfo: { hasButtons: true, count: 3 } } as never)),
-		).toBe(true);
-		expect(hasAudioButtons(video())).toBe(false);
-		expect(getAudioButtonCount(video({ audioButtonInfo: { count: 3 } } as never))).toBe(3);
-		expect(getAudioButtonCount(video())).toBe(0);
 	});
 });
 

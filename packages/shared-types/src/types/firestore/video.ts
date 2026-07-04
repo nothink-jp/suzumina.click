@@ -47,12 +47,10 @@ export interface FirestoreServerVideoData {
 	liveBroadcastContent?: LiveBroadcastContent;
 
 	// Audio button info
+	// audioButtonCount が唯一の非正規化カウンタ（web のボタン作成/削除が維持）。
+	// 旧 hasAudioButtons は「作成可否」と「実在」の二重意味で writer が衝突していたため撤去（SPR-239）。
+	// 本番に残る旧フィールドの削除は SPR-241。作成可否は videoType === "archived" から導出する。
 	audioButtonCount?: number;
-	hasAudioButtons?: boolean;
-	audioButtonInfo?: {
-		count: number;
-		hasButtons: boolean;
-	};
 
 	// Content details
 	duration?: string;

@@ -56,20 +56,19 @@ describe("validateVideoForAudioButton", () => {
 });
 
 describe("updateVideoButtonCount", () => {
-	it("存在する動画の count を増やし hasAudioButtons を更新する", async () => {
+	it("存在する動画の count を増やす（hasAudioButtons は書かない = SPR-239）", async () => {
 		const { firestore, update } = makeFirestore({ audioButtonCount: 2 });
 		await updateVideoButtonCount("vid1", firestore as never, 1);
+		expect(update).toHaveBeenCalledWith(expect.objectContaining({ audioButtonCount: 3 }));
 		expect(update).toHaveBeenCalledWith(
-			expect.objectContaining({ audioButtonCount: 3, hasAudioButtons: true }),
+			expect.not.objectContaining({ hasAudioButtons: expect.anything() }),
 		);
 	});
 
 	it("count は 0 未満にならない", async () => {
 		const { firestore, update } = makeFirestore({ audioButtonCount: 0 });
 		await updateVideoButtonCount("vid1", firestore as never, -1);
-		expect(update).toHaveBeenCalledWith(
-			expect.objectContaining({ audioButtonCount: 0, hasAudioButtons: false }),
-		);
+		expect(update).toHaveBeenCalledWith(expect.objectContaining({ audioButtonCount: 0 }));
 	});
 
 	it("動画が存在しなければ update しない", async () => {
