@@ -27,7 +27,7 @@ export {
 	normalizeOptions,
 	transformFilterValue,
 } from "./configurable-list/utils/filter-helpers";
-// Non-modal corner-docked panel shell (age gate / cookie bar etc.)
+// 非モーダルで角にドッキングするパネルの殻（年齢確認ゲート/Cookieバー等）
 export { DockedPanel } from "./docked-panel";
 
 // Utility components

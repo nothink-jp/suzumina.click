@@ -25,13 +25,14 @@ const NARROW_VIEWPORT_QUERY = "(max-width: 639px)";
 
 /**
  * 案A: 左下に独立して浮く非モーダルなピル型バー（年齢確認カードは右下・重ならない）。
- * 狭い画面では両方が全幅ボトムシート化するため、年齢確認が未解決の間はこのバーを
- * 抑制し、順次表示にする（AgeVerificationProvider の isAgeVerified を読むだけで、
- * 状態の所有権は移さない）。
+ * 狭い画面では両方が全幅ボトムシート化しうるため、年齢確認カードがドック占有中
+ * （ask/toast段階）の間はこのバーを抑制し、順次表示にする。読むのは
+ * AgeVerificationProvider の isAgeCardDocked（読み取り専用シグナル）だけで、
+ * 状態の所有権は移さない。
  */
 export function CookieConsentBanner() {
 	const isClient = useIsClient();
-	const { isAgeVerified, isLoading: isAgeLoading } = useAgeVerification();
+	const { isAgeCardDocked } = useAgeVerification();
 	const [isNarrowViewport, setIsNarrowViewport] = useState(false);
 	const [showBanner, setShowBanner] = useState(false);
 	const [showPreferences, setShowPreferences] = useState(false);
@@ -99,8 +100,8 @@ export function CookieConsentBanner() {
 		setIsLoading(false);
 	}, [isClient, applyConsentChoices]);
 
-	// 狭い画面では年齢確認カードと同時に出さず、決着後に表示する（順次表示）
-	const deferredForMobileAgeGate = isNarrowViewport && !isAgeLoading && !isAgeVerified;
+	// 狭い画面では年齢確認カードのドック占有中（ask/toast）は出さず、決着後に表示する（順次表示）
+	const deferredForMobileAgeGate = isNarrowViewport && isAgeCardDocked;
 
 	if (isLoading || !showBanner || deferredForMobileAgeGate) {
 		return null;

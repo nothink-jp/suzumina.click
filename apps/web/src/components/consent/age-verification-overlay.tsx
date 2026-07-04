@@ -7,8 +7,8 @@ import { Check, Shield, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useAgeVerification } from "@/contexts/age-verification-context";
 
-// Match the server-side list that previously lived in lib/seo/bot-detection.ts
-// so SEO crawlers and uptime monitors keep bypassing the overlay.
+// lib/seo/bot-detection.ts に以前あったサーバー側リストと同じもの。
+// 検索エンジン/監視サービスのクローラーがこのカードを回避し続けるようにする。
 const BOT_USER_AGENTS = [
 	// Search engines
 	"googlebot",
@@ -55,15 +55,23 @@ const BOT_UA_PATTERN = new RegExp(BOT_USER_AGENTS.join("|"), "i");
 
 type Stage = "hidden" | "ask" | "toast" | "pill";
 
+// Cookie バー（cookie-consent-banner.tsx）と同じ基準。狭い画面ではモバイル用の
+// 全幅ボトムシート挙動に切り替える判定に使う（トースト終了後は表示設定ピルを
+// 出さず hidden にすることで、Cookie バーの全幅シートと重ならないようにする）。
+const NARROW_VIEWPORT_QUERY = "(max-width: 639px)";
+
 /**
- * Non-modal, corner-docked age gate (案A: ドッキングカード). The page is
- * browsable and scrollable from first paint — this never renders a backdrop
- * and never redirects. Choosing "全年齢のみで続ける" just keeps R18 content
- * filtered on the current page; the visitor can reopen the card anytime via
- * the persistent "表示設定" pill.
+ * 非モーダルで角にドッキングする年齢ゲート（案A: ドッキングカード）。
+ * ページは最初の描画からブラウズ・スクロール可能で、backdrop も表示せず
+ * リダイレクトもしない。「全年齢のみで続ける」を選んでも、そのページで
+ * R18コンテンツを絞り込んだまま閲覧を継続できる。デスクトップ幅では
+ * 選択後に常駐の「表示設定」ピルからいつでも再度開けるが、狭い画面では
+ * Cookie バー（同じ全幅ボトムシート領域を使う）と重ならないようピルを
+ * 出さずに閉じる。
  */
 export function AgeVerificationOverlay() {
-	const { isAgeVerified, isLoading, updateAgeVerification } = useAgeVerification();
+	const { isAgeVerified, isLoading, updateAgeVerification, setAgeCardDocked } =
+		useAgeVerification();
 	const [botChecked, setBotChecked] = useState(false);
 	const [stage, setStage] = useState<Stage>("hidden");
 	const [chosenAdult, setChosenAdult] = useState(false);
@@ -76,16 +84,21 @@ export function AgeVerificationOverlay() {
 		setBotChecked(true);
 	}, [updateAgeVerification]);
 
-	// Only drive the ask/toast/pill flow for a visitor who is unverified when this
-	// component mounts. A returning, already-verified visitor sees nothing here —
-	// they can still change their mode anytime via /settings or this same card
-	// once they explicitly reopen it (there's nothing to reopen from on a fresh
-	// page load, so no persistent site-wide pill is shown across sessions).
+	// ask/toast/pill の流れは、このコンポーネントが mount した時点で未確認だった
+	// 訪問者だけに出す。確認済みで再訪した場合はここでは何も表示しない
+	// （/settings や、明示的に再度開いた場合のこのカード自体からいつでも変更可能）。
 	useEffect(() => {
 		if (isLoading || !botChecked || initializedRef.current) return;
 		initializedRef.current = true;
 		setStage(isAgeVerified ? "hidden" : "ask");
 	}, [isLoading, botChecked, isAgeVerified]);
+
+	// ask/toast の間は Cookie バー等の他のドックUIと重ならないよう、ドック占有中
+	// であることを共有シグナルとして公開する（pill/hidden は非占有として扱う。
+	// pill はモバイルでは出さない設計にしたうえで、常にコンパクトな表示に留める）。
+	useEffect(() => {
+		setAgeCardDocked(stage === "ask" || stage === "toast");
+	}, [stage, setAgeCardDocked]);
 
 	const handleChoice = (isAdult: boolean) => {
 		updateAgeVerification(isAdult);
@@ -93,15 +106,27 @@ export function AgeVerificationOverlay() {
 		setStage("toast");
 	};
 
+	const closeToast = () => {
+		// 狭い画面では Cookie バーが全幅ボトムシートになるため、表示設定ピルは
+		// 出さずに閉じる（ピルも全幅化すると Cookie バーと重なってしまうため）。
+		const isNarrowViewport = window.matchMedia(NARROW_VIEWPORT_QUERY).matches;
+		setStage(isNarrowViewport ? "hidden" : "pill");
+	};
+
 	if (stage === "hidden") return null;
 
 	if (stage === "pill") {
 		return (
-			<DockedPanel position="bottom-right" variant="pill" aria-label="表示設定を開く">
+			<DockedPanel
+				position="bottom-right"
+				variant="pill"
+				mobileSheet={false}
+				aria-label="表示設定を開く"
+			>
 				<button
 					type="button"
 					onClick={() => setStage("ask")}
-					className="flex w-full items-center gap-2 px-4 py-2.5 text-xs text-foreground sm:px-3.5 sm:py-2"
+					className="flex items-center gap-2 px-3.5 py-2 text-xs text-foreground"
 				>
 					<Shield className="h-3.5 w-3.5 text-primary" />
 					表示設定
@@ -133,7 +158,7 @@ export function AgeVerificationOverlay() {
 				</button>
 				<button
 					type="button"
-					onClick={() => setStage("pill")}
+					onClick={closeToast}
 					aria-label="閉じる"
 					className="text-muted-foreground hover:text-foreground"
 				>
