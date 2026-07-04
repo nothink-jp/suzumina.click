@@ -38,10 +38,9 @@ describe("submitContactForm", () => {
 		const { add } = setupFirestore();
 		const r = await submitContactForm(validData);
 		expect(r).toEqual({ success: true, message: "お問い合わせを受け付けました", id: "doc1" });
-		// IP は x-forwarded-for の先頭
-		expect(add).toHaveBeenCalledWith(
-			expect.objectContaining({ ipAddress: "1.2.3.4", status: "new" }),
-		);
+		// IP は x-forwarded-for の先頭。admin 時代の status/priority は書かない（SPR-241）
+		expect(add).toHaveBeenCalledWith(expect.objectContaining({ ipAddress: "1.2.3.4" }));
+		expect(add).toHaveBeenCalledWith(expect.not.objectContaining({ status: expect.anything() }));
 		expect(sendContactNotification).toHaveBeenCalled();
 		// キャッシュ無効化の契約も担保
 		expect(revalidatePath).toHaveBeenCalledWith("/contact");

@@ -18,7 +18,7 @@
 | `evaluations` | 作品評価（top10 / star / ng は排他） | `{userId}_{workId}` | [work-evaluation.ts](../../packages/shared-types/src/entities/work-evaluation.ts) `FirestoreWorkEvaluation` | Server Actions |
 | `circles` | DLsite サークル | サークル ID（例 `RG23954`） | [circle.ts](../../packages/shared-types/src/types/firestore/circle.ts) `CircleDocument` | Cloud Functions |
 | `creators` | DLsite クリエイター（`workCount`/`types` は非正規化統計） | クリエイター ID（Individual Info API の `creater.id`） | [creator.ts](../../packages/shared-types/src/types/firestore/creator.ts) `CreatorDocument` | Cloud Functions |
-| `contacts` | お問い合わせ（読み手は現状 GCP console のみ） | 自動生成 ID | [contact.ts](../../packages/shared-types/src/entities/contact.ts) `FirestoreContactData` | Server Actions |
+| `contacts` | お問い合わせ（通知の正は Resend メール = [email.ts](../../apps/web/src/lib/email.ts)。Firestore は送信記録のアーカイブで読み手なし） | 自動生成 ID | [contact.ts](../../packages/shared-types/src/entities/contact.ts) `FirestoreContactData` | Server Actions |
 | `ba_user` / `ba_session` / `ba_account` | better-auth の認証データ（認証の正本） | better-auth 採番 | 書き込み元 [firestore-adapter.ts](../../apps/web/src/lib/better-auth/firestore-adapter.ts)（better-auth 標準モデル・prefix `ba_`） | better-auth |
 | `youtubeMetadata` | YouTube 取得処理のメタデータ | `fetch_metadata` | 書き込み元 [youtube.ts](../../apps/functions/src/endpoints/youtube.ts)（内部型 `FetchMetadata`・非 export） | Cloud Functions |
 | `dlsiteMetadata` | DLsite 収集・整合性チェックのメタデータ | `unified_data_collection_metadata` / `dataIntegrityCheck` | 書き込み元 Cloud Function（[dlsite](../../apps/functions/src/endpoints/dlsite-individual-info-api.ts) / [integrity](../../apps/functions/src/endpoints/data-integrity-check.ts)） | Cloud Functions |

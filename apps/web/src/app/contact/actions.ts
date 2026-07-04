@@ -31,6 +31,7 @@ export async function submitContactForm(data: ContactFormData): Promise<ContactS
 
 		// Firestoreに保存するデータ
 		const now = new Date().toISOString();
+		// status/priority は admin 撤去後に読み手が無く SPR-241 で廃止（通知は下の Resend メールが正）
 		const contactData = {
 			...validatedData,
 			// 空文字の場合はundefinedに変換
@@ -39,8 +40,6 @@ export async function submitContactForm(data: ContactFormData): Promise<ContactS
 			userAgent,
 			timestamp: now,
 			createdAt: now,
-			status: "new" as const, // new, reviewing, resolved
-			priority: "medium" as const, // デフォルト優先度
 		};
 
 		// Firestoreに保存

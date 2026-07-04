@@ -235,7 +235,8 @@ describe("Audio Button Server Actions", () => {
 				expect(result.data.id).toBe("new-audio-button-id");
 			}
 			expect(mockAdd).toHaveBeenCalled();
-			expect(mockUpdate).toHaveBeenCalledWith({ id: "new-audio-button-id" });
+			// SPR-241: add 直後の update({ id }) は冗長 write のため廃止（ID は doc.id が正）
+			expect(mockUpdate).not.toHaveBeenCalledWith({ id: "new-audio-button-id" });
 		});
 
 		it("無効な入力でエラーが返される", async () => {
