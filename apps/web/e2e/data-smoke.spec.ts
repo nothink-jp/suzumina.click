@@ -37,16 +37,21 @@ test.skip(
 );
 
 test.describe("@data-smoke 年齢確認ゲート", () => {
-	test("初回訪問でダイアログが表示され、18歳以上を選ぶと通過できる", async ({ page }) => {
+	test("初回訪問で非ブロッキングな確認カードが表示され、閲覧を継続しつつ選択できる", async ({
+		page,
+	}) => {
 		await page.goto("/videos");
 
-		const dialog = page.getByRole("dialog", { name: "年齢確認" });
-		await expect(dialog).toBeVisible();
-		await dialog.getByRole("button", { name: "18歳以上" }).click();
-		await expect(dialog).toBeHidden();
-
-		// 通過後、Emulator の fixtures 由来の動画一覧が描画される
+		// 非モーダル（案A: ドッキングカード）のため、カード表示中でも背後のコンテンツは
+		// 最初から描画・閲覧可能（Emulator の fixtures 由来の動画一覧）
 		await expect(page.locator('a[href^="/videos/"]').first()).toBeVisible();
+
+		const card = page.getByRole("region", { name: "表示モードの確認" });
+		await expect(card).toBeVisible();
+		await card.getByRole("button", { name: "18歳以上 — すべての作品を表示" }).click();
+
+		// 選択後は確認トースト（同じ aria-label のドック領域）に切り替わる
+		await expect(page.getByText("R18作品を含むすべての作品を表示します")).toBeVisible();
 	});
 });
 

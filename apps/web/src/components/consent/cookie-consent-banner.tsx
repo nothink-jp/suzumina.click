@@ -1,9 +1,10 @@
 "use client";
 
+import { DockedPanel } from "@suzumina.click/ui/components/custom";
 import { Button } from "@suzumina.click/ui/components/ui/button";
-import { Card, CardContent } from "@suzumina.click/ui/components/ui/card";
-import { Cookie, Settings } from "lucide-react";
+import { Cookie } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { useAgeVerification } from "@/contexts/age-verification-context";
 import { useIsClient } from "@/hooks/use-is-client";
 import {
 	type ConsentState,
@@ -20,11 +21,30 @@ const DEFAULT_CONSENT: ConsentState = {
 	personalization: false,
 };
 
+const NARROW_VIEWPORT_QUERY = "(max-width: 639px)";
+
+/**
+ * 案A: 左下に独立して浮く非モーダルなピル型バー（年齢確認カードは右下・重ならない）。
+ * 狭い画面では両方が全幅ボトムシート化しうるため、年齢確認カードがドック占有中
+ * （ask/toast段階）の間はこのバーを抑制し、順次表示にする。読むのは
+ * AgeVerificationProvider の isAgeCardDocked（読み取り専用シグナル）だけで、
+ * 状態の所有権は移さない。
+ */
 export function CookieConsentBanner() {
 	const isClient = useIsClient();
+	const { isAgeCardDocked } = useAgeVerification();
+	const [isNarrowViewport, setIsNarrowViewport] = useState(false);
 	const [showBanner, setShowBanner] = useState(false);
 	const [showPreferences, setShowPreferences] = useState(false);
 	const [isLoading, setIsLoading] = useState(true);
+
+	useEffect(() => {
+		const mediaQuery = window.matchMedia(NARROW_VIEWPORT_QUERY);
+		const update = () => setIsNarrowViewport(mediaQuery.matches);
+		update();
+		mediaQuery.addEventListener("change", update);
+		return () => mediaQuery.removeEventListener("change", update);
+	}, []);
 
 	// Apply consent choices using unified system
 	const applyConsentChoices = useCallback((choices: ConsentState) => {
@@ -80,68 +100,46 @@ export function CookieConsentBanner() {
 		setIsLoading(false);
 	}, [isClient, applyConsentChoices]);
 
-	if (isLoading || !showBanner) {
+	// 狭い画面では年齢確認カードのドック占有中（ask/toast）は出さず、決着後に表示する（順次表示）
+	const deferredForMobileAgeGate = isNarrowViewport && isAgeCardDocked;
+
+	if (isLoading || !showBanner || deferredForMobileAgeGate) {
 		return null;
 	}
 
 	return (
 		<>
-			{/* Main consent banner */}
-			<div className="fixed bottom-0 left-0 right-0 z-50 p-4">
-				<Card className="max-w-4xl mx-auto bg-white/95 backdrop-blur-sm shadow-xl border border-border">
-					<CardContent className="p-4">
-						<div className="flex flex-col sm:flex-row items-start gap-4">
-							{/* Icon and message */}
-							<div className="flex items-start gap-3 flex-1">
-								<div className="p-2 bg-muted rounded-lg">
-									<Cookie className="h-5 w-5 text-primary" />
-								</div>
-								<div className="space-y-1">
-									<h3 className="font-semibold text-foreground text-sm">クッキーの使用について</h3>
-									<p className="text-sm text-muted-foreground leading-relaxed">
-										サイト改善・分析のためクッキーを使用します。
-										<button
-											type="button"
-											onClick={() => setShowPreferences(true)}
-											className="text-primary hover:text-primary/90 underline ml-1"
-										>
-											詳細設定
-										</button>
-									</p>
-								</div>
-							</div>
-
-							{/* Action buttons - Equal prominence design */}
-							<div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-								<Button
-									variant="outline"
-									size="sm"
-									onClick={handleRejectAll}
-									className="border-border text-primary hover:bg-accent text-xs px-3 py-2"
-								>
-									拒否
-								</Button>
-								<Button
-									variant="outline"
-									size="sm"
-									onClick={() => setShowPreferences(true)}
-									className="border-border text-primary hover:bg-accent text-xs px-3 py-2"
-								>
-									<Settings className="h-3 w-3 mr-1" />
-									設定
-								</Button>
-								<Button
-									size="sm"
-									onClick={handleAcceptAll}
-									className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs px-3 py-2"
-								>
-									すべて許可
-								</Button>
-							</div>
-						</div>
-					</CardContent>
-				</Card>
-			</div>
+			<DockedPanel
+				position="bottom-left"
+				variant="pill"
+				aria-label="クッキーの使用"
+				className="flex flex-wrap items-center gap-3 px-4 py-3 sm:flex-nowrap sm:py-2 sm:pr-2 sm:pl-4"
+			>
+				<Cookie className="h-4 w-4 flex-shrink-0 text-primary" />
+				<span className="min-w-0 flex-1 text-xs text-foreground sm:flex-none sm:whitespace-nowrap">
+					サイト改善のためクッキーを使用します
+				</span>
+				<button
+					type="button"
+					onClick={() => setShowPreferences(true)}
+					className="whitespace-nowrap text-xs text-primary underline"
+				>
+					詳細設定
+				</button>
+				<div className="flex w-full gap-2 sm:w-auto">
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={handleRejectAll}
+						className="flex-1 sm:flex-none"
+					>
+						拒否
+					</Button>
+					<Button size="sm" onClick={handleAcceptAll} className="flex-1 sm:flex-none">
+						許可
+					</Button>
+				</div>
+			</DockedPanel>
 
 			{/* Preferences panel - use Dialog component directly */}
 			<CookiePreferencesPanel

@@ -57,13 +57,15 @@ export default function WorksList({ initialData }: WorksListProps) {
 					search: params.search,
 					category: params.filters.category as string | undefined,
 					language: params.filters.language as string | undefined,
-					showR18: params.filters.showR18 as boolean | undefined,
+					// 未確認（showR18Content=false）の間はトグル自体が filters に存在しないため、
+					// ここで明示的に false を強制する。トグルがある場合のみユーザーの選択に従う。
+					showR18: showR18Content ? (params.filters.showR18 as boolean | undefined) : false,
 					genres: params.filters.genres as string[] | undefined,
 				};
 			},
 			fromResult: (result: unknown) => result as { items: WorkPlainObject[]; total: number },
 		}),
-		[],
+		[showR18Content],
 	);
 
 	// フェッチ関数
@@ -78,6 +80,11 @@ export default function WorksList({ initialData }: WorksListProps) {
 
 	return (
 		<ListWrapper>
+			{!showR18Content && (
+				<p className="mb-4 text-xs text-muted-foreground">
+					R18作品は非表示です。18歳以上の方は設定ページから表示に切り替えられます。
+				</p>
+			)}
 			<ConfigurableList<WorkPlainObject>
 				items={initialItems}
 				initialTotal={initialTotal}
