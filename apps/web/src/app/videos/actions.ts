@@ -315,8 +315,9 @@ async function getVideosWithFiltering(
 
 	// publicな動画の総数を count() 集計で取得（SPR-88: 毎リクエストの全件 .get()
 	// スキャンを回避。works/actions.ts と同じ count() パターン）。
-	// 注: 旧実装は (public || status未設定) を計上していたが、count()+where では status
-	// 未設定ドキュメントを拾えないため public のみ計上する（厳密化はメタデータ cache を検討）。
+	// 注: status 未設定 doc は count() で拾えない。旧 mapper 撤去期の未設定 doc（2026-07 時点 171/554 件）が
+	// 残っていたが、SPR-243 で mapper が status を再写像し毎時 cron の再取得で自然 backfill される。
+	// 表示側の `|| !video.status` フィルタは移行期の安全弁として残している。
 	const countSnapshot = await firestore
 		.collection("videos")
 		.where("status.privacyStatus", "==", "public")
