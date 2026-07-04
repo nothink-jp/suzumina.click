@@ -2,7 +2,7 @@
 
 import type { WorkListResultPlain, WorkPlainObject } from "@suzumina.click/shared-types";
 import { ConfigurableList, type StandardListParams } from "@suzumina.click/ui/components/custom";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ListWrapper } from "@/components/list/list-wrapper";
 import { WorkListItem } from "@/components/work/work-list-item";
 import {
@@ -14,16 +14,34 @@ import {
 import { WORK_CATEGORY_OPTIONS, WORK_LANGUAGE_OPTIONS } from "@/constants/work-options";
 import { useAgeVerification } from "@/contexts/age-verification-context";
 import { getPopularGenres, getWorks } from "../actions";
+import type { ParsedWorksSearchParams } from "../lib/parse-search-params";
 
 interface WorksListProps {
 	initialData?: WorkListResultPlain;
+	initialParams: ParsedWorksSearchParams;
 }
 
-export default function WorksList({ initialData }: WorksListProps) {
-	const { showR18Content } = useAgeVerification();
+export default function WorksList({ initialData, initialParams }: WorksListProps) {
+	const { showR18Content, isLoading: isAgeVerificationLoading } = useAgeVerification();
 	const [availableGenres, setAvailableGenres] = useState<Array<{ value: string; label: string }>>(
 		[],
 	);
+	// SSR は年齢確認状態を読めず fail-closed（showR18:false）で initialData を返す
+	// （page.tsx 参照。CDNエッジで全訪問者に共有キャッシュされるため安全側に倒す設計）。
+	// verified adult 確定後、ConfigurableList の内部再フェッチ機構（マウント後の URL 変化でのみ
+	// 発火し、マウント時の initialItems は無条件に信頼する）を経由せず、ここで直接1回だけ
+	// showR18:true で取り直し（page.tsx と同じ initialParams を使用）、結果が来たら key を
+	// 変えて ConfigurableList を再マウントする。
+	const [correctedData, setCorrectedData] = useState<WorkListResultPlain | null>(null);
+	const hasCorrectedRef = useRef(false);
+
+	useEffect(() => {
+		if (isAgeVerificationLoading) return; // localStorage解決前は待つ
+		if (hasCorrectedRef.current) return;
+		if (!showR18Content) return; // 未確認/未成年はSSRのfail-closed結果のままでよい
+		hasCorrectedRef.current = true;
+		void getWorks({ ...initialParams, showR18: true }).then(setCorrectedData);
+	}, [isAgeVerificationLoading, showR18Content, initialParams]);
 
 	// 人気ジャンルを取得
 	useEffect(() => {
@@ -42,11 +60,15 @@ export default function WorksList({ initialData }: WorksListProps) {
 		void fetchGenres();
 	}, []);
 
-	// 初期データを準備
-	const initialItems = initialData?.works || [];
-	const initialTotal = initialData?.totalCount || 0;
+	// 初期データを準備（補正済みデータがあればそちらを使用）
+	const effectiveData = correctedData ?? initialData;
+	const initialItems = effectiveData?.works || [];
+	const initialTotal = effectiveData?.totalCount || 0;
 
 	// データアダプター
+	// 未確認/未成年時はフィルタUI自体を出さない（filters下部参照）ため、
+	// params.filters.showR18 は常に undefined。その場合は showR18Content
+	// （未確認時 false）にフォールバックし、SSR同様 fail-closed を維持する。
 	const dataAdapter = useMemo(
 		() => ({
 			toParams: (params: StandardListParams) => {
@@ -57,13 +79,13 @@ export default function WorksList({ initialData }: WorksListProps) {
 					search: params.search,
 					category: params.filters.category as string | undefined,
 					language: params.filters.language as string | undefined,
-					showR18: params.filters.showR18 as boolean | undefined,
+					showR18: (params.filters.showR18 as boolean | undefined) ?? showR18Content,
 					genres: params.filters.genres as string[] | undefined,
 				};
 			},
 			fromResult: (result: unknown) => result as { items: WorkPlainObject[]; total: number },
 		}),
-		[],
+		[showR18Content],
 	);
 
 	// フェッチ関数
@@ -79,6 +101,9 @@ export default function WorksList({ initialData }: WorksListProps) {
 	return (
 		<ListWrapper>
 			<ConfigurableList<WorkPlainObject>
+				// 補正フェッチ完了時に再マウントし、ConfigurableList に新しい initialItems を
+				// 信頼させる（内部の再フェッチ判定はマウント後のURL変化にしか反応しないため）。
+				key={correctedData ? "corrected" : "initial"}
 				items={initialItems}
 				initialTotal={initialTotal}
 				// 先頭 2 件のみ priority。PR #439 で <6 を試したが /works の DLsite

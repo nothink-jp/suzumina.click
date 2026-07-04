@@ -1,63 +1,50 @@
 import { WorksPageClient } from "@/components/content/works-page-client";
 import { getWorks } from "./actions";
-
-// ジャンルパラメータをパースする関数（複雑度を下げるため分離）
-function parseGenres(genresParam: string | undefined): string[] | undefined {
-	if (typeof genresParam !== "string") return undefined;
-
-	// Next.jsのsearchParamsは既にデコード済みの値を提供
-	if (genresParam.includes("|")) {
-		// 新形式: パイプ区切り
-		return genresParam.split("|").filter(Boolean);
-	}
-	if (genresParam.includes(",") && !genresParam.includes(" ")) {
-		// 旧形式: カンマ区切り（スペースを含まない場合のみ）
-		return genresParam.split(",").filter(Boolean);
-	}
-	// 単一の値（スペースを含む可能性がある）
-	return [genresParam];
-}
+import { parseWorksSearchParams } from "./lib/parse-search-params";
 
 interface WorksPageProps {
 	searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 export default async function WorksPage({ searchParams }: WorksPageProps) {
-	const params = await searchParams;
-	const pageNumber = Number.parseInt(params.page as string, 10) || 1;
-	const validPage = Math.max(1, pageNumber);
-	const sort = typeof params.sort === "string" ? params.sort : "newest";
-	const search = typeof params.q === "string" ? params.q : undefined;
-	const category = typeof params.category === "string" ? params.category : undefined;
-	const language = typeof params.language === "string" ? params.language : undefined;
-	const genres = parseGenres(params.genres as string);
-	const limitValue = Number.parseInt(params.limit as string, 10) || 12;
-	const validLimit = [12, 24, 48].includes(limitValue) ? limitValue : 12;
+	const rawParams = await searchParams;
+	// Next.jsのsearchParamsは既にデコード済みの値を提供
+	const getParam = (key: string): string | undefined => {
+		const value = rawParams[key];
+		return typeof value === "string" ? value : undefined;
+	};
+	const { page, limit, sort, search, category, language, genres } = parseWorksSearchParams({
+		get: getParam,
+	});
 
 	// showR18パラメータの処理
-	// URLパラメータが明示的に指定されている場合はその値を使用
-	// 指定されていない場合はundefinedとして、クライアント側で判断させる
-	// 動作仕様:
-	// - undefined: URLにshowR18パラメータがない場合。全作品を表示（R18含む）
-	// - true: showR18=trueの場合。R18作品も表示
-	// - false: showR18=falseの場合。R18作品を除外
-	const showR18FromParams = params.showR18;
-	const shouldShowR18 = showR18FromParams !== undefined ? showR18FromParams === "true" : undefined;
+	// 年齢確認状態はlocalStorage駆動でServer Componentからは読めないため、
+	// URL指定が無い場合は fail-closed（R18除外）をデフォルトにする。
+	// このHTMLはCDNエッジで全訪問者に共有キャッシュされる（terraform/cloudflare.tf #5・
+	// next.config.mjsのCache-Control）ため、未確認訪問者を含む全員に安全な内容のみ返す必要がある。
+	// 年齢確認済みの成人はhydration後、クライアント側の再フェッチで showR18: true を明示送信する
+	// （works-list.tsx 参照。ここで解析した initialParams を props で渡し同じ条件で再取得する）。
+	const showR18FromParams = getParam("showR18");
+	const shouldShowR18 = showR18FromParams !== undefined ? showR18FromParams === "true" : false;
 
 	// 初期データを取得
-	// showR18がundefinedの場合はデフォルトで全件取得（クライアント側でフィルタリング）
 	const result = await getWorks({
-		page: validPage,
-		limit: validLimit,
+		page,
+		limit,
 		sort,
 		search,
 		category,
 		language,
 		genres,
-		showR18: shouldShowR18, // undefinedの場合はundefinedのまま渡す
+		showR18: shouldShowR18,
 	});
 
-	return <WorksPageClient initialData={result} />;
+	return (
+		<WorksPageClient
+			initialData={result}
+			initialParams={{ page, limit, sort, search, category, language, genres }}
+		/>
+	);
 }
 
 // メタデータ設定

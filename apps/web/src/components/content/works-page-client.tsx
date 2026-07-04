@@ -8,13 +8,15 @@ import {
 } from "@suzumina.click/ui/components/custom";
 import { Suspense } from "react";
 import WorksList from "@/app/works/components/works-list";
+import type { ParsedWorksSearchParams } from "@/app/works/lib/parse-search-params";
 import { useAgeVerification } from "@/contexts/age-verification-context";
 
 interface WorksPageClientProps {
 	initialData: WorkListResultPlain;
+	initialParams: ParsedWorksSearchParams;
 }
 
-export function WorksPageClient({ initialData }: WorksPageClientProps) {
+export function WorksPageClient({ initialData, initialParams }: WorksPageClientProps) {
 	// isLoading で early return しない: AgeVerificationOverlay 側が
 	// fixed inset-0 + body scroll lock で未確認ユーザーを覆う設計のため、
 	// ここでさらに gate するとコンテンツ render が遅れるだけで意味がない。
@@ -40,7 +42,7 @@ export function WorksPageClient({ initialData }: WorksPageClientProps) {
 						</div>
 					}
 				>
-					<WorksList initialData={initialData} />
+					<WorksList initialData={initialData} initialParams={initialParams} />
 				</Suspense>
 			</ListPageContent>
 		</ListPageLayout>
