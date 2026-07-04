@@ -1,5 +1,16 @@
 import { defineConfig, devices } from "@playwright/test";
 
+/* e2e の接続先モード:
+ * - 既定: dev サーバ（`pnpm dev`）
+ * - PLAYWRIGHT_PROD=1: 本番ビルド（next start）。事前に `next build` 済みであること。
+ *   「本番ビルドでのみ顕在化する回帰」は dev では捕捉できないため、smoke はこのモードで回す。
+ * - PLAYWRIGHT_EMULATOR=1: 本番ビルド × Firestore Emulator。データ依存 spec
+ *   （e2e/data-smoke.spec.ts）が有効になる。Emulator 起動 + seed + build を含む
+ *   ワンショットはリポジトリルートの `pnpm test:e2e:emulator`（scripts/e2e-emulator.sh）。
+ */
+const useEmulator = !!process.env.PLAYWRIGHT_EMULATOR;
+const useProdServer = !!process.env.PLAYWRIGHT_PROD || useEmulator;
+
 /**
  * @see https://playwright.dev/docs/test-configuration
  */
@@ -40,17 +51,24 @@ export default defineConfig({
 		},
 	],
 
-	/* テスト前にローカルサーバを起動する。
-	 * PLAYWRIGHT_PROD=1 のときは本番ビルド(next start)に対して実行する。
-	 * SPR-124 のような「本番ビルドでのみ顕在化する回帰」は dev では捕捉できないため、
-	 * スモーク(@smoke / e2e/smoke.spec.ts)はこのモードで回す（事前に `next build` 済みであること）。
-	 * 残った smoke はデータ非依存（layout/routing のみ・データ取得失敗は error 境界に落ちる）なので、
+	/* テスト前にローカルサーバを起動する（モードはファイル冒頭のコメントを参照）。
+	 * smoke.spec.ts はデータ非依存（layout/routing のみ・データ取得失敗は error 境界に落ちる）なので、
 	 * 既定の `pnpm dev` は ADC 無しでも成立する（本番データ前提だった手動 spec は撤去済み）。 */
 	webServer: {
-		command: process.env.PLAYWRIGHT_PROD ? "pnpm start" : "pnpm dev",
+		command: useProdServer ? "pnpm start" : "pnpm dev",
 		url: "http://127.0.0.1:3000",
 		reuseExistingServer: !process.env.CI,
 		// 本番モードは起動のみ(ビルドは事前)だが余裕を持たせる
-		timeout: (process.env.PLAYWRIGHT_PROD ? 180 : 120) * 1000,
+		timeout: (useProdServer ? 180 : 120) * 1000,
+		// Emulator モードでは server プロセスへ接続先と安全弁の opt-in を必ず引き渡す
+		// （firestore.ts は本番ビルド × Emulator を PLAYWRIGHT_EMULATOR=1 のときだけ許可する）
+		...(useEmulator
+			? {
+					env: {
+						FIRESTORE_EMULATOR_HOST: process.env.FIRESTORE_EMULATOR_HOST || "127.0.0.1:8080",
+						PLAYWRIGHT_EMULATOR: "1",
+					},
+				}
+			: {}),
 	},
 });

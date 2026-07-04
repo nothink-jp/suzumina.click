@@ -115,9 +115,22 @@ PLAYWRIGHT_PROD=1 pnpm --filter @suzumina.click/web test:e2e:smoke
 ```
 
 - `playwright.config.ts` は `PLAYWRIGHT_PROD=1` のとき webServer を `next start`（本番）に切り替える。
-- CI: `.github/workflows/e2e-smoke.yml` が web/ui 変更時に `next build` → 本番起動 → スモークを実行する。
-- CI は Firestore creds を持たないため、スモークは**データ非依存の layout/ルーティング**（ヘッダー描画・各ルートが 200）に絞る。データ依存の検証は通常 E2E（dev）側で行う。
+- CI: `.github/workflows/e2e-smoke.yml` が web/ui/fixtures 変更時に Emulator 起動 → seed → `next build` → 本番起動 → スモークを実行する。
 - `@playwright/test` と `playwright` は **lockstep**（同一バージョン）。ズレると `test.describe() not expected` で起動不能になるため一致させる。
+
+#### データ依存スモーク（@data-smoke / Emulator + fixtures）
+
+Firestore のデータに依存する検証は **Emulator + フィクスチャ**（`apps/functions/src/tools/firestore-local/fixtures/*.json`）を正本にして行う（`e2e/data-smoke.spec.ts`）。CI もこの構成で「本番ビルド × Emulator」を実行する。
+
+```bash
+# ワンショット（Emulator 起動 + seed + 本番ビルド + smoke/data-smoke 実行）
+pnpm test:e2e:emulator
+# spec だけ直したい再実行時はビルドを省略できる
+PLAYWRIGHT_SKIP_BUILD=1 pnpm test:e2e:emulator
+```
+
+- `PLAYWRIGHT_EMULATOR=1` はデータ依存 spec の有効化と同時に、`apps/web/src/lib/firestore.ts` の安全弁（本番 × Emulator 接続拒否）への明示 opt-in を兼ねる。**本番デプロイ環境では決して設定しない**。
+- spec に**本番 Firestore の ID をハードコードしない**（CI に存在保証がなく必ず腐る）。ID・タイトルは fixtures を実行時に読んで取得する（`seed:dump` での鮮度更新に追従する）。
 
 ## Best Practices
 
