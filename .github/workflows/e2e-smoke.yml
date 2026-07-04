@@ -83,6 +83,13 @@ jobs:
       - name: Install Playwright (chromium)
         run: pnpm --filter @suzumina.click/web exec playwright install --with-deps chromium
 
+      # Firestore Emulator は Java 21+ を要求する（runner 既定の PATH の java は古い）
+      - name: Setup Java 21 (Firestore Emulator requirement)
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
       # Emulator は runner 既存の apt 管理 gcloud では components install できないため、
       # action 管理の SDK に component を同梱して導入する（認証は不要。Emulator のみ使用）
       - name: Setup gcloud (Firestore Emulator)
