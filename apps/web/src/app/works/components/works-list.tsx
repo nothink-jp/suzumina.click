@@ -13,6 +13,7 @@ import {
 } from "@/constants/list-options";
 import { WORK_CATEGORY_OPTIONS, WORK_LANGUAGE_OPTIONS } from "@/constants/work-options";
 import { useAgeVerification } from "@/contexts/age-verification-context";
+import * as logger from "@/lib/logger";
 import { getPopularGenres, getWorks } from "../actions";
 import type { ParsedWorksSearchParams } from "../lib/parse-search-params";
 
@@ -39,8 +40,17 @@ export default function WorksList({ initialData, initialParams }: WorksListProps
 		if (isAgeVerificationLoading) return; // localStorage解決前は待つ
 		if (hasCorrectedRef.current) return;
 		if (!showR18Content) return; // 未確認/未成年はSSRのfail-closed結果のままでよい
+		// URLに showR18 の明示指定がある場合は SSR が既にその値を正しく反映済みのため補正しない
+		// （例: ?showR18=false は「成人だがR18非表示を選択」であり、無条件に true 補正すると
+		// フィルタUIの表示（URL由来でOFF）と実際の一覧（R18込み）が矛盾する）
+		if (initialParams.showR18 !== undefined) return;
 		hasCorrectedRef.current = true;
-		void getWorks({ ...initialParams, showR18: true }).then(setCorrectedData);
+		getWorks({ ...initialParams, showR18: true })
+			.then(setCorrectedData)
+			.catch((err: unknown) => {
+				logger.error("works: R18補正フェッチに失敗", err);
+				hasCorrectedRef.current = false; // 依存値が変化すれば再試行できるようにする
+			});
 	}, [isAgeVerificationLoading, showR18Content, initialParams]);
 
 	// 人気ジャンルを取得

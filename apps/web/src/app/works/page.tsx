@@ -13,9 +13,8 @@ export default async function WorksPage({ searchParams }: WorksPageProps) {
 		const value = rawParams[key];
 		return typeof value === "string" ? value : undefined;
 	};
-	const { page, limit, sort, search, category, language, genres } = parseWorksSearchParams({
-		get: getParam,
-	});
+	const parsedParams = parseWorksSearchParams({ get: getParam });
+	const { page, limit, sort, search, category, language, genres, showR18 } = parsedParams;
 
 	// showR18パラメータの処理
 	// 年齢確認状態はlocalStorage駆動でServer Componentからは読めないため、
@@ -23,9 +22,9 @@ export default async function WorksPage({ searchParams }: WorksPageProps) {
 	// このHTMLはCDNエッジで全訪問者に共有キャッシュされる（terraform/cloudflare.tf #5・
 	// next.config.mjsのCache-Control）ため、未確認訪問者を含む全員に安全な内容のみ返す必要がある。
 	// 年齢確認済みの成人はhydration後、クライアント側の再フェッチで showR18: true を明示送信する
-	// （works-list.tsx 参照。ここで解析した initialParams を props で渡し同じ条件で再取得する）。
-	const showR18FromParams = getParam("showR18");
-	const shouldShowR18 = showR18FromParams !== undefined ? showR18FromParams === "true" : false;
+	// （works-list.tsx 参照。parsedParams.showR18 が undefined＝URL未指定の場合のみ補正する。
+	// 明示指定（true/false）がある場合はSSRが既に正しく反映しているため補正しない）。
+	const shouldShowR18 = showR18 ?? false;
 
 	// 初期データを取得
 	const result = await getWorks({
@@ -39,12 +38,7 @@ export default async function WorksPage({ searchParams }: WorksPageProps) {
 		showR18: shouldShowR18,
 	});
 
-	return (
-		<WorksPageClient
-			initialData={result}
-			initialParams={{ page, limit, sort, search, category, language, genres }}
-		/>
-	);
+	return <WorksPageClient initialData={result} initialParams={parsedParams} />;
 }
 
 // メタデータ設定

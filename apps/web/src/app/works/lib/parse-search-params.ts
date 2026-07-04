@@ -31,6 +31,11 @@ export interface ParsedWorksSearchParams {
 	category?: string;
 	language?: string;
 	genres?: string[];
+	/**
+	 * URLの showR18 生値（未指定なら undefined）。fail-closed デフォルトの適用は
+	 * 呼び出し側の責務（page.tsx が SSR 用に、works-list.tsx が明示指定の有無判定に使う）。
+	 */
+	showR18?: boolean;
 }
 
 export function parseWorksSearchParams(params: SearchParamsGetter): ParsedWorksSearchParams {
@@ -43,6 +48,9 @@ export function parseWorksSearchParams(params: SearchParamsGetter): ParsedWorksS
 	const genres = parseGenres(params.get("genres"));
 	const limitValue = Number.parseInt(params.get("limit") ?? "", 10) || 12;
 	const validLimit = [12, 24, 48].includes(limitValue) ? limitValue : 12;
+	const showR18Raw = params.get("showR18");
+	const showR18 =
+		showR18Raw !== null && showR18Raw !== undefined ? showR18Raw === "true" : undefined;
 
 	return {
 		page: validPage,
@@ -52,5 +60,6 @@ export function parseWorksSearchParams(params: SearchParamsGetter): ParsedWorksS
 		category,
 		language,
 		genres,
+		showR18,
 	};
 }
