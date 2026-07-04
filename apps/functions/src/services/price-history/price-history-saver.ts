@@ -1,13 +1,17 @@
 import type { DLsiteApiResponse, PriceHistoryDocument } from "@suzumina.click/shared-types";
 import firestore from "../../infrastructure/database/firestore";
+import { chunkArray } from "../../shared/array-utils";
 import * as logger from "../../shared/logger";
 import { isValidPriceData } from "./price-extractor";
+
+/** priceHistory 存在確認のバルク読み取り（getAll）を分割するチャンクサイズ */
+const PRICE_HISTORY_EXISTS_CHUNK_SIZE = 300;
 
 /**
  * JST（日本標準時）での現在日付を YYYY-MM-DD 形式で取得
  * @returns JST日付文字列
  */
-function getJSTDate(): string {
+export function getJSTDate(): string {
 	// 現在のUTC時刻を取得
 	const now = new Date();
 	// toLocaleStringでJSTの日付を取得
@@ -148,4 +152,54 @@ export async function savePriceHistory(
 		logger.error(`価格履歴保存エラー: ${workId}`, error);
 		return false;
 	}
+}
+
+/**
+ * 指定した作品IDのうち、当日分(`today`)の priceHistory ドキュメントが
+ * 既に存在する作品IDの集合をバルクで確認する（SPR-229 Stage②）。
+ *
+ * `savePriceHistory` 内の重複防止チェック（既存データ確認）と同じ判定を、
+ * DLsite API呼び出しの**前段**でstableティア候補にだけ行うことで、
+ * 変化していないと分かっている作品のAPI呼び出しをスキップできるようにする。
+ *
+ * read総数について（レビュー指摘を受けて明記）: stable-skip判定された作品（多数派）は
+ * このバルク読み取りが`savePriceHistory`内の個別読み取りをまるごと置き換えるため
+ * read総数は実質不変。一方、stable-due判定された作品（当日分が無く実際に取得する少数派）は
+ * このバルク読み取りに加えて`savePriceHistory`内の個別重複チェックも従来通り実行されるため、
+ * その件数分だけreadが純増する（`savePriceHistory`側の重複防止チェックはこの関数からは
+ * 削除していない）。「新規readは発生しない」は無条件には成立しないが、stable-dueは通常
+ * 少数のため実害は小さい。
+ *
+ * @param workIds 確認対象の作品ID（stable候補のみに絞って渡す想定）
+ * @param today JST暦日文字列（`getJSTDate()`の結果）
+ * @returns 当日分が既に存在する作品IDの集合
+ */
+export async function bulkCheckPriceHistoryExistsToday(
+	workIds: string[],
+	today: string,
+): Promise<Set<string>> {
+	const existsWorkIds = new Set<string>();
+	if (workIds.length === 0) {
+		return existsWorkIds;
+	}
+
+	const refs = workIds.map((workId) =>
+		firestore.collection("works").doc(workId).collection("priceHistory").doc(today),
+	);
+	const chunks = chunkArray(refs, PRICE_HISTORY_EXISTS_CHUNK_SIZE);
+
+	const chunkResults = await Promise.all(chunks.map((chunk) => firestore.getAll(...chunk)));
+
+	for (const docs of chunkResults) {
+		for (const doc of docs) {
+			if (doc.exists) {
+				const workId = doc.ref.parent.parent?.id;
+				if (workId) {
+					existsWorkIds.add(workId);
+				}
+			}
+		}
+	}
+
+	return existsWorkIds;
 }

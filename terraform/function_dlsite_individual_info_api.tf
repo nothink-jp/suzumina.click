@@ -67,6 +67,35 @@ resource "google_cloud_scheduler_job" "fetch_dlsite_individual_api_hourly" {
   ]
 }
 
+# SPR-229 Stage②: ティア差分の取りこぼし検知を兼ねた週次フルスイープ
+# 通常runの2時間おき（0:03, 2:03, ...）・checkDataIntegrityの日曜3:00 JSTと重ならない
+# 土曜4:15 JSTに設定。既存関数・既存トピックを再利用し、mode違いのペイロードで
+# フルスイープ(ティア差分を無視した全件取得)を発火させる（新規関数は増やさない）。
+resource "google_cloud_scheduler_job" "fetch_dlsite_individual_api_weekly_full_sweep" {
+  project = var.gcp_project_id
+  region  = var.region
+  name    = "fetch-dlsite-individual-api-weekly-full-sweep"
+
+  description = "ティア差分の週次フルスイープ（取りこぼし検知・全件強制取得）"
+  schedule    = "15 4 * * 6" # 毎週土曜4:15 JST
+  time_zone   = "Asia/Tokyo"
+  paused      = false
+
+  pubsub_target {
+    topic_name = google_pubsub_topic.dlsite_individual_api_trigger.id
+    data = base64encode(jsonencode({
+      type        = "unified_update"
+      mode        = "weekly_full_sweep"
+      description = "ティア差分の取りこぼし検知を兼ねた週次全件取得"
+    }))
+  }
+
+  depends_on = [
+    google_project_service.cloudscheduler,
+    google_pubsub_topic.dlsite_individual_api_trigger,
+  ]
+}
+
 # Cloud Scheduler から Individual Info API Function を呼び出すための権限
 resource "google_pubsub_topic_iam_member" "scheduler_individual_api_pubsub_publisher" {
   project = var.gcp_project_id
