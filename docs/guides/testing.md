@@ -132,6 +132,21 @@ PLAYWRIGHT_SKIP_BUILD=1 pnpm test:e2e:emulator
 - `PLAYWRIGHT_EMULATOR=1` はデータ依存 spec の有効化と同時に、`apps/web/src/lib/firestore.ts` の安全弁（本番 × Emulator 接続拒否）への明示 opt-in を兼ねる。**本番デプロイ環境では決して設定しない**。
 - spec に**本番 Firestore の ID をハードコードしない**（CI に存在保証がなく必ず腐る）。ID・タイトルは fixtures を実行時に読んで取得する（`seed:dump` での鮮度更新に追従する）。
 
+#### Playwright Agents（e2e の authoring 支援）
+
+e2e spec の新規作成・修復は Playwright Agents（`.claude/agents/playwright-test-{planner,generator,healer}.md` +
+ルート `.mcp.json` の `playwright-test` MCP サーバー）で行える。generator は操作を live 実行しながら
+role ベースのロケーターを検証済みコードとして記録するため、手書きよりロケーター精度が高い。
+
+- **起動前提**: Firestore Emulator + fixtures（`pnpm emulator` + `pnpm seed`、または `pnpm dev:local`）。
+  MCP サーバーには `FIRESTORE_EMULATOR_HOST` が焼き込まれており、dev サーバー（port 3000）が未起動なら
+  playwright config の webServer が起動する（起動済みなら再利用）。
+- **フロー**: planner（探索 → `apps/web/specs/` に計画 md）→ generator（計画を live 実行 → spec 生成）→
+  healer（失敗 spec の自己修復。直せなければ `test.fixme()` + コメント）。
+- **CI への昇格ルール**: 生成 spec をそのままコミットしない。①データ文字列（タイトル・ID）が
+  ロケーターに残っていないか（fixtures 実行時読み込みへ置換）、②`PLAYWRIGHT_EMULATOR` ガードの有無、
+  ③ファイル名が `smoke` を含むか（CI の実行パターンは `playwright test smoke`）を確認してから昇格する。
+
 ## Best Practices
 
 ### 1. Test Organization
