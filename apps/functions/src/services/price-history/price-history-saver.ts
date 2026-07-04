@@ -161,8 +161,14 @@ export async function savePriceHistory(
  * `savePriceHistory` 内の重複防止チェック（既存データ確認）と同じ判定を、
  * DLsite API呼び出しの**前段**でstableティア候補にだけ行うことで、
  * 変化していないと分かっている作品のAPI呼び出しをスキップできるようにする。
- * `firestore.getAll()` によるバルク読み取りのため、read総数は個別`get()`と同等
- * （読み取り箇所を後段から前段に移すだけで、新規readは発生しない）。
+ *
+ * read総数について（レビュー指摘を受けて明記）: stable-skip判定された作品（多数派）は
+ * このバルク読み取りが`savePriceHistory`内の個別読み取りをまるごと置き換えるため
+ * read総数は実質不変。一方、stable-due判定された作品（当日分が無く実際に取得する少数派）は
+ * このバルク読み取りに加えて`savePriceHistory`内の個別重複チェックも従来通り実行されるため、
+ * その件数分だけreadが純増する（`savePriceHistory`側の重複防止チェックはこの関数からは
+ * 削除していない）。「新規readは発生しない」は無条件には成立しないが、stable-dueは通常
+ * 少数のため実害は小さい。
  *
  * @param workIds 確認対象の作品ID（stable候補のみに絞って渡す想定）
  * @param today JST暦日文字列（`getJSTDate()`の結果）

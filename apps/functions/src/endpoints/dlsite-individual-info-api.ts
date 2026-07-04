@@ -31,6 +31,7 @@ import { collectWorkIdsForProduction } from "../services/dlsite/work-id-collecto
 import { orderNewWorksFirst } from "../services/dlsite/work-ordering";
 import {
 	classifyAndFilterStableTier,
+	classifyWorkTiers,
 	getStableCandidateIds,
 	type TieredWorkIds,
 	toDueWorkIds,
@@ -44,8 +45,12 @@ import * as logger from "../shared/logger";
  * SPR-229 Stage②: ティア差分によるdue-setフィルタの有効/無効フラグ。
  * 緊急時はこの環境変数をfalseにして再デプロイするだけで旧挙動（全件取得）に戻せる
  * （Firestoreスキーマ変更を伴わないためロールバックの障害はない）。
+ * 呼び出し時に都度読む（モジュール読み込み時点で固定しない）ことで、テストから
+ * `process.env`を切り替えて両分岐を検証できるようにする。
  */
-const DLSITE_TIER_FILTERING_ENABLED = process.env.DLSITE_TIER_FILTERING_ENABLED !== "false";
+function isTierFilteringEnabled(): boolean {
+	return process.env.DLSITE_TIER_FILTERING_ENABLED !== "false";
+}
 
 /**
  * Pub/SubメッセージのPubsubMessage型定義（youtube.tsと同型）
@@ -454,6 +459,9 @@ async function initializeNewBatchProcessing(
 		tierBreakdown,
 		isFullSweepCycle,
 		fullSweepWouldSkipWorkIds: isFullSweepCycle ? fullSweepWouldSkipWorkIds : undefined,
+		// SPR-229: 新規サイクル開始時点で pending 状態は解消済み（effectiveFullSweep に
+		// 反映済み、または今回対象外）のため必ずクリアする。
+		pendingFullSweep: undefined,
 	});
 }
 
@@ -466,14 +474,18 @@ async function initializeNewBatchProcessing(
  *
  * read総数について: stable候補に対する`priceHistory/{today}`存在確認は、従来
  * `savePriceHistory`内で毎run・全作品に個別`get()`として発生していたread（重複防止チェック）を
- * 前段でバルク`getAll()`にまとめて行うだけであり、新規readは発生しない（対象母数はほぼ不変）。
+ * 前段でバルク`getAll()`にまとめて行うもの。**stable-skip**作品（多数派）はread総数が実質不変
+ * （後段の個別readが丸ごと不要になる代わりに前段のバルクreadが乗るだけ）。一方
+ * **stable-due**作品（当日分がまだ無く実際に取得する少数派）は、前段のバルクreadに加えて
+ * `savePriceHistory`側の個別重複チェックも従来通り実行されるため、その件数分だけreadが純増する
+ * （レビュー指摘: 「新規readは発生しない」は無条件には成立しない。stable-dueは通常少数のため実害は小さい）。
  */
-async function computeDueWorkIds(
+export async function computeDueWorkIds(
 	currentWorkIds: string[],
 	existingWorksMap: Map<string, WorkDocument>,
 	forceFullSweep: boolean,
 ): Promise<{ dueWorkIds: string[]; tiered: TieredWorkIds | null }> {
-	if (!DLSITE_TIER_FILTERING_ENABLED) {
+	if (!isTierFilteringEnabled()) {
 		logger.info("ティア差分をスキップして全件を対象にします", {
 			理由: "DLSITE_TIER_FILTERING_ENABLED=false",
 			対象数: currentWorkIds.length,
@@ -483,18 +495,16 @@ async function computeDueWorkIds(
 
 	// 週次フルスイープでも classifyAndFilterStableTier 自体は実行する（取りこぼし検知のため
 	// stable想定の集合が必要）。差はdue-setに反映するかどうかのみ（下記）。
+	// ティア分類は classifyWorkTiers で1回だけ行い、getStableCandidateIds /
+	// classifyAndFilterStableTier の両方で結果を再利用する（同じ作品を2回分類しない）。
 	const today = new Date();
-	const stableCandidateIds = getStableCandidateIds(currentWorkIds, existingWorksMap, today);
+	const tiers = classifyWorkTiers(currentWorkIds, existingWorksMap, today);
+	const stableCandidateIds = getStableCandidateIds(currentWorkIds, tiers);
 	const priceHistoryTodayExists = await bulkCheckPriceHistoryExistsToday(
 		stableCandidateIds,
 		getJSTDate(),
 	);
-	const tiered = classifyAndFilterStableTier(
-		currentWorkIds,
-		existingWorksMap,
-		priceHistoryTodayExists,
-		today,
-	);
+	const tiered = classifyAndFilterStableTier(currentWorkIds, tiers, priceHistoryTodayExists);
 
 	logger.info("ティア差分due-set計算完了(SPR-229 Stage②)", {
 		対象総数: currentWorkIds.length,
@@ -749,7 +759,7 @@ async function recomputeQueuedCreators(): Promise<void> {
 /**
  * この run が処理すべきサイクル情報（継続 or 新規）
  */
-interface CycleInfo {
+export interface CycleInfo {
 	allWorkIds: string[];
 	batches: string[][];
 	startBatch: number;
@@ -764,9 +774,12 @@ interface CycleInfo {
  *
  * SPR-229: due-set/週次モードはサイクル開始時（新規処理）に確定済みのため、継続処理では
  * 再判定しない。forceFullSweep が渡されていても前サイクルが tiered モードで継続中なら
- * 今回は反映されない（次の週次発火 or 次サイクルで自然に反映される。低頻度の安全網のため許容）。
+ * 今回は反映されない。ただしその場合 `pendingFullSweep` をメタデータに記録し、次に新規
+ * サイクルが始まるタイミング（継続中サイクル完了後の次run）で強制フルスイープとして
+ * 拾い直す（レビュー指摘対応: 継続中サイクルとの衝突で週次フルスイープがその週丸ごと
+ * 無音で消えるのを防ぐ。1週間まるまる遅延はしない）。
  */
-async function resolveCycleInfo(
+export async function resolveCycleInfo(
 	metadata: CollectionMetadata,
 	continuationInfo: ReturnType<typeof getContinuationInfo>,
 	forceFullSweep: boolean,
@@ -774,8 +787,9 @@ async function resolveCycleInfo(
 	if (continuationInfo.isContinuation === true) {
 		if (forceFullSweep) {
 			logger.warn(
-				"週次フルスイープの発火時に前サイクルが継続中でした。今回は前サイクルの設定のまま継続します",
+				"週次フルスイープの発火時に前サイクルが継続中でした。pendingFullSweepを記録し次の新規サイクルで拾い直します",
 			);
+			await updateUnifiedMetadata({ pendingFullSweep: true });
 		}
 		const allWorkIds = continuationInfo.allWorkIds;
 		const batches = chunkArray(allWorkIds, BATCH_SIZE);
@@ -790,13 +804,15 @@ async function resolveCycleInfo(
 		return { allWorkIds, batches, startBatch, wouldSkipStableIds };
 	}
 
-	// 新規処理: 作品IDを収集
-	const prepared = await prepareNewBatchProcessing(metadata, forceFullSweep);
+	// 新規処理: 作品IDを収集。前サイクルが継続中で反映できなかった週次フルスイープが
+	// pendingFullSweepとして残っていれば、ここで拾い直す。
+	const effectiveFullSweep = forceFullSweep || metadata.pendingFullSweep === true;
+	const prepared = await prepareNewBatchProcessing(metadata, effectiveFullSweep);
 	if (!prepared) {
 		return null;
 	}
 	const wouldSkipStableIds =
-		forceFullSweep && prepared.tiered ? new Set(prepared.tiered.stableSkippedIds) : undefined;
+		effectiveFullSweep && prepared.tiered ? new Set(prepared.tiered.stableSkippedIds) : undefined;
 	return {
 		allWorkIds: prepared.allWorkIds,
 		batches: prepared.batches,

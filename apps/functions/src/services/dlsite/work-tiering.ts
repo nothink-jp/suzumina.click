@@ -62,18 +62,36 @@ export function classifyWorkTier(existing: WorkDocument | undefined, today: Date
 }
 
 /**
+ * 作品IDをティアへ一括分類する（各IDにつき classifyWorkTier は1回だけ呼ぶ）
+ *
+ * `getStableCandidateIds` と `classifyAndFilterStableTier` はこの結果（Map）を再利用する。
+ * 呼び出し側で個別に分類し直すと同じ作品を2回ずつ分類することになるため、
+ * 分類は必ずここで1回だけ行う。
+ */
+export function classifyWorkTiers(
+	workIds: string[],
+	existingWorksMap: Map<string, WorkDocument>,
+	today: Date,
+): Map<string, WorkTier> {
+	const tiers = new Map<string, WorkTier>();
+	for (const id of workIds) {
+		tiers.set(id, classifyWorkTier(existingWorksMap.get(id), today));
+	}
+	return tiers;
+}
+
+/**
  * stable候補（= new/volatile以外）の作品IDを抽出する
  *
  * 呼び出し側（dlsite-individual-info-api.ts）はこの結果に対してのみ
  * `priceHistory/{today}` の存在確認をバルクで行う（stable候補以外は対象外にすることで
  * 無駄な読み取りを避ける）。
+ *
+ * @param workIds 対象の作品ID
+ * @param tiers `classifyWorkTiers` で事前に計算したティア分類結果
  */
-export function getStableCandidateIds(
-	workIds: string[],
-	existingWorksMap: Map<string, WorkDocument>,
-	today: Date,
-): string[] {
-	return workIds.filter((id) => classifyWorkTier(existingWorksMap.get(id), today) === "stable");
+export function getStableCandidateIds(workIds: string[], tiers: Map<string, WorkTier>): string[] {
+	return workIds.filter((id) => tiers.get(id) === "stable");
 }
 
 /** ティア別に振り分けた作品ID */
@@ -90,16 +108,15 @@ export interface TieredWorkIds {
  * 作品IDをティア別に分類し、stableティアは当日分priceHistoryの有無でdue/skipに振り分ける
  *
  * @param workIds 対象の全作品ID（scrape順）
- * @param existingWorksMap 既存 works のマップ（追加読み取りなしで再利用）
+ * @param tiers `classifyWorkTiers` で事前に計算したティア分類結果（`getStableCandidateIds` と
+ *   同じ結果を再利用し、作品ごとの分類を2回行わない）
  * @param priceHistoryTodayExists 当日分 priceHistory が既に存在する作品IDの集合
  *   （`getStableCandidateIds` で絞った候補のみを対象にあらかじめバルク確認した結果を渡す）
- * @param today 基準日時（テスト容易性のため注入）
  */
 export function classifyAndFilterStableTier(
 	workIds: string[],
-	existingWorksMap: Map<string, WorkDocument>,
+	tiers: Map<string, WorkTier>,
 	priceHistoryTodayExists: Set<string>,
-	today: Date,
 ): TieredWorkIds {
 	const newIds: string[] = [];
 	const volatileIds: string[] = [];
@@ -107,7 +124,10 @@ export function classifyAndFilterStableTier(
 	const stableSkippedIds: string[] = [];
 
 	for (const workId of workIds) {
-		const tier = classifyWorkTier(existingWorksMap.get(workId), today);
+		// tiers に無い workId は呼び出し側の不整合（classifyWorkTiers に渡した workIds と
+		// 異なる集合を渡した場合）。安全側（毎run取得＝new扱い）に倒し、stable-skipへの
+		// 誤混入を防ぐ。
+		const tier = tiers.get(workId) ?? "new";
 		if (tier === "new") {
 			newIds.push(workId);
 		} else if (tier === "volatile") {

@@ -418,6 +418,16 @@ describe("unified-data-processor", () => {
 			expect(result.metadataChanged).toBe(false);
 			expect(result.hasAnyChange).toBe(false);
 		});
+
+		it("割引率のみ変化した場合、priceOrSalesChangedのみtrueになる（JPY価格は据え置き）", () => {
+			const existing = { ...mockWorkData, price: { ...mockWorkData.price, discount: 10 } };
+			const updated = { ...mockWorkData, price: { ...mockWorkData.price, discount: 30 } };
+			const result = detectChanges(existing, updated);
+
+			expect(result.priceOrSalesChanged).toBe(true);
+			expect(result.metadataChanged).toBe(false);
+			expect(result.hasAnyChange).toBe(true);
+		});
 	});
 
 	afterEach(() => {

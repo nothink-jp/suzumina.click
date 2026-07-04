@@ -248,11 +248,21 @@ export async function processUnifiedDLsiteData(
 
 /**
  * 価格変更をチェック
+ *
+ * 本体価格（current）だけでなく割引率（discount）も見る。DLsiteのセールでJPY価格は
+ * 据え置きのまま割引率だけ変わるケースがあり、currentのみの比較では検知できないため
+ * （レビュー指摘: 割引率のみの変化がShouldSkipUpdate/取りこぼし検知の両方で見逃される）。
  */
 function hasPriceChanged(existing: WorkDocument, updated: WorkDocument): boolean {
 	if (existing.price.current !== updated.price.current) {
 		logger.info(
 			`価格変更検出: ${existing.productId} - ${existing.price.current} → ${updated.price.current}`,
+		);
+		return true;
+	}
+	if (existing.price.discount !== updated.price.discount) {
+		logger.info(
+			`割引率変更検出: ${existing.productId} - ${existing.price.discount} → ${updated.price.discount}`,
 		);
 		return true;
 	}

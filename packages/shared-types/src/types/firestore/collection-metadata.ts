@@ -45,6 +45,13 @@ export interface CollectionMetadata {
 	 * （取りこぼし検知用。isFullSweepCycle=trueのサイクルでのみ設定・continuation runで再利用）
 	 */
 	fullSweepWouldSkipWorkIds?: string[];
+	/**
+	 * SPR-229: 週次フルスイープの発火時に前サイクルが継続中で反映できなかった場合にtrue。
+	 * 次の新規サイクル開始時（`prepareNewBatchProcessing`）にこのフラグを見て
+	 * 強制フルスイープとして拾い直し、そのタイミングでクリアする（レビュー指摘対応:
+	 * 継続中サイクルとの衝突で週次フルスイープがその週丸ごと無音で消えるのを防ぐ）。
+	 */
+	pendingFullSweep?: boolean;
 }
 
 /**

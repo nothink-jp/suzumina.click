@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import {
 	classifyAndFilterStableTier,
 	classifyWorkTier,
+	classifyWorkTiers,
 	getStableCandidateIds,
 	toDueWorkIds,
 	VOLATILE_RELEASE_WINDOW_DAYS,
@@ -60,6 +61,22 @@ describe("classifyWorkTier", () => {
 	});
 });
 
+describe("classifyWorkTiers", () => {
+	it("各作品IDをclassifyWorkTierと同じ結果でMapに詰める", () => {
+		const existingWorksMap = new Map<string, WorkDocument>([
+			["RJ001", makeWork({ productId: "RJ001" })], // stable
+			["RJ002", makeWork({ productId: "RJ002", salesStatus: { isSale: true, isSoldOut: false } })], // volatile
+		]);
+		const workIds = ["RJ001", "RJ002", "RJ003"]; // RJ003はnew（マップ不在）
+
+		const tiers = classifyWorkTiers(workIds, existingWorksMap, TODAY);
+
+		expect(tiers.get("RJ001")).toBe("stable");
+		expect(tiers.get("RJ002")).toBe("volatile");
+		expect(tiers.get("RJ003")).toBe("new");
+	});
+});
+
 describe("getStableCandidateIds", () => {
 	it("stableティアの作品IDのみを返す", () => {
 		const existingWorksMap = new Map<string, WorkDocument>([
@@ -67,8 +84,9 @@ describe("getStableCandidateIds", () => {
 			["RJ002", makeWork({ productId: "RJ002", salesStatus: { isSale: true, isSoldOut: false } })], // volatile
 		]);
 		const workIds = ["RJ001", "RJ002", "RJ003"]; // RJ003はnew（マップ不在）
+		const tiers = classifyWorkTiers(workIds, existingWorksMap, TODAY);
 
-		expect(getStableCandidateIds(workIds, existingWorksMap, TODAY)).toEqual(["RJ001"]);
+		expect(getStableCandidateIds(workIds, tiers)).toEqual(["RJ001"]);
 	});
 });
 
@@ -84,13 +102,9 @@ describe("classifyAndFilterStableTier", () => {
 		]);
 		const workIds = ["RJ_NEW", "RJ_VOLATILE", "RJ_STABLE_DUE", "RJ_STABLE_SKIP"];
 		const priceHistoryTodayExists = new Set(["RJ_STABLE_SKIP"]);
+		const tiers = classifyWorkTiers(workIds, existingWorksMap, TODAY);
 
-		const result = classifyAndFilterStableTier(
-			workIds,
-			existingWorksMap,
-			priceHistoryTodayExists,
-			TODAY,
-		);
+		const result = classifyAndFilterStableTier(workIds, tiers, priceHistoryTodayExists);
 
 		expect(result).toEqual({
 			newIds: ["RJ_NEW"],
@@ -105,15 +119,20 @@ describe("classifyAndFilterStableTier", () => {
 			["RJ001", makeWork({ productId: "RJ001" })],
 			["RJ002", makeWork({ productId: "RJ002" })],
 		]);
-		const result = classifyAndFilterStableTier(
-			["RJ001", "RJ002"],
-			existingWorksMap,
-			new Set(),
-			TODAY,
-		);
+		const workIds = ["RJ001", "RJ002"];
+		const tiers = classifyWorkTiers(workIds, existingWorksMap, TODAY);
+		const result = classifyAndFilterStableTier(workIds, tiers, new Set());
 
 		expect(result.stableDueIds).toEqual(["RJ001", "RJ002"]);
 		expect(result.stableSkippedIds).toEqual([]);
+	});
+
+	it("tiersに存在しないworkIdは安全側でnew扱いになる", () => {
+		const tiers = new Map<string, "new" | "volatile" | "stable">();
+		const result = classifyAndFilterStableTier(["RJ_UNKNOWN"], tiers, new Set());
+
+		expect(result.newIds).toEqual(["RJ_UNKNOWN"]);
+		expect(result.stableDueIds).toEqual([]);
 	});
 });
 
