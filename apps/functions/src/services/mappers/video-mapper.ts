@@ -142,6 +142,16 @@ export function mapYouTubeToVideoPlainObject(
 				"none") as VideoPlainObject["liveBroadcastContent"],
 			liveStreamingDetails: liveDetails,
 			videoType,
+			// status は /videos の total 集計（where status.privacyStatus=="public" の count()）と
+			// 埋め込み可否判定（status.embeddable）が読む。旧 mapper 撤去時に写像が落ち、
+			// status 無し docs が total から漏れていた（SPR-243。既存分は毎時 cron の再取得で自然 backfill）。
+			status: youtubeVideo.status
+				? {
+						privacyStatus: youtubeVideo.status.privacyStatus || undefined,
+						uploadStatus: youtubeVideo.status.uploadStatus || undefined,
+						embeddable: youtubeVideo.status.embeddable ?? undefined,
+					}
+				: undefined,
 			// Use both new and old format for compatibility
 			tags: {
 				playlistTags,

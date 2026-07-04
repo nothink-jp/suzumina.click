@@ -64,6 +64,24 @@ describe("mapYouTubeToVideoPlainObject", () => {
 		expect(v?.statistics).toBeUndefined();
 	});
 
+	it("status を写像する（/videos の total 集計と埋め込み可否が読む = SPR-243）", () => {
+		const v = mapYouTubeToVideoPlainObject(
+			ytVideo({
+				status: { privacyStatus: "public", uploadStatus: "processed", embeddable: true },
+			}),
+		);
+		expect(v?.status).toEqual({
+			privacyStatus: "public",
+			uploadStatus: "processed",
+			embeddable: true,
+		});
+	});
+
+	it("status 無しは undefined（merge:true で既存値を保持）", () => {
+		const v = mapYouTubeToVideoPlainObject(ytVideo());
+		expect(v?.status).toBeUndefined();
+	});
+
 	it("snippet の欠落フィールドは既定値（空文字 / 空サムネ）で補完する", () => {
 		// 必須 id + 最小 snippet（title 等を持たない）でフォールバック分岐を通す
 		const v = mapYouTubeToVideoPlainObject({
