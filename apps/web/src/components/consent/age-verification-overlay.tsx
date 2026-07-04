@@ -1,8 +1,9 @@
 "use client";
 
+import { DockedPanel } from "@suzumina.click/ui/components/custom";
+import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/ui/card";
-import { AlertTriangle, Calendar, Heart, Shield } from "lucide-react";
+import { Check, Shield, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useAgeVerification } from "@/contexts/age-verification-context";
 
@@ -52,16 +53,21 @@ const BOT_USER_AGENTS = [
 ];
 const BOT_UA_PATTERN = new RegExp(BOT_USER_AGENTS.join("|"), "i");
 
+type Stage = "hidden" | "ask" | "toast" | "pill";
+
 /**
- * Client-side overlay that prompts age verification without blocking content render.
- * Renders nothing until the provider's localStorage check resolves, then either
- * stays hidden (verified / bot) or shows a fixed-position confirmation card.
+ * Non-modal, corner-docked age gate (案A: ドッキングカード). The page is
+ * browsable and scrollable from first paint — this never renders a backdrop
+ * and never redirects. Choosing "全年齢のみで続ける" just keeps R18 content
+ * filtered on the current page; the visitor can reopen the card anytime via
+ * the persistent "表示設定" pill.
  */
 export function AgeVerificationOverlay() {
 	const { isAgeVerified, isLoading, updateAgeVerification } = useAgeVerification();
-	const [showMinorMessage, setShowMinorMessage] = useState(false);
 	const [botChecked, setBotChecked] = useState(false);
-	const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const [stage, setStage] = useState<Stage>("hidden");
+	const [chosenAdult, setChosenAdult] = useState(false);
+	const initializedRef = useRef(false);
 
 	useEffect(() => {
 		if (BOT_UA_PATTERN.test(navigator.userAgent)) {
@@ -70,134 +76,98 @@ export function AgeVerificationOverlay() {
 		setBotChecked(true);
 	}, [updateAgeVerification]);
 
+	// Only drive the ask/toast/pill flow for a visitor who is unverified when this
+	// component mounts. A returning, already-verified visitor sees nothing here —
+	// they can still change their mode anytime via /settings or this same card
+	// once they explicitly reopen it (there's nothing to reopen from on a fresh
+	// page load, so no persistent site-wide pill is shown across sessions).
 	useEffect(() => {
-		return () => {
-			if (redirectTimerRef.current !== null) {
-				clearTimeout(redirectTimerRef.current);
-			}
-		};
-	}, []);
+		if (isLoading || !botChecked || initializedRef.current) return;
+		initializedRef.current = true;
+		setStage(isAgeVerified ? "hidden" : "ask");
+	}, [isLoading, botChecked, isAgeVerified]);
 
-	const visible = !isLoading && botChecked && (!isAgeVerified || showMinorMessage);
-
-	useEffect(() => {
-		if (!visible) return;
-		const previous = document.body.style.overflow;
-		document.body.style.overflow = "hidden";
-		return () => {
-			document.body.style.overflow = previous;
-		};
-	}, [visible]);
-
-	if (!visible) return null;
-
-	const handleAgeConfirmation = (isAdult: boolean) => {
-		if (isAdult) {
-			updateAgeVerification(true);
-			return;
-		}
-		updateAgeVerification(false);
-		setShowMinorMessage(true);
-		redirectTimerRef.current = setTimeout(() => {
-			window.location.href = "/";
-		}, 3000);
+	const handleChoice = (isAdult: boolean) => {
+		updateAgeVerification(isAdult);
+		setChosenAdult(isAdult);
+		setStage("toast");
 	};
 
-	if (showMinorMessage) {
-		return (
-			<div
-				role="dialog"
-				aria-modal="true"
-				aria-labelledby="age-verification-minor-title"
-				className="fixed inset-0 z-50 flex items-center justify-center suzuka-gradient p-4"
-			>
-				<Card className="w-full max-w-md mx-auto shadow-xl">
-					<CardHeader className="text-center pb-4">
-						<div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
-							<Shield className="h-8 w-8 text-primary" />
-						</div>
-						<CardTitle
-							id="age-verification-minor-title"
-							className="text-xl font-bold text-foreground"
-						>
-							ありがとうございます
-						</CardTitle>
-					</CardHeader>
+	if (stage === "hidden") return null;
 
-					<CardContent className="space-y-6">
-						<div className="text-center space-y-4">
-							<p className="text-sm text-muted-foreground leading-relaxed">
-								安全なご利用のため、年齢制限のない
-								<br />
-								コンテンツのみご利用いただけます。
-							</p>
-							<div className="flex items-center justify-center gap-2 text-xs text-primary">
-								<Heart className="h-3 w-3" />
-								<span>全年齢対象のコンテンツをお楽しみください</span>
-							</div>
-							<div className="text-xs text-muted-foreground/70 text-center">
-								3秒後にトップページに移動します...
-							</div>
-						</div>
-					</CardContent>
-				</Card>
-			</div>
+	if (stage === "pill") {
+		return (
+			<DockedPanel position="bottom-right" variant="pill" aria-label="表示設定を開く">
+				<button
+					type="button"
+					onClick={() => setStage("ask")}
+					className="flex w-full items-center gap-2 px-4 py-2.5 text-xs text-foreground sm:px-3.5 sm:py-2"
+				>
+					<Shield className="h-3.5 w-3.5 text-primary" />
+					表示設定
+				</button>
+			</DockedPanel>
+		);
+	}
+
+	if (stage === "toast") {
+		return (
+			<DockedPanel
+				role="status"
+				position="bottom-right"
+				aria-label="表示モードの確認"
+				className="flex max-w-full items-center gap-3 p-3.5 sm:max-w-[400px]"
+			>
+				<div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-success/10 text-success">
+					<Check className="h-4 w-4" />
+				</div>
+				<span className="text-sm text-foreground">
+					{chosenAdult ? "R18作品を含むすべての作品を表示します" : "全年齢対象の作品のみ表示します"}
+				</span>
+				<button
+					type="button"
+					onClick={() => setStage("ask")}
+					className="whitespace-nowrap text-xs text-primary underline"
+				>
+					変更
+				</button>
+				<button
+					type="button"
+					onClick={() => setStage("pill")}
+					aria-label="閉じる"
+					className="text-muted-foreground hover:text-foreground"
+				>
+					<X className="h-3.5 w-3.5" />
+				</button>
+			</DockedPanel>
 		);
 	}
 
 	return (
-		<div
-			role="dialog"
-			aria-modal="true"
-			aria-labelledby="age-verification-title"
-			className="fixed inset-0 z-50 flex items-center justify-center suzuka-gradient p-4"
+		<DockedPanel
+			position="bottom-right"
+			aria-label="表示モードの確認"
+			className="flex w-full flex-col gap-3 p-5 sm:max-w-[360px]"
 		>
-			<Card className="w-full max-w-md mx-auto shadow-xl">
-				<CardHeader className="text-center pb-4">
-					<div className="mx-auto w-16 h-16 bg-warning/10 rounded-full flex items-center justify-center mb-4">
-						<AlertTriangle className="h-8 w-8 text-warning" />
-					</div>
-					<CardTitle id="age-verification-title" className="text-xl font-bold text-foreground">
-						年齢確認
-					</CardTitle>
-				</CardHeader>
-
-				<CardContent className="space-y-6">
-					<div className="text-center space-y-3">
-						<p className="text-sm text-muted-foreground leading-relaxed">
-							このサイトには18歳未満の方には適さない
-							<br />
-							コンテンツが含まれています。
-						</p>
-						<div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-							<Calendar className="h-3 w-3" />
-							<span>あなたは18歳以上ですか？</span>
-						</div>
-					</div>
-
-					<div className="grid grid-cols-2 gap-3">
-						<Button
-							variant="outline"
-							onClick={() => handleAgeConfirmation(false)}
-							className="w-full border-border text-primary hover:bg-accent"
-						>
-							18歳未満
-						</Button>
-						<Button
-							onClick={() => handleAgeConfirmation(true)}
-							className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-						>
-							18歳以上
-						</Button>
-					</div>
-
-					<div className="text-xs text-muted-foreground text-center leading-relaxed">
-						この確認は法的要件に基づくものです。
-						<br />
-						30日間記憶され、期限後に再確認が必要です。
-					</div>
-				</CardContent>
-			</Card>
-		</div>
+			<div className="flex items-center gap-2">
+				<Badge variant="destructive">R18</Badge>
+				<h3 className="text-sm font-bold text-foreground">表示モードの確認</h3>
+			</div>
+			<p className="text-xs leading-relaxed text-muted-foreground">
+				このサイトはDLsite作品情報など、18歳未満の方に適さないコンテンツを含みます。現在は
+				<strong className="text-foreground">全年齢作品のみ</strong>表示しています。
+			</p>
+			<div className="flex flex-col gap-2">
+				<Button onClick={() => handleChoice(true)} className="w-full">
+					18歳以上 — すべての作品を表示
+				</Button>
+				<Button variant="outline" onClick={() => handleChoice(false)} className="w-full">
+					全年齢のみで続ける
+				</Button>
+			</div>
+			<p className="text-[11px] leading-relaxed text-muted-foreground">
+				選択は30日間このブラウザに記憶されます。右下の「表示設定」からいつでも変更できます。
+			</p>
+		</DockedPanel>
 	);
 }

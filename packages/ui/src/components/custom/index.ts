@@ -27,6 +27,8 @@ export {
 	normalizeOptions,
 	transformFilterValue,
 } from "./configurable-list/utils/filter-helpers";
+// Non-modal corner-docked panel shell (age gate / cookie bar etc.)
+export { DockedPanel } from "./docked-panel";
 
 // Utility components
 export { HighlightText } from "./highlight-text";
