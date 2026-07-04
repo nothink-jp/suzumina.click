@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { expect, type Page, test } from "@playwright/test";
+import { expect, test } from "@playwright/test";
+import { markAgeVerified } from "./helpers";
 
 /**
  * Firestore Emulator + fixtures 前提のデータ依存スモーク（PLAYWRIGHT_EMULATOR=1 のときのみ実行）。
@@ -27,15 +28,6 @@ function firstFixtureDoc(name: string): FixtureDoc {
 		throw new Error(`fixture ${name} が空です`);
 	}
 	return doc;
-}
-
-/** 年齢確認を通過済みの状態を再現する（ダイアログ経由の通過は「年齢確認ゲート」テストで担保） */
-async function markAgeVerified(page: Page): Promise<void> {
-	await page.addInitScript(() => {
-		localStorage.setItem("age-verified", "true");
-		localStorage.setItem("age-verification-date", new Date().toISOString());
-		localStorage.setItem("age-verification-adult", "true");
-	});
 }
 
 // biome-ignore lint/suspicious/noSkippedTests: デバッグ用の無効化ではなく実行環境ガード（Emulator 必須）

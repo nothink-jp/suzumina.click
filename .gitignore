@@ -14,6 +14,8 @@ node_modules
 coverage
 test-results/
 playwright-report/
+# Playwright Agents (run-test-mcp-server) の作業ログ
+.playwright-mcp/
 
 # next.js
 .next/
