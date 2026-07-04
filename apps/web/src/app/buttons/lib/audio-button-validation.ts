@@ -54,9 +54,10 @@ export async function updateVideoButtonCount(
 			const videoData = videoDoc.data();
 			const currentCount = videoData?.audioButtonCount || 0;
 			const newCount = Math.max(0, currentCount + increment);
+			// hasAudioButtons は書かない: cron 側が「作成可能か」の意味で上書きしており
+			// 意味が二重だったため撤去（SPR-239）。ボタン有無は audioButtonCount > 0 が正。
 			await videoRef.update({
 				audioButtonCount: newCount,
-				hasAudioButtons: newCount > 0,
 				updatedAt: new Date().toISOString(),
 			});
 		}

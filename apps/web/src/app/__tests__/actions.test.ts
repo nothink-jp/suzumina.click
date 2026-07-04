@@ -288,7 +288,6 @@ describe("Homepage Actions", () => {
 					lastFetchedAtISO: "2023-01-01T00:00:00Z",
 					liveBroadcastContent: "none" as const,
 					audioButtonCount: 5,
-					hasAudioButtons: true,
 				},
 				{
 					id: "video-2",
@@ -315,7 +314,6 @@ describe("Homepage Actions", () => {
 					lastFetchedAtISO: "2023-01-02T00:00:00Z",
 					liveBroadcastContent: "none" as const,
 					audioButtonCount: 3,
-					hasAudioButtons: true,
 				},
 			];
 
@@ -431,7 +429,6 @@ describe("Homepage Actions", () => {
 					lastFetchedAtISO: "2023-01-01T00:00:00Z",
 					liveBroadcastContent: "none" as const,
 					audioButtonCount: 0,
-					hasAudioButtons: false,
 				},
 			];
 
@@ -645,7 +642,6 @@ describe("Homepage Actions", () => {
 					lastFetchedAtISO: "2023-01-01T00:00:00Z",
 					liveBroadcastContent: "none" as const,
 					audioButtonCount: 0,
-					hasAudioButtons: false,
 				},
 			];
 
@@ -727,7 +723,6 @@ describe("Homepage Actions", () => {
 					lastFetchedAtISO: "2023-01-01T00:00:00Z",
 					liveBroadcastContent: "none" as const,
 					audioButtonCount: 0,
-					hasAudioButtons: false,
 				},
 			];
 

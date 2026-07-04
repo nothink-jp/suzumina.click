@@ -198,20 +198,6 @@ export function getAllTags(video: VideoPlainObject): string[] {
 }
 
 /**
- * Checks if video has audio buttons
- */
-export function hasAudioButtons(video: VideoPlainObject): boolean {
-	return video.audioButtonInfo?.hasButtons || false;
-}
-
-/**
- * Gets audio button count
- */
-export function getAudioButtonCount(video: VideoPlainObject): number {
-	return video.audioButtonInfo?.count || 0;
-}
-
-/**
  * Checks if video is older than specified days
  */
 export function isOlderThan(video: VideoPlainObject, days: number): boolean {
@@ -249,8 +235,6 @@ export const videoOperations = {
 	formatDuration,
 	getFormattedViewCount,
 	getAllTags,
-	hasAudioButtons,
-	getAudioButtonCount,
 	isOlderThan,
 	getAgeInDays,
 };

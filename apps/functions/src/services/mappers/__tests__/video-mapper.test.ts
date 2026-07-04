@@ -54,8 +54,7 @@ describe("mapYouTubeToVideoPlainObject", () => {
 			contentTags: ["t1", "t2"],
 		});
 		expect(v?.videoType).toBe("normal");
-		// 許諾上ボタン作成可は archived のみ。normal は hasAudioButtons / canCreateButton とも false で整合する。
-		expect(v?.hasAudioButtons).toBe(false);
+		// 許諾上ボタン作成可は archived のみ（正本は _computed.canCreateButton。SPR-239 で hasAudioButtons は撤去）。
 		expect(v?._computed?.canCreateButton).toBe(false);
 	});
 
@@ -134,7 +133,6 @@ describe("mapYouTubeToVideoPlainObject", () => {
 		);
 		expect(v?._computed?.isArchived).toBe(true);
 		expect(v?._computed?.canCreateButton).toBe(true);
-		expect(v?.hasAudioButtons).toBe(true);
 	});
 
 	it("liveStreamingDetails の concurrentViewers(文字列)を数値化する", () => {

@@ -29,7 +29,6 @@ vi.mock("../actions", () => ({
 				viewCount: 100,
 				likeCount: 10,
 				commentCount: 5,
-				hasAudioButtons: true,
 			},
 			{
 				id: "video-2",
@@ -42,7 +41,6 @@ vi.mock("../actions", () => ({
 				viewCount: 200,
 				likeCount: 20,
 				commentCount: 10,
-				hasAudioButtons: false,
 			},
 		],
 		totalCount: 2,
