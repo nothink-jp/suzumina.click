@@ -1,16 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-	ContactCategorySchema,
-	type ContactPriority,
-	ContactPrioritySchema,
-	type ContactStatus,
-	ContactStatusSchema,
-	FirestoreContactDataSchema,
-	FrontendContactDataSchema,
-	getPriorityColor,
-	getPriorityDisplayName,
-	getStatusDisplayName,
-} from "../contact";
+import { ContactCategorySchema, FirestoreContactDataSchema } from "../contact";
 
 describe("Contact Schemas", () => {
 	describe("ContactCategorySchema", () => {
@@ -23,61 +12,32 @@ describe("Contact Schemas", () => {
 		});
 	});
 
-	describe("ContactPrioritySchema", () => {
-		it("should validate priority values", () => {
-			expect(() => ContactPrioritySchema.parse("low")).not.toThrow();
-			expect(() => ContactPrioritySchema.parse("medium")).not.toThrow();
-			expect(() => ContactPrioritySchema.parse("high")).not.toThrow();
-			expect(() => ContactPrioritySchema.parse("invalid")).toThrow();
-		});
-	});
-
-	describe("ContactStatusSchema", () => {
-		it("should validate status values", () => {
-			expect(() => ContactStatusSchema.parse("new")).not.toThrow();
-			expect(() => ContactStatusSchema.parse("reviewing")).not.toThrow();
-			expect(() => ContactStatusSchema.parse("resolved")).not.toThrow();
-			expect(() => ContactStatusSchema.parse("invalid")).toThrow();
-		});
-	});
-
 	describe("FirestoreContactDataSchema", () => {
-		it("should validate basic structure", () => {
-			// Test that schema exists and can be used
-			expect(typeof FirestoreContactDataSchema.parse).toBe("function");
-		});
-	});
+		const validData = {
+			category: "bug",
+			subject: "テスト件名",
+			content: "テスト本文です。10文字以上あります。",
+			ipAddress: "1.2.3.4",
+			userAgent: "test-agent",
+			createdAt: "2026-07-04T00:00:00.000Z",
+			timestamp: "2026-07-04T00:00:00.000Z",
+		};
 
-	describe("FrontendContactDataSchema", () => {
-		it("should validate basic structure", () => {
-			// Test that schema exists and can be used
-			expect(typeof FrontendContactDataSchema.parse).toBe("function");
+		it("書き込み実体と同じ形を受理する（email は省略可）", () => {
+			expect(() => FirestoreContactDataSchema.parse(validData)).not.toThrow();
+			expect(() =>
+				FirestoreContactDataSchema.parse({ ...validData, email: "a@example.com" }),
+			).not.toThrow();
 		});
-	});
-});
 
-describe("Contact Utility Functions", () => {
-	describe("getStatusDisplayName", () => {
-		it("should return correct Japanese status names", () => {
-			expect(getStatusDisplayName("new" as ContactStatus)).toBe("新規");
-			expect(getStatusDisplayName("reviewing" as ContactStatus)).toBe("確認中");
-			expect(getStatusDisplayName("resolved" as ContactStatus)).toBe("対応済み");
+		it("admin 時代の status/priority を要求しない（SPR-241 で撤去済み）", () => {
+			const parsed = FirestoreContactDataSchema.parse(validData);
+			expect(parsed).not.toHaveProperty("status");
+			expect(parsed).not.toHaveProperty("priority");
 		});
-	});
 
-	describe("getPriorityDisplayName", () => {
-		it("should return correct Japanese priority names", () => {
-			expect(getPriorityDisplayName("low" as ContactPriority)).toBe("低");
-			expect(getPriorityDisplayName("medium" as ContactPriority)).toBe("中");
-			expect(getPriorityDisplayName("high" as ContactPriority)).toBe("高");
-		});
-	});
-
-	describe("getPriorityColor", () => {
-		it("should return correct CSS color classes", () => {
-			expect(getPriorityColor("low" as ContactPriority)).toBe("text-green-600");
-			expect(getPriorityColor("medium" as ContactPriority)).toBe("text-yellow-600");
-			expect(getPriorityColor("high" as ContactPriority)).toBe("text-red-600");
+		it("content は 10 文字未満を拒否する", () => {
+			expect(() => FirestoreContactDataSchema.parse({ ...validData, content: "短い" })).toThrow();
 		});
 	});
 });

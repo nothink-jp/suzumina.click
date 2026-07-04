@@ -23,9 +23,36 @@
           "dislikeCount": 0,
           "favoriteCount": 0,
           "engagementRate": 0,
-          "playCount": 23
+          "playCount": 25
         },
-        "updatedAt": "2026-05-30T10:53:01.578Z"
+        "updatedAt": "2026-06-20T16:02:11.216Z"
+      }
+    },
+    {
+      "id": "3ZQGfMT0ufuoZPFIo3nf",
+      "data": {
+        "buttonText": "これが男の中の男だ",
+        "videoId": "aoWkEzZD8zA",
+        "videoTitle": "錦、、、俺のこと錦山組に、入れてくれるんだよね😎？【龍が如く極 #2／この配信はゲームのネタバレを含みます】",
+        "startTime": 6945.7,
+        "endTime": 6950.6,
+        "duration": 4.900000000000546,
+        "tags": [
+          "龍が如く極"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2026-06-26T08:11:57.605Z",
+        "id": "3ZQGfMT0ufuoZPFIo3nf",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 5
+        },
+        "updatedAt": "2026-07-01T02:59:21.971Z"
       }
     },
     {
@@ -83,6 +110,31 @@
       }
     },
     {
+      "id": "7Jf6iiLUd25eu3NfhL9X",
+      "data": {
+        "buttonText": "一緒に手繋いで飛び降りよ？",
+        "videoId": "LpkHvKg_DX8",
+        "videoTitle": "深夜のゆるクラ♡ピグリン要塞に行きたい…🐷！！！【#すみっこキングダム／Minecraft】",
+        "startTime": 15709.5,
+        "endTime": 15713.8,
+        "duration": 4.299999999999272,
+        "tags": [],
+        "creatorId": "REDACTED",
+        "creatorName": "生きえら",
+        "isPublic": true,
+        "createdAt": "2026-06-20T16:15:57.059Z",
+        "id": "7Jf6iiLUd25eu3NfhL9X",
+        "stats": {
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "likeCount": 1,
+          "playCount": 6
+        },
+        "updatedAt": "2026-06-26T08:00:14.959Z"
+      }
+    },
+    {
       "id": "99v1trF7nK2iUvlS2moI",
       "data": {
         "buttonText": "かじゅまを身籠もってるのかもしれない",
@@ -129,9 +181,9 @@
           "dislikeCount": 0,
           "favoriteCount": 1,
           "engagementRate": 0.019230769230769232,
-          "playCount": 57
+          "playCount": 59
         },
-        "updatedAt": "2026-03-24T19:19:56.475Z"
+        "updatedAt": "2026-06-20T16:03:33.106Z"
       }
     },
     {
@@ -180,9 +232,9 @@
           "dislikeCount": 0,
           "favoriteCount": 0,
           "engagementRate": 0.037037037037037035,
-          "playCount": 37
+          "playCount": 38
         },
-        "updatedAt": "2026-03-24T19:23:06.655Z"
+        "updatedAt": "2026-06-20T16:04:57.898Z"
       }
     },
     {
@@ -205,11 +257,11 @@
         "stats": {
           "likeCount": 0,
           "dislikeCount": 0,
-          "favoriteCount": 0,
           "engagementRate": 0,
-          "playCount": 45
+          "favoriteCount": 0,
+          "playCount": 56
         },
-        "updatedAt": "2026-05-30T13:37:19.783Z"
+        "updatedAt": "2026-06-23T14:24:10.953Z"
       }
     },
     {
@@ -234,9 +286,9 @@
           "dislikeCount": 0,
           "favoriteCount": 0,
           "engagementRate": 0,
-          "playCount": 44
+          "playCount": 46
         },
-        "updatedAt": "2026-03-30T01:48:39.003Z"
+        "updatedAt": "2026-06-20T16:04:05.202Z"
       }
     },
     {
@@ -261,9 +313,9 @@
           "dislikeCount": 0,
           "favoriteCount": 0,
           "engagementRate": 0,
-          "playCount": 35
+          "playCount": 42
         },
-        "updatedAt": "2026-06-03T09:05:13.008Z"
+        "updatedAt": "2026-06-20T10:20:33.107Z"
       }
     },
     {
@@ -285,9 +337,9 @@
           "dislikeCount": 0,
           "favoriteCount": 0,
           "engagementRate": 0,
-          "playCount": 22
+          "playCount": 23
         },
-        "updatedAt": "2026-01-18T09:16:29.046Z"
+        "updatedAt": "2026-06-18T12:31:59.629Z"
       }
     },
     {
@@ -338,9 +390,9 @@
           "dislikeCount": 0,
           "favoriteCount": 1,
           "engagementRate": 0.023809523809523808,
-          "playCount": 78
+          "playCount": 80
         },
-        "updatedAt": "2026-05-30T09:08:43.079Z"
+        "updatedAt": "2026-06-20T16:03:04.924Z"
       }
     },
     {
@@ -392,9 +444,9 @@
           "dislikeCount": 0,
           "favoriteCount": 0,
           "engagementRate": 0,
-          "playCount": 155
+          "playCount": 156
         },
-        "updatedAt": "2026-05-06T16:07:31.073Z"
+        "updatedAt": "2026-06-20T16:03:45.672Z"
       }
     },
     {
@@ -416,9 +468,9 @@
           "dislikeCount": 0,
           "favoriteCount": 0,
           "engagementRate": 0,
-          "playCount": 44
+          "playCount": 46
         },
-        "updatedAt": "2026-05-30T06:11:36.021Z"
+        "updatedAt": "2026-06-20T16:02:05.997Z"
       }
     },
     {
@@ -491,9 +543,9 @@
           "dislikeCount": 0,
           "favoriteCount": 2,
           "engagementRate": 0.023809523809523808,
-          "playCount": 68
+          "playCount": 69
         },
-        "updatedAt": "2026-06-03T08:27:13.090Z"
+        "updatedAt": "2026-06-08T15:51:18.584Z"
       }
     },
     {
@@ -542,9 +594,9 @@
           "dislikeCount": 0,
           "favoriteCount": 0,
           "engagementRate": 0,
-          "playCount": 144
+          "playCount": 145
         },
-        "updatedAt": "2026-03-24T19:20:25.138Z"
+        "updatedAt": "2026-06-15T07:29:06.536Z"
       }
     },
     {
@@ -596,9 +648,9 @@
           "dislikeCount": 0,
           "favoriteCount": 0,
           "engagementRate": 0,
-          "playCount": 27
+          "playCount": 28
         },
-        "updatedAt": "2026-03-30T01:48:19.586Z"
+        "updatedAt": "2026-06-20T16:03:51.698Z"
       }
     },
     {
@@ -623,9 +675,9 @@
           "dislikeCount": 0,
           "favoriteCount": 0,
           "engagementRate": 0,
-          "playCount": 42
+          "playCount": 43
         },
-        "updatedAt": "2026-05-30T11:38:00.196Z"
+        "updatedAt": "2026-06-20T16:04:16.998Z"
       }
     },
     {
@@ -651,9 +703,9 @@
           "dislikeCount": 0,
           "favoriteCount": 0,
           "engagementRate": 0,
-          "playCount": 40
+          "playCount": 43
         },
-        "updatedAt": "2026-05-30T10:53:08.852Z"
+        "updatedAt": "2026-06-23T14:25:09.899Z"
       }
     },
     {
@@ -697,15 +749,14 @@
         "creatorName": "がこんがこん",
         "isPublic": true,
         "createdAt": "2025-08-19T23:38:08.803Z",
-        "favoriteCount": 1,
         "stats": {
-          "likeCount": 0,
           "dislikeCount": 0,
           "favoriteCount": 0,
           "engagementRate": 0,
-          "playCount": 65
+          "likeCount": 1,
+          "playCount": 69
         },
-        "updatedAt": "2026-05-30T13:37:27.093Z"
+        "updatedAt": "2026-06-20T16:00:50.726Z"
       }
     },
     {
@@ -781,6 +832,1125 @@
           "playCount": 19
         },
         "updatedAt": "2026-01-18T05:31:09.044Z"
+      }
+    },
+    {
+      "id": "NadVf6t5ruaf4GQCctpP",
+      "data": {
+        "buttonText": "兄弟じゃん",
+        "videoId": "aoWkEzZD8zA",
+        "videoTitle": "錦、、、俺のこと錦山組に、入れてくれるんだよね😎？【龍が如く極 #2／この配信はゲームのネタバレを含みます】",
+        "startTime": 6437.9,
+        "endTime": 6451.1,
+        "duration": 13.200000000000728,
+        "tags": [
+          "龍が如く極"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2026-06-26T07:59:14.864Z",
+        "id": "NadVf6t5ruaf4GQCctpP",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 5
+        },
+        "updatedAt": "2026-06-29T11:44:21.484Z"
+      }
+    },
+    {
+      "id": "OhoTxRzPfFiG5pOKgYsy",
+      "data": {
+        "buttonText": "よわよわ〜",
+        "videoId": "aoWkEzZD8zA",
+        "videoTitle": "錦、、、俺のこと錦山組に、入れてくれるんだよね😎？【龍が如く極 #2／この配信はゲームのネタバレを含みます】",
+        "startTime": 6677.1,
+        "endTime": 6680.5,
+        "duration": 3.399999999999636,
+        "tags": [
+          "龍が如く極"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2026-06-26T08:05:59.437Z",
+        "id": "OhoTxRzPfFiG5pOKgYsy",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 5
+        },
+        "updatedAt": "2026-06-29T11:44:16.961Z"
+      }
+    },
+    {
+      "id": "PXyeFqk1HvXN9Cmb466k",
+      "data": {
+        "buttonText": "惚れ直してしまうわ",
+        "videoId": "uGfEIvsBH6s",
+        "videoTitle": "本日も開店します☕【COFFEE TALK #5／物語のネタバレを含みます】",
+        "startTime": 3619.1,
+        "endTime": 3622.1,
+        "duration": 3,
+        "tags": [
+          "ゲーム",
+          "coffee talk"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2025-08-12T12:01:21.406Z",
+        "stats": {
+          "likeCount": 1,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0.1,
+          "playCount": 43
+        },
+        "updatedAt": "2026-06-20T16:00:43.581Z"
+      }
+    },
+    {
+      "id": "PdISiTzaHzzt48HdF4W3",
+      "data": {
+        "buttonText": "We Wish You a Merry Christmas (?)",
+        "videoId": "wWTmChxPaMc",
+        "videoTitle": "1日早いけどケーキ食べよ🎄💗",
+        "startTime": 5455,
+        "endTime": 5466,
+        "duration": 11,
+        "tags": [
+          "クリスマス"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "Siang*",
+        "isPublic": true,
+        "createdAt": "2025-08-01T18:03:04.002Z",
+        "stats": {
+          "likeCount": 1,
+          "dislikeCount": 0,
+          "favoriteCount": 1,
+          "engagementRate": 0.047619047619047616,
+          "playCount": 33
+        },
+        "updatedAt": "2026-06-20T16:03:18.627Z"
+      }
+    },
+    {
+      "id": "PhFSkJVLET9XSZpxKDhK",
+      "data": {
+        "buttonText": "待ってくれ〜",
+        "videoId": "GJZQPvOYXyY",
+        "videoTitle": "【みやぢ×みなせ】怖がり2人で初見協力プレイ。【BIOHAZARD 5】",
+        "startTime": 5204,
+        "endTime": 5208,
+        "duration": 4,
+        "tags": [],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "stats": {
+          "playCount": 8,
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0
+        },
+        "createdAt": "2025-07-12T02:42:32.524Z",
+        "updatedAt": "2025-08-17T16:53:30.784Z"
+      }
+    },
+    {
+      "id": "Q29R6nH6BKblaFRlTfBM",
+      "data": {
+        "buttonText": "ﾁﾞｭｳｳｳ...",
+        "videoId": "44sdknho7e4",
+        "videoTitle": "かわいいにゃんこのパズルゲームで遊ぶ♥【KU100バイノーラル／Cats Organized Neatly#2】",
+        "startTime": 8649,
+        "endTime": 8668,
+        "duration": 19,
+        "tags": [
+          "Cats Organized Neatly"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "Siang*",
+        "isPublic": true,
+        "createdAt": "2025-08-01T18:32:06.486Z",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 1,
+          "engagementRate": 0,
+          "playCount": 91
+        },
+        "updatedAt": "2026-06-15T14:25:05.656Z"
+      }
+    },
+    {
+      "id": "Qt6VeSfVAPvwblCxjjNn",
+      "data": {
+        "buttonText": "すげーよなー",
+        "videoId": "rUKrc8czZj0",
+        "videoTitle": "お誕生日だあ！！今年もみんなでケーキ食べよ🍰♡",
+        "startTime": 3734,
+        "endTime": 3736,
+        "duration": 2,
+        "tags": [],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2025-06-30T12:46:34.571Z",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 22
+        },
+        "updatedAt": "2026-05-30T13:38:25.100Z"
+      }
+    },
+    {
+      "id": "TzsmNnHDE3P9U4mOOSBr",
+      "data": {
+        "buttonText": "会話力と察し力必要よこれ",
+        "videoId": "ds8nkv4LW_8",
+        "videoTitle": "ちるいコーヒーショップの店長さんになる。【COFFEE TALK／物語のネタバレを含みます】",
+        "startTime": 1300.5,
+        "endTime": 1303.7,
+        "duration": 3.2000000000000455,
+        "tags": [
+          "ゲーム",
+          "COFFEE TALK"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2025-07-18T05:38:15.306Z",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 15
+        },
+        "updatedAt": "2026-03-24T19:21:32.909Z"
+      }
+    },
+    {
+      "id": "X8e8QwbAA64jc9JaVpSl",
+      "data": {
+        "buttonText": "とぅるるる​​ふんとぅはい！",
+        "videoId": "_dATpIe2Vco",
+        "videoTitle": "チルい音ゲーでまったり遊ぶ🌸【Melatonin／KU100バイノーラル】",
+        "startTime": 6845.7,
+        "endTime": 6849.2,
+        "duration": 3.5,
+        "tags": [
+          "MELATONIN"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "Siang*",
+        "isPublic": true,
+        "createdAt": "2025-08-01T17:47:14.319Z",
+        "stats": {
+          "dislikeCount": 0,
+          "favoriteCount": 1,
+          "engagementRate": 0,
+          "likeCount": 1,
+          "playCount": 33
+        },
+        "updatedAt": "2026-03-30T01:47:10.266Z"
+      }
+    },
+    {
+      "id": "YcUiNywqbsw832SFvWJA",
+      "data": {
+        "buttonText": "大変だよそりゃ",
+        "videoId": "rUKrc8czZj0",
+        "videoTitle": "お誕生日だあ！！今年もみんなでケーキ食べよ🍰♡",
+        "startTime": 4049,
+        "endTime": 4053,
+        "duration": 4,
+        "tags": [],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2025-06-30T12:54:41.215Z",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 38
+        },
+        "updatedAt": "2026-06-15T14:24:51.347Z"
+      }
+    },
+    {
+      "id": "YrqEnBDNQMMf7MDrEM2V",
+      "data": {
+        "buttonText": "釣りしてるよ〜",
+        "videoId": "RZc58Hug7X4",
+        "videoTitle": "まったりファンタジール生活🌟【ファンタジーライフｉ グルグルの竜と時をぬすむ少女#5】",
+        "startTime": 7216,
+        "endTime": 7219,
+        "duration": 3,
+        "tags": [],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2025-06-29T01:42:31.108Z",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 25
+        },
+        "updatedAt": "2026-03-24T19:22:03.154Z"
+      }
+    },
+    {
+      "id": "aCXsJvjsR7qxbvsQKfgO",
+      "data": {
+        "buttonText": "ギャルはファンタジーに入りますか？",
+        "videoId": "rUKrc8czZj0",
+        "videoTitle": "お誕生日だあ！！今年もみんなでケーキ食べよ🍰♡",
+        "startTime": 6720,
+        "endTime": 6723,
+        "duration": 3,
+        "tags": [
+          "雑談"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2025-06-30T12:36:35.459Z",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 40
+        },
+        "updatedAt": "2026-03-24T19:22:49.516Z"
+      }
+    },
+    {
+      "id": "afV0j4jL1us8mu4wE5QK",
+      "data": {
+        "buttonText": "転生するならダウナー系の活動者になるっていう話をしてて",
+        "videoId": "ds8nkv4LW_8",
+        "videoTitle": "ちるいコーヒーショップの店長さんになる。【COFFEE TALK／物語のネタバレを含みます】",
+        "startTime": 71.3,
+        "endTime": 78.7,
+        "duration": 7.400000000000006,
+        "tags": [
+          "ゲーム",
+          "COFFEE TALK"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2025-07-18T07:27:57.232Z",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 27
+        },
+        "updatedAt": "2026-05-30T17:07:39.069Z"
+      }
+    },
+    {
+      "id": "cdr2QzdF5gmkuqAXyyoL",
+      "data": {
+        "buttonText": "うふふ(笑)",
+        "videoId": "iCZxh1oyLKg",
+        "videoTitle": "お喋りと歌のリハビリ😎🌸",
+        "startTime": 1026,
+        "endTime": 1028,
+        "duration": 2,
+        "tags": [],
+        "creatorId": "REDACTED",
+        "creatorName": "ゆうほー",
+        "isPublic": true,
+        "createdAt": "2025-07-05T06:22:42.302Z",
+        "stats": {
+          "likeCount": 1,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0.05555555555555555,
+          "playCount": 22
+        },
+        "updatedAt": "2026-03-24T19:22:58.576Z"
+      }
+    },
+    {
+      "id": "dDJioylOH8XKZ1Fg7Pcm",
+      "data": {
+        "buttonText": "こんばんは",
+        "videoId": "rUKrc8czZj0",
+        "videoTitle": "お誕生日だあ！！今年もみんなでケーキ食べよ🍰♡",
+        "startTime": 75,
+        "endTime": 79,
+        "duration": 4,
+        "tags": [],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2025-07-01T15:31:08.746Z",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 15
+        },
+        "updatedAt": "2026-03-24T19:22:54.727Z"
+      }
+    },
+    {
+      "id": "ejaSupvD8SjH4PPFRLUx",
+      "data": {
+        "buttonText": "ゴクリ",
+        "videoId": "GJZQPvOYXyY",
+        "videoTitle": "【みやぢ×みなせ】怖がり2人で初見協力プレイ。【BIOHAZARD 5】",
+        "startTime": 6,
+        "endTime": 8,
+        "duration": 2,
+        "tags": [
+          "バイオハザード5",
+          "ゲーム"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2025-07-12T03:16:04.322Z",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 20
+        },
+        "updatedAt": "2026-01-18T09:17:21.878Z"
+      }
+    },
+    {
+      "id": "fmxSqi1lcb15p3dxJwnS",
+      "data": {
+        "buttonText": "バハ・ハ",
+        "videoId": "h5FZgLVDJGk",
+        "videoTitle": "タマゲいっぱいみつけるぞ～！！！【ファンタジーライフｉ グルグルの竜と時をぬすむ少女#6】",
+        "startTime": 283.6,
+        "endTime": 285,
+        "duration": 1.3999999999999773,
+        "tags": [
+          "ファンタジーライフ"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "gagacrow",
+        "isPublic": true,
+        "createdAt": "2025-07-27T04:41:27.924Z",
+        "stats": {
+          "likeCount": 1,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0.006896551724137931,
+          "playCount": 151
+        },
+        "updatedAt": "2026-03-24T19:20:08.895Z"
+      }
+    },
+    {
+      "id": "gwawPNPuHSOApqILEEXK",
+      "data": {
+        "buttonText": "じゅうしゃんレベル",
+        "videoId": "B20PhTUzSrQ",
+        "videoTitle": "ストーリーすすめる！！世界救うぞ～～！！！【ファンタジーライフｉ グルグルの竜と時をぬすむ少女#10】",
+        "startTime": 7323.9,
+        "endTime": 7325.9,
+        "duration": 2,
+        "tags": [
+          "ゲーム",
+          "ファンタジーライフ"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2025-07-26T14:48:20.586Z",
+        "stats": {
+          "likeCount": 1,
+          "dislikeCount": 0,
+          "favoriteCount": 1,
+          "engagementRate": 0.005319148936170213,
+          "playCount": 196
+        },
+        "updatedAt": "2026-05-06T16:07:24.110Z"
+      }
+    },
+    {
+      "id": "hVZ4NyF1woObai9R3vQa",
+      "data": {
+        "buttonText": "直始めにしてみた",
+        "videoId": "B20PhTUzSrQ",
+        "videoTitle": "ストーリーすすめる！！世界救うぞ～～！！！【ファンタジーライフｉ グルグルの竜と時をぬすむ少女#10】",
+        "startTime": 46.8,
+        "endTime": 50.1,
+        "duration": 3.3000000000000043,
+        "tags": [
+          "ゲーム",
+          "ファンタジーライフ"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2025-07-23T23:59:09.455Z",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 81
+        },
+        "updatedAt": "2026-01-18T04:13:48.602Z"
+      }
+    },
+    {
+      "id": "jKasN6FfALO922utZz19",
+      "data": {
+        "buttonText": "がんばるよーフィーバーフィーバー",
+        "videoId": "B20PhTUzSrQ",
+        "videoTitle": "ストーリーすすめる！！世界救うぞ～～！！！【ファンタジーライフｉ グルグルの竜と時をぬすむ少女#10】",
+        "startTime": 6048,
+        "endTime": 6052.1,
+        "duration": 4.100000000000364,
+        "tags": [
+          "ゲーム",
+          "ファンタジーライフ"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2025-07-26T13:47:33.476Z",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 144
+        },
+        "updatedAt": "2026-03-30T01:47:18.561Z"
+      }
+    },
+    {
+      "id": "kCeaYC2sVulAD9hqg2Xi",
+      "data": {
+        "buttonText": "なんで誕生日にこんな思いせなあかんねん",
+        "videoId": "aoWkEzZD8zA",
+        "videoTitle": "錦、、、俺のこと錦山組に、入れてくれるんだよね😎？【龍が如く極 #2／この配信はゲームのネタバレを含みます】",
+        "startTime": 5788.2,
+        "endTime": 5792.6,
+        "duration": 4.400000000000546,
+        "tags": [
+          "龍が如く極"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2026-06-26T07:43:27.650Z",
+        "id": "kCeaYC2sVulAD9hqg2Xi",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 2
+        },
+        "updatedAt": "2026-06-26T07:55:18.452Z"
+      }
+    },
+    {
+      "id": "khLQgdM0FtpnuTn6VxOi",
+      "data": {
+        "buttonText": "ベェ",
+        "videoId": "97UnRtIlMc0",
+        "videoTitle": "全てのライフの力を合わせて…ギア作り！！！【ファンタジーライフｉ グルグルの竜と時をぬすむ少女#11】",
+        "startTime": 4993.6,
+        "endTime": 4995.7,
+        "duration": 2.0999999999994543,
+        "tags": [
+          "ファンタジーライフ"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2025-07-27T14:09:12.074Z",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 78
+        },
+        "updatedAt": "2026-05-20T04:12:25.280Z"
+      }
+    },
+    {
+      "id": "kssdZrpolpPRS1wvGDNO",
+      "data": {
+        "buttonText": "「大好きだよ」みたいなのを女の子同士で言い合って",
+        "videoId": "rUKrc8czZj0",
+        "videoTitle": "お誕生日だあ！！今年もみんなでケーキ食べよ🍰♡",
+        "startTime": 4628,
+        "endTime": 4633,
+        "duration": 5,
+        "tags": [],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2025-06-30T12:48:38.369Z",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 29
+        },
+        "updatedAt": "2026-06-20T16:05:03.905Z"
+      }
+    },
+    {
+      "id": "l5eg01chnTLarrLYdtWt",
+      "data": {
+        "buttonText": "わてにもわからん",
+        "videoId": "djUaF_-2MC8",
+        "videoTitle": "そろそろエドワード助けにいくか～！！【ファンタジーライフｉ グルグルの竜と時をぬすむ少女#7】",
+        "startTime": 4104,
+        "endTime": 4107,
+        "duration": 3,
+        "tags": [],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2025-07-07T06:40:45.523Z",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 31
+        },
+        "updatedAt": "2026-03-24T19:23:11.492Z"
+      }
+    },
+    {
+      "id": "lplSH14aSgptgueC687X",
+      "data": {
+        "buttonText": "Open",
+        "videoId": "aoWkEzZD8zA",
+        "videoTitle": "錦、、、俺のこと錦山組に、入れてくれるんだよね😎？【龍が如く極 #2／この配信はゲームのネタバレを含みます】",
+        "startTime": 13575.1,
+        "endTime": 13576.7,
+        "duration": 1.6000000000003638,
+        "tags": [
+          "龍が如く極"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2026-06-27T01:31:03.983Z",
+        "id": "lplSH14aSgptgueC687X",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 5
+        },
+        "updatedAt": "2026-06-29T11:00:24.991Z"
+      }
+    },
+    {
+      "id": "m7cApOwwbj6tkJT9B6lp",
+      "data": {
+        "buttonText": "泣いてるよ",
+        "videoId": "ds8nkv4LW_8",
+        "videoTitle": "ちるいコーヒーショップの店長さんになる。【COFFEE TALK／物語のネタバレを含みます】",
+        "startTime": 2309,
+        "endTime": 2311.3,
+        "duration": 2.300000000000182,
+        "tags": [
+          "ゲーム",
+          "COFFEE TALK"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2025-07-18T05:14:57.365Z",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 16
+        },
+        "updatedAt": "2026-03-24T19:21:38.085Z"
+      }
+    },
+    {
+      "id": "mJtBdtQweZSeixjPgA76",
+      "data": {
+        "buttonText": "あんたいいやつじゃん…すりすり",
+        "videoId": "S534eutWhUY",
+        "videoTitle": "今日はどんなお客さんが来るかな…☕？【COFFEE TALK #6／物語のネタバレを含みます】",
+        "startTime": 5924.4,
+        "endTime": 5927.6,
+        "duration": 3.2000000000007276,
+        "creatorId": "REDACTED",
+        "creatorName": "ivan",
+        "isPublic": true,
+        "createdAt": "2025-08-21T01:02:51.250Z",
+        "id": "mJtBdtQweZSeixjPgA76",
+        "tags": [
+          "ゲーム",
+          "COFFEE TALK"
+        ],
+        "stats": {
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "likeCount": 2,
+          "playCount": 71
+        },
+        "updatedAt": "2026-06-20T16:17:07.510Z"
+      }
+    },
+    {
+      "id": "qJxXRSS7Cek5HMQhR6bZ",
+      "data": {
+        "buttonText": "改めまして涼花みなせです",
+        "videoId": "GJZQPvOYXyY",
+        "videoTitle": "【みやぢ×みなせ】怖がり2人で初見協力プレイ。【BIOHAZARD 5】",
+        "startTime": 1131,
+        "endTime": 1134,
+        "duration": 3,
+        "tags": [
+          "ゲーム",
+          "バイオハザード5"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2025-07-12T03:41:37.916Z",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": -1,
+          "engagementRate": 0,
+          "playCount": 50
+        },
+        "updatedAt": "2026-06-20T16:04:11.289Z"
+      }
+    },
+    {
+      "id": "rPAGgplNWYbhKC9gHAyG",
+      "data": {
+        "buttonText": "このキャバクラで誕生日迎えることになる！",
+        "videoId": "aoWkEzZD8zA",
+        "videoTitle": "錦、、、俺のこと錦山組に、入れてくれるんだよね😎？【龍が如く極 #2／この配信はゲームのネタバレを含みます】",
+        "startTime": 2797.4,
+        "endTime": 2802.8,
+        "duration": 5.400000000000091,
+        "tags": [
+          "龍が如く極"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2026-06-21T11:15:15.702Z",
+        "id": "rPAGgplNWYbhKC9gHAyG",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 5
+        },
+        "updatedAt": "2026-06-26T07:55:30.999Z"
+      }
+    },
+    {
+      "id": "s016OX6i1gtylTFr0qe9",
+      "data": {
+        "buttonText": "あらあら〜　歯医者のこと聞きたいんだ〜　そうかそうか〜",
+        "videoId": "FeZ3F5dr6H8",
+        "videoTitle": "ざつだん🌟",
+        "startTime": 971,
+        "endTime": 980,
+        "duration": 9,
+        "tags": [],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2025-06-30T12:34:41.082Z",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 1,
+          "engagementRate": 0,
+          "playCount": 30
+        },
+        "updatedAt": "2026-05-30T13:38:17.890Z"
+      }
+    },
+    {
+      "id": "sFCVeD8ywqYsJPitFADk",
+      "data": {
+        "buttonText": "こんばんはー",
+        "videoId": "ds8nkv4LW_8",
+        "videoTitle": "ちるいコーヒーショップの店長さんになる。【COFFEE TALK／物語のネタバレを含みます】",
+        "startTime": 20.1,
+        "endTime": 22.7,
+        "duration": 2.599999999999998,
+        "tags": [
+          "ゲーム",
+          "挨拶",
+          "COFFEE TALK"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2025-07-18T07:20:02.049Z",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 16
+        },
+        "updatedAt": "2026-03-24T19:21:30.289Z"
+      }
+    },
+    {
+      "id": "sMqrHeNEuOOUHflC0AzB",
+      "data": {
+        "buttonText": "カンニングするなってこと！？",
+        "videoId": "S534eutWhUY",
+        "videoTitle": "今日はどんなお客さんが来るかな…☕？【COFFEE TALK #6／物語のネタバレを含みます】",
+        "startTime": 4078.8,
+        "endTime": 4081.2,
+        "duration": 2.399999999999636,
+        "tags": [
+          "ゲーム",
+          "COFFEE TALK"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2025-08-19T23:31:02.139Z",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 25
+        },
+        "updatedAt": "2026-06-20T16:02:01.292Z"
+      }
+    },
+    {
+      "id": "sNgTr6YLSFOsMXx19NL0",
+      "data": {
+        "buttonText": "やべえ！",
+        "videoId": "4puiyit3sp0",
+        "videoTitle": "世界を滅亡から救うか寄り道するのか...自由だぁ～！！！【ファンタジーライフｉ グルグルの竜と時をぬすむ少女#8】",
+        "startTime": 3195,
+        "endTime": 3197,
+        "duration": 2,
+        "tags": [],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2025-07-08T12:48:57.115Z",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 17
+        },
+        "updatedAt": "2026-03-30T01:48:47.492Z"
+      }
+    },
+    {
+      "id": "t7iLQ2POVXdg8yGuHxCJ",
+      "data": {
+        "buttonText": "そんでさあ…え、あ、な、なに？",
+        "videoId": "B20PhTUzSrQ",
+        "videoTitle": "ストーリーすすめる！！世界救うぞ～～！！！【ファンタジーライフｉ グルグルの竜と時をぬすむ少女#10】",
+        "startTime": 284.4,
+        "endTime": 288.3,
+        "duration": 3.900000000000034,
+        "tags": [
+          "ゲーム",
+          "ファンタジーライフ"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2025-07-24T03:51:45.649Z",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 135
+        },
+        "updatedAt": "2026-06-15T07:28:58.535Z"
+      }
+    },
+    {
+      "id": "tD2Vh18xqywurfUzuKmz",
+      "data": {
+        "buttonText": "腹減ったー",
+        "videoId": "iCZxh1oyLKg",
+        "videoTitle": "お喋りと歌のリハビリ😎🌸",
+        "startTime": 4782,
+        "endTime": 4784,
+        "duration": 2,
+        "tags": [],
+        "creatorId": "REDACTED",
+        "creatorName": "ivan",
+        "isPublic": true,
+        "createdAt": "2025-07-07T02:47:20.828Z",
+        "stats": {
+          "likeCount": 1,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0.05555555555555555,
+          "playCount": 20
+        },
+        "updatedAt": "2026-03-24T19:23:01.268Z"
+      }
+    },
+    {
+      "id": "uKVVbvmKgJnvAG8QHrLY",
+      "data": {
+        "buttonText": "あたまいてぇ",
+        "videoId": "rUKrc8czZj0",
+        "videoTitle": "お誕生日だあ！！今年もみんなでケーキ食べよ🍰♡",
+        "startTime": 2235,
+        "endTime": 2238,
+        "duration": 3,
+        "tags": [],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2025-06-29T13:35:37.825Z",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 18
+        },
+        "updatedAt": "2026-01-18T09:16:16.732Z"
+      }
+    },
+    {
+      "id": "v9ZvWQ6DHmaga31OBaJr",
+      "data": {
+        "buttonText": "闇のあるストーリー、読ませて欲しい、あたしに",
+        "videoId": "ds8nkv4LW_8",
+        "videoTitle": "ちるいコーヒーショップの店長さんになる。【COFFEE TALK／物語のネタバレを含みます】",
+        "startTime": 5010.4,
+        "endTime": 5013.9,
+        "duration": 3.5,
+        "tags": [
+          "ゲーム",
+          "COFFEE TALK"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2025-07-18T10:55:58.279Z",
+        "stats": {
+          "likeCount": 1,
+          "dislikeCount": 0,
+          "favoriteCount": 1,
+          "engagementRate": 0.02127659574468085,
+          "playCount": 54
+        },
+        "updatedAt": "2026-06-02T10:56:00.719Z"
+      }
+    },
+    {
+      "id": "vA49RzYP9CUqrg5la4bx",
+      "data": {
+        "buttonText": "なぁ～～～～～～～～～～",
+        "videoId": "B20PhTUzSrQ",
+        "videoTitle": "ストーリーすすめる！！世界救うぞ～～！！！【ファンタジーライフｉ グルグルの竜と時をぬすむ少女#10】",
+        "startTime": 7747.5,
+        "endTime": 7751.6,
+        "duration": 4.100000000000364,
+        "tags": [
+          "ファンタジーライフ"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "Siang*",
+        "isPublic": true,
+        "createdAt": "2025-07-24T17:45:59.144Z",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 1,
+          "engagementRate": 0,
+          "playCount": 142
+        },
+        "updatedAt": "2026-05-06T16:07:43.372Z"
+      }
+    },
+    {
+      "id": "xLOcSm24HACc1u1CQ4Tf",
+      "data": {
+        "buttonText": "ちゅ、ちゅぱ？",
+        "videoId": "aoWkEzZD8zA",
+        "videoTitle": "錦、、、俺のこと錦山組に、入れてくれるんだよね😎？【龍が如く極 #2／この配信はゲームのネタバレを含みます】",
+        "startTime": 2048,
+        "endTime": 2050.1,
+        "duration": 2.099999999999909,
+        "tags": [
+          "龍が如く極"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2026-06-21T10:54:45.322Z",
+        "id": "xLOcSm24HACc1u1CQ4Tf",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 6
+        },
+        "updatedAt": "2026-07-03T20:20:48.249Z"
+      }
+    },
+    {
+      "id": "xP98sGmfFvZXqeBZKAUr",
+      "data": {
+        "buttonText": "斜にかまえてさぁ",
+        "videoId": "rUKrc8czZj0",
+        "videoTitle": "お誕生日だあ！！今年もみんなでケーキ食べよ🍰♡",
+        "startTime": 1136,
+        "endTime": 1138,
+        "duration": 2,
+        "tags": [],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2025-06-29T01:40:17.967Z",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 22
+        },
+        "updatedAt": "2026-03-24T19:21:54.923Z"
+      }
+    },
+    {
+      "id": "xwx7ItC3hCXIpbdEJTsU",
+      "data": {
+        "buttonText": "開店前待機ありがとう",
+        "videoId": "S534eutWhUY",
+        "videoTitle": "今日はどんなお客さんが来るかな…☕？【COFFEE TALK #6／物語のネタバレを含みます】",
+        "startTime": 32,
+        "endTime": 38.7,
+        "duration": 6.700000000000003,
+        "tags": [
+          "ゲーム",
+          "COFFEE TALK"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2025-08-20T03:57:52.305Z",
+        "id": "xwx7ItC3hCXIpbdEJTsU",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 23
+        },
+        "updatedAt": "2026-06-20T16:01:53.488Z"
+      }
+    },
+    {
+      "id": "xxOUWJnipXcQ7k1TJbO9",
+      "data": {
+        "buttonText": "いらっしゃい",
+        "videoId": "ds8nkv4LW_8",
+        "videoTitle": "ちるいコーヒーショップの店長さんになる。【COFFEE TALK／物語のネタバレを含みます】",
+        "startTime": 4289.6,
+        "endTime": 4291.7,
+        "duration": 2.0999999999994543,
+        "tags": [
+          "ゲーム",
+          "COFFEE TALK",
+          "挨拶"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2025-07-16T13:14:15.795Z",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 15
+        },
+        "updatedAt": "2026-01-26T05:37:34.017Z"
+      }
+    },
+    {
+      "id": "zps859BKdOqSq22ONtGo",
+      "data": {
+        "buttonText": "ナマをカタカナをやめなさい！",
+        "videoId": "aoWkEzZD8zA",
+        "videoTitle": "錦、、、俺のこと錦山組に、入れてくれるんだよね😎？【龍が如く極 #2／この配信はゲームのネタバレを含みます】",
+        "startTime": 2426,
+        "endTime": 2429.4,
+        "duration": 3.400000000000091,
+        "tags": [
+          "龍が如く極"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2026-06-21T11:03:18.090Z",
+        "id": "zps859BKdOqSq22ONtGo",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 4
+        },
+        "updatedAt": "2026-06-26T14:44:53.151Z"
       }
     }
   ]

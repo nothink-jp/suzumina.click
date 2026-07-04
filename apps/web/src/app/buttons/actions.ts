@@ -307,7 +307,8 @@ export async function createAudioButton(
 				updatedAt: new Date().toISOString(),
 			});
 
-			await docRef.update({ id: docRef.id });
+			// 旧実装は add 直後に update({ id }) で ID を doc 本体へ複製していたが、
+			// 読み手は doc.id で常に上書きするため冗長な 2 write だった（SPR-241 で廃止）。
 
 			// レート制限カウントを増やす
 			const incremented = await incrementButtonCount(user.discordId);
