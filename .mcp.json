@@ -1,8 +1,15 @@
 {
 	"mcpServers": {
 		"playwright-test": {
-			"command": "bash",
-			"args": ["-c", "cd apps/web && exec npx playwright run-test-mcp-server"],
+			"command": "pnpm",
+			"args": [
+				"--filter",
+				"@suzumina.click/web",
+				"exec",
+				"playwright",
+				"run-test-mcp-server",
+				"--headless"
+			],
 			"env": {
 				"FIRESTORE_EMULATOR_HOST": "127.0.0.1:8080"
 			}
