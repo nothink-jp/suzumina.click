@@ -1,4 +1,5 @@
 import { test } from "@playwright/test";
+import { markAgeVerified } from "./helpers";
 
 /**
  * Playwright Agents（planner/generator/healer）の環境 seed。
@@ -8,11 +9,7 @@ import { test } from "@playwright/test";
  */
 test.describe("Agents seed", () => {
 	test("seed", async ({ page }) => {
-		await page.addInitScript(() => {
-			localStorage.setItem("age-verified", "true");
-			localStorage.setItem("age-verification-date", new Date().toISOString());
-			localStorage.setItem("age-verification-adult", "true");
-		});
+		await markAgeVerified(page);
 		await page.goto("/");
 	});
 });
