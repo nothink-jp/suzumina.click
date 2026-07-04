@@ -15,8 +15,14 @@ export function createFirestoreInstance(): Firestore {
 	const projectId = process.env.GOOGLE_CLOUD_PROJECT || "suzumina-click";
 
 	// 本番ビルドが Emulator に接続するのは致命的な誤設定。明示的に弾く
-	// （ローカル開発では FIRESTORE_EMULATOR_HOST が設定され、SDK が自動で Emulator に接続する）
-	if (process.env.NODE_ENV === "production" && process.env.FIRESTORE_EMULATOR_HOST) {
+	// （ローカル開発では FIRESTORE_EMULATOR_HOST が設定され、SDK が自動で Emulator に接続する）。
+	// 例外: e2e スモークは「本番ビルド × Emulator」で回すため、PLAYWRIGHT_EMULATOR=1 の
+	// 明示 opt-in がある場合のみ許可する（本番デプロイ環境では決して設定しないこと）
+	if (
+		process.env.NODE_ENV === "production" &&
+		process.env.FIRESTORE_EMULATOR_HOST &&
+		process.env.PLAYWRIGHT_EMULATOR !== "1"
+	) {
 		throw new Error(
 			"FIRESTORE_EMULATOR_HOST is set in production. Refusing to connect Firestore to an emulator.",
 		);
