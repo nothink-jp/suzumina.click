@@ -26,8 +26,8 @@
 | UserWorkEvaluation | 作品への個人評価（総合 1–5 星 + 特性軸 + レビュー） | — | [user-evaluation.ts](../../packages/shared-types/src/entities/user-evaluation.ts) `UserWorkEvaluation` |
 | Favorite | 音声ボタンのお気に入り（`users/{userId}/favorites`） | — | [favorite.ts](../../packages/shared-types/src/entities/favorite.ts) |
 | Contact | お問い合わせ | — | [contact.ts](../../packages/shared-types/src/entities/contact.ts) |
-| Circle | サークル | [circle-plain.ts](../../packages/shared-types/src/plain-objects/circle-plain.ts) | [circle-creator.ts](../../packages/shared-types/src/entities/circle-creator.ts) |
-| Creator / CreatorWorkMapping | クリエイター・作品の非正規化関連付け | — | [circle-creator.ts](../../packages/shared-types/src/entities/circle-creator.ts) |
+| Circle | サークル | [circle-plain.ts](../../packages/shared-types/src/plain-objects/circle-plain.ts) | [firestore/circle.ts](../../packages/shared-types/src/types/firestore/circle.ts) `CircleDocument` |
+| Creator / CreatorWorkRelation | クリエイター・作品の非正規化関連付け（`creators/{id}/works` サブコレクション） | — | [firestore/creator.ts](../../packages/shared-types/src/types/firestore/creator.ts) `CreatorDocument` / `CreatorWorkRelation` |
 
 > AudioButton / Video は DLsite 作品への直接参照を持たない（AudioButton は `videoId` のみ保持）。
 
@@ -38,7 +38,7 @@ AudioButton → Video         (videoId で参照)
 User        → AudioButton    (作成者 / Favorite)
 User        → Work           (WorkEvaluation)
 Circle      → Work           (circleId で参照)
-CreatorWorkMapping → Work, Creator  (非正規化関連)
+creators/{id}/works → Work, Creator  (非正規化関連)
 
 ※ Work ↔ Video / AudioButton の直接参照は無い
 ```
@@ -101,7 +101,7 @@ const work = workTransformers.fromFirestore(data);            // WorkPlainObject
 ## 実装状況・Entity 化の方針
 
 - Work / Video / AudioButton / Circle のデータは PlainObject + Zod + transformers に一本化。
-  User / WorkEvaluation / UserWorkEvaluation / Favorite / Contact / CreatorWorkMapping は Zod スキーマ中心（型定義・検証）。
+  User / WorkEvaluation / UserWorkEvaluation / Favorite / Contact は Zod スキーマ中心（型定義・検証）。
 - 新規ドメインにクラス Entity を作る前に、**CLAUDE.md「Entity 化のゲート」**
   （ビジネスルール 5 個以上 / 明確な状態遷移 / 複雑な不変条件のいずれか）を必ず通す。
   実装手順は [entity-implementation-guide.md](entity-implementation-guide.md)。

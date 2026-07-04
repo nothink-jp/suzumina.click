@@ -1,73 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { CREATOR_TYPE_LABELS, getCreatorTypeLabel } from "../../utilities/creator/type-label";
 import { isValidCircleId, isValidCreatorId } from "../../utilities/validators/dlsite-ids";
-import {
-	CircleDataSchema,
-	CreatorPageInfoSchema,
-	type CreatorType,
-	CreatorTypeSchema,
-	CreatorWorkMappingSchema,
-} from "../circle-creator";
-
-describe("CircleDataSchema", () => {
-	it("正しいサークルデータを検証する", () => {
-		const validData = {
-			circleId: "RG12345",
-			name: "テストサークル",
-			nameEn: "Test Circle",
-			workCount: 10,
-			lastUpdated: new Date(),
-			createdAt: new Date(),
-		};
-
-		const result = CircleDataSchema.safeParse(validData);
-		expect(result.success).toBe(true);
-		if (result.success) {
-			expect(result.data.circleId).toBe("RG12345");
-			expect(result.data.name).toBe("テストサークル");
-			expect(result.data.workCount).toBe(10);
-		}
-	});
-
-	it("workCountのデフォルト値を設定する", () => {
-		const validData = {
-			circleId: "RG12345",
-			name: "テストサークル",
-			lastUpdated: new Date(),
-			createdAt: new Date(),
-		};
-
-		const result = CircleDataSchema.safeParse(validData);
-		expect(result.success).toBe(true);
-		if (result.success) {
-			expect(result.data.workCount).toBe(0);
-		}
-	});
-
-	it("無効なサークルIDを拒否する", () => {
-		const invalidData = {
-			circleId: "INVALID",
-			name: "テストサークル",
-			lastUpdated: new Date(),
-			createdAt: new Date(),
-		};
-
-		const result = CircleDataSchema.safeParse(invalidData);
-		expect(result.success).toBe(false);
-	});
-
-	it("空のサークル名を拒否する", () => {
-		const invalidData = {
-			circleId: "RG12345",
-			name: "",
-			lastUpdated: new Date(),
-			createdAt: new Date(),
-		};
-
-		const result = CircleDataSchema.safeParse(invalidData);
-		expect(result.success).toBe(false);
-	});
-});
+import { CreatorPageInfoSchema, type CreatorType, CreatorTypeSchema } from "../circle-creator";
 
 describe("CreatorTypeSchema", () => {
 	it("有効なクリエイタータイプを検証する", () => {
@@ -81,69 +15,6 @@ describe("CreatorTypeSchema", () => {
 
 	it("無効なクリエイタータイプを拒否する", () => {
 		const result = CreatorTypeSchema.safeParse("invalid");
-		expect(result.success).toBe(false);
-	});
-});
-
-describe("CreatorWorkMappingSchema", () => {
-	it("正しいマッピングデータを検証する", () => {
-		const validData = {
-			creatorId: "123456",
-			workId: "RJ01234567",
-			creatorName: "テストクリエイター",
-			types: ["voice", "music"],
-			circleId: "RG12345",
-			createdAt: new Date(),
-		};
-
-		const result = CreatorWorkMappingSchema.safeParse(validData);
-		expect(result.success).toBe(true);
-		if (result.success) {
-			expect(result.data.creatorId).toBe("123456");
-			expect(result.data.workId).toBe("RJ01234567");
-			expect(result.data.types).toHaveLength(2);
-		}
-	});
-
-	it("空のクリエイターIDを拒否する", () => {
-		const invalidData = {
-			creatorId: "",
-			workId: "RJ01234567",
-			creatorName: "テストクリエイター",
-			types: ["voice"],
-			circleId: "RG12345",
-			createdAt: new Date(),
-		};
-
-		const result = CreatorWorkMappingSchema.safeParse(invalidData);
-		expect(result.success).toBe(false);
-	});
-
-	it("無効な作品IDを拒否する", () => {
-		const invalidData = {
-			creatorId: "123456",
-			workId: "INVALID",
-			creatorName: "テストクリエイター",
-			types: ["voice"],
-			circleId: "RG12345",
-			createdAt: new Date(),
-		};
-
-		const result = CreatorWorkMappingSchema.safeParse(invalidData);
-		expect(result.success).toBe(false);
-	});
-
-	it("空のtypes配列を拒否する", () => {
-		const invalidData = {
-			creatorId: "123456",
-			workId: "RJ01234567",
-			creatorName: "テストクリエイター",
-			types: [],
-			circleId: "RG12345",
-			createdAt: new Date(),
-		};
-
-		const result = CreatorWorkMappingSchema.safeParse(invalidData);
 		expect(result.success).toBe(false);
 	});
 });
