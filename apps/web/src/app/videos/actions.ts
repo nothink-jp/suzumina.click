@@ -31,6 +31,11 @@ const POPULAR_TAGS_REVALIDATE_SECONDS = 60 * 60;
  * status 未設定ドキュメント（表示フィルタでは表示される）を total から漏らしていた。
  * total は ConfigurableList のページ数計算に使われるため、この非対称は
  * 一覧末尾のページが実在するのに到達できない不具合を生んでいた（SPR-246）。
+ *
+ * 注意: Firestore の `!=` は「フィールド未設定」だけでなく値が `null` のドキュメントも
+ * 対象外にする。そのため status はあるが privacyStatus が欠損/null という中間状態が
+ * 発生すると、表示フィルタでは非表示なのに本関数では visible 側に誤って計上される
+ * （本番データでは 2026-07-05 時点でこのパターンは 0 件を確認済み）。
  */
 async function getVisibleVideoCount(firestore: FirebaseFirestore.Firestore): Promise<number> {
 	const [totalSnapshot, nonPublicSnapshot] = await Promise.all([
@@ -188,8 +193,8 @@ export async function getVideosList(params: {
 		videoParams.videoType
 	);
 
-	// フィルタ無し時、data.total は getVideosWithFiltering 内で既に getVisibleVideoCount により
-	// 算出済み（getTotalVideoCount({}) と同一の計算）なので再計算しない（count() クエリの重複回避）
+	// フィルタ無し時、data.total は getVideosWithFiltering 内で既に getVisibleVideoCount で
+	// 算出済みのため再計算しない（同じ集計を二重に投げる count() クエリの重複回避）
 	const totalCount = hasFilters ? filteredCount : data.total;
 
 	return {
@@ -487,53 +492,5 @@ export async function getVideoById(videoId: string) {
 			stack: error instanceof Error ? error.stack : undefined,
 		});
 		return null;
-	}
-}
-
-/**
- * Entity V2を使用した動画総数の取得
- */
-export async function getTotalVideoCount(params?: {
-	year?: string;
-	search?: string;
-	playlistTags?: string[];
-	userTags?: string[];
-	categoryNames?: string[];
-	videoType?: string;
-}) {
-	try {
-		const firestore = getFirestore();
-
-		// フィルタが無い場合は count() 集計で取得し全件スキャンを回避（SPR-88）。
-		// 現状の唯一の呼び出し元 getVideosList は常にフィルタ無し ({}) で呼ぶため、
-		// この fast path が実質的なホットパス。
-		const hasFilters = !!(
-			params?.year ||
-			params?.search ||
-			params?.playlistTags?.length ||
-			params?.userTags?.length ||
-			params?.categoryNames?.length ||
-			params?.videoType
-		);
-		if (!hasFilters) {
-			return await getVisibleVideoCount(firestore);
-		}
-
-		// フィルタがある場合は全件取得してメモリ上でフィルタリング（暫定）
-		const snapshot = await firestore.collection("videos").get();
-		const videos = snapshot.docs
-			.map((doc) => convertToVideo(doc))
-			.filter((video): video is VideoPlainObject => video !== null)
-			.filter((video) => video.status?.privacyStatus === "public" || !video.status);
-		const filteredVideos = filterVideos(videos, params || {});
-
-		return filteredVideos.length;
-	} catch (error) {
-		logger.error("動画総数V2取得でエラーが発生", {
-			action: "getTotalVideoCount",
-			error: error instanceof Error ? error.message : String(error),
-			stack: error instanceof Error ? error.stack : undefined,
-		});
-		return 0;
 	}
 }
