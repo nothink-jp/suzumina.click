@@ -35,7 +35,7 @@
 	},
 	"dependencies": {
 		"@google-cloud/firestore": "^8.6.0",
-		"@google-cloud/functions-framework": "^5.0.2",
+		"@google-cloud/functions-framework": "^5.0.5",
 		"@suzumina.click/shared-types": "workspace:*",
 		"googleapis": "^173.0.0"
 	},
