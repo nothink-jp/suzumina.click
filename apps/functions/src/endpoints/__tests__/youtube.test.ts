@@ -235,6 +235,35 @@ describe("fetchYouTubeVideos: playlistモード（incremental discovery）", () 
 		expect(youtubeApi.fetchUploadsPlaylistPage).toHaveBeenCalledTimes(2);
 		expect(youtubeApi.fetchVideoDetails).toHaveBeenCalledWith(dummyClient, ["a", "b", "c"]);
 	});
+
+	it("ページ上限に達しても後続ページが残っている場合はisComplete扱いにせず警告する（レビュー指摘対応）", async () => {
+		process.env.YOUTUBE_DISCOVERY_MODE = "playlist";
+		getMetadataMock.mockResolvedValue({
+			exists: true,
+			data: () => ({ isInProgress: false, uploadsPlaylistId: "UUcached" }),
+		});
+		// 全ページが未知IDのみ・かつ常にnextPageTokenありを返し続ける（ページ上限で強制打ち切りされる状況）
+		vi.mocked(youtubeApi.fetchUploadsPlaylistPage).mockImplementation(async () => ({
+			videoIds: ["x"],
+			nextPageToken: "more",
+		}));
+		vi.mocked(youtubeFirestore.getKnownVideoIdsSet).mockResolvedValue(new Set());
+		vi.mocked(youtubeApi.fetchVideoDetails).mockResolvedValue([
+			{ id: "x" } as youtube_v3.Schema$Video,
+		]);
+
+		await fetchYouTubeVideos(pubsubEvent());
+
+		// ページ上限到達の警告ログが出る
+		expect(logger.warn).toHaveBeenCalledWith(
+			expect.stringContaining("ページ上限"),
+			expect.anything(),
+		);
+		// isComplete扱いにならないため lastSuccessfulCompleteFetch は更新されない
+		expect(updateMock).not.toHaveBeenCalledWith(
+			expect.objectContaining({ lastSuccessfulCompleteFetch: expect.anything() }),
+		);
+	});
 });
 
 describe("fetchYouTubeVideos: 週次フルスイープ（mode=weekly_full_sweep）", () => {

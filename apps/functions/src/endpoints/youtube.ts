@@ -299,11 +299,17 @@ async function resolveUploadsPlaylistId(
  * 既知のはずと判断してそのページで打ち切る（early-stop）。Firestoreが空の場合
  * （初回バックフィル）は全ページが「既知IDなし」と判定され続けるため、
  * 特別分岐なしで自然に全件取得になる。
+ *
+ * @returns `videoIds`（新着の動画ID）と、`MAX_DISCOVERY_PAGES`到達により本来まだ
+ *   後続ページが残っていた状態で打ち切られたかどうか（`truncated`）。レビュー指摘対応:
+ *   early-stop（既知IDに当たって正常に打ち切り）とページ上限による強制打ち切りを
+ *   区別しないと、チャンネル動画数が上限（20ページ=1,000件）を超えた際に
+ *   超過分の旧動画が「発見完了」扱いのまま恒久的に見つからなくなる。
  */
 async function fetchVideoIdsViaPlaylistIncremental(
 	youtube: youtube_v3.Youtube,
 	uploadsPlaylistId: string,
-): Promise<string[]> {
+): Promise<{ videoIds: string[]; truncated: boolean }> {
 	const newVideoIds: string[] = [];
 	let pageToken: string | undefined;
 	let page = 0;
@@ -311,7 +317,7 @@ async function fetchVideoIdsViaPlaylistIncremental(
 	do {
 		const page_ = await fetchUploadsPlaylistPage(youtube, uploadsPlaylistId, pageToken);
 		if (page_.videoIds.length === 0) {
-			break;
+			return { videoIds: newVideoIds, truncated: false };
 		}
 
 		const knownIds = await getKnownVideoIdsSet(page_.videoIds);
@@ -319,15 +325,23 @@ async function fetchVideoIdsViaPlaylistIncremental(
 		newVideoIds.push(...unknownInPage);
 
 		if (unknownInPage.length < page_.videoIds.length) {
-			// このページ内に既知IDが混ざっていた＝新着はここまで
-			break;
+			// このページ内に既知IDが混ざっていた＝新着はここまで（正常なearly-stop）
+			return { videoIds: newVideoIds, truncated: false };
 		}
 
 		pageToken = page_.nextPageToken;
 		page++;
 	} while (pageToken && page < MAX_DISCOVERY_PAGES);
 
-	return newVideoIds;
+	// ループを抜けた時点でpageTokenが残っている＝ページ上限による強制打ち切り
+	const truncated = Boolean(pageToken);
+	if (truncated) {
+		logger.warn(
+			`uploads playlistのページ上限(${MAX_DISCOVERY_PAGES})に達したため打ち切りました。後続ページが未処理のまま残っています`,
+			{ processedPages: page, newVideoIdsCount: newVideoIds.length },
+		);
+	}
+	return { videoIds: newVideoIds, truncated };
 }
 
 /**
@@ -409,8 +423,13 @@ async function fetchVideoIds(
 
 	if (mode === "playlist") {
 		const uploadsPlaylistId = await resolveUploadsPlaylistId(youtube, metadata);
-		const videoIds = await fetchVideoIdsViaPlaylistIncremental(youtube, uploadsPlaylistId);
-		return { videoIds, nextPageToken: undefined, isComplete: true };
+		const { videoIds, truncated } = await fetchVideoIdsViaPlaylistIncremental(
+			youtube,
+			uploadsPlaylistId,
+		);
+		// truncated=true（ページ上限による強制打ち切り）の場合はisComplete:falseとし、
+		// lastSuccessfulCompleteFetchを誤って更新しないようにする（レビュー指摘対応）。
+		return { videoIds, nextPageToken: undefined, isComplete: !truncated };
 	}
 
 	return fetchVideoIdsViaSearch(youtube, metadata);
