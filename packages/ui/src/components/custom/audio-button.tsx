@@ -41,12 +41,18 @@ interface AudioButtonProps {
 	onDetailClick?: () => void;
 	// お気に入り関連
 	isFavorite?: boolean;
+	/**
+	 * isAuthenticated=false でも disabled にせず常にクリックで呼び出す（未ログイン注記行は別途表示）。
+	 * 呼び出し元が未ログイン時のガード/ログイン誘導（toast 等）を自前で行うこと。
+	 */
 	onFavoriteToggle?: () => void;
 	// いいね関連
 	isLiked?: boolean;
+	/** onFavoriteToggle と同様、未ログイン時のガードは呼び出し元の責務 */
 	onLikeToggle?: () => void;
 	// 低評価関連
 	isDisliked?: boolean;
+	/** onFavoriteToggle と同様、未ログイン時のガードは呼び出し元の責務 */
 	onDislikeToggle?: () => void;
 	// ハイライト関連
 	searchQuery?: string;

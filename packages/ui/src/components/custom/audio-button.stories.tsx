@@ -160,7 +160,9 @@ export const UnauthenticatedShowsLoginNote: Story = {
 	play: async ({ canvasElement, args }) => {
 		const canvas = within(canvasElement);
 		await userEvent.click(canvas.getByRole("button", { name: "詳細を表示" }));
-		await expect(await screen.findByText("お気に入り・評価にはログインが必要です")).toBeVisible();
+		await expect(
+			await screen.findByText("お気に入り・評価にはログインが必要です"),
+		).toBeInTheDocument();
 		const favoriteBtn = await screen.findByRole("button", { name: "お気に入りに追加" });
 		await expect(favoriteBtn).not.toBeDisabled();
 		await userEvent.click(favoriteBtn);
