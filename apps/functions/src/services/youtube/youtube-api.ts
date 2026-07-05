@@ -248,6 +248,99 @@ export async function fetchChannelPlaylists(
 }
 
 /**
+ * チャンネルのuploads playlist ID（アップロード済み動画を新着順に並べたプレイリスト）を取得する
+ *
+ * SPR-230: discoveryを`search.list`(100 units)から`playlistItems.list`(1 unit)へ
+ * 置換するための前段。`UC…`→`UU…`という非公式な文字列変換には頼らず、
+ * `channels.list`で正規に取得する（One-Way Door変更のため検証可能性を優先）。
+ *
+ * @param youtube - YouTube APIクライアント
+ * @param channelId - チャンネルID
+ * @returns uploads playlist ID（取得できなければundefined）
+ */
+export async function fetchUploadsPlaylistId(
+	youtube: youtube_v3.Youtube,
+	channelId: string,
+): Promise<string | undefined> {
+	if (!canExecuteOperation("channels")) {
+		throw new Error("YouTube APIクォータが不足しています");
+	}
+
+	try {
+		const response = await youtube.channels.list({
+			part: ["contentDetails"],
+			id: [channelId],
+		});
+
+		recordQuotaUsage("channels");
+		getYouTubeQuotaMonitor().logQuotaUsage("channels", 1, { channelId });
+
+		const uploadsPlaylistId =
+			response.data.items?.[0]?.contentDetails?.relatedPlaylists?.uploads ?? undefined;
+
+		if (!uploadsPlaylistId) {
+			logger.warn("uploads playlist IDの取得に失敗しました", { channelId });
+		}
+
+		return uploadsPlaylistId;
+	} catch (error: unknown) {
+		logger.error("チャンネル情報取得エラー:", error);
+		throw error;
+	}
+}
+
+/**
+ * uploads playlistの動画IDを1ページ分取得する（discovery専用）
+ *
+ * uploads playlistは新着順（reverse-chronological）に並んでいるため、
+ * 呼び出し側でこれをページングして「既知videoIdに当たったら停止」する
+ * incremental discoveryに使う。プレイリストタグ付け用の`fetchPlaylistItems`
+ * （全件走査・タグ付け目的）とは責務が異なるため専用関数として分離している。
+ *
+ * @param youtube - YouTube APIクライアント
+ * @param uploadsPlaylistId - uploads playlist ID
+ * @param pageToken - 継続ページトークン
+ * @returns このページの動画ID（新着順）と次ページトークン
+ */
+export async function fetchUploadsPlaylistPage(
+	youtube: youtube_v3.Youtube,
+	uploadsPlaylistId: string,
+	pageToken?: string,
+): Promise<{ videoIds: string[]; nextPageToken?: string }> {
+	if (!canExecuteOperation("playlistItems")) {
+		throw new Error("YouTube APIクォータが不足しています");
+	}
+
+	try {
+		const response = await youtube.playlistItems.list({
+			part: ["contentDetails"],
+			playlistId: uploadsPlaylistId,
+			maxResults: MAX_VIDEOS_PER_BATCH,
+			pageToken,
+		});
+
+		recordQuotaUsage("playlistItems");
+		getYouTubeQuotaMonitor().logQuotaUsage("playlistItems", 1, {
+			uploadsPlaylistId,
+			pageToken: pageToken || "none",
+			resultCount: response.data.items?.length || 0,
+		});
+
+		const videoIds = (response.data.items || [])
+			.map((item) => item.contentDetails?.videoId)
+			.filter((id): id is string => typeof id === "string" && id.length > 0);
+
+		return {
+			videoIds,
+			nextPageToken: response.data.nextPageToken ?? undefined,
+		};
+	} catch (error: unknown) {
+		logger.error("uploads playlistアイテム取得エラー:", error);
+		throw error;
+	}
+}
+
+/**
  * プレイリストの動画一覧を取得
  * 既存のページネーション処理パターンを活用
  *

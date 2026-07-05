@@ -5,11 +5,17 @@ import {
 	extractVideoIds,
 	fetchChannelPlaylists,
 	fetchPlaylistItems,
+	fetchUploadsPlaylistId,
+	fetchUploadsPlaylistPage,
 	fetchVideoDetails,
 	initializeYouTubeClient,
 	searchVideos,
 } from "../services/youtube/youtube-api";
-import { saveVideosToFirestore } from "../services/youtube/youtube-firestore";
+import {
+	getAllVideoIds,
+	getKnownVideoIdsSet,
+	saveVideosToFirestore,
+} from "../services/youtube/youtube-firestore";
 import { SUZUKA_MINASE_CHANNEL_ID } from "../shared/common";
 import * as logger from "../shared/logger";
 
@@ -20,8 +26,12 @@ const METADATA_DOC_ID = "fetch_metadata";
 const METADATA_COLLECTION = "youtubeMetadata";
 
 // 実行制限関連の定数
-const MAX_PAGES_PER_EXECUTION = 3; // 1回の実行での最大ページ数
+const MAX_PAGES_PER_EXECUTION = 3; // 1回の実行での最大ページ数（search.listベース経路用）
 const LOCK_TIMEOUT_MS = 30 * 60 * 1000; // ロックのタイムアウト（30分）
+
+// SPR-230: uploads playlistベースdiscoveryのページ数上限（1 unit/ページと安価なため緩め。
+// 初回バックフィル(~550件≈11ページ)を1runで完了できる余裕を持たせる）
+const MAX_DISCOVERY_PAGES = 20;
 
 // メタデータの型定義
 interface FetchMetadata {
@@ -30,6 +40,21 @@ interface FetchMetadata {
 	isInProgress: boolean;
 	lastError?: string;
 	lastSuccessfulCompleteFetch?: Timestamp;
+	/** SPR-230: uploads playlist ID（チャンネル固定のため一度取得したらキャッシュする） */
+	uploadsPlaylistId?: string;
+}
+
+/**
+ * SPR-230: discovery方式の切り替えフラグ。呼び出し時に都度`process.env`を読む
+ * （DLsiteの`isTierFilteringEnabled()`パターン踏襲・テストで環境変数を切り替えられるように）。
+ *
+ * - "search"（既定）: 現行のsearch.listベース（変更なし）
+ * - "shadow": search.list経路は維持しつつ、uploads playlist全走査との差分をログ出力のみ行う
+ * - "playlist": uploads playlistベースのincremental discoveryに完全移行
+ */
+function getDiscoveryMode(): "search" | "shadow" | "playlist" {
+	const raw = process.env.YOUTUBE_DISCOVERY_MODE;
+	return raw === "shadow" || raw === "playlist" ? raw : "search";
 }
 
 /**
@@ -50,6 +75,27 @@ interface FetchResult {
 interface PubsubMessage {
 	data?: string;
 	attributes?: Record<string, string>;
+}
+
+/**
+ * SPR-230: Pub/Subペイロードから`mode`を取り出す（DLsite側`decodePubsubMode`と同型）。
+ * 週次フルスイープ（`mode==="weekly_full_sweep"`）かどうかの判定に使う。
+ * デコード失敗時は安全側（通常run）にフォールバックする。
+ */
+function decodePubsubMode(message: PubsubMessage | undefined): string | undefined {
+	if (!message?.data) {
+		return undefined;
+	}
+	try {
+		const decoded = Buffer.from(message.data, "base64").toString("utf-8");
+		const parsed = JSON.parse(decoded) as { mode?: unknown };
+		return typeof parsed.mode === "string" ? parsed.mode : undefined;
+	} catch (err) {
+		logger.warn("Pub/Subペイロードのデコードに失敗（modeなしとして通常runを続行します）", {
+			error: err instanceof Error ? err.message : String(err),
+		});
+		return undefined;
+	}
 }
 
 /**
@@ -143,13 +189,13 @@ async function prepareExecution(): Promise<[FetchMetadata | undefined, FetchResu
 }
 
 /**
- * YouTube動画IDを検索して取得
+ * YouTube動画IDをsearch.list経由で検索して取得（現行方式・SPR-230移行前の既存ロジック）
  *
  * @param youtube - YouTube APIクライアント
  * @param metadata - 取得済みのメタデータ
  * @returns Promise<{videoIds: string[], nextPageToken: string | undefined, isComplete: boolean}> - 取得した動画IDと関連情報
  */
-async function fetchVideoIds(
+async function fetchVideoIdsViaSearch(
 	youtube: youtube_v3.Youtube,
 	metadata: FetchMetadata,
 ): Promise<{
@@ -220,6 +266,154 @@ async function fetchVideoIds(
 	}
 
 	return { videoIds: allVideoIds, nextPageToken, isComplete };
+}
+
+/**
+ * uploads playlist IDを解決する（メタデータにキャッシュ済みならそれを使い、無ければ取得して保存）
+ *
+ * SPR-230: 対象は`SUZUKA_MINASE_CHANNEL_ID`固定チャンネルで、uploads playlist IDは
+ * 実質不変のため、一度取得すればメタデータ経由で以後の呼び出しコストはゼロになる。
+ */
+async function resolveUploadsPlaylistId(
+	youtube: youtube_v3.Youtube,
+	metadata: FetchMetadata,
+): Promise<string> {
+	if (metadata.uploadsPlaylistId) {
+		return metadata.uploadsPlaylistId;
+	}
+
+	const uploadsPlaylistId = await fetchUploadsPlaylistId(youtube, SUZUKA_MINASE_CHANNEL_ID);
+	if (!uploadsPlaylistId) {
+		throw new Error("uploads playlist IDの取得に失敗しました");
+	}
+
+	await updateMetadata({ uploadsPlaylistId });
+	return uploadsPlaylistId;
+}
+
+/**
+ * uploads playlistを新着順にページングし、Firestoreに未登録の（＝新着の）動画IDだけを返す
+ *
+ * SPR-230 Phase②: uploads playlistは新着順（reverse-chronological）なので、
+ * ページ内に1件でも既知IDがあれば、それより後ろ（時系列的に古い動画）はすべて
+ * 既知のはずと判断してそのページで打ち切る（early-stop）。Firestoreが空の場合
+ * （初回バックフィル）は全ページが「既知IDなし」と判定され続けるため、
+ * 特別分岐なしで自然に全件取得になる。
+ */
+async function fetchVideoIdsViaPlaylistIncremental(
+	youtube: youtube_v3.Youtube,
+	uploadsPlaylistId: string,
+): Promise<string[]> {
+	const newVideoIds: string[] = [];
+	let pageToken: string | undefined;
+	let page = 0;
+
+	do {
+		const page_ = await fetchUploadsPlaylistPage(youtube, uploadsPlaylistId, pageToken);
+		if (page_.videoIds.length === 0) {
+			break;
+		}
+
+		const knownIds = await getKnownVideoIdsSet(page_.videoIds);
+		const unknownInPage = page_.videoIds.filter((id) => !knownIds.has(id));
+		newVideoIds.push(...unknownInPage);
+
+		if (unknownInPage.length < page_.videoIds.length) {
+			// このページ内に既知IDが混ざっていた＝新着はここまで
+			break;
+		}
+
+		pageToken = page_.nextPageToken;
+		page++;
+	} while (pageToken && page < MAX_DISCOVERY_PAGES);
+
+	return newVideoIds;
+}
+
+/**
+ * uploads playlistを（early-stopせず）全件ページングして動画IDを取得する
+ *
+ * SPR-230: shadowモードでの発見集合突合、および週次フルスイープの取りこぼし検知に使う。
+ */
+async function fetchVideoIdsViaPlaylistFull(
+	youtube: youtube_v3.Youtube,
+	uploadsPlaylistId: string,
+): Promise<string[]> {
+	const allVideoIds: string[] = [];
+	let pageToken: string | undefined;
+	let page = 0;
+
+	do {
+		const result = await fetchUploadsPlaylistPage(youtube, uploadsPlaylistId, pageToken);
+		allVideoIds.push(...result.videoIds);
+		pageToken = result.nextPageToken;
+		page++;
+	} while (pageToken && page < MAX_DISCOVERY_PAGES);
+
+	return allVideoIds;
+}
+
+/**
+ * SPR-230 shadowモード: uploads playlist全走査の発見集合とFirestoreの既知集合を比較し、
+ * 対称差をログ出力する。比較自体が失敗しても本処理には影響させない（ログのみ・例外を投げない）。
+ */
+async function logDiscoveryShadowComparison(
+	youtube: youtube_v3.Youtube,
+	uploadsPlaylistId: string,
+): Promise<void> {
+	try {
+		const [playlistVideoIds, knownIds] = await Promise.all([
+			fetchVideoIdsViaPlaylistFull(youtube, uploadsPlaylistId),
+			getAllVideoIds(),
+		]);
+		const playlistIdSet = new Set(playlistVideoIds);
+		const missingInPlaylist = [...knownIds].filter((id) => !playlistIdSet.has(id));
+		const extraInPlaylist = playlistVideoIds.filter((id) => !knownIds.has(id));
+
+		if (missingInPlaylist.length === 0 && extraInPlaylist.length === 0) {
+			logger.info("SPR-230 shadow: discovery方式の発見集合が一致しました", {
+				uploadsPlaylist件数: playlistVideoIds.length,
+				Firestore既知件数: knownIds.size,
+			});
+		} else {
+			logger.warn("SPR-230 shadow: discovery方式の発見集合に差分があります", {
+				uploadsPlaylistに無いFirestore既知件数: missingInPlaylist.length,
+				uploadsPlaylistのみに存在する件数: extraInPlaylist.length,
+				missingSample: missingInPlaylist.slice(0, 10),
+				extraSample: extraInPlaylist.slice(0, 10),
+			});
+		}
+	} catch (error) {
+		logger.warn("SPR-230 shadow: discovery方式の比較に失敗しました（本処理には影響しません）", {
+			error: error instanceof Error ? error.message : String(error),
+		});
+	}
+}
+
+/**
+ * YouTube動画IDを取得する（discoveryモードに応じて経路を切り替える）
+ *
+ * - "search"/"shadow": 既存のsearch.listベース経路（挙動を変えない）。"shadow"のみ
+ *   後続で`logDiscoveryShadowComparison`による比較ログを追加で行う。
+ * - "playlist": uploads playlistベースのincremental discoveryに完全移行
+ */
+async function fetchVideoIds(
+	youtube: youtube_v3.Youtube,
+	metadata: FetchMetadata,
+): Promise<{
+	videoIds: string[];
+	nextPageToken: string | undefined;
+	isComplete: boolean;
+}> {
+	const mode = getDiscoveryMode();
+
+	if (mode === "playlist") {
+		const uploadsPlaylistId = await resolveUploadsPlaylistId(youtube, metadata);
+		const videoIds = await fetchVideoIdsViaPlaylistIncremental(youtube, uploadsPlaylistId);
+		return { videoIds, nextPageToken: undefined, isComplete: true };
+	}
+
+	return fetchVideoIdsViaSearch(youtube, metadata);
 }
 
 // 注：動画詳細取得機能はutils/youtube-apiから利用
@@ -297,11 +491,111 @@ function mapPlaylistTagsToVideos(
 }
 
 /**
+ * SPR-230: 週次フルスイープ（early-stopなし全ページ走査＋Firestore既知IDとの突合）
+ *
+ * discovery方式（uploads playlist経由）の取りこぼし検知のみが目的で、通常の動画詳細取得・
+ * 保存フローは実行しない（統計取得のティア化はPhase③のスコープ外）。コストは
+ * uploads playlist全走査（~11ページ=11 units）程度と軽量。
+ */
+async function runWeeklyFullSweep(
+	youtube: youtube_v3.Youtube,
+	metadata: FetchMetadata,
+): Promise<FetchResult> {
+	try {
+		logger.info(
+			"週次フルスイープを開始します（discovery取りこぼし検知のみ、動画詳細取得は行いません）",
+		);
+		const uploadsPlaylistId = await resolveUploadsPlaylistId(youtube, metadata);
+		await logDiscoveryShadowComparison(youtube, uploadsPlaylistId);
+		await updateMetadata({ isInProgress: false, lastError: undefined });
+		logger.info("週次フルスイープが完了しました");
+		return { videoCount: 0 };
+	} catch (error: unknown) {
+		logger.error("週次フルスイープでエラーが発生しました:", error);
+		await updateMetadata({
+			isInProgress: false,
+			lastError: error instanceof Error ? error.message : String(error),
+		});
+		return {
+			videoCount: 0,
+			error: error instanceof Error ? error.message : "不明なエラーが発生しました",
+		};
+	}
+}
+
+/**
+ * 通常の動画ID取得〜詳細取得〜Firestore保存フロー（旧`fetchYouTubeVideosLogic`本体・SPR-230で分離）
+ */
+async function runNormalFetchAndSave(
+	youtube: youtube_v3.Youtube,
+	metadata: FetchMetadata,
+): Promise<FetchResult> {
+	// 3. 動画IDの取得
+	logger.info(`チャンネル ${SUZUKA_MINASE_CHANNEL_ID} の動画情報取得を開始します`);
+	const { videoIds, nextPageToken, isComplete } = await fetchVideoIds(youtube, metadata);
+
+	// SPR-230: shadowモードは発見結果に関わらず毎run比較する（0件run＝定常状態こそ
+	// 両方式が一致すべき基準ケースのため、videoIds空チェックの前に実行する）。
+	// search.list経路の挙動・保存結果には影響させない、比較専用。
+	if (getDiscoveryMode() === "shadow") {
+		try {
+			const uploadsPlaylistId = await resolveUploadsPlaylistId(youtube, metadata);
+			await logDiscoveryShadowComparison(youtube, uploadsPlaylistId);
+		} catch (error) {
+			logger.warn(
+				"SPR-230 shadow: uploads playlist ID解決に失敗しました（本処理には影響しません）",
+				{ error: error instanceof Error ? error.message : String(error) },
+			);
+		}
+	}
+
+	logger.info(`取得した動画ID合計: ${videoIds.length}件`);
+	if (videoIds.length === 0) {
+		logger.info("チャンネルに動画が見つかりませんでした");
+		await updateMetadata({ isInProgress: false });
+		return { videoCount: 0 };
+	}
+
+	// 4. プレイリスト情報の取得
+	logger.info("プレイリスト情報を取得中...");
+	const playlistVideoMap = await buildPlaylistVideoMapping(youtube, SUZUKA_MINASE_CHANNEL_ID);
+
+	// 5. 動画の詳細情報取得
+	const videoDetails = await fetchVideoDetails(youtube, videoIds);
+
+	// 6. プレイリストタグを動画にマッピング
+	const videosWithPlaylistTags = mapPlaylistTagsToVideos(videoDetails, playlistVideoMap);
+
+	// 7. Firestoreにデータ保存
+	const savedCount = await saveVideosToFirestore(videosWithPlaylistTags);
+
+	// 8. メタデータを更新
+	if (isComplete) {
+		await updateMetadata({
+			nextPageToken: undefined,
+			lastSuccessfulCompleteFetch: Timestamp.now(),
+		});
+	} else if (nextPageToken) {
+		// 明示的にnextPageTokenを使用（既にfetchVideoIds内で保存されているが、変数使用のため記述）
+		logger.debug(`次回の実行のためにページトークンを保存: ${nextPageToken}`);
+	}
+
+	// 9. 処理完了を記録
+	await updateMetadata({
+		isInProgress: false,
+		lastError: undefined,
+	});
+
+	return { videoCount: savedCount };
+}
+
+/**
  * YouTube動画情報取得の共通処理
  *
+ * @param isWeeklyFullSweep SPR-230: 週次フルスイープ実行時true（discovery取りこぼし検知のみ行う）
  * @returns Promise<FetchResult> - 処理結果
  */
-async function fetchYouTubeVideosLogic(): Promise<FetchResult> {
+async function fetchYouTubeVideosLogic(isWeeklyFullSweep = false): Promise<FetchResult> {
 	try {
 		// 1. YouTube APIクライアントの初期化
 		const [youtube, initError] = initializeYouTubeClient();
@@ -324,48 +618,11 @@ async function fetchYouTubeVideosLogic(): Promise<FetchResult> {
 			return { videoCount: 0, error: "メタデータの準備に失敗しました" };
 		}
 
-		// 3. 動画IDの取得
-		logger.info(`チャンネル ${SUZUKA_MINASE_CHANNEL_ID} の動画情報取得を開始します`);
-		const { videoIds, nextPageToken, isComplete } = await fetchVideoIds(youtube, metadata);
-
-		logger.info(`取得した動画ID合計: ${videoIds.length}件`);
-		if (videoIds.length === 0) {
-			logger.info("チャンネルに動画が見つかりませんでした");
-			await updateMetadata({ isInProgress: false });
-			return { videoCount: 0 };
+		if (isWeeklyFullSweep) {
+			return await runWeeklyFullSweep(youtube, metadata);
 		}
 
-		// 4. プレイリスト情報の取得
-		logger.info("プレイリスト情報を取得中...");
-		const playlistVideoMap = await buildPlaylistVideoMapping(youtube, SUZUKA_MINASE_CHANNEL_ID);
-
-		// 5. 動画の詳細情報取得
-		const videoDetails = await fetchVideoDetails(youtube, videoIds);
-
-		// 6. プレイリストタグを動画にマッピング
-		const videosWithPlaylistTags = mapPlaylistTagsToVideos(videoDetails, playlistVideoMap);
-
-		// 7. Firestoreにデータ保存
-		const savedCount = await saveVideosToFirestore(videosWithPlaylistTags);
-
-		// 8. メタデータを更新
-		if (isComplete) {
-			await updateMetadata({
-				nextPageToken: undefined,
-				lastSuccessfulCompleteFetch: Timestamp.now(),
-			});
-		} else if (nextPageToken) {
-			// 明示的にnextPageTokenを使用（既にfetchVideoIds内で保存されているが、変数使用のため記述）
-			logger.debug(`次回の実行のためにページトークンを保存: ${nextPageToken}`);
-		}
-
-		// 9. 処理完了を記録
-		await updateMetadata({
-			isInProgress: false,
-			lastError: undefined,
-		});
-
-		return { videoCount: savedCount };
+		return await runNormalFetchAndSave(youtube, metadata);
 	} catch (error: unknown) {
 		// エラー発生時はログ出力して処理終了
 		logger.error("YouTube動画情報取得中にエラーが発生しました:", error);
@@ -425,8 +682,15 @@ export const fetchYouTubeVideos = async (event: CloudEvent<PubsubMessage>): Prom
 			}
 		}
 
+		// SPR-230: ペイロードのmodeを確認し、週次フルスイープかどうかを判定する
+		const mode = decodePubsubMode(message);
+		const isWeeklyFullSweep = mode === "weekly_full_sweep";
+		if (isWeeklyFullSweep) {
+			logger.info("週次フルスイープトリガーを検出しました");
+		}
+
 		// 共通のロジックを実行
-		const result = await fetchYouTubeVideosLogic();
+		const result = await fetchYouTubeVideosLogic(isWeeklyFullSweep);
 
 		if (result.error) {
 			logger.warn(`YouTube動画取得処理でエラーが発生しました: ${result.error}`);
