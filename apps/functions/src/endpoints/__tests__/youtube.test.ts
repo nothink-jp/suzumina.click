@@ -150,6 +150,38 @@ describe("fetchYouTubeVideos: shadowモード", () => {
 		// 比較の失敗/差分検出自体は本処理の完了を妨げない
 		expect(result).toBeUndefined();
 	});
+
+	it("全走査がページ上限で打ち切られた場合はmissing判定をスキップして警告する（レビュー指摘対応）", async () => {
+		process.env.YOUTUBE_DISCOVERY_MODE = "shadow";
+		vi.mocked(youtubeApi.searchVideos).mockResolvedValue({ items: [], nextPageToken: undefined });
+		vi.mocked(youtubeApi.extractVideoIds).mockReturnValue([]);
+		vi.mocked(youtubeApi.fetchUploadsPlaylistId).mockResolvedValue("UUxxxx");
+		// 常にnextPageTokenありを返し続ける → fetchVideoIdsViaPlaylistFullがページ上限で打ち切られる
+		vi.mocked(youtubeApi.fetchUploadsPlaylistPage).mockImplementation(async () => ({
+			videoIds: ["v1"],
+			nextPageToken: "more",
+		}));
+		// Firestoreには走査未到達分のv2がある想定（打ち切られなければmissing判定される状況）
+		vi.mocked(youtubeFirestore.getAllVideoIds).mockResolvedValue(new Set(["v1", "v2"]));
+
+		await fetchYouTubeVideos(pubsubEvent());
+
+		// ページ上限打ち切りの警告が出る
+		expect(logger.warn).toHaveBeenCalledWith(
+			expect.stringContaining("ページ上限で打ち切られたため、今回はmissing判定をスキップします"),
+			expect.anything(),
+		);
+		// missing判定はスキップされるため「差分があります」ログは出ない
+		expect(logger.warn).not.toHaveBeenCalledWith(
+			expect.stringContaining("差分があります"),
+			expect.anything(),
+		);
+		// 一致ログも出ない（判定自体をスキップしているため）
+		expect(logger.info).not.toHaveBeenCalledWith(
+			expect.stringContaining("発見集合が一致しました"),
+			expect.anything(),
+		);
+	});
 });
 
 describe("fetchYouTubeVideos: playlistモード（incremental discovery）", () => {
