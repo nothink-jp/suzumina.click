@@ -16,8 +16,10 @@ permissions:
 
 # 短時間に複数PRがmainへ連続マージされると、前のデプロイが進行中のまま次のrunが
 # gcloud functions deploy を叩き、GCP側が "unable to queue the operation" (409) で
-# 全関数デプロイを拒否する（2026-07-04 実測）。cancel-in-progress ではなく直列化する
-# （進行中のデプロイを打ち切ると部分適用のまま終わるため、待たせて完走させる）。
+# 全関数デプロイを拒否する（2026-07-04 実測）。cancel-in-progress: false は「実行中の run」
+# を打ち切らないという意味（待たせて完走させる＝進行中のデプロイが部分適用のまま終わるのを防ぐ）。
+# 待機中(pending)の run は仕様上、後続pushで古い方が置き換わり得るが、最終的にmainの
+# 最新状態がデプロイされればよいユースケースなので問題ない。
 concurrency:
   group: deploy-functions-${{ github.ref }}
   cancel-in-progress: false
