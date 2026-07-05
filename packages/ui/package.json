@@ -53,7 +53,7 @@
 		"@vitest/browser": "^4.1.9",
 		"@vitest/browser-playwright": "^4.1.9",
 		"@vitest/coverage-v8": "^4.1.9",
-		"chromatic": "^17.7.2",
+		"chromatic": "^18.0.1",
 		"happy-dom": "^20.10.6",
 		"next": "^16.2.9",
 		"playwright": "^1.61.1",
