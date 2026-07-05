@@ -11,11 +11,18 @@ const mockBatchCommit = vi.fn().mockResolvedValue(undefined);
 const mockDoc = vi.fn((id: string) => ({ id }));
 const mockGetAll = vi.fn();
 const mockSelectGet = vi.fn();
+const mockWhereSelectLimitGet = vi.fn();
+const mockWhere = vi.fn((..._args: unknown[]) => ({
+	select: vi.fn(() => ({
+		limit: vi.fn(() => ({ get: mockWhereSelectLimitGet })),
+	})),
+}));
 vi.mock("../../../infrastructure/database/firestore", () => ({
 	default: {
 		collection: vi.fn(() => ({
 			doc: mockDoc,
 			select: vi.fn(() => ({ get: mockSelectGet })),
+			where: (...args: unknown[]) => mockWhere(...args),
 		})),
 		batch: vi.fn(() => ({ set: mockBatchSet, commit: mockBatchCommit })),
 		getAll: (...refs: unknown[]) => mockGetAll(...refs),
@@ -38,7 +45,12 @@ vi.mock("../../mappers/video-mapper", () => ({
 	},
 }));
 
-import { getAllVideoIds, getKnownVideoIdsSet, saveVideosToFirestore } from "../youtube-firestore";
+import {
+	getAllVideoIds,
+	getKnownVideoIdsSet,
+	getStaleLiveVideoIds,
+	saveVideosToFirestore,
+} from "../youtube-firestore";
 
 // videoToFirestore（実物）が受け付ける最小の VideoPlainObject
 const plainObject = (id = "v1") =>
@@ -152,5 +164,26 @@ describe("getAllVideoIds", () => {
 		const result = await getAllVideoIds();
 
 		expect(result.size).toBe(0);
+	});
+});
+
+describe("getStaleLiveVideoIds", () => {
+	it("liveBroadcastContentがlive/upcomingのままの動画IDのみを返す", async () => {
+		mockWhereSelectLimitGet.mockResolvedValue({
+			docs: [{ id: "live1" }, { id: "upcoming1" }],
+		});
+
+		const result = await getStaleLiveVideoIds();
+
+		expect(result).toEqual(["live1", "upcoming1"]);
+		expect(mockWhere).toHaveBeenCalledWith("liveBroadcastContent", "in", ["live", "upcoming"]);
+	});
+
+	it("該当が無い場合は空配列を返す", async () => {
+		mockWhereSelectLimitGet.mockResolvedValue({ docs: [] });
+
+		const result = await getStaleLiveVideoIds();
+
+		expect(result).toEqual([]);
 	});
 });

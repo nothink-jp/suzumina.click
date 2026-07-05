@@ -68,6 +68,30 @@ export async function getAllVideoIds(): Promise<Set<string>> {
 	return new Set(snapshot.docs.map((doc) => doc.id));
 }
 
+/** stale判定で再取得対象とする件数上限（暴走防止。fetchVideoDetailsの1バッチ分に収まる値） */
+export const MAX_STALE_LIVE_VIDEO_IDS = 50;
+
+/**
+ * Firestore上で`liveBroadcastContent`が"live"または"upcoming"のまま残っている動画IDを返す
+ *
+ * SPR-230回帰対応: incremental discoveryは新着（未知）動画IDしか返さないため、一度保存された
+ * 動画は配信終了後も再取得されず、liveBroadcastContent/liveStreamingDetails.actualEndTimeが
+ * 固着する（video-firestore.tsのisLive/isUpcomingはliveBroadcastContent自体をOR条件に使うため
+ * フロントエンド側では直せない）。対象は通常0〜数件だが、異常系の暴走防止として
+ * MAX_STALE_LIVE_VIDEO_IDSで打ち切る（単一フィールド+inクエリのため複合インデックス不要）。
+ *
+ * @returns liveBroadcastContentが"live"/"upcoming"のまま残っている動画IDの配列
+ */
+export async function getStaleLiveVideoIds(): Promise<string[]> {
+	const snapshot = await firestore
+		.collection(VIDEOS_COLLECTION)
+		.where("liveBroadcastContent", "in", ["live", "upcoming"])
+		.select()
+		.limit(MAX_STALE_LIVE_VIDEO_IDS)
+		.get();
+	return snapshot.docs.map((doc) => doc.id);
+}
+
 /**
  * Entity 形式でYouTube動画をFirestoreに保存
  *
