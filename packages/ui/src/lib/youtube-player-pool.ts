@@ -21,19 +21,18 @@ interface PlayerData {
 
 interface SegmentPlayback {
 	videoId: string;
+	startTime: number;
 	endTime: number;
 	intervalId: NodeJS.Timeout;
-	callbacks: {
-		onPlay?: () => void;
-		onPause?: () => void;
-		onEnd?: () => void;
-	};
+	callbacks: PlaySegmentCallbacks;
 }
 
 export interface PlaySegmentCallbacks {
 	onPlay?: () => void;
 	onPause?: () => void;
 	onEnd?: () => void;
+	/** 再生進捗（0-100）。監視間隔（250ms）ごとに通知 */
+	onProgress?: (progressPercent: number) => void;
 }
 
 /**
@@ -154,7 +153,7 @@ export class YouTubePlayerPool {
 			player.playVideo();
 
 			// endTime監視を開始
-			this.startEndTimeMonitoring(player, videoId, endTime, callbacks);
+			this.startEndTimeMonitoring(player, videoId, startTime, endTime, callbacks);
 
 			// プレイヤーの状態を更新
 			const playerData = this.players.get(videoId);
@@ -254,15 +253,23 @@ export class YouTubePlayerPool {
 	private startEndTimeMonitoring(
 		player: YTPlayer,
 		videoId: string,
+		startTime: number,
 		endTime: number,
 		callbacks: PlaySegmentCallbacks,
 	): void {
+		const segmentDuration = endTime - startTime;
 		this.activeSegment = {
 			videoId,
+			startTime,
 			endTime,
 			intervalId: setInterval(() => {
 				try {
 					const currentTime = player.getCurrentTime();
+
+					if (segmentDuration > 0) {
+						const progress = ((currentTime - startTime) / segmentDuration) * 100;
+						callbacks.onProgress?.(Math.min(100, Math.max(0, progress)));
+					}
 
 					if (currentTime >= endTime) {
 						this.stopCurrentSegment();

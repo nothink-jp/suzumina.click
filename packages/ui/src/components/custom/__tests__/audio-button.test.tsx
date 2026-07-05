@@ -122,7 +122,7 @@ describe("AudioButton", () => {
 		// メタデータが表示されることを確認
 		expect(screen.getByText("10.0秒")).toBeInTheDocument();
 		expect(screen.getByText("テストユーザー")).toBeInTheDocument();
-		expect(screen.getByText("再生: 5回")).toBeInTheDocument();
+		expect(screen.getByText("再生 5回")).toBeInTheDocument();
 	});
 
 	it("should display tags", async () => {
@@ -227,7 +227,7 @@ describe("AudioButton", () => {
 
 		// 高評価ボタンが liked 状態になっていることを確認
 		const likeButton = screen.getByText("2").closest("button");
-		expect(likeButton).toHaveClass("text-primary");
+		expect(likeButton).toHaveClass("text-suzuka-600");
 	});
 
 	it("should handle detail click", async () => {
@@ -287,7 +287,7 @@ describe("AudioButton", () => {
 		);
 	});
 
-	it("should disable favorite button when not authenticated", async () => {
+	it("should keep favorite button enabled when not authenticated and let the caller decide", async () => {
 		const user = userEvent.setup();
 		const onFavoriteToggleMock = vi.fn();
 
@@ -300,21 +300,19 @@ describe("AudioButton", () => {
 			/>,
 		);
 
-		// 詳細表示ボタン（iアイコン）をクリック
+		// 詳細表示ボタン（⋯アイコン）をクリック
 		const infoButton = screen.getByRole("button", { name: "詳細を表示" });
 		await user.click(infoButton);
 
-		// お気に入りボタンを確認
+		// お気に入りボタンは disabled にしない（クリック可能なまま、呼び出し元がログイン誘導を行う）
 		const favoriteButton = screen.getByRole("button", { name: "お気に入りに追加" });
-		expect(favoriteButton).toBeDisabled();
-		expect(favoriteButton).toHaveClass("opacity-50", "cursor-not-allowed");
+		expect(favoriteButton).not.toBeDisabled();
 
-		// クリックしても何も起こらない
 		await user.click(favoriteButton);
-		expect(onFavoriteToggleMock).not.toHaveBeenCalled();
+		expect(onFavoriteToggleMock).toHaveBeenCalledTimes(1);
 	});
 
-	it("should disable like buttons when not authenticated", async () => {
+	it("should keep like/dislike buttons enabled when not authenticated", async () => {
 		const user = userEvent.setup();
 		const onLikeToggleMock = vi.fn();
 		const onDislikeToggleMock = vi.fn();
@@ -330,31 +328,25 @@ describe("AudioButton", () => {
 			/>,
 		);
 
-		// 詳細表示ボタン（iアイコン）をクリック
+		// 詳細表示ボタン（⋯アイコン）をクリック
 		const infoButton = screen.getByRole("button", { name: "詳細を表示" });
 		await user.click(infoButton);
 
-		// 高評価ボタンを確認
 		const likeButton = screen.getByText("2").closest("button");
-		expect(likeButton).toBeDisabled();
-		expect(likeButton).toHaveClass("opacity-50", "cursor-not-allowed");
+		const dislikeButton = screen.getByRole("button", { name: "低評価する" });
+		expect(likeButton).not.toBeDisabled();
+		expect(dislikeButton).not.toBeDisabled();
 
-		// 低評価ボタンを確認
-		const dislikeButton = screen.getByTitle("低評価するにはログインが必要です");
-		expect(dislikeButton).toBeDisabled();
-		expect(dislikeButton).toHaveClass("opacity-50", "cursor-not-allowed");
-
-		// クリックしても何も起こらない
 		if (likeButton) {
 			await user.click(likeButton);
 		}
 		await user.click(dislikeButton);
 
-		expect(onLikeToggleMock).not.toHaveBeenCalled();
-		expect(onDislikeToggleMock).not.toHaveBeenCalled();
+		expect(onLikeToggleMock).toHaveBeenCalledTimes(1);
+		expect(onDislikeToggleMock).toHaveBeenCalledTimes(1);
 	});
 
-	it("should show authentication required tooltips", async () => {
+	it("should show a login note instead of tooltips when not authenticated", async () => {
 		const user = userEvent.setup();
 
 		render(
@@ -370,13 +362,11 @@ describe("AudioButton", () => {
 			/>,
 		);
 
-		// 詳細表示ボタン（iアイコン）をクリック
+		// 詳細表示ボタン（⋯アイコン）をクリック
 		const infoButton = screen.getByRole("button", { name: "詳細を表示" });
 		await user.click(infoButton);
 
-		// ツールチップメッセージを確認
-		expect(screen.getByTitle("お気に入りするにはログインが必要です")).toBeInTheDocument();
-		expect(screen.getByTitle("高評価するにはログインが必要です")).toBeInTheDocument();
-		expect(screen.getByTitle("低評価するにはログインが必要です")).toBeInTheDocument();
+		// title tooltip ではなく注記行で案内する（スマホで title が出ない問題の回避）
+		expect(screen.getByText("お気に入り・評価にはログインが必要です")).toBeInTheDocument();
 	});
 });

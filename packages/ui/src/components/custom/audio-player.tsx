@@ -22,6 +22,8 @@ export interface AudioPlayerProps {
 	onPause?: () => void;
 	/** 再生終了時のコールバック */
 	onEnd?: () => void;
+	/** 再生進捗（0-100）通知時のコールバック */
+	onProgress?: (progressPercent: number) => void;
 	/** 音量（0-100） */
 	volume?: number;
 	/** 自動再生するかどうか */
@@ -47,7 +49,7 @@ export interface AudioControls {
  * プール化された音声プレイヤーコンポーネント
  */
 export const AudioPlayer = forwardRef<AudioControls, AudioPlayerProps>(
-	({ audioButton, onPlay, onPause, onEnd, volume = 50, autoPlay = false }, ref) => {
+	({ audioButton, onPlay, onPause, onEnd, onProgress, volume = 50, autoPlay = false }, ref) => {
 		const [isPlaying, setIsPlaying] = useState(false);
 		const [isReady, setIsReady] = useState(false);
 		const mountedRef = useRef(true);
@@ -81,6 +83,11 @@ export const AudioPlayer = forwardRef<AudioControls, AudioPlayerProps>(
 							onEnd?.();
 						}
 					},
+					onProgress: (progressPercent) => {
+						if (mountedRef.current) {
+							onProgress?.(progressPercent);
+						}
+					},
 				};
 
 				await pool.playSegment(
@@ -96,7 +103,7 @@ export const AudioPlayer = forwardRef<AudioControls, AudioPlayerProps>(
 					onEnd?.();
 				}
 			}
-		}, [audioButton, onPlay, onPause, onEnd]);
+		}, [audioButton, onPlay, onPause, onEnd, onProgress]);
 
 		/**
 		 * 一時停止処理

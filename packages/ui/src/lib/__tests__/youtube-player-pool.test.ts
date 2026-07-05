@@ -226,4 +226,19 @@ describe("YouTubePlayerPool", () => {
 
 		expect(callbacks.onEnd).toHaveBeenCalled();
 	});
+
+	it("should report playback progress via onProgress callback", async () => {
+		const callbacks = {
+			onProgress: vi.fn(),
+		};
+
+		await pool.playSegment("test-video-id", 10, 20, callbacks);
+
+		// startTime=10, endTime=20 の中間地点(15)を再生中と見なす
+		lastCreatedPlayer?.getCurrentTime.mockReturnValue(15);
+
+		await new Promise((resolve) => setTimeout(resolve, 300));
+
+		expect(callbacks.onProgress).toHaveBeenCalledWith(50);
+	});
 });
