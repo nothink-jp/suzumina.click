@@ -1,11 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import {
-	getPopularVideoTags,
-	getTotalVideoCount,
-	getVideoById,
-	getVideosList,
-	getVideoTitles,
-} from "../actions";
+import { getPopularVideoTags, getVideoById, getVideosList, getVideoTitles } from "../actions";
 
 // Mock Firestore
 const mockGet = vi.fn();
@@ -144,10 +138,12 @@ describe("Video Server Actions", () => {
 				docs: mockVideoDocs,
 				size: 2,
 			});
-			// デフォルトパスの総数は count() 集計から取得する（SPR-88）
-			mockCount.mockReturnValue({
-				get: vi.fn().mockResolvedValue({ data: () => ({ count: 2 }) }),
-			});
+			// デフォルトパスの総数は count() 集計から取得する（SPR-88）。
+			// getVisibleVideoCount は「全件数」→「status ありかつ non-public 件数」の順で
+			// count() を 2 回呼び差分を取る（SPR-246）。
+			mockCount
+				.mockReturnValueOnce({ get: vi.fn().mockResolvedValue({ data: () => ({ count: 2 }) }) })
+				.mockReturnValueOnce({ get: vi.fn().mockResolvedValue({ data: () => ({ count: 0 }) }) });
 
 			const result = await getVideoTitles();
 
@@ -308,15 +304,17 @@ describe("Video Server Actions", () => {
 
 		it("フィルタ無しのデフォルトパスは count() 集計で総数を取得する（全件スキャン回避, SPR-88）", async () => {
 			mockGet.mockResolvedValue({ docs: [], size: 0 });
-			mockCount.mockReturnValue({
-				get: vi.fn().mockResolvedValue({ data: () => ({ count: 99 }) }),
-			});
+			// getVisibleVideoCount は「全件数」→「status ありかつ non-public 件数」の順で
+			// count() を 2 回呼び差分を取る（SPR-246: 表示フィルタとの非対称修正）。
+			mockCount
+				.mockReturnValueOnce({ get: vi.fn().mockResolvedValue({ data: () => ({ count: 99 }) }) })
+				.mockReturnValueOnce({ get: vi.fn().mockResolvedValue({ data: () => ({ count: 0 }) }) });
 
 			const result = await getVideosList({ page: 1, limit: 12 });
 
-			// count() + where(public) 集計が使われる
-			expect(mockWhere).toHaveBeenCalledWith("status.privacyStatus", "==", "public");
-			expect(mockCount).toHaveBeenCalled();
+			// count() + where(!=, public) 集計（non-public 件数）が使われる
+			expect(mockWhere).toHaveBeenCalledWith("status.privacyStatus", "!=", "public");
+			expect(mockCount).toHaveBeenCalledTimes(2);
 			expect(result.totalCount).toBe(99);
 		});
 
@@ -561,40 +559,6 @@ describe("Video Server Actions", () => {
 		it("例外時は null", async () => {
 			mockDoc.mockReturnValue({ get: vi.fn().mockRejectedValue(new Error("fs")) });
 			expect(await getVideoById("video-1")).toBeNull();
-		});
-	});
-
-	describe("getTotalVideoCount", () => {
-		it("フィルタ無しは count() 集計の値を返す（fast path）", async () => {
-			mockCount.mockReturnValue({
-				get: vi.fn().mockResolvedValue({ data: () => ({ count: 42 }) }),
-			});
-			expect(await getTotalVideoCount()).toBe(42);
-		});
-
-		it("フィルタ有りは全件取得しメモリ上でフィルタした件数を返す", async () => {
-			mockGet.mockResolvedValue({
-				docs: [
-					{ id: "video-1", data: () => videoData() },
-					// 非公開は除外される
-					{
-						id: "video-2",
-						data: () =>
-							videoData({
-								id: "video-2",
-								videoId: "video-2",
-								status: { privacyStatus: "private" },
-							}),
-					},
-				],
-			});
-			const n = await getTotalVideoCount({ year: "2024" });
-			expect(n).toBe(1);
-		});
-
-		it("例外時は 0", async () => {
-			mockCount.mockReturnValue({ get: vi.fn().mockRejectedValue(new Error("fs")) });
-			expect(await getTotalVideoCount()).toBe(0);
 		});
 	});
 });
