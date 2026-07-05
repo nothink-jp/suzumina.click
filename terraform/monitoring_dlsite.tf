@@ -307,6 +307,13 @@ resource "google_monitoring_alert_policy" "dlsite_api_batch_all_failed" {
 # Scheduler 停止 / Pub/Sub subscription・Eventarc trigger の破壊 / 関数消失では
 # 「ログが出ない」ため、ログ内容ベースのアラートは全て沈黙する（SPR-234 分類 B1）。
 # run 開始ログ（2h 毎・12回/日）を metric 化し、absence 条件で run 途絶そのものを検知する。
+#
+# 注意（2026-07-04 実測の偽陽性）: 同日に fetchdlsiteunifieddata への実デプロイが
+# 34分間に4回集中（うち1回はCI側の409衝突で失敗）した際、実行ログ自体は1件も
+# 欠けていなかった（gcloud logging read で確認済み）にも関わらず、本アラートが
+# 2回誤発火した。revision churn が激しい時間帯に log-based metric の反映が
+# 遅延した可能性が高い。duration を3h→4hに拡げて余裕を持たせている
+# （deploy-functions.yml 側の同時実行制御と合わせて二段構え）。
 resource "google_logging_metric" "dlsite_run_started" {
   name    = "dlsite_run_started"
   project = var.gcp_project_id
@@ -331,12 +338,14 @@ resource "google_monitoring_alert_policy" "dlsite_run_absent" {
   combiner     = "OR"
 
   conditions {
-    display_name = "定期runが3時間以上観測されない"
+    display_name = "定期runが4時間以上観測されない"
 
-    # 2h 周期 + 1h マージン。1 run 欠けの時点で異常（過去ログでは欠けゼロ）。
+    # 2h 周期 + 2h マージン（旧: 1hマージン=3h）。2026-07-04 に revision churn 集中時の
+    # metric 反映遅延で3hマージンでは偽陽性が2回発生したため拡大。1 run 欠けただけでは
+    # 発火せず、2 run 連続欠けで異常とみなす。
     condition_absent {
       filter   = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.dlsite_run_started.id}\" resource.type=\"cloud_run_revision\""
-      duration = "10800s"
+      duration = "14400s"
 
       aggregations {
         alignment_period   = "300s"
@@ -355,12 +364,20 @@ resource "google_monitoring_alert_policy" "dlsite_run_absent" {
 
   documentation {
     content   = <<-EOT
-    # DLsite 定期 run の途絶（3時間以上）
+    # DLsite 定期 run の途絶（4時間以上）
 
-    fetchDLsiteUnifiedData の run 開始ログが3時間以上観測されていません（正常時は
+    fetchDLsiteUnifiedData の run 開始ログが4時間以上観測されていません（正常時は
     2時間毎・12回/日）。ログ自体が出ない障害のため、他の DLsite アラートは沈黙します。
 
-    ## 考えられる原因と確認手順
+    ## まず確認すること（2026-07-04 に偽陽性実績あり）
+    実際に run が欠けているかを最優先で確認する。過去に revision churn 集中時の
+    metric 反映遅延で、実行ログは正常に出ているのにこのアラートだけ誤発火した例がある：
+    ```bash
+    gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="fetchdlsiteunifieddata" AND (jsonPayload.message:"統合データ収集開始" OR textPayload:"統合データ収集開始")' --freshness=1d --format="value(timestamp)" --order=asc
+    ```
+    直近の2時間おきの時刻が全て埋まっていれば偽陽性（対応不要）。
+
+    ## 実際に欠けていた場合の原因と確認手順
     1. Cloud Scheduler 停止/削除: gcloud scheduler jobs describe fetch-dlsite-individual-api-hourly --location=asia-northeast1
     2. Pub/Sub topic/subscription・Eventarc trigger の破壊: gcloud eventarc triggers list --location=asia-northeast1
     3. サービス消失/起動不能: gcloud run services describe fetchdlsiteunifieddata --region=asia-northeast1
