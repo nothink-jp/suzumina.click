@@ -8,6 +8,7 @@
 import { videoToFirestore } from "@suzumina.click/shared-types";
 import type { youtube_v3 } from "googleapis";
 import firestore from "../../infrastructure/database/firestore";
+import { chunkArray } from "../../shared/array-utils";
 import { SUZUKA_MINASE_CHANNEL_ID } from "../../shared/common";
 import * as logger from "../../shared/logger";
 import { VideoMapper } from "../mappers/video-mapper";
@@ -38,10 +39,7 @@ export async function getKnownVideoIdsSet(videoIds: string[]): Promise<Set<strin
 	}
 
 	const refs = videoIds.map((id) => firestore.collection(VIDEOS_COLLECTION).doc(id));
-	const chunks: FirebaseFirestore.DocumentReference[][] = [];
-	for (let i = 0; i < refs.length; i += KNOWN_VIDEO_IDS_CHUNK_SIZE) {
-		chunks.push(refs.slice(i, i + KNOWN_VIDEO_IDS_CHUNK_SIZE));
-	}
+	const chunks = chunkArray(refs, KNOWN_VIDEO_IDS_CHUNK_SIZE);
 
 	const chunkResults = await Promise.all(chunks.map((chunk) => firestore.getAll(...chunk)));
 

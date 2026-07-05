@@ -10,9 +10,13 @@ const mockBatchSet = vi.fn();
 const mockBatchCommit = vi.fn().mockResolvedValue(undefined);
 const mockDoc = vi.fn((id: string) => ({ id }));
 const mockGetAll = vi.fn();
+const mockSelectGet = vi.fn();
 vi.mock("../../../infrastructure/database/firestore", () => ({
 	default: {
-		collection: vi.fn(() => ({ doc: mockDoc })),
+		collection: vi.fn(() => ({
+			doc: mockDoc,
+			select: vi.fn(() => ({ get: mockSelectGet })),
+		})),
 		batch: vi.fn(() => ({ set: mockBatchSet, commit: mockBatchCommit })),
 		getAll: (...refs: unknown[]) => mockGetAll(...refs),
 	},
@@ -34,7 +38,7 @@ vi.mock("../../mappers/video-mapper", () => ({
 	},
 }));
 
-import { getKnownVideoIdsSet, saveVideosToFirestore } from "../youtube-firestore";
+import { getAllVideoIds, getKnownVideoIdsSet, saveVideosToFirestore } from "../youtube-firestore";
 
 // videoToFirestore（実物）が受け付ける最小の VideoPlainObject
 const plainObject = (id = "v1") =>
@@ -128,5 +132,25 @@ describe("getKnownVideoIdsSet", () => {
 
 		expect(mockGetAll).toHaveBeenCalledTimes(2);
 		expect(result.size).toBe(350);
+	});
+});
+
+describe("getAllVideoIds", () => {
+	it("videosコレクション全件のIDを集合として返す", async () => {
+		mockSelectGet.mockResolvedValue({
+			docs: [{ id: "v1" }, { id: "v2" }, { id: "v3" }],
+		});
+
+		const result = await getAllVideoIds();
+
+		expect(result).toEqual(new Set(["v1", "v2", "v3"]));
+	});
+
+	it("コレクションが空の場合は空集合を返す", async () => {
+		mockSelectGet.mockResolvedValue({ docs: [] });
+
+		const result = await getAllVideoIds();
+
+		expect(result.size).toBe(0);
 	});
 });

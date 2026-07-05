@@ -18,6 +18,7 @@ import {
 } from "../services/youtube/youtube-firestore";
 import { SUZUKA_MINASE_CHANNEL_ID } from "../shared/common";
 import * as logger from "../shared/logger";
+import { decodePubsubMode, type PubsubMessage } from "../shared/pubsub-utils";
 
 // メタデータ保存用のドキュメントID
 const METADATA_DOC_ID = "fetch_metadata";
@@ -39,6 +40,15 @@ interface FetchMetadata {
 	nextPageToken?: string;
 	isInProgress: boolean;
 	lastError?: string;
+	/**
+	 * 直近で「打ち切りなく完了した」run の時刻。
+	 * SPR-230レビュー指摘: discoveryモードによって保証の強さが異なる点に注意。
+	 * search経路（既定）ではチャンネル全カタログを最後まで走査できたことを意味するが、
+	 * playlist経路ではその run のincremental走査が`MAX_DISCOVERY_PAGES`上限に達さず
+	 * 終えられたこと（＝early-stopで正常終了、または上限に達さず全件終了）を意味するに
+	 * 留まる。定常運用では早期にearly-stopするため、「全カタログを検証済み」という
+	 * 意味では読めない（そこまでの保証が要る場合は週次フルスイープの`truncated`判定を見る）。
+	 */
 	lastSuccessfulCompleteFetch?: Timestamp;
 	/** SPR-230: uploads playlist ID（チャンネル固定のため一度取得したらキャッシュする） */
 	uploadsPlaylistId?: string;
@@ -67,35 +77,6 @@ function getDiscoveryMode(): "search" | "shadow" | "playlist" {
 interface FetchResult {
 	videoCount: number;
 	error?: string;
-}
-
-/**
- * Pub/SubメッセージのPubsubMessage型定義
- */
-interface PubsubMessage {
-	data?: string;
-	attributes?: Record<string, string>;
-}
-
-/**
- * SPR-230: Pub/Subペイロードから`mode`を取り出す（DLsite側`decodePubsubMode`と同型）。
- * 週次フルスイープ（`mode==="weekly_full_sweep"`）かどうかの判定に使う。
- * デコード失敗時は安全側（通常run）にフォールバックする。
- */
-function decodePubsubMode(message: PubsubMessage | undefined): string | undefined {
-	if (!message?.data) {
-		return undefined;
-	}
-	try {
-		const decoded = Buffer.from(message.data, "base64").toString("utf-8");
-		const parsed = JSON.parse(decoded) as { mode?: unknown };
-		return typeof parsed.mode === "string" ? parsed.mode : undefined;
-	} catch (err) {
-		logger.warn("Pub/Subペイロードのデコードに失敗（modeなしとして通常runを続行します）", {
-			error: err instanceof Error ? err.message : String(err),
-		});
-		return undefined;
-	}
 }
 
 /**
@@ -348,11 +329,16 @@ async function fetchVideoIdsViaPlaylistIncremental(
  * uploads playlistを（early-stopせず）全件ページングして動画IDを取得する
  *
  * SPR-230: shadowモードでの発見集合突合、および週次フルスイープの取りこぼし検知に使う。
+ *
+ * @returns `videoIds`と、`MAX_DISCOVERY_PAGES`到達により打ち切られたかどうか（`truncated`）。
+ *   レビュー指摘対応: `fetchVideoIdsViaPlaylistIncremental`と同じ理由で、打ち切りを
+ *   検知しないと、チャンネル動画数が上限を超えた際にこの関数を使う取りこぼし検知
+ *   （shadow比較・週次フルスイープ）自体が「未走査分をすべて取りこぼし」と誤検知し続ける。
  */
 async function fetchVideoIdsViaPlaylistFull(
 	youtube: youtube_v3.Youtube,
 	uploadsPlaylistId: string,
-): Promise<string[]> {
+): Promise<{ videoIds: string[]; truncated: boolean }> {
 	const allVideoIds: string[] = [];
 	let pageToken: string | undefined;
 	let page = 0;
@@ -364,25 +350,49 @@ async function fetchVideoIdsViaPlaylistFull(
 		page++;
 	} while (pageToken && page < MAX_DISCOVERY_PAGES);
 
-	return allVideoIds;
+	const truncated = Boolean(pageToken);
+	if (truncated) {
+		logger.warn(
+			`uploads playlist全件走査がページ上限(${MAX_DISCOVERY_PAGES})に達したため打ち切りました。取りこぼし検知の比較は不完全です`,
+			{ processedPages: page, videoIdsCount: allVideoIds.length },
+		);
+	}
+	return { videoIds: allVideoIds, truncated };
 }
 
 /**
  * SPR-230 shadowモード: uploads playlist全走査の発見集合とFirestoreの既知集合を比較し、
  * 対称差をログ出力する。比較自体が失敗しても本処理には影響させない（ログのみ・例外を投げない）。
+ *
+ * ページ上限で全走査自体が打ち切られた場合（`truncated`）、未走査分は「Firestoreにあるが
+ * playlist走査で見つからない」＝missing判定に必ず引っかかってしまい偽陽性になるため、
+ * その回はmissing判定をスキップする（レビュー指摘対応）。
  */
 async function logDiscoveryShadowComparison(
 	youtube: youtube_v3.Youtube,
 	uploadsPlaylistId: string,
 ): Promise<void> {
 	try {
-		const [playlistVideoIds, knownIds] = await Promise.all([
+		const [{ videoIds: playlistVideoIds, truncated }, knownIds] = await Promise.all([
 			fetchVideoIdsViaPlaylistFull(youtube, uploadsPlaylistId),
 			getAllVideoIds(),
 		]);
 		const playlistIdSet = new Set(playlistVideoIds);
-		const missingInPlaylist = [...knownIds].filter((id) => !playlistIdSet.has(id));
 		const extraInPlaylist = playlistVideoIds.filter((id) => !knownIds.has(id));
+
+		if (truncated) {
+			logger.warn(
+				"SPR-230 shadow: uploads playlist全走査がページ上限で打ち切られたため、今回はmissing判定をスキップします",
+				{
+					uploadsPlaylist走査件数: playlistVideoIds.length,
+					Firestore既知件数: knownIds.size,
+					uploadsPlaylistのみに存在する件数: extraInPlaylist.length,
+				},
+			);
+			return;
+		}
+
+		const missingInPlaylist = [...knownIds].filter((id) => !playlistIdSet.has(id));
 
 		if (missingInPlaylist.length === 0 && extraInPlaylist.length === 0) {
 			logger.info("SPR-230 shadow: discovery方式の発見集合が一致しました", {
@@ -514,7 +524,8 @@ function mapPlaylistTagsToVideos(
  *
  * discovery方式（uploads playlist経由）の取りこぼし検知のみが目的で、通常の動画詳細取得・
  * 保存フローは実行しない（統計取得のティア化はPhase③のスコープ外）。コストは
- * uploads playlist全走査（~11ページ=11 units）程度と軽量。
+ * uploads playlist全走査（現在の動画数~550件なら~11ページ=11 units、上限
+ * `MAX_DISCOVERY_PAGES`=20ページ=20 unitsまで）程度と軽量。
  */
 async function runWeeklyFullSweep(
 	youtube: youtube_v3.Youtube,
