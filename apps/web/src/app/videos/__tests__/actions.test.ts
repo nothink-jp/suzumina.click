@@ -144,10 +144,12 @@ describe("Video Server Actions", () => {
 				docs: mockVideoDocs,
 				size: 2,
 			});
-			// デフォルトパスの総数は count() 集計から取得する（SPR-88）
-			mockCount.mockReturnValue({
-				get: vi.fn().mockResolvedValue({ data: () => ({ count: 2 }) }),
-			});
+			// デフォルトパスの総数は count() 集計から取得する（SPR-88）。
+			// getVisibleVideoCount は「全件数」→「status ありかつ non-public 件数」の順で
+			// count() を 2 回呼び差分を取る（SPR-246）。
+			mockCount
+				.mockReturnValueOnce({ get: vi.fn().mockResolvedValue({ data: () => ({ count: 2 }) }) })
+				.mockReturnValueOnce({ get: vi.fn().mockResolvedValue({ data: () => ({ count: 0 }) }) });
 
 			const result = await getVideoTitles();
 
@@ -308,15 +310,17 @@ describe("Video Server Actions", () => {
 
 		it("フィルタ無しのデフォルトパスは count() 集計で総数を取得する（全件スキャン回避, SPR-88）", async () => {
 			mockGet.mockResolvedValue({ docs: [], size: 0 });
-			mockCount.mockReturnValue({
-				get: vi.fn().mockResolvedValue({ data: () => ({ count: 99 }) }),
-			});
+			// getVisibleVideoCount は「全件数」→「status ありかつ non-public 件数」の順で
+			// count() を 2 回呼び差分を取る（SPR-246: 表示フィルタとの非対称修正）。
+			mockCount
+				.mockReturnValueOnce({ get: vi.fn().mockResolvedValue({ data: () => ({ count: 99 }) }) })
+				.mockReturnValueOnce({ get: vi.fn().mockResolvedValue({ data: () => ({ count: 0 }) }) });
 
 			const result = await getVideosList({ page: 1, limit: 12 });
 
-			// count() + where(public) 集計が使われる
-			expect(mockWhere).toHaveBeenCalledWith("status.privacyStatus", "==", "public");
-			expect(mockCount).toHaveBeenCalled();
+			// count() + where(!=, public) 集計（non-public 件数）が使われる
+			expect(mockWhere).toHaveBeenCalledWith("status.privacyStatus", "!=", "public");
+			expect(mockCount).toHaveBeenCalledTimes(2);
 			expect(result.totalCount).toBe(99);
 		});
 
@@ -566,9 +570,11 @@ describe("Video Server Actions", () => {
 
 	describe("getTotalVideoCount", () => {
 		it("フィルタ無しは count() 集計の値を返す（fast path）", async () => {
-			mockCount.mockReturnValue({
-				get: vi.fn().mockResolvedValue({ data: () => ({ count: 42 }) }),
-			});
+			// getVisibleVideoCount は「全件数」→「status ありかつ non-public 件数」の順で
+			// count() を 2 回呼び差分を取る（SPR-246）。
+			mockCount
+				.mockReturnValueOnce({ get: vi.fn().mockResolvedValue({ data: () => ({ count: 42 }) }) })
+				.mockReturnValueOnce({ get: vi.fn().mockResolvedValue({ data: () => ({ count: 0 }) }) });
 			expect(await getTotalVideoCount()).toBe(42);
 		});
 
