@@ -308,12 +308,10 @@ resource "google_monitoring_alert_policy" "dlsite_api_batch_all_failed" {
 # 「ログが出ない」ため、ログ内容ベースのアラートは全て沈黙する（SPR-234 分類 B1）。
 # run 開始ログ（2h 毎・12回/日）を metric 化し、absence 条件で run 途絶そのものを検知する。
 #
-# 注意（2026-07-04 実測の偽陽性）: 同日に fetchdlsiteunifieddata への実デプロイが
-# 34分間に4回集中（うち1回はCI側の409衝突で失敗）した際、実行ログ自体は1件も
-# 欠けていなかった（gcloud logging read で確認済み）にも関わらず、本アラートが
-# 2回誤発火した。revision churn が激しい時間帯に log-based metric の反映が
-# 遅延した可能性が高い。duration を3h→4hに拡げて余裕を持たせている
-# （deploy-functions.yml 側の同時実行制御と合わせて二段構え）。
+# 注意（2026-07-04/07-05 実測の偽陽性・原因確定）: デプロイ後に本アラートが誤発火する
+# 事象が2回発生したが、実行ログ自体は1件も欠けていなかった（gcloud logging read で確認済み）。
+# 真因は「metric反映遅延」ではなく、revision 単位で時系列が分かれる構造的な問題
+# （dlsite_run_absent policy の cross_series_reducer 集約で解消・詳細は同 policy 側コメント）。
 resource "google_logging_metric" "dlsite_run_started" {
   name    = "dlsite_run_started"
   project = var.gcp_project_id
@@ -340,16 +338,26 @@ resource "google_monitoring_alert_policy" "dlsite_run_absent" {
   conditions {
     display_name = "定期runが4時間以上観測されない"
 
-    # 2h 周期 + 2h マージン（旧: 1hマージン=3h）。2026-07-04 に revision churn 集中時の
-    # metric 反映遅延で3hマージンでは偽陽性が2回発生したため拡大。1 run 欠けただけでは
-    # 発火せず、2 run 連続欠けで異常とみなす。
+    # 2h 周期 + 2h マージン（旧: 1hマージン=3h）。1 run 欠けただけでは発火せず、
+    # 2 run 連続欠けで異常とみなす。
+    #
+    # 注意（2026-07-05 実測の偽陽性・再発）: revision 単位の絶対不在監視は構造的に
+    # 誤発火する。Cloud Run revision は監視対象リソースラベルに revision_name を含むため
+    # cross_series_reducer 無しでは metric の時系列が revision ごとに分かれる。
+    # デプロイで新 revision に切り替わると旧 revision の時系列は最終ログ時刻のまま
+    # 更新が止まり、実行ログ自体は正常に出続けていても旧 revision の系列だけが
+    # duration 後に不在条件を満たして誤発火する（3h→4hへの拡大は緩和にしかならず、
+    # デプロイの度に約4時間後の誤発火を予約してしまう構造は直らない）。
+    # cross_series_reducer + group_by_fields で service 全体を1系列に集約し解消。
     condition_absent {
       filter   = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.dlsite_run_started.id}\" resource.type=\"cloud_run_revision\""
       duration = "14400s"
 
       aggregations {
-        alignment_period   = "300s"
-        per_series_aligner = "ALIGN_COUNT"
+        alignment_period     = "300s"
+        per_series_aligner   = "ALIGN_COUNT"
+        cross_series_reducer = "REDUCE_SUM"
+        group_by_fields      = ["resource.label.service_name"]
       }
 
       trigger {
