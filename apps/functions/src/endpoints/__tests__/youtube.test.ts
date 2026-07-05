@@ -1,54 +1,357 @@
-import { describe, expect, it, vi } from "vitest";
+/**
+ * youtube.ts のテスト（SPR-230: discoveryモード切替・early-stop・週次フルスイープ 中心）
+ *
+ * サービス層（youtube-api.ts / youtube-firestore.ts）はモックし、
+ * dlsite-individual-info-api.test.tsと同様のパターンでエンドポイントの分岐を検証する。
+ */
 
-// Mocks
-vi.mock("../../../shared/logger", () => ({
+import type { youtube_v3 } from "googleapis";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("../../infrastructure/database/firestore", () => {
+	const updateMock = vi.fn().mockResolvedValue(undefined);
+	const getMock = vi.fn().mockResolvedValue({ exists: false });
+	const docRef = { update: updateMock, get: getMock, set: vi.fn() };
+	const collection = vi.fn(() => ({ doc: vi.fn(() => docRef) }));
+
+	return {
+		default: { collection, getAll: vi.fn() },
+		Timestamp: { now: vi.fn(() => ({ seconds: 0, nanoseconds: 0 })) },
+		__updateMock: updateMock,
+		__getMock: getMock,
+	};
+});
+
+vi.mock("../../services/youtube/youtube-api", () => ({
+	initializeYouTubeClient: vi.fn(),
+	searchVideos: vi.fn(),
+	extractVideoIds: vi.fn(),
+	fetchVideoDetails: vi.fn(),
+	fetchChannelPlaylists: vi.fn(),
+	fetchPlaylistItems: vi.fn(),
+	fetchUploadsPlaylistId: vi.fn(),
+	fetchUploadsPlaylistPage: vi.fn(),
+}));
+
+vi.mock("../../services/youtube/youtube-firestore", () => ({
+	saveVideosToFirestore: vi.fn(),
+	getKnownVideoIdsSet: vi.fn(),
+	getAllVideoIds: vi.fn(),
+}));
+
+vi.mock("../../shared/logger", () => ({
+	debug: vi.fn(),
 	info: vi.fn(),
 	warn: vi.fn(),
 	error: vi.fn(),
-	debug: vi.fn(),
 }));
 
-vi.mock("../../config/feature-flags", () => ({
-	isEntityEnabled: vi.fn(() => false), // デフォルトは無効
-}));
+const { fetchYouTubeVideos } = await import("../youtube");
+const youtubeApi = await import("../../services/youtube/youtube-api");
+const youtubeFirestore = await import("../../services/youtube/youtube-firestore");
+const logger = await import("../../shared/logger");
+const firestoreMock = vi.mocked(await import("../../infrastructure/database/firestore"));
+const updateMock = (firestoreMock as unknown as { __updateMock: ReturnType<typeof vi.fn> })
+	.__updateMock;
+const getMetadataMock = (firestoreMock as unknown as { __getMock: ReturnType<typeof vi.fn> })
+	.__getMock;
 
-vi.mock("../../../infrastructure/database/firestore", () => ({
-	default: {
-		collection: vi.fn(() => ({
-			doc: vi.fn(() => ({
-				get: vi.fn().mockResolvedValue({ exists: false }),
-				set: vi.fn().mockResolvedValue(undefined),
-				update: vi.fn().mockResolvedValue(undefined),
-			})),
-		})),
-		batch: vi.fn(() => ({
-			set: vi.fn(),
-			commit: vi.fn().mockResolvedValue(undefined),
-		})),
-	},
-	Timestamp: {
-		now: vi.fn().mockReturnValue({ seconds: 1234567890, nanoseconds: 0 }),
-	},
-}));
+const dummyClient = {} as youtube_v3.Youtube;
 
-vi.mock("googleapis", () => ({
-	google: {
-		youtube: vi.fn(() => ({
-			search: {
-				list: vi.fn().mockResolvedValue({ data: { items: [] } }),
-			},
-			videos: {
-				list: vi.fn().mockResolvedValue({ data: { items: [] } }),
-			},
-		})),
-	},
-}));
+function pubsubEvent(payload?: Record<string, unknown>) {
+	return {
+		type: "google.cloud.pubsub.topic.v1.messagePublished",
+		data: {
+			data: payload ? Buffer.from(JSON.stringify(payload)).toString("base64") : undefined,
+		},
+	} as unknown as Parameters<typeof fetchYouTubeVideos>[0];
+}
 
-import { fetchYouTubeVideos } from "../youtube";
+beforeEach(() => {
+	vi.clearAllMocks();
+	delete process.env.YOUTUBE_DISCOVERY_MODE;
 
-describe("fetchYouTubeVideos", () => {
-	it("should be exported as a function", () => {
-		expect(fetchYouTubeVideos).toBeDefined();
-		expect(typeof fetchYouTubeVideos).toBe("function");
+	getMetadataMock.mockResolvedValue({ exists: false });
+	vi.mocked(youtubeApi.initializeYouTubeClient).mockReturnValue([dummyClient, undefined]);
+	vi.mocked(youtubeApi.fetchChannelPlaylists).mockResolvedValue([]);
+	vi.mocked(youtubeApi.fetchPlaylistItems).mockResolvedValue([]);
+	vi.mocked(youtubeApi.fetchVideoDetails).mockResolvedValue([]);
+	vi.mocked(youtubeFirestore.saveVideosToFirestore).mockResolvedValue(0);
+	vi.mocked(youtubeFirestore.getKnownVideoIdsSet).mockResolvedValue(new Set());
+	vi.mocked(youtubeFirestore.getAllVideoIds).mockResolvedValue(new Set());
+});
+
+describe("fetchYouTubeVideos: 通常run（既定=searchモード）", () => {
+	it("search.listベースの経路で動画を取得・保存する", async () => {
+		vi.mocked(youtubeApi.searchVideos).mockResolvedValue({ items: [], nextPageToken: undefined });
+		vi.mocked(youtubeApi.extractVideoIds).mockReturnValue(["v1", "v2"]);
+		vi.mocked(youtubeApi.fetchVideoDetails).mockResolvedValue([
+			{ id: "v1" } as youtube_v3.Schema$Video,
+			{ id: "v2" } as youtube_v3.Schema$Video,
+		]);
+		vi.mocked(youtubeFirestore.saveVideosToFirestore).mockResolvedValue(2);
+
+		await fetchYouTubeVideos(pubsubEvent());
+
+		expect(youtubeApi.searchVideos).toHaveBeenCalled();
+		expect(youtubeApi.fetchUploadsPlaylistId).not.toHaveBeenCalled();
+		expect(youtubeFirestore.saveVideosToFirestore).toHaveBeenCalled();
+	});
+});
+
+describe("fetchYouTubeVideos: shadowモード", () => {
+	it("既存経路の保存は維持しつつ、uploads playlist全走査との比較ログを追加で出す", async () => {
+		process.env.YOUTUBE_DISCOVERY_MODE = "shadow";
+		vi.mocked(youtubeApi.searchVideos).mockResolvedValue({ items: [], nextPageToken: undefined });
+		vi.mocked(youtubeApi.extractVideoIds).mockReturnValue(["v1"]);
+		vi.mocked(youtubeApi.fetchVideoDetails).mockResolvedValue([
+			{ id: "v1" } as youtube_v3.Schema$Video,
+		]);
+		vi.mocked(youtubeApi.fetchUploadsPlaylistId).mockResolvedValue("UUxxxx");
+		vi.mocked(youtubeApi.fetchUploadsPlaylistPage).mockResolvedValue({
+			videoIds: ["v1"],
+			nextPageToken: undefined,
+		});
+		vi.mocked(youtubeFirestore.getAllVideoIds).mockResolvedValue(new Set(["v1"]));
+
+		await fetchYouTubeVideos(pubsubEvent());
+
+		// 既存経路（search.list）は維持される
+		expect(youtubeApi.searchVideos).toHaveBeenCalled();
+		// 追加で比較用にuploads playlist側も呼ばれる
+		expect(youtubeApi.fetchUploadsPlaylistId).toHaveBeenCalled();
+		expect(youtubeApi.fetchUploadsPlaylistPage).toHaveBeenCalled();
+		expect(youtubeFirestore.getAllVideoIds).toHaveBeenCalled();
+		// 発見集合が一致しているのでinfoログ（警告ではない）
+		expect(logger.warn).not.toHaveBeenCalledWith(
+			expect.stringContaining("差分があります"),
+			expect.anything(),
+		);
+	});
+
+	it("発見集合に差分がある場合はwarnログを出す（保存フロー自体は継続する）", async () => {
+		process.env.YOUTUBE_DISCOVERY_MODE = "shadow";
+		vi.mocked(youtubeApi.searchVideos).mockResolvedValue({ items: [], nextPageToken: undefined });
+		vi.mocked(youtubeApi.extractVideoIds).mockReturnValue([]);
+		vi.mocked(youtubeApi.fetchUploadsPlaylistId).mockResolvedValue("UUxxxx");
+		vi.mocked(youtubeApi.fetchUploadsPlaylistPage).mockResolvedValue({
+			videoIds: ["v1"],
+			nextPageToken: undefined,
+		});
+		// Firestoreにはv2があるが、uploads playlist走査では見つからない → 差分あり
+		vi.mocked(youtubeFirestore.getAllVideoIds).mockResolvedValue(new Set(["v2"]));
+
+		const result = await fetchYouTubeVideos(pubsubEvent());
+
+		expect(logger.warn).toHaveBeenCalledWith(
+			expect.stringContaining("差分があります"),
+			expect.anything(),
+		);
+		// 比較の失敗/差分検出自体は本処理の完了を妨げない
+		expect(result).toBeUndefined();
+	});
+
+	it("全走査がページ上限で打ち切られた場合はmissing判定をスキップして警告する（レビュー指摘対応）", async () => {
+		process.env.YOUTUBE_DISCOVERY_MODE = "shadow";
+		vi.mocked(youtubeApi.searchVideos).mockResolvedValue({ items: [], nextPageToken: undefined });
+		vi.mocked(youtubeApi.extractVideoIds).mockReturnValue([]);
+		vi.mocked(youtubeApi.fetchUploadsPlaylistId).mockResolvedValue("UUxxxx");
+		// 常にnextPageTokenありを返し続ける → fetchVideoIdsViaPlaylistFullがページ上限で打ち切られる
+		vi.mocked(youtubeApi.fetchUploadsPlaylistPage).mockImplementation(async () => ({
+			videoIds: ["v1"],
+			nextPageToken: "more",
+		}));
+		// Firestoreには走査未到達分のv2がある想定（打ち切られなければmissing判定される状況）
+		vi.mocked(youtubeFirestore.getAllVideoIds).mockResolvedValue(new Set(["v1", "v2"]));
+
+		await fetchYouTubeVideos(pubsubEvent());
+
+		// ページ上限打ち切りの警告が出る
+		expect(logger.warn).toHaveBeenCalledWith(
+			expect.stringContaining("ページ上限で打ち切られたため、今回はmissing判定をスキップします"),
+			expect.anything(),
+		);
+		// missing判定はスキップされるため「差分があります」ログは出ない
+		expect(logger.warn).not.toHaveBeenCalledWith(
+			expect.stringContaining("差分があります"),
+			expect.anything(),
+		);
+		// 一致ログも出ない（判定自体をスキップしているため）
+		expect(logger.info).not.toHaveBeenCalledWith(
+			expect.stringContaining("発見集合が一致しました"),
+			expect.anything(),
+		);
+	});
+});
+
+describe("fetchYouTubeVideos: playlistモード（incremental discovery）", () => {
+	it("uploads playlist IDが未キャッシュなら取得してメタデータに保存する", async () => {
+		process.env.YOUTUBE_DISCOVERY_MODE = "playlist";
+		vi.mocked(youtubeApi.fetchUploadsPlaylistId).mockResolvedValue("UUxxxx");
+		vi.mocked(youtubeApi.fetchUploadsPlaylistPage).mockResolvedValue({
+			videoIds: [],
+			nextPageToken: undefined,
+		});
+
+		await fetchYouTubeVideos(pubsubEvent());
+
+		expect(youtubeApi.fetchUploadsPlaylistId).toHaveBeenCalledTimes(1);
+		expect(updateMock).toHaveBeenCalledWith(
+			expect.objectContaining({ uploadsPlaylistId: "UUxxxx" }),
+		);
+	});
+
+	it("キャッシュ済みのuploads playlist IDがあれば再取得しない", async () => {
+		process.env.YOUTUBE_DISCOVERY_MODE = "playlist";
+		getMetadataMock.mockResolvedValue({
+			exists: true,
+			data: () => ({ isInProgress: false, uploadsPlaylistId: "UUcached" }),
+		});
+		vi.mocked(youtubeApi.fetchUploadsPlaylistPage).mockResolvedValue({
+			videoIds: [],
+			nextPageToken: undefined,
+		});
+
+		await fetchYouTubeVideos(pubsubEvent());
+
+		expect(youtubeApi.fetchUploadsPlaylistId).not.toHaveBeenCalled();
+		expect(youtubeApi.fetchUploadsPlaylistPage).toHaveBeenCalledWith(
+			dummyClient,
+			"UUcached",
+			undefined,
+		);
+	});
+
+	it("ページ内に既知IDが混ざったら、それより前の未知IDだけ採用してページングを打ち切る", async () => {
+		process.env.YOUTUBE_DISCOVERY_MODE = "playlist";
+		getMetadataMock.mockResolvedValue({
+			exists: true,
+			data: () => ({ isInProgress: false, uploadsPlaylistId: "UUcached" }),
+		});
+		vi.mocked(youtubeApi.fetchUploadsPlaylistPage).mockResolvedValue({
+			videoIds: ["new1", "known1", "known2"],
+			nextPageToken: "next-page",
+		});
+		vi.mocked(youtubeFirestore.getKnownVideoIdsSet).mockResolvedValue(
+			new Set(["known1", "known2"]),
+		);
+		vi.mocked(youtubeApi.fetchVideoDetails).mockResolvedValue([
+			{ id: "new1" } as youtube_v3.Schema$Video,
+		]);
+
+		await fetchYouTubeVideos(pubsubEvent());
+
+		// 既知IDに当たった時点で打ち切るため、1ページ分しか呼ばれない
+		expect(youtubeApi.fetchUploadsPlaylistPage).toHaveBeenCalledTimes(1);
+		expect(youtubeApi.fetchVideoDetails).toHaveBeenCalledWith(dummyClient, ["new1"]);
+	});
+
+	it("全件が未知（初回バックフィル相当）の場合は次ページまで継続する", async () => {
+		process.env.YOUTUBE_DISCOVERY_MODE = "playlist";
+		getMetadataMock.mockResolvedValue({
+			exists: true,
+			data: () => ({ isInProgress: false, uploadsPlaylistId: "UUcached" }),
+		});
+		vi.mocked(youtubeApi.fetchUploadsPlaylistPage)
+			.mockResolvedValueOnce({ videoIds: ["a", "b"], nextPageToken: "p2" })
+			.mockResolvedValueOnce({ videoIds: ["c"], nextPageToken: undefined });
+		vi.mocked(youtubeFirestore.getKnownVideoIdsSet).mockResolvedValue(new Set());
+		vi.mocked(youtubeApi.fetchVideoDetails).mockResolvedValue([
+			{ id: "a" } as youtube_v3.Schema$Video,
+			{ id: "b" } as youtube_v3.Schema$Video,
+			{ id: "c" } as youtube_v3.Schema$Video,
+		]);
+
+		await fetchYouTubeVideos(pubsubEvent());
+
+		expect(youtubeApi.fetchUploadsPlaylistPage).toHaveBeenCalledTimes(2);
+		expect(youtubeApi.fetchVideoDetails).toHaveBeenCalledWith(dummyClient, ["a", "b", "c"]);
+	});
+
+	it("ページ上限に達しても後続ページが残っている場合はisComplete扱いにせず警告する（レビュー指摘対応）", async () => {
+		process.env.YOUTUBE_DISCOVERY_MODE = "playlist";
+		getMetadataMock.mockResolvedValue({
+			exists: true,
+			data: () => ({ isInProgress: false, uploadsPlaylistId: "UUcached" }),
+		});
+		// 全ページが未知IDのみ・かつ常にnextPageTokenありを返し続ける（ページ上限で強制打ち切りされる状況）
+		vi.mocked(youtubeApi.fetchUploadsPlaylistPage).mockImplementation(async () => ({
+			videoIds: ["x"],
+			nextPageToken: "more",
+		}));
+		vi.mocked(youtubeFirestore.getKnownVideoIdsSet).mockResolvedValue(new Set());
+		vi.mocked(youtubeApi.fetchVideoDetails).mockResolvedValue([
+			{ id: "x" } as youtube_v3.Schema$Video,
+		]);
+
+		await fetchYouTubeVideos(pubsubEvent());
+
+		// ページ上限到達の警告ログが出る
+		expect(logger.warn).toHaveBeenCalledWith(
+			expect.stringContaining("ページ上限"),
+			expect.anything(),
+		);
+		// isComplete扱いにならないため lastSuccessfulCompleteFetch は更新されない
+		expect(updateMock).not.toHaveBeenCalledWith(
+			expect.objectContaining({ lastSuccessfulCompleteFetch: expect.anything() }),
+		);
+	});
+});
+
+describe("fetchYouTubeVideos: 週次フルスイープ（mode=weekly_full_sweep）", () => {
+	it("通常の詳細取得・保存フローは実行せず、discovery取りこぼし検知のみ行う", async () => {
+		vi.mocked(youtubeApi.fetchUploadsPlaylistId).mockResolvedValue("UUxxxx");
+		vi.mocked(youtubeApi.fetchUploadsPlaylistPage).mockResolvedValue({
+			videoIds: ["v1"],
+			nextPageToken: undefined,
+		});
+		vi.mocked(youtubeFirestore.getAllVideoIds).mockResolvedValue(new Set(["v1"]));
+
+		await fetchYouTubeVideos(pubsubEvent({ mode: "weekly_full_sweep" }));
+
+		expect(youtubeApi.searchVideos).not.toHaveBeenCalled();
+		expect(youtubeApi.fetchVideoDetails).not.toHaveBeenCalled();
+		expect(youtubeFirestore.saveVideosToFirestore).not.toHaveBeenCalled();
+		expect(youtubeApi.fetchUploadsPlaylistId).toHaveBeenCalled();
+		expect(youtubeFirestore.getAllVideoIds).toHaveBeenCalled();
+	});
+
+	it("週次フルスイープでも通常runと同じ二重実行ロックに従う", async () => {
+		getMetadataMock.mockResolvedValue({
+			exists: true,
+			data: () => ({
+				isInProgress: true,
+				lastFetchedAt: { toMillis: () => Date.now() },
+			}),
+		});
+
+		await fetchYouTubeVideos(pubsubEvent({ mode: "weekly_full_sweep" }));
+
+		expect(youtubeApi.fetchUploadsPlaylistId).not.toHaveBeenCalled();
+	});
+});
+
+describe("fetchYouTubeVideos: Pub/Subペイロードのデコード", () => {
+	it("dataが空でも通常runとして処理を続行する", async () => {
+		vi.mocked(youtubeApi.searchVideos).mockResolvedValue({ items: [], nextPageToken: undefined });
+		vi.mocked(youtubeApi.extractVideoIds).mockReturnValue([]);
+
+		await fetchYouTubeVideos(pubsubEvent());
+
+		expect(youtubeApi.searchVideos).toHaveBeenCalled();
+	});
+
+	it("不正なJSONペイロードは安全側（通常run）にフォールバックする", async () => {
+		vi.mocked(youtubeApi.searchVideos).mockResolvedValue({ items: [], nextPageToken: undefined });
+		vi.mocked(youtubeApi.extractVideoIds).mockReturnValue([]);
+
+		const event = {
+			type: "test",
+			data: { data: Buffer.from("not-json").toString("base64") },
+		} as unknown as Parameters<typeof fetchYouTubeVideos>[0];
+
+		await fetchYouTubeVideos(event);
+
+		expect(youtubeApi.searchVideos).toHaveBeenCalled();
 	});
 });

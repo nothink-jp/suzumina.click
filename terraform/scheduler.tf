@@ -27,6 +27,34 @@ resource "google_cloud_scheduler_job" "fetch_youtube_videos_hourly" {
   ]
 }
 
+# SPR-230: discovery方式（uploads playlist経由）の取りこぼし検知を兼ねた週次フルスイープ
+# 通常runの毎時30分・DLsiteの週次フルスイープ（土曜4:15 JST）と重ならない
+# 日曜4:00 JSTに設定。既存関数・既存topicを再利用し、mode違いのペイロードで
+# early-stopなしの全ページ走査＋Firestore既知IDとの突合を発火させる（新規関数は増やさない）。
+resource "google_cloud_scheduler_job" "fetch_youtube_videos_weekly_full_sweep" {
+  project     = var.gcp_project_id
+  region      = var.region
+  name        = "fetch-youtube-videos-weekly-full-sweep"
+  schedule    = "0 4 * * 0" # 毎週日曜4:00 JST
+  time_zone   = "Asia/Tokyo"
+  description = "YouTube discovery方式の取りこぼし検知（uploads playlist全走査）を週次で実行します"
+
+  pubsub_target {
+    topic_name = google_pubsub_topic.youtube_video_fetch_trigger.id
+    data = base64encode(jsonencode({
+      mode        = "weekly_full_sweep"
+      description = "discovery方式の取りこぼし検知を兼ねた週次全件走査"
+    }))
+  }
+
+  depends_on = [
+    google_project_service.cloudscheduler,
+    google_pubsub_topic.youtube_video_fetch_trigger,
+    google_pubsub_topic_iam_member.scheduler_pubsub_publisher,
+    google_service_account.fetch_youtube_videos_sa,
+  ]
+}
+
 
 # 旧 collectDLsiteTimeseries 関連スケジューラーは統合アーキテクチャにより削除済み
 #

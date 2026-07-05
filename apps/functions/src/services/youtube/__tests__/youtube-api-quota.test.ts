@@ -22,6 +22,8 @@ vi.mock("../../../shared/logger", () => ({
 import {
 	fetchChannelPlaylists,
 	fetchPlaylistItems,
+	fetchUploadsPlaylistId,
+	fetchUploadsPlaylistPage,
 	fetchVideoDetails,
 	searchVideos,
 } from "../youtube-api";
@@ -31,6 +33,7 @@ const makeClient = () => ({
 	videos: { list: vi.fn() },
 	playlists: { list: vi.fn() },
 	playlistItems: { list: vi.fn() },
+	channels: { list: vi.fn() },
 });
 const asYoutube = (c: ReturnType<typeof makeClient>) => c as unknown as youtube_v3.Youtube;
 
@@ -136,5 +139,74 @@ describe("fetchPlaylistItems", () => {
 		const c = makeClient();
 		c.playlistItems.list.mockRejectedValue(new Error("items fail"));
 		expect(await fetchPlaylistItems(asYoutube(c), "pl")).toEqual([]);
+	});
+});
+
+describe("fetchUploadsPlaylistId", () => {
+	it("クォータ不足は例外", async () => {
+		canExecuteOperation.mockReturnValue(false);
+		await expect(fetchUploadsPlaylistId(asYoutube(makeClient()), "ch")).rejects.toThrow("クォータ");
+	});
+
+	it("uploads playlist IDを返す", async () => {
+		const c = makeClient();
+		c.channels.list.mockResolvedValue({
+			data: { items: [{ contentDetails: { relatedPlaylists: { uploads: "UUxxxx" } } }] },
+		});
+		const r = await fetchUploadsPlaylistId(asYoutube(c), "ch");
+		expect(r).toBe("UUxxxx");
+		expect(recordQuotaUsage).toHaveBeenCalledWith("channels");
+	});
+
+	it("items無し・uploads無しはundefined", async () => {
+		const c = makeClient();
+		c.channels.list.mockResolvedValue({ data: {} });
+		expect(await fetchUploadsPlaylistId(asYoutube(c), "ch")).toBeUndefined();
+	});
+
+	it("API エラーは再throw", async () => {
+		const c = makeClient();
+		c.channels.list.mockRejectedValue(new Error("channels fail"));
+		await expect(fetchUploadsPlaylistId(asYoutube(c), "ch")).rejects.toThrow("channels fail");
+	});
+});
+
+describe("fetchUploadsPlaylistPage", () => {
+	it("クォータ不足は例外", async () => {
+		canExecuteOperation.mockReturnValue(false);
+		await expect(fetchUploadsPlaylistPage(asYoutube(makeClient()), "UUxxxx")).rejects.toThrow(
+			"クォータ",
+		);
+	});
+
+	it("1ページ分のvideoIdとnextPageTokenを返す（空videoIdは除外）", async () => {
+		const c = makeClient();
+		c.playlistItems.list.mockResolvedValue({
+			data: {
+				items: [{ contentDetails: { videoId: "a" } }, { contentDetails: {} }],
+				nextPageToken: "n1",
+			},
+		});
+		const r = await fetchUploadsPlaylistPage(asYoutube(c), "UUxxxx");
+		expect(r).toEqual({ videoIds: ["a"], nextPageToken: "n1" });
+		expect(c.playlistItems.list).toHaveBeenCalledWith(
+			expect.objectContaining({ playlistId: "UUxxxx", pageToken: undefined }),
+		);
+		expect(recordQuotaUsage).toHaveBeenCalledWith("playlistItems");
+	});
+
+	it("items無しは空配列", async () => {
+		const c = makeClient();
+		c.playlistItems.list.mockResolvedValue({ data: {} });
+		expect(await fetchUploadsPlaylistPage(asYoutube(c), "UUxxxx")).toEqual({
+			videoIds: [],
+			nextPageToken: undefined,
+		});
+	});
+
+	it("API エラーは再throw", async () => {
+		const c = makeClient();
+		c.playlistItems.list.mockRejectedValue(new Error("page fail"));
+		await expect(fetchUploadsPlaylistPage(asYoutube(c), "UUxxxx")).rejects.toThrow("page fail");
 	});
 });

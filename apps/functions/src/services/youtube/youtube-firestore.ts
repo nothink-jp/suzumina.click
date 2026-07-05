@@ -8,6 +8,7 @@
 import { videoToFirestore } from "@suzumina.click/shared-types";
 import type { youtube_v3 } from "googleapis";
 import firestore from "../../infrastructure/database/firestore";
+import { chunkArray } from "../../shared/array-utils";
 import { SUZUKA_MINASE_CHANNEL_ID } from "../../shared/common";
 import * as logger from "../../shared/logger";
 import { VideoMapper } from "../mappers/video-mapper";
@@ -15,6 +16,57 @@ import { VideoMapper } from "../mappers/video-mapper";
 // Firestore関連の定数
 const VIDEOS_COLLECTION = "videos";
 const MAX_FIRESTORE_BATCH_SIZE = 500; // Firestoreのバッチ書き込み上限
+
+/** videoIdバルク存在確認（getAll）を分割するチャンクサイズ */
+const KNOWN_VIDEO_IDS_CHUNK_SIZE = 300;
+
+/**
+ * 指定した動画IDのうち、Firestoreに既に存在する（=既知の）IDの集合を返す
+ *
+ * SPR-230: uploads playlistは新着順なので、ページ内の動画IDがこの集合に
+ * 含まれていれば「既に発見済みの旧動画」と判定できる（incremental discoveryの
+ * early-stop判定に使う）。`videos`コレクションはdoc ID=video.idのため、
+ * DLsiteの`getExistingWorksMap`（productIdフィールドでの`in`クエリ）と違い
+ * `firestore.getAll(...refs)`によるバルク直接取得がそのまま使える。
+ *
+ * @param videoIds 確認対象の動画ID
+ * @returns 既にFirestoreに存在する動画IDの集合
+ */
+export async function getKnownVideoIdsSet(videoIds: string[]): Promise<Set<string>> {
+	const knownIds = new Set<string>();
+	if (videoIds.length === 0) {
+		return knownIds;
+	}
+
+	const refs = videoIds.map((id) => firestore.collection(VIDEOS_COLLECTION).doc(id));
+	const chunks = chunkArray(refs, KNOWN_VIDEO_IDS_CHUNK_SIZE);
+
+	const chunkResults = await Promise.all(chunks.map((chunk) => firestore.getAll(...chunk)));
+
+	for (const docs of chunkResults) {
+		for (const doc of docs) {
+			if (doc.exists) {
+				knownIds.add(doc.id);
+			}
+		}
+	}
+
+	return knownIds;
+}
+
+/**
+ * Firestoreに保存されている全動画IDの集合を返す（`videos`コレクション全件のID一覧）
+ *
+ * SPR-230: 週次フルスイープでの取りこぼし検知（uploads playlist全走査で見つからなかった
+ * 既知動画IDが無いか）に使う。`select()`でフィールド取得を省きID一覧のみを取得することで
+ * 読み取りコストを抑える。対象は~550件程度の小規模コレクションのため全件取得で十分。
+ *
+ * @returns Firestoreに存在する全動画IDの集合
+ */
+export async function getAllVideoIds(): Promise<Set<string>> {
+	const snapshot = await firestore.collection(VIDEOS_COLLECTION).select().get();
+	return new Set(snapshot.docs.map((doc) => doc.id));
+}
 
 /**
  * Entity 形式でYouTube動画をFirestoreに保存

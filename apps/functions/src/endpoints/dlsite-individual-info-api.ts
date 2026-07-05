@@ -40,6 +40,7 @@ import { bulkCheckPriceHistoryExistsToday, getJSTDate } from "../services/price-
 import { chunkArray } from "../shared/array-utils";
 import { withClearedUndefined } from "../shared/firestore-write";
 import * as logger from "../shared/logger";
+import { decodePubsubMode, type PubsubMessage } from "../shared/pubsub-utils";
 
 /**
  * SPR-229 Stage②: ティア差分によるdue-setフィルタの有効/無効フラグ。
@@ -50,35 +51,6 @@ import * as logger from "../shared/logger";
  */
 function isTierFilteringEnabled(): boolean {
 	return process.env.DLSITE_TIER_FILTERING_ENABLED !== "false";
-}
-
-/**
- * Pub/SubメッセージのPubsubMessage型定義（youtube.tsと同型）
- */
-interface PubsubMessage {
-	data?: string;
-	attributes?: Record<string, string>;
-}
-
-/**
- * SPR-229 Stage②: Pub/Subペイロードから`mode`を取り出す。
- * 週次フルスイープ（`mode==="weekly_full_sweep"`）かどうかの判定に使う。
- * デコード失敗時は安全側（通常のティア差分run）にフォールバックする。
- */
-function decodePubsubMode(message: PubsubMessage | undefined): string | undefined {
-	if (!message?.data) {
-		return undefined;
-	}
-	try {
-		const decoded = Buffer.from(message.data, "base64").toString("utf-8");
-		const parsed = JSON.parse(decoded) as { mode?: unknown };
-		return typeof parsed.mode === "string" ? parsed.mode : undefined;
-	} catch (err) {
-		logger.warn("Pub/Subペイロードのデコードに失敗（modeなしとして通常runを続行します）", {
-			error: err instanceof Error ? err.message : String(err),
-		});
-		return undefined;
-	}
 }
 
 // 統合メタデータ保存用の定数

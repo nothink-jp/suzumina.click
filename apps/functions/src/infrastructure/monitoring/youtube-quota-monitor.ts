@@ -32,6 +32,9 @@ export const QUOTA_COSTS = {
 	// プレイリスト関連（3層タグシステム用）
 	playlists: 1, // playlists.list API
 	playlistItems: 1, // playlistItems.list API
+
+	// チャンネル情報取得（SPR-230: uploads playlist ID解決用）
+	channels: 1, // channels.list API
 } as const;
 
 /**
