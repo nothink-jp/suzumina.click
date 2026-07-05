@@ -14,6 +14,14 @@ permissions:
   contents: read
   id-token: write
 
+# 短時間に複数PRがmainへ連続マージされると、前のデプロイが進行中のまま次のrunが
+# gcloud functions deploy を叩き、GCP側が "unable to queue the operation" (409) で
+# 全関数デプロイを拒否する（2026-07-04 実測）。cancel-in-progress ではなく直列化する
+# （進行中のデプロイを打ち切ると部分適用のまま終わるため、待たせて完走させる）。
+concurrency:
+  group: deploy-functions-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   check-pr-status:
     name: Check PR Status
