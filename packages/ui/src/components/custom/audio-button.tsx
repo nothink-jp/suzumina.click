@@ -26,7 +26,7 @@ import {
 	User,
 	Video,
 } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useId, useRef, useState } from "react";
 import { type AudioControls, AudioPlayer } from "./audio-player";
 import { HighlightText } from "./highlight-text";
 import { TagList } from "./tag-list";
@@ -216,9 +216,11 @@ function PopoverTags({
 function FavoriteButton({
 	isFavorite,
 	onFavoriteToggle,
+	describedBy,
 }: {
 	isFavorite?: boolean;
 	onFavoriteToggle?: () => void;
+	describedBy?: string;
 }) {
 	if (!onFavoriteToggle) return null;
 
@@ -230,6 +232,7 @@ function FavoriteButton({
 				onFavoriteToggle();
 			}}
 			aria-label={isFavorite ? "お気に入りを解除" : "お気に入りに追加"}
+			aria-describedby={describedBy}
 			className={cn(
 				"flex items-center justify-center gap-1.5 h-10 px-2.5 rounded-lg text-xs font-semibold transition-colors hover:bg-accent",
 				isFavorite ? "text-suzuka-600" : "text-muted-foreground hover:text-foreground",
@@ -247,12 +250,14 @@ function LikeDislikeButtons({
 	onLikeToggle,
 	isDisliked,
 	onDislikeToggle,
+	describedBy,
 }: {
 	audioButton: AudioButtonType;
 	isLiked?: boolean;
 	onLikeToggle?: () => void;
 	isDisliked?: boolean;
 	onDislikeToggle?: () => void;
+	describedBy?: string;
 }) {
 	if (!onLikeToggle) return null;
 
@@ -264,6 +269,7 @@ function LikeDislikeButtons({
 					e.stopPropagation();
 					onLikeToggle();
 				}}
+				aria-describedby={describedBy}
 				className={cn(
 					"flex items-center gap-1.5 h-10 px-2.5 rounded-lg text-xs font-semibold transition-colors hover:bg-accent",
 					isLiked ? "text-suzuka-600" : "text-muted-foreground hover:text-foreground",
@@ -272,17 +278,20 @@ function LikeDislikeButtons({
 				<ThumbsUp className={cn("h-4 w-4", isLiked && "fill-current")} />
 				<span>{audioButton.stats.likeCount}</span>
 			</button>
-			<button
-				type="button"
-				onClick={(e) => {
-					e.stopPropagation();
-					onDislikeToggle?.();
-				}}
-				aria-label={isDisliked ? "低評価を取り消す" : "低評価する"}
-				className="flex items-center justify-center h-10 px-2.5 rounded-lg text-xs font-semibold text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-			>
-				<ThumbsDown className={cn("h-4 w-4", isDisliked && "fill-current")} />
-			</button>
+			{onDislikeToggle && (
+				<button
+					type="button"
+					onClick={(e) => {
+						e.stopPropagation();
+						onDislikeToggle();
+					}}
+					aria-label={isDisliked ? "低評価を取り消す" : "低評価する"}
+					aria-describedby={describedBy}
+					className="flex items-center justify-center h-10 px-2.5 rounded-lg text-xs font-semibold text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+				>
+					<ThumbsDown className={cn("h-4 w-4", isDisliked && "fill-current")} />
+				</button>
+			)}
 		</div>
 	);
 }
@@ -300,6 +309,7 @@ function PopoverActions({
 	showDetailLink,
 	onDetailClick,
 	onPopoverClose,
+	describedBy,
 }: {
 	audioButton: AudioButtonType;
 	youtubeUrl: string;
@@ -312,10 +322,15 @@ function PopoverActions({
 	showDetailLink?: boolean;
 	onDetailClick?: () => void;
 	onPopoverClose?: () => void;
+	describedBy?: string;
 }) {
 	return (
 		<div className="flex gap-1 items-center flex-wrap">
-			<FavoriteButton isFavorite={isFavorite} onFavoriteToggle={onFavoriteToggle} />
+			<FavoriteButton
+				isFavorite={isFavorite}
+				onFavoriteToggle={onFavoriteToggle}
+				describedBy={describedBy}
+			/>
 
 			<LikeDislikeButtons
 				audioButton={audioButton}
@@ -323,6 +338,7 @@ function PopoverActions({
 				onLikeToggle={onLikeToggle}
 				isDisliked={isDisliked}
 				onDislikeToggle={onDislikeToggle}
+				describedBy={describedBy}
 			/>
 
 			<a
@@ -372,6 +388,8 @@ function AudioButtonPopoverContent({
 	highlightClassName,
 	isAuthenticated,
 }: AudioButtonPopoverContentProps) {
+	const authNoteId = useId();
+
 	return (
 		<div className="p-4 space-y-4">
 			{/* 見出し層: タイトル・秒数/再生数・説明 */}
@@ -395,7 +413,7 @@ function AudioButtonPopoverContent({
 			{/* アクション層 */}
 			<div className="space-y-2 border-t border-border pt-3">
 				{!isAuthenticated && (
-					<p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+					<p id={authNoteId} className="flex items-center gap-1.5 text-xs text-muted-foreground">
 						<Lock className="h-3 w-3" />
 						お気に入り・評価にはログインが必要です
 					</p>
@@ -412,6 +430,7 @@ function AudioButtonPopoverContent({
 					showDetailLink={showDetailLink}
 					onDetailClick={onDetailClick}
 					onPopoverClose={onPopoverClose}
+					describedBy={isAuthenticated ? undefined : authNoteId}
 				/>
 			</div>
 		</div>
@@ -441,8 +460,9 @@ export function AudioButton({
 	const [isPlaying, setIsPlaying] = useState(false);
 	const [isLoading, setIsLoading] = useState(false);
 	const [isPopoverOpen, setIsPopoverOpen] = useState(false);
-	const [progress, setProgress] = useState(0);
 	const audioPlayerRef = useRef<AudioControls>(null);
+	// 250ms毎に更新される再生進捗はReact stateにせずDOMへ直接書き込む（コンポーネント全体の再レンダーを避けるため）
+	const progressFillRef = useRef<HTMLSpanElement>(null);
 
 	// 時間の計算
 	const duration = (audioButton.endTime || audioButton.startTime) - audioButton.startTime;
@@ -476,17 +496,29 @@ export function AudioButton({
 		onPlay?.();
 	}, [onPlay]);
 
+	const resetProgressFill = useCallback(() => {
+		if (progressFillRef.current) {
+			progressFillRef.current.style.width = "0%";
+		}
+	}, []);
+
+	const handleProgress = useCallback((progressPercent: number) => {
+		if (progressFillRef.current) {
+			progressFillRef.current.style.width = `${progressPercent}%`;
+		}
+	}, []);
+
 	const handlePlayPause = useCallback(() => {
 		setIsPlaying(false);
 		setIsLoading(false);
-		setProgress(0);
-	}, []);
+		resetProgressFill();
+	}, [resetProgressFill]);
 
 	const handlePlayEnd = useCallback(() => {
 		setIsPlaying(false);
 		setIsLoading(false);
-		setProgress(0);
-	}, []);
+		resetProgressFill();
+	}, [resetProgressFill]);
 
 	return (
 		<>
@@ -497,7 +529,7 @@ export function AudioButton({
 				onPlay={handlePlayStart}
 				onPause={handlePlayPause}
 				onEnd={handlePlayEnd}
-				onProgress={setProgress}
+				onProgress={handleProgress}
 			/>
 
 			{/* UI要素 */}
@@ -512,11 +544,12 @@ export function AudioButton({
 						className,
 					)}
 				>
-					{/* 進捗フィル */}
+					{/* 進捗フィル（DOMへ直接書き込むためReact state化しない） */}
 					<span
+						ref={progressFillRef}
 						aria-hidden="true"
 						className="pointer-events-none absolute inset-0 bg-minase-200 transition-[width] duration-150 ease-linear"
-						style={{ width: `${progress}%` }}
+						style={{ width: "0%" }}
 					/>
 
 					{/* メイン部分 - 再生専用エリア */}
