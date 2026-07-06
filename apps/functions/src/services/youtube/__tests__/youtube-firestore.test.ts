@@ -11,11 +11,14 @@ const mockBatchCommit = vi.fn().mockResolvedValue(undefined);
 const mockDoc = vi.fn((id: string) => ({ id }));
 const mockGetAll = vi.fn();
 const mockSelectGet = vi.fn();
-const mockWhereSelectLimitGet = vi.fn();
-const mockWhere = vi.fn((..._args: unknown[]) => ({
+const mockWhereOrderByGet = vi.fn();
+const mockOrderBy = vi.fn((..._args: unknown[]) => ({
 	select: vi.fn(() => ({
-		limit: vi.fn(() => ({ get: mockWhereSelectLimitGet })),
+		limit: vi.fn(() => ({ get: mockWhereOrderByGet })),
 	})),
+}));
+const mockWhere = vi.fn((..._args: unknown[]) => ({
+	orderBy: (...args: unknown[]) => mockOrderBy(...args),
 }));
 vi.mock("../../../infrastructure/database/firestore", () => ({
 	default: {
@@ -168,22 +171,33 @@ describe("getAllVideoIds", () => {
 });
 
 describe("getStaleLiveVideoIds", () => {
-	it("liveBroadcastContentがlive/upcomingのままの動画IDのみを返す", async () => {
-		mockWhereSelectLimitGet.mockResolvedValue({
+	it("liveBroadcastContentがlive/upcomingのままの動画IDのみを、lastFetchedAt昇順で返す", async () => {
+		mockWhereOrderByGet.mockResolvedValue({
 			docs: [{ id: "live1" }, { id: "upcoming1" }],
 		});
 
 		const result = await getStaleLiveVideoIds();
 
-		expect(result).toEqual(["live1", "upcoming1"]);
+		expect(result).toEqual({ videoIds: ["live1", "upcoming1"], truncated: false });
 		expect(mockWhere).toHaveBeenCalledWith("liveBroadcastContent", "in", ["live", "upcoming"]);
+		expect(mockOrderBy).toHaveBeenCalledWith("lastFetchedAt", "asc");
 	});
 
 	it("該当が無い場合は空配列を返す", async () => {
-		mockWhereSelectLimitGet.mockResolvedValue({ docs: [] });
+		mockWhereOrderByGet.mockResolvedValue({ docs: [] });
 
 		const result = await getStaleLiveVideoIds();
 
-		expect(result).toEqual([]);
+		expect(result).toEqual({ videoIds: [], truncated: false });
+	});
+
+	it("上限件数に達した場合はtruncated:trueを返す", async () => {
+		const docs = Array.from({ length: 50 }, (_, i) => ({ id: `stale${i}` }));
+		mockWhereOrderByGet.mockResolvedValue({ docs });
+
+		const result = await getStaleLiveVideoIds();
+
+		expect(result.truncated).toBe(true);
+		expect(result.videoIds).toHaveLength(50);
 	});
 });

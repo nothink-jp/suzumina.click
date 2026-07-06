@@ -81,7 +81,10 @@ beforeEach(() => {
 	vi.mocked(youtubeFirestore.saveVideosToFirestore).mockResolvedValue(0);
 	vi.mocked(youtubeFirestore.getKnownVideoIdsSet).mockResolvedValue(new Set());
 	vi.mocked(youtubeFirestore.getAllVideoIds).mockResolvedValue(new Set());
-	vi.mocked(youtubeFirestore.getStaleLiveVideoIds).mockResolvedValue([]);
+	vi.mocked(youtubeFirestore.getStaleLiveVideoIds).mockResolvedValue({
+		videoIds: [],
+		truncated: false,
+	});
 });
 
 describe("fetchYouTubeVideos: 通常run（既定=searchモード）", () => {
@@ -106,7 +109,10 @@ describe("fetchYouTubeVideos: stale live/upcoming動画の再取得（SPR-230回
 	it("新着0件でもstale live動画をfetchVideoDetails対象に含めて保存する（回帰の核心）", async () => {
 		vi.mocked(youtubeApi.searchVideos).mockResolvedValue({ items: [], nextPageToken: undefined });
 		vi.mocked(youtubeApi.extractVideoIds).mockReturnValue([]);
-		vi.mocked(youtubeFirestore.getStaleLiveVideoIds).mockResolvedValue(["stale1"]);
+		vi.mocked(youtubeFirestore.getStaleLiveVideoIds).mockResolvedValue({
+			videoIds: ["stale1"],
+			truncated: false,
+		});
 		vi.mocked(youtubeApi.fetchVideoDetails).mockResolvedValue([
 			{ id: "stale1" } as youtube_v3.Schema$Video,
 		]);
@@ -121,7 +127,10 @@ describe("fetchYouTubeVideos: stale live/upcoming動画の再取得（SPR-230回
 	it("新着とstaleが両方ある場合はマージ・重複排除して渡す", async () => {
 		vi.mocked(youtubeApi.searchVideos).mockResolvedValue({ items: [], nextPageToken: undefined });
 		vi.mocked(youtubeApi.extractVideoIds).mockReturnValue(["new1", "dup"]);
-		vi.mocked(youtubeFirestore.getStaleLiveVideoIds).mockResolvedValue(["stale1", "dup"]);
+		vi.mocked(youtubeFirestore.getStaleLiveVideoIds).mockResolvedValue({
+			videoIds: ["stale1", "dup"],
+			truncated: false,
+		});
 		vi.mocked(youtubeApi.fetchVideoDetails).mockResolvedValue([]);
 
 		await fetchYouTubeVideos(pubsubEvent());
@@ -139,12 +148,41 @@ describe("fetchYouTubeVideos: stale live/upcoming動画の再取得（SPR-230回
 	it("stale無し・新着0件のときは従来通り早期returnする（非回帰確認）", async () => {
 		vi.mocked(youtubeApi.searchVideos).mockResolvedValue({ items: [], nextPageToken: undefined });
 		vi.mocked(youtubeApi.extractVideoIds).mockReturnValue([]);
-		vi.mocked(youtubeFirestore.getStaleLiveVideoIds).mockResolvedValue([]);
+		vi.mocked(youtubeFirestore.getStaleLiveVideoIds).mockResolvedValue({
+			videoIds: [],
+			truncated: false,
+		});
 
 		await fetchYouTubeVideos(pubsubEvent());
 
 		expect(youtubeApi.fetchVideoDetails).not.toHaveBeenCalled();
 		expect(youtubeFirestore.saveVideosToFirestore).not.toHaveBeenCalled();
+	});
+
+	it("stale救済クエリが失敗しても、run全体は失敗させず新着分は保存する", async () => {
+		vi.mocked(youtubeApi.searchVideos).mockResolvedValue({ items: [], nextPageToken: undefined });
+		vi.mocked(youtubeApi.extractVideoIds).mockReturnValue(["new1"]);
+		vi.mocked(youtubeFirestore.getStaleLiveVideoIds).mockRejectedValue(
+			new Error("Firestore query failed"),
+		);
+		vi.mocked(youtubeApi.fetchVideoDetails).mockResolvedValue([
+			{ id: "new1" } as youtube_v3.Schema$Video,
+		]);
+		vi.mocked(youtubeFirestore.saveVideosToFirestore).mockResolvedValue(1);
+
+		await fetchYouTubeVideos(pubsubEvent());
+
+		expect(logger.warn).toHaveBeenCalledWith(
+			expect.stringContaining("stale live/upcoming動画の取得に失敗しました"),
+			expect.anything(),
+		);
+		// stale救済はスキップされるが、新着分の取得・保存は継続する
+		expect(youtubeApi.fetchVideoDetails).toHaveBeenCalledWith(dummyClient, ["new1"]);
+		expect(youtubeFirestore.saveVideosToFirestore).toHaveBeenCalled();
+		// runはエラーとして記録されない
+		expect(updateMock).not.toHaveBeenCalledWith(
+			expect.objectContaining({ lastError: expect.anything() }),
+		);
 	});
 });
 

@@ -15,7 +15,6 @@ import {
 	getAllVideoIds,
 	getKnownVideoIdsSet,
 	getStaleLiveVideoIds,
-	MAX_STALE_LIVE_VIDEO_IDS,
 	saveVideosToFirestore,
 } from "../services/youtube/youtube-firestore";
 import { SUZUKA_MINASE_CHANNEL_ID } from "../shared/common";
@@ -591,21 +590,32 @@ async function runNormalFetchAndSave(
 	// 一度保存された動画は配信終了後も再取得されずliveBroadcastContentが固着する
 	// （services/youtube/youtube-firestore.tsのgetStaleLiveVideoIds参照）。
 	// 新着0件でも救済対象は毎run拾う＝早期returnより前に合流させるのが要点。
-	const staleLiveVideoIds = await getStaleLiveVideoIds();
-	if (staleLiveVideoIds.length > 0) {
-		logger.info(
-			`配信中/配信予定のまま更新が止まっている動画を再取得対象に追加: ${staleLiveVideoIds.length}件`,
-			{ videoIds: staleLiveVideoIds },
-		);
-	}
-	if (staleLiveVideoIds.length >= MAX_STALE_LIVE_VIDEO_IDS) {
-		logger.warn(
-			"stale live/upcoming動画が上限件数に達しました。配信状態の固着が広範囲化している可能性があります",
-			{ count: staleLiveVideoIds.length },
-		);
+	// クエリ自体の失敗はこの回のstale救済をスキップするに留め、run全体を失敗させない
+	// （shadowモード比較と同様、本処理への影響を切り離す）。
+	let staleLiveVideoIds: string[] = [];
+	try {
+		const result = await getStaleLiveVideoIds();
+		staleLiveVideoIds = result.videoIds;
+		if (staleLiveVideoIds.length > 0) {
+			logger.info(
+				`配信中/配信予定のまま更新が止まっている動画を再取得対象に追加: ${staleLiveVideoIds.length}件`,
+				{ videoIds: staleLiveVideoIds },
+			);
+		}
+		if (result.truncated) {
+			logger.warn(
+				"stale live/upcoming動画が上限件数に達しました。配信状態の固着が広範囲化している可能性があります",
+				{ count: staleLiveVideoIds.length },
+			);
+		}
+	} catch (error) {
+		logger.warn("stale live/upcoming動画の取得に失敗しました（今回はstale救済をスキップします）", {
+			error: error instanceof Error ? error.message : String(error),
+		});
 	}
 
 	const videoIds = Array.from(new Set([...discoveredVideoIds, ...staleLiveVideoIds]));
+	logger.info(`動画詳細取得対象の合計: ${videoIds.length}件`);
 
 	if (videoIds.length === 0) {
 		logger.info("チャンネルに動画が見つかりませんでした");
