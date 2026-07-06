@@ -427,6 +427,27 @@ resource "google_firestore_index" "works_category_popular_desc" {
 #   }
 # }
 
+# videos コレクション - liveBroadcastContent（live/upcoming） + lastFetchedAt 昇順
+# SPR-230回帰対応: getStaleLiveVideoIds()（youtube-firestore.ts）が配信中/配信予定のまま
+# 固着した動画を再取得するために使う。lastFetchedAt昇順にすることで、件数上限を
+# 超える固着が発生した場合でも最も長く再取得されていない動画から優先的に救済され、
+# 複数runでローテーションして全件解消に向かう。where(in)+orderBy(別フィールド)のため
+# 複合インデックスが必要。
+resource "google_firestore_index" "videos_livebroadcastcontent_lastfetchedat_asc" {
+  project    = var.gcp_project_id
+  collection = "videos"
+
+  fields {
+    field_path = "liveBroadcastContent"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "lastFetchedAt"
+    order      = "ASCENDING"
+  }
+}
+
 # ===================================================================
 # 📊 SUMMARY - Terraform 管理インデックス（2026-06-24 SPR-213 で棚卸し）
 # ===================================================================
@@ -439,6 +460,8 @@ resource "google_firestore_index" "works_category_popular_desc" {
 #   Firestore where(category)+orderBy を実行）
 # - audiobuttons_ispublic_createdat_desc（1）: 音声ボタン一覧 newest / autocomplete tags
 # - works.workId COLLECTION_GROUP（google_firestore_field・SPR-204）: creator-firestore.ts
+# - videos_livebroadcastcontent_lastfetchedat_asc（1・2026-07-06 SPR-230回帰対応で追加）:
+#   getStaleLiveVideoIds()（youtube-firestore.ts）の配信中/配信予定固着動画の再取得
 # - ※ audioButtons の creatorId / stats.* / videoId 系は firestore_indexes_audiobuttons_update.tf が管理
 #
 # 【SPR-213 で本ファイルから撤去した managed-unused（13）】

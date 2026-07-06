@@ -14,6 +14,7 @@ import {
 import {
 	getAllVideoIds,
 	getKnownVideoIdsSet,
+	getStaleLiveVideoIds,
 	saveVideosToFirestore,
 } from "../services/youtube/youtube-firestore";
 import { SUZUKA_MINASE_CHANNEL_ID } from "../shared/common";
@@ -562,7 +563,11 @@ async function runNormalFetchAndSave(
 ): Promise<FetchResult> {
 	// 3. 動画IDの取得
 	logger.info(`チャンネル ${SUZUKA_MINASE_CHANNEL_ID} の動画情報取得を開始します`);
-	const { videoIds, nextPageToken, isComplete } = await fetchVideoIds(youtube, metadata);
+	const {
+		videoIds: discoveredVideoIds,
+		nextPageToken,
+		isComplete,
+	} = await fetchVideoIds(youtube, metadata);
 
 	// SPR-230: shadowモードは発見結果に関わらず毎run比較する（0件run＝定常状態こそ
 	// 両方式が一致すべき基準ケースのため、videoIds空チェックの前に実行する）。
@@ -579,7 +584,39 @@ async function runNormalFetchAndSave(
 		}
 	}
 
-	logger.info(`取得した動画ID合計: ${videoIds.length}件`);
+	logger.info(`新着として発見した動画ID: ${discoveredVideoIds.length}件`);
+
+	// SPR-230回帰対応: incremental discoveryは新着（未知）動画IDしか返さないため、
+	// 一度保存された動画は配信終了後も再取得されずliveBroadcastContentが固着する
+	// （services/youtube/youtube-firestore.tsのgetStaleLiveVideoIds参照）。
+	// 新着0件でも救済対象は毎run拾う＝早期returnより前に合流させるのが要点。
+	// クエリ自体の失敗はこの回のstale救済をスキップするに留め、run全体を失敗させない
+	// （shadowモード比較と同様、本処理への影響を切り離す）。
+	let staleLiveVideoIds: string[] = [];
+	try {
+		const result = await getStaleLiveVideoIds();
+		staleLiveVideoIds = result.videoIds;
+		if (staleLiveVideoIds.length > 0) {
+			logger.info(
+				`配信中/配信予定のまま更新が止まっている動画を再取得対象に追加: ${staleLiveVideoIds.length}件`,
+				{ videoIds: staleLiveVideoIds },
+			);
+		}
+		if (result.truncated) {
+			logger.warn(
+				"stale live/upcoming動画が上限件数に達しました。配信状態の固着が広範囲化している可能性があります",
+				{ count: staleLiveVideoIds.length },
+			);
+		}
+	} catch (error) {
+		logger.warn("stale live/upcoming動画の取得に失敗しました（今回はstale救済をスキップします）", {
+			error: error instanceof Error ? error.message : String(error),
+		});
+	}
+
+	const videoIds = Array.from(new Set([...discoveredVideoIds, ...staleLiveVideoIds]));
+	logger.info(`動画詳細取得対象の合計: ${videoIds.length}件`);
+
 	if (videoIds.length === 0) {
 		logger.info("チャンネルに動画が見つかりませんでした");
 		await updateMetadata({ isInProgress: false });

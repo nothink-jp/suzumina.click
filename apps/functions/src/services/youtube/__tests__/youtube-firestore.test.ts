@@ -11,11 +11,21 @@ const mockBatchCommit = vi.fn().mockResolvedValue(undefined);
 const mockDoc = vi.fn((id: string) => ({ id }));
 const mockGetAll = vi.fn();
 const mockSelectGet = vi.fn();
+const mockWhereOrderByGet = vi.fn();
+const mockOrderBy = vi.fn((..._args: unknown[]) => ({
+	select: vi.fn(() => ({
+		limit: vi.fn(() => ({ get: mockWhereOrderByGet })),
+	})),
+}));
+const mockWhere = vi.fn((..._args: unknown[]) => ({
+	orderBy: (...args: unknown[]) => mockOrderBy(...args),
+}));
 vi.mock("../../../infrastructure/database/firestore", () => ({
 	default: {
 		collection: vi.fn(() => ({
 			doc: mockDoc,
 			select: vi.fn(() => ({ get: mockSelectGet })),
+			where: (...args: unknown[]) => mockWhere(...args),
 		})),
 		batch: vi.fn(() => ({ set: mockBatchSet, commit: mockBatchCommit })),
 		getAll: (...refs: unknown[]) => mockGetAll(...refs),
@@ -38,7 +48,12 @@ vi.mock("../../mappers/video-mapper", () => ({
 	},
 }));
 
-import { getAllVideoIds, getKnownVideoIdsSet, saveVideosToFirestore } from "../youtube-firestore";
+import {
+	getAllVideoIds,
+	getKnownVideoIdsSet,
+	getStaleLiveVideoIds,
+	saveVideosToFirestore,
+} from "../youtube-firestore";
 
 // videoToFirestore（実物）が受け付ける最小の VideoPlainObject
 const plainObject = (id = "v1") =>
@@ -152,5 +167,37 @@ describe("getAllVideoIds", () => {
 		const result = await getAllVideoIds();
 
 		expect(result.size).toBe(0);
+	});
+});
+
+describe("getStaleLiveVideoIds", () => {
+	it("liveBroadcastContentがlive/upcomingのままの動画IDのみを、lastFetchedAt昇順で返す", async () => {
+		mockWhereOrderByGet.mockResolvedValue({
+			docs: [{ id: "live1" }, { id: "upcoming1" }],
+		});
+
+		const result = await getStaleLiveVideoIds();
+
+		expect(result).toEqual({ videoIds: ["live1", "upcoming1"], truncated: false });
+		expect(mockWhere).toHaveBeenCalledWith("liveBroadcastContent", "in", ["live", "upcoming"]);
+		expect(mockOrderBy).toHaveBeenCalledWith("lastFetchedAt", "asc");
+	});
+
+	it("該当が無い場合は空配列を返す", async () => {
+		mockWhereOrderByGet.mockResolvedValue({ docs: [] });
+
+		const result = await getStaleLiveVideoIds();
+
+		expect(result).toEqual({ videoIds: [], truncated: false });
+	});
+
+	it("上限件数に達した場合はtruncated:trueを返す", async () => {
+		const docs = Array.from({ length: 50 }, (_, i) => ({ id: `stale${i}` }));
+		mockWhereOrderByGet.mockResolvedValue({ docs });
+
+		const result = await getStaleLiveVideoIds();
+
+		expect(result.truncated).toBe(true);
+		expect(result.videoIds).toHaveLength(50);
 	});
 });

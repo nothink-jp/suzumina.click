@@ -68,6 +68,42 @@ export async function getAllVideoIds(): Promise<Set<string>> {
 	return new Set(snapshot.docs.map((doc) => doc.id));
 }
 
+/** stale判定で再取得対象とする件数上限（暴走防止） */
+const MAX_STALE_LIVE_VIDEO_IDS = 50;
+
+/**
+ * Firestore上で`liveBroadcastContent`が"live"または"upcoming"のまま残っている動画IDを返す
+ *
+ * SPR-230回帰対応: incremental discoveryは新着（未知）動画IDしか返さないため、一度保存された
+ * 動画は配信終了後も再取得されず、liveBroadcastContent/liveStreamingDetails.actualEndTimeが
+ * 固着する（video-firestore.tsのisLive/isUpcomingはliveBroadcastContent自体をOR条件に使うため
+ * フロントエンド側では直せない）。対象は通常0〜数件だが、異常系の暴走防止として
+ * MAX_STALE_LIVE_VIDEO_IDSで打ち切る。`lastFetchedAt`昇順にすることで、50件を超える固着が
+ * 発生した場合でも最も長く再取得されていない動画から優先的に救済され、再取得後は
+ * `lastFetchedAt`が更新され順位が下がるため複数runでローテーションし全件が解消に向かう
+ * （`where(in)`+`orderBy(別フィールド)`のため複合インデックスが必要。
+ * terraform/firestore_indexes.tfに追加済み）。
+ *
+ * @returns liveBroadcastContentが"live"/"upcoming"のまま残っている動画IDと、
+ *   件数上限に達したため今回救済しきれなかった可能性があるかどうか（truncated）
+ */
+export async function getStaleLiveVideoIds(): Promise<{
+	videoIds: string[];
+	truncated: boolean;
+}> {
+	const snapshot = await firestore
+		.collection(VIDEOS_COLLECTION)
+		.where("liveBroadcastContent", "in", ["live", "upcoming"])
+		.orderBy("lastFetchedAt", "asc")
+		.select()
+		.limit(MAX_STALE_LIVE_VIDEO_IDS)
+		.get();
+	return {
+		videoIds: snapshot.docs.map((doc) => doc.id),
+		truncated: snapshot.docs.length >= MAX_STALE_LIVE_VIDEO_IDS,
+	};
+}
+
 /**
  * Entity 形式でYouTube動画をFirestoreに保存
  *
