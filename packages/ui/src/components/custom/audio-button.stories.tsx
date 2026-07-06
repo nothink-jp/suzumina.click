@@ -148,8 +148,8 @@ export const FavoriteToggleInteraction: Story = {
 	},
 };
 
-// 同上。未認証時は popover 内の FavoriteButton が disabled になることを確認する。
-export const UnauthenticatedFavoriteDisabled: Story = {
+// 同上。未認証時は disabled にせず注記行を表示し、クリックは呼び出し元（ログイン誘導のtoast等）に委ねる。
+export const UnauthenticatedShowsLoginNote: Story = {
 	args: {
 		audioButton: mockAudioButton,
 		onPlay: fn(),
@@ -160,9 +160,12 @@ export const UnauthenticatedFavoriteDisabled: Story = {
 	play: async ({ canvasElement, args }) => {
 		const canvas = within(canvasElement);
 		await userEvent.click(canvas.getByRole("button", { name: "詳細を表示" }));
+		await expect(
+			await screen.findByText("お気に入り・評価にはログインが必要です"),
+		).toBeInTheDocument();
 		const favoriteBtn = await screen.findByRole("button", { name: "お気に入りに追加" });
-		await expect(favoriteBtn).toBeDisabled();
+		await expect(favoriteBtn).not.toBeDisabled();
 		await userEvent.click(favoriteBtn);
-		await expect(args.onFavoriteToggle).not.toHaveBeenCalled();
+		await expect(args.onFavoriteToggle).toHaveBeenCalledOnce();
 	},
 };
