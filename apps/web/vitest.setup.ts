@@ -237,6 +237,7 @@ vi.mock("lucide-react", () => {
 		LogOut: createMockIcon("LogOut"),
 		// Icons for tag editors / WorkDetail など
 		Tag: createMockIcon("Tag"),
+		Flame: createMockIcon("Flame"),
 		FileText: createMockIcon("FileText"),
 		// Icons for VideoDetail
 		Timer: createMockIcon("Timer"),
