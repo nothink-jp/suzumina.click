@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { getLikeDislikeStatusAction, toggleDislikeAction } from "@/actions/dislikes";
 import { toggleFavoriteAction } from "@/actions/favorites";
 import { toggleLikeAction } from "@/actions/likes";
+import { buildXShareUrl } from "@/components/audio/share-on-x-button";
 import { useSession } from "@/lib/auth/client";
 
 interface AudioButtonWithFavoriteClientProps {
@@ -220,6 +221,7 @@ export function AudioButtonWithFavoriteClient({
 			searchQuery={searchQuery}
 			highlightClassName={highlightClassName}
 			isAuthenticated={isAuthenticated}
+			xShareUrl={buildXShareUrl(audioButton.id, audioButton.buttonText)}
 		/>
 	);
 }

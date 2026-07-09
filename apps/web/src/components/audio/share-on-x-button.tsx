@@ -9,7 +9,8 @@ import { Button } from "@suzumina.click/ui/components/ui/button";
 export function buildXShareUrl(audioButtonId: string, buttonText: string): string {
 	const params = new URLSearchParams({
 		text: `「${buttonText}」`,
-		url: `https://suzumina.click/buttons/${audioButtonId}`,
+		// utm は X 共有経由の流入を GA4 / サーバーログで判別するため（canonical は utm なしのまま）
+		url: `https://suzumina.click/buttons/${audioButtonId}?utm_source=x&utm_medium=social`,
 		hashtags: "涼花みなせ",
 	});
 	return `https://x.com/intent/post?${params.toString()}`;
