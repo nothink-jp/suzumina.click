@@ -226,7 +226,7 @@ function OgCard({ siteName, badgeLabel, buttonText, durationLabel, videoTitle }:
 						backgroundColor: MINASE_50,
 						border: `4px solid ${MINASE_300}`,
 						borderRadius: 32,
-						boxShadow: "0 12px 40px hsl(30, 38%, 66%, 0.35)",
+						boxShadow: "0 12px 40px hsla(30, 38%, 66%, 0.35)",
 						overflow: "hidden",
 					}}
 				>
@@ -347,7 +347,8 @@ export default async function Image({ params }: OgImageParams) {
 	// ボタン名が ASCII ならそのまま表示を継続できる。regular(400) はメタ行専用なので欠けても bold で代替される
 	const [fontBold, fontRegular] = await Promise.all([
 		loadMPlusRoundedSubset(700, boldText).catch(() => null),
-		loadMPlusRoundedSubset(400, videoTitle).catch(() => null),
+		// videoTitle が空（未設定・ボタン未取得のフォールバック経路）なら 400 のフェッチ自体を省く
+		videoTitle ? loadMPlusRoundedSubset(400, videoTitle).catch(() => null) : Promise.resolve(null),
 	]);
 
 	if (!fontBold) {
