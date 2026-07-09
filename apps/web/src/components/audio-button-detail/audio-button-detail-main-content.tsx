@@ -121,6 +121,7 @@ export function AudioButtonDetailMainContent({ audioButton }: AudioButtonDetailM
 					{/* アクションボタン */}
 					<AudioButtonDetailActions
 						audioButtonId={audioButton.id}
+						buttonText={audioButton.buttonText}
 						favoriteCount={audioButton.stats.favoriteCount || 0}
 						likeCount={audioButton.stats.likeCount}
 					/>
