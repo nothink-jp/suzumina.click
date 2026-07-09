@@ -50,6 +50,7 @@ export { TimeDisplay } from "./time-display";
 export type { ValidationMessageProps } from "./validation-message";
 export { ValidationMessage, ValidationMessages } from "./validation-message";
 
+export { XIcon } from "./x-icon";
 export { YoutubeIcon } from "./youtube-icon";
 // YouTube components
 export { YouTubePlayer } from "./youtube-player";
