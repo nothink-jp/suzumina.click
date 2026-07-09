@@ -1,14 +1,17 @@
 import { FavoriteButton } from "@/components/audio/favorite-button";
 import { LikeDislikeButtons } from "@/components/audio/like-dislike-buttons";
+import { ShareOnXButton } from "@/components/audio/share-on-x-button";
 
 interface AudioButtonDetailActionsProps {
 	audioButtonId: string;
+	buttonText: string;
 	favoriteCount: number;
 	likeCount: number;
 }
 
 export function AudioButtonDetailActions({
 	audioButtonId,
+	buttonText,
 	favoriteCount,
 	likeCount,
 }: AudioButtonDetailActionsProps) {
@@ -33,6 +36,9 @@ export function AudioButtonDetailActions({
 					variant="outline"
 					size="sm"
 				/>
+
+				{/* Xで共有（静的 intent リンク・SPR-248） */}
+				<ShareOnXButton audioButtonId={audioButtonId} buttonText={buttonText} />
 			</div>
 		</div>
 	);
