@@ -6,6 +6,7 @@ import { getAudioButtonById } from "@/app/buttons/actions";
  * X のリンクカードは「画像 + 小タイトル + ドメイン」しか表示しないため（SPR-17 調査）、
  * 「音声ボタンである」こと・ボタン名を画像自体に載せる。
  * og:image / twitter:image はこの規約ファイルから自動出力される（generateMetadata の images 手書きは撤去済み）。
+ * どの失敗経路でも 500 は返さない（ボタン未取得→サイト名版 / フォント取得失敗→ASCII 縮退版）。
  */
 
 export const size = { width: 1200, height: 630 };
@@ -35,7 +36,9 @@ export function buttonTextFontSize(text: string): number {
 
 /**
  * Google Fonts から表示文字だけの Noto Sans JP サブセットを取得する。
- * ブラウザ UA を名乗らない fetch には woff2 でなく TTF が返るため ImageResponse でそのまま使える。
+ * - ブラウザ UA を名乗らない fetch には woff2 でなく TTF が返るため ImageResponse でそのまま使える
+ * - `text=` 付きの css2 は日英混在でも @font-face を1件だけ返す（unicode-range 分割なし。2026-07 実測）。
+ *   万一複数に分割されても、呼び出し側の catch で ASCII 縮退版にフォールバックする
  */
 async function loadNotoSansJpSubset(text: string): Promise<ArrayBuffer> {
 	const uniqueChars = [...new Set(text)].join("");
@@ -68,32 +71,25 @@ function PlayIcon() {
 	);
 }
 
-interface OgImageParams {
-	params: Promise<{ id: string }>;
+interface OgCardProps {
+	headerLabel: string;
+	durationLabel: string;
+	heading: string;
+	headingFontSize: number;
+	footerLeft: string;
+	footerRight: string;
 }
 
-export default async function Image({ params }: OgImageParams) {
-	const { id } = await params;
-
-	let buttonText = "";
-	let durationLabel = "";
-	try {
-		const result = await getAudioButtonById(id);
-		if (result.success) {
-			const button = result.data;
-			buttonText = truncateButtonText(button.buttonText);
-			const duration = (button.endTime || button.startTime) - button.startTime;
-			durationLabel = `${duration.toFixed(1)}秒`;
-		}
-	} catch {
-		// ボタン未取得時はサイト名だけのフォールバック画像を返す（画像 500 でカード無画像になるより良い）
-	}
-
-	const heading = buttonText ? `「${buttonText}」` : "すずみなくりっく！";
-	const fontText = `${heading}${durationLabel}涼花みなせ音声ボタンすずみなくりっく！suzumina.click`;
-	const notoSansJp = await loadNotoSansJpSubset(fontText);
-
-	return new ImageResponse(
+/** カードレイアウト本体（通常版と ASCII 縮退版で共用） */
+function OgCard({
+	headerLabel,
+	durationLabel,
+	heading,
+	headingFontSize,
+	footerLeft,
+	footerRight,
+}: OgCardProps) {
+	return (
 		<div
 			style={{
 				display: "flex",
@@ -111,7 +107,7 @@ export default async function Image({ params }: OgImageParams) {
 			<div style={{ display: "flex", alignItems: "center", gap: 28 }}>
 				<PlayIcon />
 				<div style={{ display: "flex", flexDirection: "column" }}>
-					<span style={{ fontSize: 34, color: SUZUKA_700 }}>涼花みなせ 音声ボタン</span>
+					<span style={{ fontSize: 34, color: SUZUKA_700 }}>{headerLabel}</span>
 					{durationLabel && (
 						<span style={{ fontSize: 28, color: MINASE_600 }}>{durationLabel}</span>
 					)}
@@ -124,7 +120,7 @@ export default async function Image({ params }: OgImageParams) {
 					display: "flex",
 					flexGrow: 1,
 					alignItems: "center",
-					fontSize: buttonText ? buttonTextFontSize(buttonText) : 76,
+					fontSize: headingFontSize,
 					fontWeight: 700,
 					color: MINASE_950,
 					lineHeight: 1.35,
@@ -144,10 +140,62 @@ export default async function Image({ params }: OgImageParams) {
 					paddingTop: 28,
 				}}
 			>
-				<span style={{ fontSize: 36, fontWeight: 700, color: SUZUKA_500 }}>すずみなくりっく！</span>
-				<span style={{ fontSize: 30, color: MINASE_600 }}>suzumina.click</span>
+				<span style={{ fontSize: 36, fontWeight: 700, color: SUZUKA_500 }}>{footerLeft}</span>
+				<span style={{ fontSize: 30, color: MINASE_600 }}>{footerRight}</span>
 			</div>
-		</div>,
+		</div>
+	);
+}
+
+interface OgImageParams {
+	params: Promise<{ id: string }>;
+}
+
+export default async function Image({ params }: OgImageParams) {
+	const { id } = await params;
+
+	// getAudioButtonById は withErrorHandling で例外を握り常に {success} を返すが、
+	// OG 画像はどの経路でも 500 にしないルートなので念のため reject も null に落とす
+	const result = await getAudioButtonById(id).catch(() => null);
+	let buttonText = "";
+	let durationSec: number | null = null;
+	if (result?.success) {
+		buttonText = truncateButtonText(result.data.buttonText);
+		durationSec = (result.data.endTime || result.data.startTime) - result.data.startTime;
+	}
+
+	const heading = buttonText ? `「${buttonText}」` : "すずみなくりっく！";
+	const durationLabel = durationSec != null ? `${durationSec.toFixed(1)}秒` : "";
+	const fontText = `${heading}${durationLabel}涼花みなせ音声ボタンすずみなくりっく！suzumina.click`;
+
+	// フォント取得失敗でも 500 にしない: 内蔵デフォルトフォント（latin のみ）で ASCII 縮退版を描画。
+	// ボタン名が ASCII ならそのまま表示を継続できる
+	const notoSansJp = await loadNotoSansJpSubset(fontText).catch(() => null);
+	if (!notoSansJp) {
+		const asciiButtonText = /^[\x20-\x7E]+$/.test(buttonText) ? buttonText : "";
+		const asciiHeading = asciiButtonText ? `"${asciiButtonText}"` : "suzumina.click";
+		return new ImageResponse(
+			<OgCard
+				headerLabel="SOUND BUTTON"
+				durationLabel={durationSec != null ? `${durationSec.toFixed(1)}s` : ""}
+				heading={asciiHeading}
+				headingFontSize={buttonTextFontSize(asciiHeading)}
+				footerLeft="suzumina.click"
+				footerRight=""
+			/>,
+			{ ...size },
+		);
+	}
+
+	return new ImageResponse(
+		<OgCard
+			headerLabel="涼花みなせ 音声ボタン"
+			durationLabel={durationLabel}
+			heading={heading}
+			headingFontSize={buttonText ? buttonTextFontSize(buttonText) : 76}
+			footerLeft="すずみなくりっく！"
+			footerRight="suzumina.click"
+		/>,
 		{
 			...size,
 			fonts: [{ name: "Noto Sans JP", data: notoSansJp, weight: 700, style: "normal" }],
