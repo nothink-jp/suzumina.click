@@ -287,6 +287,30 @@ describe("AudioButton", () => {
 		);
 	});
 
+	it("xShareUrl 指定時のみポップオーバーに共有リンクを表示する", async () => {
+		const user = userEvent.setup();
+		const shareUrl = "https://x.com/intent/post?text=test";
+
+		render(<AudioButton audioButton={mockAudioButton} xShareUrl={shareUrl} />);
+
+		await user.click(screen.getByRole("button", { name: "詳細を表示" }));
+
+		const shareLink = screen.getByRole("link", { name: "「テスト音声ボタン」をXで共有" });
+		expect(shareLink).toHaveAttribute("href", shareUrl);
+		expect(shareLink).toHaveAttribute("target", "_blank");
+		expect(shareLink).toHaveAttribute("rel", "noopener noreferrer");
+	});
+
+	it("xShareUrl 未指定なら共有リンクを表示しない", async () => {
+		const user = userEvent.setup();
+
+		render(<AudioButton audioButton={mockAudioButton} />);
+
+		await user.click(screen.getByRole("button", { name: "詳細を表示" }));
+
+		expect(screen.queryByRole("link", { name: /をXで共有/ })).not.toBeInTheDocument();
+	});
+
 	it("should keep favorite button enabled when not authenticated and let the caller decide", async () => {
 		const user = userEvent.setup();
 		const onFavoriteToggleMock = vi.fn();

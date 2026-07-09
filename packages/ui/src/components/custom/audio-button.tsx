@@ -30,6 +30,7 @@ import { useCallback, useId, useRef, useState } from "react";
 import { type AudioControls, AudioPlayer } from "./audio-player";
 import { HighlightText } from "./highlight-text";
 import { TagList } from "./tag-list";
+import { XIcon } from "./x-icon";
 import { YoutubeIcon } from "./youtube-icon";
 
 interface AudioButtonProps {
@@ -59,6 +60,8 @@ interface AudioButtonProps {
 	highlightClassName?: string;
 	// 認証関連
 	isAuthenticated?: boolean;
+	/** X共有の intent URL。指定時のみポップオーバーに「共有」アクションを表示（組み立ては呼び出し元の責務） */
+	xShareUrl?: string;
 }
 
 interface AudioButtonPopoverContentProps {
@@ -77,6 +80,7 @@ interface AudioButtonPopoverContentProps {
 	searchQuery?: string;
 	highlightClassName?: string;
 	isAuthenticated: boolean;
+	xShareUrl?: string;
 }
 
 // Extracted components for reducing complexity
@@ -310,6 +314,7 @@ function PopoverActions({
 	onDetailClick,
 	onPopoverClose,
 	describedBy,
+	xShareUrl,
 }: {
 	audioButton: AudioButtonType;
 	youtubeUrl: string;
@@ -323,6 +328,7 @@ function PopoverActions({
 	onDetailClick?: () => void;
 	onPopoverClose?: () => void;
 	describedBy?: string;
+	xShareUrl?: string;
 }) {
 	return (
 		<div className="flex gap-1 items-center flex-wrap">
@@ -351,6 +357,20 @@ function PopoverActions({
 				<YoutubeIcon className="h-4 w-4" />
 				YouTube
 			</a>
+
+			{xShareUrl && (
+				<a
+					href={xShareUrl}
+					target="_blank"
+					rel="noopener noreferrer"
+					className="flex items-center gap-1.5 h-10 px-2.5 rounded-lg text-xs font-semibold bg-foreground/5 text-foreground hover:bg-foreground/10 transition-colors"
+					onClick={(e) => e.stopPropagation()}
+					aria-label={`「${audioButton.buttonText}」をXで共有`}
+				>
+					<XIcon className="h-3.5 w-3.5" />
+					共有
+				</a>
+			)}
 
 			{showDetailLink && onDetailClick && (
 				<button
@@ -387,6 +407,7 @@ function AudioButtonPopoverContent({
 	searchQuery,
 	highlightClassName,
 	isAuthenticated,
+	xShareUrl,
 }: AudioButtonPopoverContentProps) {
 	const authNoteId = useId();
 
@@ -431,6 +452,7 @@ function AudioButtonPopoverContent({
 					onDetailClick={onDetailClick}
 					onPopoverClose={onPopoverClose}
 					describedBy={isAuthenticated ? undefined : authNoteId}
+					xShareUrl={xShareUrl}
 				/>
 			</div>
 		</div>
@@ -456,6 +478,7 @@ export function AudioButton({
 	searchQuery,
 	highlightClassName,
 	isAuthenticated = false,
+	xShareUrl,
 }: AudioButtonProps) {
 	const [isPlaying, setIsPlaying] = useState(false);
 	const [isLoading, setIsLoading] = useState(false);
@@ -627,6 +650,7 @@ export function AudioButton({
 						onPopoverClose={() => setIsPopoverOpen(false)}
 						searchQuery={searchQuery}
 						highlightClassName={highlightClassName}
+						xShareUrl={xShareUrl}
 						isAuthenticated={isAuthenticated}
 					/>
 				</PopoverContent>
