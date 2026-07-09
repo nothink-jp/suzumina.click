@@ -92,7 +92,9 @@ export async function RelatedAudioButtons({ currentId, videoId, tags }: RelatedA
 		tags.length > 0
 			? fetchButtons({
 					tags,
-					limit: SECTION_LIMIT + 1,
+					// 同一動画セクションとの重複排除で減る分の余裕。タグ経路は in-memory フィルタ
+					// （全件取得→スライス）のため limit を増やしても Firestore reads は増えない
+					limit: SECTION_LIMIT * 2,
 					sortBy: "mostPlayed",
 					onlyPublic: true,
 				})
