@@ -57,19 +57,13 @@ export async function generateMetadata({ params }: AudioButtonDetailPageProps): 
 			"YouTube",
 			"音声切り抜き",
 		],
+		// og:image / twitter:image は手書きしない。同ディレクトリの opengraph-image.tsx
+		// （動的生成・SPR-249）から両タグとも自動出力される
 		openGraph: {
 			title: `${audioButton.buttonText} | すずみなくりっく！`,
 			description: description,
 			type: "article",
 			url: `https://suzumina.click/buttons/${audioButton.id}`,
-			images: [
-				{
-					url: `https://img.youtube.com/vi/${audioButton.videoId}/maxresdefault.jpg`,
-					width: 1280,
-					height: 720,
-					alt: `${audioButton.buttonText} - 涼花みなせ音声ボタン`,
-				},
-			],
 			publishedTime: audioButton.createdAt,
 			authors: [audioButton.creatorName],
 		},
@@ -77,7 +71,6 @@ export async function generateMetadata({ params }: AudioButtonDetailPageProps): 
 			card: "summary_large_image",
 			title: `${audioButton.buttonText} | すずみなくりっく！`,
 			description: description,
-			images: [`https://img.youtube.com/vi/${audioButton.videoId}/maxresdefault.jpg`],
 		},
 		alternates: {
 			canonical: `/buttons/${audioButton.id}`,
