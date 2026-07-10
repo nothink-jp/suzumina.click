@@ -78,11 +78,12 @@ export function AudioButtonCreator({
 			const result = await createAudioButton(input);
 
 			if (result.success) {
-				// 詳細ページへ遷移。create セグメントを離れるためこの instance は破棄される。
+				// 詳細ページへフルロード遷移（SPR-252）。router.push だと /buttons ツリー内の soft nav が
+				// @modal にインターセプトされ、作成フォームの上にクイックビューが重なってしまう
+				// （フォーム instance も破棄されず「作成中…」が固着する）。フルロードなら
+				// フル詳細ページ表示と instance 破棄の両方が保証される。
 				// 遷移完了まで「作成中…」を維持し、フォームを空白化しない（ちらつき防止）。
-				// 既知の制約: router.push に完了コールバックが無いため、遷移が完了しない異常時
-				// （ネットワーク断・SSR エラー等）は「作成中…」のまま固着しうる。ちらつき防止を優先。
-				router.push(`/buttons/${result.data.id}`);
+				window.location.href = `/buttons/${result.data.id}`;
 				return;
 			}
 
@@ -99,7 +100,6 @@ export function AudioButtonCreator({
 		tags,
 		timeAdjustment.startTime,
 		timeAdjustment.endTime,
-		router,
 		setIsCreating,
 		setError,
 		videoTitle,
