@@ -409,10 +409,11 @@ describe("AudioButtonCreator - Refactored Architecture", () => {
 			await waitFor(() => expect(createButton).toBeEnabled());
 			await user.click(createButton);
 
-			// 詳細ページへ遷移する
+			// 詳細ページへフルロード遷移する（router.push だと @modal にインターセプトされるため。SPR-252）
 			await waitFor(() => {
-				expect(mockPush).toHaveBeenCalledWith("/buttons/new-audio-button-id");
+				expect(window.location.href).toContain("/buttons/new-audio-button-id");
 			});
+			expect(mockPush).not.toHaveBeenCalled();
 
 			// 遷移完了まで「作成中…」を維持し、フォームは空白化しない（ちらつき防止）
 			expect(screen.getByRole("button", { name: /作成中/ })).toBeInTheDocument();

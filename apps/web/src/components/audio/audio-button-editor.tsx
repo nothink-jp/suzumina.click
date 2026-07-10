@@ -56,7 +56,9 @@ export function AudioButtonEditor({ audioButton, videoDuration = 600 }: AudioBut
 			const result = await updateAudioButton(audioButton.id, input);
 
 			if (result.success) {
-				router.push(`/buttons/${audioButton.id}`);
+				// フルロード遷移（SPR-252）: router.push だと /buttons ツリー内の soft nav が
+				// @modal にインターセプトされ、編集フォームの上にクイックビューが重なる
+				window.location.href = `/buttons/${audioButton.id}`;
 			} else {
 				setError(result.error || "更新に失敗しました");
 			}
@@ -65,7 +67,7 @@ export function AudioButtonEditor({ audioButton, videoDuration = 600 }: AudioBut
 		} finally {
 			setIsUpdating(false);
 		}
-	}, [isValid, hasChanges, audioButton.id, buttonText, tags, router, setError, setIsUpdating]);
+	}, [isValid, hasChanges, audioButton.id, buttonText, tags, setError, setIsUpdating]);
 
 	// 時間調整用のハンドラーは共通フックから取得
 
