@@ -18,6 +18,8 @@ interface PlayHeroProps {
 	/** L=詳細ページ用（再生中パルスリング付き）/ M=モーダル用 */
 	size?: "L" | "M";
 	onPlay?: () => void;
+	/** 再生状態の変化を親へ通知する（メタ表示の「再生中」同期用） */
+	onPlayStateChange?: (playing: boolean) => void;
 	className?: string;
 }
 
@@ -42,7 +44,13 @@ function HeroCircleIcon({
 	);
 }
 
-export function PlayHero({ audioButton, size = "L", onPlay, className }: PlayHeroProps) {
+export function PlayHero({
+	audioButton,
+	size = "L",
+	onPlay,
+	onPlayStateChange,
+	className,
+}: PlayHeroProps) {
 	const [isPlaying, setIsPlaying] = useState(false);
 	const [isLoading, setIsLoading] = useState(false);
 	const audioPlayerRef = useRef<AudioControls>(null);
@@ -70,13 +78,15 @@ export function PlayHero({ audioButton, size = "L", onPlay, className }: PlayHer
 		setIsPlaying(true);
 		setIsLoading(false);
 		onPlay?.();
-	}, [onPlay]);
+		onPlayStateChange?.(true);
+	}, [onPlay, onPlayStateChange]);
 
 	const handleStop = useCallback(() => {
 		setIsPlaying(false);
 		setIsLoading(false);
 		resetProgressFill();
-	}, [resetProgressFill]);
+		onPlayStateChange?.(false);
+	}, [resetProgressFill, onPlayStateChange]);
 
 	const handleProgress = useCallback((progressPercent: number) => {
 		if (progressFillRef.current) {

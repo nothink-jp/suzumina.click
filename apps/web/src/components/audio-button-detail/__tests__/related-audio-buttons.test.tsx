@@ -58,7 +58,7 @@ describe("RelatedAudioButtons", () => {
 		vi.clearAllMocks();
 	});
 
-	it("同一動画セクションから現在のボタンを除外して表示する", async () => {
+	it("この動画のボタンから現在のボタンを除外して表示する", async () => {
 		mockList.mockImplementation(async (query) => {
 			if (query?.videoId) return successResult([makeButton("current"), makeButton("b1")]);
 			return successResult([]);
@@ -66,7 +66,7 @@ describe("RelatedAudioButtons", () => {
 
 		render(await RelatedAudioButtons({ currentId: "current", videoId: "v1", tags: [] }));
 
-		expect(screen.getByText("同じ動画の音声ボタン")).toBeInTheDocument();
+		expect(screen.getByText("この動画のボタン")).toBeInTheDocument();
 		expect(screen.getByText("ボタンb1")).toBeInTheDocument();
 		expect(screen.queryByText("ボタンcurrent")).not.toBeInTheDocument();
 	});
@@ -80,12 +80,12 @@ describe("RelatedAudioButtons", () => {
 
 		render(await RelatedAudioButtons({ currentId: "current", videoId: "v1", tags: ["タグA"] }));
 
-		expect(screen.getByText("同じタグの音声ボタン")).toBeInTheDocument();
+		expect(screen.getByText("同じタグのボタン")).toBeInTheDocument();
 		// b1 は同一動画側にのみ表示（重複排除）
 		expect(screen.getAllByText("ボタンb1")).toHaveLength(1);
 		expect(screen.getByText("ボタンb2")).toBeInTheDocument();
 		// もっと見るリンクはタグを | 連結した一覧 URL を指す
-		expect(screen.getByRole("link", { name: "同じタグのボタンをもっと見る" })).toHaveAttribute(
+		expect(screen.getByRole("link", { name: /同じタグのボタンをもっと見る/ })).toHaveAttribute(
 			"href",
 			`/buttons?tags=${encodeURIComponent("タグA")}`,
 		);
@@ -108,9 +108,9 @@ describe("RelatedAudioButtons", () => {
 
 		render(await RelatedAudioButtons({ currentId: "current", videoId: "v1", tags: ["タグA"] }));
 
-		expect(screen.getByText("人気の音声ボタン")).toBeInTheDocument();
+		expect(screen.getByText("人気のボタン")).toBeInTheDocument();
 		expect(screen.getByText("ボタンpop1")).toBeInTheDocument();
-		expect(screen.getByRole("link", { name: "音声ボタン一覧を見る" })).toHaveAttribute(
+		expect(screen.getByRole("link", { name: /音声ボタン一覧を見る/ })).toHaveAttribute(
 			"href",
 			"/buttons",
 		);
