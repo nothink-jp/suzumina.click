@@ -3,21 +3,26 @@
  */
 
 import type { AudioButton as AudioButtonType } from "@suzumina.click/shared-types";
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { PlayHero } from "../play-hero";
 
-// YouTube Player Pool のモック（audio-button.test.tsx と同じ基盤）
-vi.mock("../../lib/youtube-player-pool", () => ({
-	youTubePlayerPool: {
-		onReady: vi.fn((callback) => callback()),
-		playSegment: vi.fn(),
-		stopCurrentSegment: vi.fn(),
-		getOrCreatePlayer: vi.fn(() => Promise.resolve({ setVolume: vi.fn() })),
-		getStats: vi.fn(() => ({ activeSegmentVideoId: null })),
+// AudioPlayer は props を捕捉するスタブに差し替え、onPlay/onPause/onEnd を任意に発火できるようにする
+// （YouTube pool 実体はテスト環境で再生状態まで到達しないため、コールバック契約を直接検証する）
+let capturedPlayerProps: Record<string, unknown> | null = null;
+vi.mock("../audio-player", () => ({
+	AudioPlayer: (props: Record<string, unknown>) => {
+		capturedPlayerProps = props;
+		return null;
 	},
 }));
+
+const firePlayerEvent = (name: "onPlay" | "onPause" | "onEnd" | "onProgress", arg?: number) => {
+	act(() => {
+		(capturedPlayerProps?.[name] as (n?: number) => void)?.(arg);
+	});
+};
 
 const mockAudioButton: AudioButtonType = {
 	id: "hero-test",
@@ -64,10 +69,53 @@ describe("PlayHero", () => {
 		expect(button).toBeDisabled();
 	});
 
-	it("L サイズは進捗フィルとテキストを持つ（既定）", () => {
+	it("再生開始で onPlay と onPlayStateChange(true) が呼ばれ、一時停止表示になる", () => {
+		const onPlay = vi.fn();
+		const onPlayStateChange = vi.fn();
+		render(
+			<PlayHero
+				audioButton={mockAudioButton}
+				onPlay={onPlay}
+				onPlayStateChange={onPlayStateChange}
+			/>,
+		);
+
+		firePlayerEvent("onPlay");
+
+		expect(onPlay).toHaveBeenCalledTimes(1);
+		expect(onPlayStateChange).toHaveBeenLastCalledWith(true);
+		expect(screen.getByRole("button", { name: "一時停止" })).toBeInTheDocument();
+	});
+
+	it("一時停止で onPlayStateChange(false) が呼ばれ、進捗がリセットされる", () => {
+		const onPlayStateChange = vi.fn();
+		const { container } = render(
+			<PlayHero audioButton={mockAudioButton} onPlayStateChange={onPlayStateChange} />,
+		);
+
+		firePlayerEvent("onPlay");
+		firePlayerEvent("onProgress", 40);
+		firePlayerEvent("onPause");
+
+		expect(onPlayStateChange).toHaveBeenLastCalledWith(false);
+		expect(screen.getByRole("button", { name: "再生" })).toBeInTheDocument();
+		const fill = container.querySelector('span[style*="width: 0%"]');
+		expect(fill).not.toBeNull();
+	});
+
+	it("再生終了でも onPlayStateChange(false) が呼ばれる", () => {
+		const onPlayStateChange = vi.fn();
+		render(<PlayHero audioButton={mockAudioButton} onPlayStateChange={onPlayStateChange} />);
+
+		firePlayerEvent("onPlay");
+		firePlayerEvent("onEnd");
+
+		expect(onPlayStateChange).toHaveBeenLastCalledWith(false);
+	});
+
+	it("L サイズは進捗フィルを width 0% で初期化する（既定）", () => {
 		const { container } = render(<PlayHero audioButton={mockAudioButton} size="L" />);
 
-		// 進捗フィルは width 0% で初期化される
 		const fill = container.querySelector('span[style*="width: 0%"]');
 		expect(fill).not.toBeNull();
 	});

@@ -3,6 +3,7 @@ import { YoutubeIcon } from "@suzumina.click/ui/components/custom/youtube-icon";
 import { Clock } from "lucide-react";
 import { getVideoById } from "@/app/videos/actions";
 import { getVideoBadgeInfo } from "@/components/video/video-badge";
+import { formatJSTDateSlash } from "@/utils/date-format";
 
 /**
  * 元動画カード（SPR-255）: サムネイル + 切り抜き位置バー + クリップ範囲 + YouTube リンク。
@@ -26,20 +27,6 @@ export function parseIsoDurationToSeconds(duration: string | undefined): number 
 	const minutes = match[2] ? Number.parseInt(match[2], 10) : 0;
 	const seconds = match[3] ? Number.parseFloat(match[3]) : 0;
 	return hours * 3600 + minutes * 60 + seconds;
-}
-
-function formatPublishedDate(isoString: string | undefined): string {
-	if (!isoString) return "";
-	try {
-		return new Date(isoString).toLocaleDateString("ja-JP", {
-			timeZone: "Asia/Tokyo",
-			year: "numeric",
-			month: "2-digit",
-			day: "2-digit",
-		});
-	} catch {
-		return "";
-	}
 }
 
 export async function SourceVideoCard({
@@ -93,7 +80,7 @@ export async function SourceVideoCard({
 				<p className="line-clamp-2 text-sm leading-[1.5] font-bold">{title}</p>
 				{video?.publishedAt && (
 					<p className="mt-2 text-xs text-muted-foreground">
-						{formatPublishedDate(video.publishedAt)}
+						{formatJSTDateSlash(video.publishedAt)}
 					</p>
 				)}
 				<div className="mt-3 flex items-center gap-2 rounded-xl bg-muted px-3.5 py-2.5">

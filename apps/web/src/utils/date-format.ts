@@ -116,3 +116,21 @@ export function formatJSTDate(dateString: string | Date): string {
 
 	return `${year}年 ${month}月 ${day}日`;
 }
+
+/**
+ * 日付を日本標準時の "YYYY/MM/DD" でフォーマット（ボタン詳細のメタ表示用）
+ * @param dateString - ISO形式の日付文字列またはDateオブジェクト
+ * @returns 無効な日付は空文字
+ */
+export function formatJSTDateSlash(dateString: string | Date): string {
+	const date = validateAndParseDate(dateString);
+	if (!date) {
+		return "";
+	}
+	return date.toLocaleDateString("ja-JP", {
+		timeZone: "Asia/Tokyo",
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+	});
+}

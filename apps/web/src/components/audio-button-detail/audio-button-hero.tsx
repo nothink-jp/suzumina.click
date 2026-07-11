@@ -5,6 +5,7 @@ import { ActionPillRow } from "@suzumina.click/ui/components/custom/action-pill-
 import { MetaPillRow } from "@suzumina.click/ui/components/custom/meta-pill-row";
 import { PlayHero } from "@suzumina.click/ui/components/custom/play-hero";
 import { buildXShareUrl } from "@/components/audio/share-on-x-button";
+import { formatJSTDateSlash } from "@/utils/date-format";
 import { useAudioButtonHeroState } from "./use-audio-button-hero-state";
 
 /**
@@ -15,20 +16,6 @@ import { useAudioButtonHeroState } from "./use-audio-button-hero-state";
 
 interface AudioButtonHeroProps {
 	audioButton: AudioButtonPlainObject;
-}
-
-/** createdAt(ISO) → "2026/06/26"（JST） */
-export function formatCreatedDate(isoString: string): string {
-	try {
-		return new Date(isoString).toLocaleDateString("ja-JP", {
-			timeZone: "Asia/Tokyo",
-			year: "numeric",
-			month: "2-digit",
-			day: "2-digit",
-		});
-	} catch {
-		return "";
-	}
 }
 
 export function AudioButtonHero({ audioButton }: AudioButtonHeroProps) {
@@ -69,7 +56,7 @@ export function AudioButtonHero({ audioButton }: AudioButtonHeroProps) {
 				<MetaPillRow
 					playCount={playCount}
 					durationText={`${duration.toFixed(1)}秒`}
-					dateText={formatCreatedDate(audioButton.createdAt)}
+					dateText={formatJSTDateSlash(audioButton.createdAt)}
 					favoriteCount={audioButton.stats.favoriteCount || 0}
 					isPlaying={isPlaying}
 				/>
