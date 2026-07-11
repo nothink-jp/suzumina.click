@@ -26,10 +26,11 @@ import {
 	User,
 	Video,
 } from "lucide-react";
-import { useCallback, useId, useRef, useState } from "react";
-import { type AudioControls, AudioPlayer } from "./audio-player";
+import { useCallback, useId, useState } from "react";
+import { AudioPlayer } from "./audio-player";
 import { HighlightText } from "./highlight-text";
 import { TagList } from "./tag-list";
+import { useAudioPlayback } from "./use-audio-playback";
 import { XIcon } from "./x-icon";
 import { YoutubeIcon } from "./youtube-icon";
 
@@ -480,12 +481,10 @@ export function AudioButton({
 	isAuthenticated = false,
 	xShareUrl,
 }: AudioButtonProps) {
-	const [isPlaying, setIsPlaying] = useState(false);
-	const [isLoading, setIsLoading] = useState(false);
 	const [isPopoverOpen, setIsPopoverOpen] = useState(false);
-	const audioPlayerRef = useRef<AudioControls>(null);
-	// 250ms毎に更新される再生進捗はReact stateにせずDOMへ直接書き込む（コンポーネント全体の再レンダーを避けるため）
-	const progressFillRef = useRef<HTMLSpanElement>(null);
+	// 再生状態機械は useAudioPlayback に一本化（PlayHero と共有・SPR-258）
+	const { isPlaying, isLoading, audioPlayerRef, progressFillRef, handleToggle, playerHandlers } =
+		useAudioPlayback({ onPlay });
 
 	// 時間の計算
 	const duration = (audioButton.endTime || audioButton.startTime) - audioButton.startTime;
@@ -498,62 +497,17 @@ export function AudioButton({
 			: audioButton.buttonText;
 
 	const handlePlayClick = useCallback(
-		async (e: React.MouseEvent) => {
+		(e: React.MouseEvent) => {
 			e.stopPropagation();
-
-			if (isPlaying) {
-				audioPlayerRef.current?.pause();
-			} else {
-				// 再生開始までの読み込み中はスピナーを出す（onPlay=handlePlayStart で解除）。
-				// 以前は setIsLoading(true) の経路が無くスピナーが不達だった（SPR-200）。
-				setIsLoading(true);
-				audioPlayerRef.current?.play();
-			}
+			handleToggle();
 		},
-		[isPlaying],
+		[handleToggle],
 	);
-
-	const handlePlayStart = useCallback(() => {
-		setIsPlaying(true);
-		setIsLoading(false);
-		onPlay?.();
-	}, [onPlay]);
-
-	const resetProgressFill = useCallback(() => {
-		if (progressFillRef.current) {
-			progressFillRef.current.style.width = "0%";
-		}
-	}, []);
-
-	const handleProgress = useCallback((progressPercent: number) => {
-		if (progressFillRef.current) {
-			progressFillRef.current.style.width = `${progressPercent}%`;
-		}
-	}, []);
-
-	const handlePlayPause = useCallback(() => {
-		setIsPlaying(false);
-		setIsLoading(false);
-		resetProgressFill();
-	}, [resetProgressFill]);
-
-	const handlePlayEnd = useCallback(() => {
-		setIsPlaying(false);
-		setIsLoading(false);
-		resetProgressFill();
-	}, [resetProgressFill]);
 
 	return (
 		<>
 			{/* プール化された音声プレイヤー（DOM要素なし） */}
-			<AudioPlayer
-				ref={audioPlayerRef}
-				audioButton={audioButton}
-				onPlay={handlePlayStart}
-				onPause={handlePlayPause}
-				onEnd={handlePlayEnd}
-				onProgress={handleProgress}
-			/>
+			<AudioPlayer ref={audioPlayerRef} audioButton={audioButton} {...playerHandlers} />
 
 			{/* UI要素 */}
 			<Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
