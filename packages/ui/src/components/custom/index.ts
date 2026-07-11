@@ -1,6 +1,4 @@
 // Audio components
-
-// ボタン画面刷新の共通部品（SPR-254）
 export { ActionPillRow } from "./action-pill-row";
 export { AudioButton } from "./audio-button";
 export { AudioPlayer } from "./audio-player";
