@@ -22,6 +22,8 @@ concurrency:
 
 permissions:
   contents: read
+  # debounce ステップの `gh api repos/.../pulls/{number}` 呼び出しに必要
+  pull-requests: read
 
 jobs:
   changes:
@@ -48,8 +50,10 @@ jobs:
     # Dependabot run には Actions secrets（CHROMATIC_PROJECT_TOKEN）が注入されず必ず失敗するため除外する。
     # 依存 bump は packages/ui の見た目に影響しない（lock 変更で発火するだけ）ので視覚回帰の対象外でよい。
     # draft PR は対象外（ready_for_review か workflow_dispatch で改めて実行される）。
+    # workflow_dispatch は paths-filter の差分検出（既定 base は直近コミットのみ比較）に関わらず常に実行し、
+    # 手動でのベースライン更新が静かに no-op になることを防ぐ。
     if: >
-      needs.changes.outputs.ui == 'true' &&
+      (needs.changes.outputs.ui == 'true' || github.event_name == 'workflow_dispatch') &&
       github.actor != 'dependabot[bot]' &&
       (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
     timeout-minutes: 15
