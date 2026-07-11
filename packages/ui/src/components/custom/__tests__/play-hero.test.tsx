@@ -6,6 +6,7 @@ import type { AudioButton as AudioButtonType } from "@suzumina.click/shared-type
 import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
+import { PROGRESS_TICK_MS } from "../../../lib/playback-constants";
 import { PlayHero } from "../play-hero";
 
 // AudioPlayer は props を捕捉するスタブに差し替え、onPlay/onPause/onEnd を任意に発火できるようにする
@@ -118,6 +119,13 @@ describe("PlayHero", () => {
 
 		const fill = container.querySelector('span[style*="width: 0%"]');
 		expect(fill).not.toBeNull();
+	});
+
+	it("進捗フィルの transition は進捗更新間隔と同値（カクつき防止・SPR-259）", () => {
+		const { container } = render(<PlayHero audioButton={mockAudioButton} />);
+
+		const fill = container.querySelector('span[style*="width: 0%"]') as HTMLElement;
+		expect(fill.style.transitionDuration).toBe(`${PROGRESS_TICK_MS}ms`);
 	});
 
 	it("M サイズでも同一の accessibility 構造を保つ", () => {

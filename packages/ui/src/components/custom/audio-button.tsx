@@ -27,6 +27,7 @@ import {
 	Video,
 } from "lucide-react";
 import { useCallback, useId, useState } from "react";
+import { PROGRESS_TICK_MS } from "../../lib/playback-constants";
 import { AudioPlayer } from "./audio-player";
 import { HighlightText } from "./highlight-text";
 import { TagList } from "./tag-list";
@@ -521,12 +522,13 @@ export function AudioButton({
 						className,
 					)}
 				>
-					{/* 進捗フィル（DOMへ直接書き込むためReact state化しない） */}
+					{/* 進捗フィル（DOMへ直接書き込むためReact state化しない）。
+					    transition は進捗更新間隔と同値にして連続移動させる（短いとカクつく・SPR-259） */}
 					<span
 						ref={progressFillRef}
 						aria-hidden="true"
-						className="pointer-events-none absolute inset-0 bg-minase-200 transition-[width] duration-150 ease-linear"
-						style={{ width: "0%" }}
+						className="pointer-events-none absolute inset-0 bg-minase-200 transition-[width] ease-linear"
+						style={{ width: "0%", transitionDuration: `${PROGRESS_TICK_MS}ms` }}
 					/>
 
 					{/* メイン部分 - 再生専用エリア */}

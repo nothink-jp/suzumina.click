@@ -6,6 +6,7 @@ import type { AudioButton as AudioButtonType } from "@suzumina.click/shared-type
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
+import { PROGRESS_TICK_MS } from "../../../lib/playback-constants";
 import { AudioButton } from "../audio-button";
 
 // YouTube Player Pool のモック
@@ -71,6 +72,13 @@ describe("AudioButton", () => {
 
 		const playButton = screen.getByRole("button", { name: "再生" });
 		expect(playButton).toBeInTheDocument();
+	});
+
+	it("進捗フィルの transition は進捗更新間隔と同値（カクつき防止・SPR-259）", () => {
+		const { container } = render(<AudioButton audioButton={mockAudioButton} />);
+
+		const fill = container.querySelector('span[style*="width: 0%"]') as HTMLElement;
+		expect(fill.style.transitionDuration).toBe(`${PROGRESS_TICK_MS}ms`);
 	});
 
 	it("should truncate long titles", () => {
