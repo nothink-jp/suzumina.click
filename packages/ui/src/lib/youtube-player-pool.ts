@@ -9,6 +9,7 @@
 
 // 既存のyoutube-typesを再利用
 import type { YTPlayer, YTPlayerConfig } from "../components/custom/youtube-types";
+import { PROGRESS_TICK_MS } from "./playback-constants";
 import { loadYouTubeIframeAPI } from "./youtube-api-loader";
 
 interface PlayerData {
@@ -31,7 +32,7 @@ export interface PlaySegmentCallbacks {
 	onPlay?: () => void;
 	onPause?: () => void;
 	onEnd?: () => void;
-	/** 再生進捗（0-100）。監視間隔（250ms）ごとに通知 */
+	/** 再生進捗（0-100）。PROGRESS_TICK_MS ごとに通知 */
 	onProgress?: (progressPercent: number) => void;
 }
 
@@ -43,7 +44,7 @@ export class YouTubePlayerPool {
 	private players = new Map<string, PlayerData>();
 	private activeSegment: SegmentPlayback | null = null;
 	private readonly maxPoolSize = 5;
-	private readonly monitoringInterval = 250; // 250ms間隔で監視
+	private readonly monitoringInterval = PROGRESS_TICK_MS;
 	private isAPIReady = false;
 	private readyCallbacks: (() => void)[] = [];
 

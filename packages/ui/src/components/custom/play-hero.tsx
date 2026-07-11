@@ -3,6 +3,7 @@
 import type { AudioButton as AudioButtonType } from "@suzumina.click/shared-types";
 import { cn } from "@suzumina.click/ui/lib/utils";
 import { Loader2, Pause, Play } from "lucide-react";
+import { PROGRESS_TICK_MS } from "../../lib/playback-constants";
 import { AudioPlayer } from "./audio-player";
 import { useAudioPlayback } from "./use-audio-playback";
 
@@ -84,12 +85,13 @@ export function PlayHero({
 						: "gap-3.5 rounded-2xl border-[1.5px] py-3 pr-[26px] pl-3 shadow-[0_6px_18px_hsl(var(--suzuka-500)/0.12)] hover:shadow-[0_8px_22px_hsl(var(--minase-500)/0.2)]",
 				)}
 			>
-				{/* 進捗フィル（DOMへ直接書き込むためReact state化しない） */}
+				{/* 進捗フィル（DOMへ直接書き込むためReact state化しない）。
+				    transition は進捗更新間隔と同値にして連続移動させる（短いとカクつく・SPR-259） */}
 				<span
 					ref={progressFillRef}
 					aria-hidden="true"
-					className="pointer-events-none absolute inset-0 bg-minase-200 transition-[width] duration-100 ease-linear"
-					style={{ width: "0%" }}
+					className="pointer-events-none absolute inset-0 bg-minase-200 transition-[width] ease-linear"
+					style={{ width: "0%", transitionDuration: `${PROGRESS_TICK_MS}ms` }}
 				/>
 
 				{/* 再生サークル */}

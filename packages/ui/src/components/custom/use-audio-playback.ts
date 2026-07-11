@@ -9,8 +9,9 @@ import type { AudioControls, AudioPlayerProps } from "./audio-player";
  * AudioPlayer ハンドラ群を一本化する。見た目は各コンポーネントの責務のまま。
  *
  * 使い方: 返り値の audioPlayerRef と playerHandlers を AudioPlayer に渡し、
- * progressFillRef を進捗フィル要素に張る。進捗は 250ms 毎の更新のため
- * React state にせず DOM へ直接書き込む（再レンダー回避）。
+ * progressFillRef を進捗フィル要素に張る。進捗は PROGRESS_TICK_MS
+ * （lib/playback-constants.ts）毎の更新のため React state にせず
+ * DOM へ直接書き込む（再レンダー回避）。フィル要素の transition も同定数に揃える（SPR-259）。
  */
 
 interface UseAudioPlaybackOptions {
