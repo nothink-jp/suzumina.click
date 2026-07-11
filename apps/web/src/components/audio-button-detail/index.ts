@@ -1,8 +1,9 @@
-export { AudioButtonDetailActions } from "./audio-button-detail-actions";
-export { AudioButtonDetailHeader } from "./audio-button-detail-header";
-export { AudioButtonDetailMainContent } from "./audio-button-detail-main-content";
-export { AudioButtonDetailSidebar } from "./audio-button-detail-sidebar";
-export { AudioButtonDetailStats } from "./audio-button-detail-stats";
+export { AudioButtonHero } from "./audio-button-hero";
+export { AudioButtonHeroHeader } from "./audio-button-hero-header";
+export { AudioButtonQuickView } from "./audio-button-quick-view";
+export { CreatorCard } from "./creator-card";
+export { DetailTagCard } from "./detail-tag-card";
+export { ListCtaCard } from "./list-cta-card";
 export { RelatedAudioButtons } from "./related-audio-buttons";
-export { UserCardWrapper } from "./user-card-wrapper";
-export { VideoCardWrapper } from "./video-card-wrapper";
+export { SourceVideoCard } from "./source-video-card";
+export { SourceVideoMini } from "./source-video-mini";
