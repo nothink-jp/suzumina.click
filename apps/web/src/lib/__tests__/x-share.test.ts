@@ -1,6 +1,5 @@
-import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { buildXShareUrl, ShareOnXButton } from "../share-on-x-button";
+import { buildXShareUrl } from "../x-share";
 
 describe("buildXShareUrl", () => {
 	it("x.com の intent URL を生成し、text/url/hashtags を含む", () => {
@@ -32,17 +31,5 @@ describe("buildXShareUrl", () => {
 			"https://suzumina.click/buttons/id1?utm_source=x&utm_medium=social",
 		);
 		expect(url.searchParams.get("hashtags")).toBe("涼花みなせ");
-	});
-});
-
-describe("ShareOnXButton", () => {
-	it("intent URL への新規タブリンクとして描画される", () => {
-		render(<ShareOnXButton audioButtonId="abc123" buttonText="テストボタン" />);
-
-		const link = screen.getByRole("link", { name: "「テストボタン」をXで共有" });
-		expect(link).toHaveAttribute("href", buildXShareUrl("abc123", "テストボタン"));
-		expect(link).toHaveAttribute("target", "_blank");
-		expect(link).toHaveAttribute("rel", "noopener noreferrer");
-		expect(link).toHaveTextContent("Xで共有");
 	});
 });

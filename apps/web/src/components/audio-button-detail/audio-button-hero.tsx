@@ -4,7 +4,7 @@ import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
 import { ActionPillRow } from "@suzumina.click/ui/components/custom/action-pill-row";
 import { MetaPillRow } from "@suzumina.click/ui/components/custom/meta-pill-row";
 import { PlayHero } from "@suzumina.click/ui/components/custom/play-hero";
-import { buildXShareUrl } from "@/components/audio/share-on-x-button";
+import { buildXShareUrl } from "@/lib/x-share";
 import { formatJSTDateSlash } from "@/utils/date-format";
 import { useAudioButtonHeroState } from "./use-audio-button-hero-state";
 
