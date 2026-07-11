@@ -38,7 +38,9 @@ export function MetaPillRow({
 	return (
 		<div className={cn("flex flex-wrap items-center justify-center gap-2.5", className)}>
 			{isPlaying ? (
-				<span className="inline-flex items-center gap-[7px] rounded-full bg-heart/10 px-4 py-[7px] text-sm font-extrabold text-heart">
+				/* デザイン原案の bg-heart/10 + text-heart は実測コントラスト 4.08 で WCAG AA 不合格のため、
+				   お気に入り済みピルと同じ solid heart（4.8:1 ✓）に変更している */
+				<span className="inline-flex items-center gap-[7px] rounded-full bg-heart px-4 py-[7px] text-sm font-extrabold text-heart-foreground">
 					<Play className="h-3.5 w-3.5 fill-current" />
 					{playCount} 回目の再生中…
 				</span>

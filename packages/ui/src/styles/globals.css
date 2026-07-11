@@ -105,7 +105,7 @@
 		/* Heart accent - 桜霞: 瞳・ハートの鮮やかピンクレッド。くすませた suzuka に対する差し色。
 		 * status（info/success/…）と同じ semantic role として消費する（bg-heart / text-heart /
 		 * text-heart-foreground、hover は /90 不透明度）。favorite/like の active・新着強調に限定。 */
-		--heart: 348 80% 48%;            /* 白文字 ≈4.9:1 ✓・text-heart on white / bg-heart/10 も ≈4.5:1 ✓ */
+		--heart: 348 80% 48%;            /* 白文字 ≈4.9:1 ✓・text-heart on white ✓。※ text-heart on bg-heart/10 は実測 4.08 で AA 不合格（axe 検出・SPR-254）— 淡色地に heart 文字を載せない */
 		--heart-foreground: 344 50% 99%; /* heart 面上の文字（≒白）。bg-heart 上 ≈4.8:1 ✓ */
 
 		/* Animation keyframes */
