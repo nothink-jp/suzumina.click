@@ -3,8 +3,8 @@
 import type { AudioButton as AudioButtonType } from "@suzumina.click/shared-types";
 import { cn } from "@suzumina.click/ui/lib/utils";
 import { Loader2, Pause, Play } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
-import { type AudioControls, AudioPlayer } from "./audio-player";
+import { AudioPlayer } from "./audio-player";
+import { useAudioPlayback } from "./use-audio-playback";
 
 /**
  * 再生ヒーロー（ボタン画面刷新の中核部品・SPR-254）。
@@ -51,60 +51,16 @@ export function PlayHero({
 	onPlayStateChange,
 	className,
 }: PlayHeroProps) {
-	const [isPlaying, setIsPlaying] = useState(false);
-	const [isLoading, setIsLoading] = useState(false);
-	const audioPlayerRef = useRef<AudioControls>(null);
-	// 進捗はReact stateにせずDOMへ直接書き込む（AudioButton と同じ・再レンダー回避）
-	const progressFillRef = useRef<HTMLSpanElement>(null);
+	// 再生状態機械は useAudioPlayback に一本化（AudioButton と共有・SPR-258）
+	const { isPlaying, isLoading, audioPlayerRef, progressFillRef, handleToggle, playerHandlers } =
+		useAudioPlayback({ onPlay, onPlayStateChange });
 
 	const isL = size === "L";
-
-	const handleToggle = useCallback(() => {
-		if (isPlaying) {
-			audioPlayerRef.current?.pause();
-		} else {
-			setIsLoading(true);
-			audioPlayerRef.current?.play();
-		}
-	}, [isPlaying]);
-
-	const resetProgressFill = useCallback(() => {
-		if (progressFillRef.current) {
-			progressFillRef.current.style.width = "0%";
-		}
-	}, []);
-
-	const handlePlayStart = useCallback(() => {
-		setIsPlaying(true);
-		setIsLoading(false);
-		onPlay?.();
-		onPlayStateChange?.(true);
-	}, [onPlay, onPlayStateChange]);
-
-	const handleStop = useCallback(() => {
-		setIsPlaying(false);
-		setIsLoading(false);
-		resetProgressFill();
-		onPlayStateChange?.(false);
-	}, [resetProgressFill, onPlayStateChange]);
-
-	const handleProgress = useCallback((progressPercent: number) => {
-		if (progressFillRef.current) {
-			progressFillRef.current.style.width = `${progressPercent}%`;
-		}
-	}, []);
 
 	return (
 		<div className={cn("relative inline-block max-w-full", className)}>
 			{/* プール化された音声プレイヤー（DOM要素なし） */}
-			<AudioPlayer
-				ref={audioPlayerRef}
-				audioButton={audioButton}
-				onPlay={handlePlayStart}
-				onPause={handleStop}
-				onEnd={handleStop}
-				onProgress={handleProgress}
-			/>
+			<AudioPlayer ref={audioPlayerRef} audioButton={audioButton} {...playerHandlers} />
 
 			{/* 再生中パルスリング（Lのみ） */}
 			{isL && isPlaying && (
