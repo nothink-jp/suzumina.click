@@ -1,17 +1,12 @@
 import type { AudioButton } from "@suzumina.click/shared-types";
-import { YoutubeIcon } from "@suzumina.click/ui/components/custom/youtube-icon";
-import { Button } from "@suzumina.click/ui/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/ui/card";
-import { Flame, Tag } from "lucide-react";
 import Link from "next/link";
-import type { ReactNode } from "react";
 import { getAudioButtonsList } from "@/app/buttons/actions";
 import { AudioButtonWithPlayCount } from "@/components/audio/audio-button-with-play-count";
 
 /**
- * 詳細ページの関連音声ボタン群（SPR-250 で再生ハブ化）。
+ * 詳細ページの関連音声ボタン群（SPR-250 で再生ハブ化・SPR-255 でヒーロー構成のデザインに刷新）。
  * X共有・検索から着地した訪問者が「1ボタン聴いて終わり」にならないよう、
- * 同じ動画 → 同じタグ → （両方無ければ）人気、の順で必ず次に押せるボタンを出す。
+ * この動画 → 同じタグ → （両方無ければ）人気、の順で必ず次に押せるボタンを出す。
  * 同一動画クエリは既存の videoId+createdAt 複合インデックスを使う（sortBy を変えると新規インデックスが要る点に注意）。
  * タグ・人気は in-memory フィルタ / 単一 orderBy のため複合インデックス不要。
  */
@@ -33,55 +28,43 @@ async function fetchButtons(
 }
 
 function RelatedSection({
-	icon,
 	title,
 	buttons,
 	moreHref,
 	moreLabel,
 }: {
-	icon: ReactNode;
 	title: string;
 	buttons: AudioButton[];
 	moreHref: string;
 	moreLabel: string;
 }) {
 	return (
-		<Card className="bg-card/80 backdrop-blur-sm shadow-lg border-0">
-			<CardHeader>
-				<CardTitle className="flex items-center gap-2 text-lg">
-					{icon}
-					{title}
-				</CardTitle>
-			</CardHeader>
-			<CardContent>
-				<div className="flex flex-wrap gap-3 items-start">
-					{buttons.map((audioButton) => (
-						<AudioButtonWithPlayCount
-							key={audioButton.id}
-							audioButton={audioButton}
-							showFavorite={true}
-							maxTitleLength={50}
-							className="shadow-sm hover:shadow-md transition-all duration-200"
-						/>
-					))}
-				</div>
-				<div className="mt-6 text-center">
-					<Button
-						variant="outline"
-						size="sm"
-						asChild
-						className="border-border text-primary hover:bg-accent"
-					>
-						<Link href={moreHref}>{moreLabel}</Link>
-					</Button>
-				</div>
-			</CardContent>
-		</Card>
+		<section>
+			<div className="mb-3.5 flex items-baseline gap-2.5">
+				<h2 className="text-[19px] font-extrabold">{title}</h2>
+				<span className="text-[13px] font-bold text-suzuka-600">{buttons.length}個</span>
+			</div>
+			<div className="flex flex-wrap items-start gap-3">
+				{buttons.map((audioButton) => (
+					<AudioButtonWithPlayCount
+						key={audioButton.id}
+						audioButton={audioButton}
+						showFavorite={true}
+						maxTitleLength={50}
+						className="shadow-sm hover:shadow-md transition-all duration-200"
+					/>
+				))}
+			</div>
+			<div className="mt-3.5">
+				<Link href={moreHref} className="text-[13px] font-bold text-primary hover:text-suzuka-700">
+					{moreLabel} →
+				</Link>
+			</div>
+		</section>
 	);
 }
 
 export async function RelatedAudioButtons({ currentId, videoId, tags }: RelatedAudioButtonsProps) {
-	// +1 は現在のボタン自身が結果に含まれる分の余裕
 	const [sameVideoAll, sameTagsAll] = await Promise.all([
 		fetchButtons({
 			videoId,
@@ -121,11 +104,10 @@ export async function RelatedAudioButtons({ currentId, videoId, tags }: RelatedA
 	}
 
 	return (
-		<div className="space-y-8">
+		<div className="flex flex-col gap-7">
 			{sameVideo.length > 0 && (
 				<RelatedSection
-					icon={<YoutubeIcon className="h-5 w-5 text-primary" />}
-					title="同じ動画の音声ボタン"
+					title="この動画のボタン"
 					buttons={sameVideo}
 					moreHref={`/buttons?videoId=${encodeURIComponent(videoId)}`}
 					moreLabel="この動画のボタンをもっと見る"
@@ -133,8 +115,7 @@ export async function RelatedAudioButtons({ currentId, videoId, tags }: RelatedA
 			)}
 			{sameTags.length > 0 && (
 				<RelatedSection
-					icon={<Tag className="h-5 w-5 text-primary" />}
-					title="同じタグの音声ボタン"
+					title="同じタグのボタン"
 					buttons={sameTags}
 					moreHref={`/buttons?tags=${encodeURIComponent(tags.join("|"))}`}
 					moreLabel="同じタグのボタンをもっと見る"
@@ -142,8 +123,7 @@ export async function RelatedAudioButtons({ currentId, videoId, tags }: RelatedA
 			)}
 			{popular.length > 0 && (
 				<RelatedSection
-					icon={<Flame className="h-5 w-5 text-primary" />}
-					title="人気の音声ボタン"
+					title="人気のボタン"
 					buttons={popular}
 					moreHref="/buttons"
 					moreLabel="音声ボタン一覧を見る"

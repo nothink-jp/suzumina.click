@@ -1,15 +1,14 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/ui/card";
-import { Eye } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { getAudioButtonById } from "@/app/buttons/actions";
-import {
-	AudioButtonDetailHeader,
-	AudioButtonDetailMainContent,
-	AudioButtonDetailSidebar,
-	RelatedAudioButtons,
-} from "@/components/audio-button-detail";
+import { AudioButtonHero } from "@/components/audio-button-detail/audio-button-hero";
+import { AudioButtonHeroHeader } from "@/components/audio-button-detail/audio-button-hero-header";
+import { CreatorCard } from "@/components/audio-button-detail/creator-card";
+import { DetailTagCard } from "@/components/audio-button-detail/detail-tag-card";
+import { ListCtaCard } from "@/components/audio-button-detail/list-cta-card";
+import { RelatedAudioButtons } from "@/components/audio-button-detail/related-audio-buttons";
+import { SourceVideoCard } from "@/components/audio-button-detail/source-video-card";
 
 interface AudioButtonDetailPageProps {
 	params: Promise<{
@@ -94,51 +93,68 @@ export default async function AudioButtonDetailPage({ params }: AudioButtonDetai
 
 	const audioButton = result.data;
 
-	// per-user 状態（お気に入り/高低評価/編集権限）はここで取得しない。
+	// per-user 状態（お気に入り/高低評価/作成者判定）はここで取得しない。
 	// 純公開 shell として session を読まず、各 client island が自分の状態を解決する（SPR-223）。
-	// これにより詳細ページを共有キャッシュ可（public）へ戻せる（SPR-222/226 の per-user SSR 漏洩を解消）。
+	// これにより詳細ページを共有キャッシュ可（public）のまま保つ（SPR-222/226 の per-user SSR 漏洩対策）。
 
 	return (
 		<div className="min-h-screen">
-			{/* パンくずナビゲーション */}
-			<AudioButtonDetailHeader title={audioButton.buttonText} />
-
-			<div className="container mx-auto px-4 pb-8 max-w-7xl">
-				{/* メインコンテンツ: グリッドレイアウト */}
-				<div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-					{/* 左側: 音声ボタン詳細 */}
-					<AudioButtonDetailMainContent audioButton={audioButton} />
-
-					{/* 右側: 動画カード + ユーザーカード */}
-					<AudioButtonDetailSidebar
-						videoId={audioButton.videoId}
-						videoTitle={audioButton.videoTitle}
+			{/* ヒーロー: 押すことが主役（SPR-255） */}
+			<section className="suzuka-gradient-radial relative px-4 pt-5 pb-8 text-center sm:px-6 sm:pt-11 sm:pb-[52px]">
+				<div className="relative mx-auto max-w-[1240px]">
+					<AudioButtonHeroHeader
+						audioButtonId={audioButton.id}
+						buttonText={audioButton.buttonText}
 						createdBy={audioButton.creatorId}
-						createdByName={audioButton.creatorName}
 					/>
+					<div className="h-[18px] sm:h-[26px]" />
+					<AudioButtonHero audioButton={audioButton} />
+				</div>
+			</section>
+
+			{/* 本文: モバイルは 関連 → 元動画 → タグ → 作成者 → 一覧誘導 の順に積む。
+			    lg 以上は main + 右レール（360px）の2カラム（wrapper を contents 化して order で制御） */}
+			<div className="mx-auto flex max-w-[1240px] flex-col gap-[18px] px-4 pt-6 pb-12 sm:px-8 lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:gap-8 lg:pt-9 lg:pb-14">
+				<div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-7">
+					<div className="order-1 min-w-0 lg:order-none">
+						<Suspense fallback={null}>
+							<RelatedAudioButtons
+								currentId={audioButton.id}
+								videoId={audioButton.videoId}
+								tags={audioButton.tags || []}
+							/>
+						</Suspense>
+					</div>
+					<div className="order-5 lg:order-none">
+						<Suspense fallback={null}>
+							<ListCtaCard />
+						</Suspense>
+					</div>
 				</div>
 
-				{/* 関連音声ボタン */}
-				<Suspense
-					fallback={
-						<Card className="bg-card/80 backdrop-blur-sm shadow-lg border-0">
-							<CardHeader>
-								<CardTitle className="text-lg">関連音声ボタン</CardTitle>
-							</CardHeader>
-							<CardContent>
-								<div className="flex items-center justify-center py-8">
-									<Eye className="h-8 w-8 animate-pulse text-muted-foreground" />
-								</div>
-							</CardContent>
-						</Card>
-					}
-				>
-					<RelatedAudioButtons
-						currentId={audioButton.id}
-						videoId={audioButton.videoId}
-						tags={audioButton.tags || []}
-					/>
-				</Suspense>
+				<aside className="contents lg:flex lg:flex-col lg:gap-[18px]">
+					<div className="order-2 lg:order-none">
+						<Suspense fallback={null}>
+							<SourceVideoCard
+								videoId={audioButton.videoId}
+								videoTitle={audioButton.videoTitle}
+								startTime={audioButton.startTime}
+								endTime={audioButton.endTime || audioButton.startTime}
+							/>
+						</Suspense>
+					</div>
+					<div className="order-3 lg:order-none">
+						<DetailTagCard tags={audioButton.tags || []} />
+					</div>
+					<div className="order-4 lg:order-none">
+						<Suspense fallback={null}>
+							<CreatorCard
+								createdBy={audioButton.creatorId}
+								createdByName={audioButton.creatorName}
+							/>
+						</Suspense>
+					</div>
+				</aside>
 			</div>
 		</div>
 	);
