@@ -71,14 +71,17 @@ describe("ThumbnailImage", () => {
 	});
 
 	it("プレースホルダー画像が正しく設定される", () => {
+		// next/image 標準の blur placeholder は stdDeviation が固定で調整できないため、
+		// 自前のぼかし背景レイヤー（blur-sm）を敷く方式に変更している
 		render(<ThumbnailImage {...defaultProps} />);
 
 		const image = screen.getByTestId("next-image");
-		expect(image).toHaveAttribute("data-placeholder", "blur");
-		expect(image).toHaveAttribute(
-			"data-blur-data-url",
-			expect.stringContaining("data:image/svg+xml"),
-		);
+		expect(image).toHaveAttribute("data-placeholder", "empty");
+
+		const container = image.parentElement;
+		const backdrop = container?.querySelector('[aria-hidden="true"].blur-sm');
+		expect(backdrop).toBeInTheDocument();
+		expect(backdrop?.getAttribute("style")).toContain("data:image/svg+xml");
 	});
 
 	it("エラー後に再度エラーが発生しても重複して処理されない", async () => {
@@ -119,7 +122,7 @@ describe("ThumbnailImage", () => {
 		expect(image).toHaveAttribute("data-fill", "true");
 		expect(image).toHaveAttribute("data-priority", "true");
 		expect(image).toHaveAttribute("sizes", "100vw");
-		expect(image).toHaveAttribute("data-placeholder", "blur");
+		expect(image).toHaveAttribute("data-placeholder", "empty");
 	});
 
 	it("メモ化により同じpropsでは再レンダリングされない", () => {

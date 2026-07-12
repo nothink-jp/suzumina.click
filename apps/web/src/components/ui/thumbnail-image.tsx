@@ -94,7 +94,7 @@ const ThumbnailImage = memo(function ThumbnailImage({
 		}
 	};
 
-	// プレースホルダー画像の場合はblur効果を無効化
+	// プレースホルダー画像自体を表示している場合は、その下に同じ画像のぼかし背景を重ねない
 	const isPlaceholderImage = imageSrc === PLACEHOLDER_IMAGE;
 
 	return (
@@ -107,6 +107,19 @@ const ThumbnailImage = memo(function ThumbnailImage({
 			}}
 			className={className}
 		>
+			{/*
+			 * next/image 標準の placeholder="blur" は feGaussianBlur の stdDeviation が
+			 * 20 に固定されており props で調整できず、かつ fill + 動的 src では viewBox を
+			 * 正しく計算できないため想定より強くぼける（Next.js 内部実装依存）。
+			 * 自前の背景レイヤーで blur-sm（4px）に固定し、強さを直接制御する。
+			 */}
+			{!isPlaceholderImage && (
+				<div
+					aria-hidden="true"
+					className="absolute inset-0 scale-110 bg-cover bg-center blur-sm"
+					style={{ backgroundImage: `url(${PLACEHOLDER_IMAGE})` }}
+				/>
+			)}
 			<Image
 				src={imageSrc}
 				alt={alt}
@@ -120,8 +133,7 @@ const ThumbnailImage = memo(function ThumbnailImage({
 				loading={priority ? "eager" : loading}
 				quality={quality}
 				onError={handleError}
-				placeholder={isPlaceholderImage ? "empty" : "blur"}
-				blurDataURL={isPlaceholderImage ? undefined : PLACEHOLDER_IMAGE}
+				placeholder="empty"
 				unoptimized={optimized ? undefined : true}
 				style={{
 					// CLS削減: object-fitでレイアウト安定化
