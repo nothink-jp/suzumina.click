@@ -62,7 +62,7 @@ describe("GA4 カスタムイベント語彙 (SPR-149)", () => {
 		grantAnalyticsConsent();
 		trackCreateError("vid00000001", "x".repeat(150));
 		const call = gtag.mock.calls.find((c) => c[1] === "create_error");
-		expect((call?.[2] as { reason: string }).reason).toHaveLength(100);
+		expect((call?.[2] as { reason: string } | undefined)?.reason).toHaveLength(100);
 	});
 
 	it("favorite: 追加/削除でイベント名を分ける", () => {

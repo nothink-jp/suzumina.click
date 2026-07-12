@@ -64,7 +64,6 @@ const plainObject = (id = "v1") =>
 		publishedAt: "2024-01-01T00:00:00.000Z",
 		lastFetchedAt: "2024-01-01T00:00:00.000Z",
 		_computed: { videoType: "normal" },
-		// biome-ignore lint/suspicious/noExplicitAny: テスト用の最小 plain object
 	}) as any;
 
 const ytVideo = (over: Partial<youtube_v3.Schema$Video> = {}): youtube_v3.Schema$Video => ({

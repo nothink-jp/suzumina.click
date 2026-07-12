@@ -95,7 +95,7 @@ describe.skipIf(!RUN)("checkDataIntegrity (integration / Firestore Emulator)", (
 		expect(result.checks.circleWorkCounts.fixed).toBeGreaterThan(0);
 
 		const circle = await db.collection("circles").doc("RG001").get();
-		expect((circle.data()?.workIds as string[]).sort()).toEqual(["RJ001", "RJ002"]);
+		expect((circle.data()?.workIds as string[] | undefined)?.sort()).toEqual(["RJ001", "RJ002"]);
 	});
 
 	it("孤立した Creator マッピングと空 Creator を削除する", async () => {

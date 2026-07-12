@@ -15,7 +15,6 @@ const fsButton = (over: Record<string, unknown> = {}) =>
 		createdByName: "作者",
 		createdAt: "2024-01-01T00:00:00.000Z",
 		...over,
-		// biome-ignore lint/suspicious/noExplicitAny: テスト用の最小データ
 	}) as any;
 
 beforeEach(() => {
