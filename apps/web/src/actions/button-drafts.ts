@@ -80,6 +80,8 @@ export async function createButtonDraft(
 
 		const ref = draftsRef(user.discordId);
 
+		// 上限はソフトリミット: count→add 間の TOCTOU で数件超えうるが、個人所有の下書き掃除が目的のため
+		// 許容する（厳密化のトランザクションはコストに見合わない判断）
 		const countSnapshot = await ref.count().get();
 		if (countSnapshot.data().count >= MAX_DRAFTS_PER_USER) {
 			return {

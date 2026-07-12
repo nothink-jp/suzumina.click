@@ -27,6 +27,7 @@ function parseVideoIdInput(value: string): string | null {
 	return /^[A-Za-z0-9_-]{11}$/.test(trimmed) ? trimmed : null;
 }
 
+// shared-types の formatTimestamp は小数第1位付き（"14:26.0"）表示。下書き一覧は整数秒で十分なため独自実装
 function formatSeconds(total: number): string {
 	const s = Math.floor(total % 60);
 	const m = Math.floor((total / 60) % 60);
@@ -68,7 +69,8 @@ export function LiveCaptureView({ video, initialDrafts }: LiveCaptureViewProps) 
 	const isUpcoming = video?.liveBroadcastContent === "upcoming";
 
 	const handleMark = useCallback(async () => {
-		if (!video) {
+		// isMarking ガードは M キーの素早い2連打による二重作成防止（ボタンの disabled では keydown を防げない）
+		if (!video || isMarking) {
 			return;
 		}
 		setIsMarking(true);
@@ -105,7 +107,7 @@ export function LiveCaptureView({ video, initialDrafts }: LiveCaptureViewProps) 
 		} finally {
 			setIsMarking(false);
 		}
-	}, [video]);
+	}, [video, isMarking]);
 
 	// M キーでマーク（入力欄フォーカス中とキーリピートは無視）
 	useEffect(() => {
