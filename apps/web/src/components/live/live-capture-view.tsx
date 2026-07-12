@@ -163,48 +163,46 @@ export function LiveCaptureView({ video, initialDrafts }: LiveCaptureViewProps) 
 			)}
 
 			{video ? (
-				<>
-					<div className="space-y-3">
-						<div className="flex items-center gap-2 flex-wrap">
-							{isLiveNow && <Badge variant="destructive">配信中</Badge>}
-							{isUpcoming && <Badge variant="secondary">配信予定</Badge>}
-							{!isLiveNow && !isUpcoming && <Badge variant="outline">アーカイブ</Badge>}
-							<span className="text-sm font-medium truncate">{video.title}</span>
-						</div>
-
-						<div className="aspect-video bg-muted rounded-lg overflow-hidden shadow-lg">
-							<YouTubePlayer
-								videoId={video.videoId}
-								controls={true}
-								onReady={(player) => {
-									playerRef.current = player;
-								}}
-							/>
-						</div>
-
-						<Button
-							onClick={handleMark}
-							disabled={isMarking}
-							size="lg"
-							className={`w-full min-h-[56px] text-lg font-bold transition-colors ${
-								justMarked ? "bg-green-600 hover:bg-green-600" : ""
-							}`}
-						>
-							{isMarking ? (
-								<Loader2 className="h-5 w-5 mr-2 animate-spin" />
-							) : (
-								<Bookmark className="h-5 w-5 mr-2" />
-							)}
-							{justMarked ? "マークしました" : "ここをマーク（M）"}
-						</Button>
-
-						{isUpcoming && (
-							<p className="text-xs text-muted-foreground">
-								配信開始前です。開始後にプレイヤーが再生されてからマークしてください。
-							</p>
-						)}
+				<div className="space-y-3">
+					<div className="flex items-center gap-2 flex-wrap">
+						{isLiveNow && <Badge variant="destructive">配信中</Badge>}
+						{isUpcoming && <Badge variant="secondary">配信予定</Badge>}
+						{!isLiveNow && !isUpcoming && <Badge variant="outline">アーカイブ</Badge>}
+						<span className="text-sm font-medium truncate">{video.title}</span>
 					</div>
-				</>
+
+					<div className="aspect-video bg-muted rounded-lg overflow-hidden shadow-lg">
+						<YouTubePlayer
+							videoId={video.videoId}
+							controls={true}
+							onReady={(player) => {
+								playerRef.current = player;
+							}}
+						/>
+					</div>
+
+					<Button
+						onClick={handleMark}
+						disabled={isMarking}
+						size="lg"
+						className={`w-full min-h-[56px] text-lg font-bold transition-colors ${
+							justMarked ? "bg-green-600 hover:bg-green-600" : ""
+						}`}
+					>
+						{isMarking ? (
+							<Loader2 className="h-5 w-5 mr-2 animate-spin" />
+						) : (
+							<Bookmark className="h-5 w-5 mr-2" />
+						)}
+						{justMarked ? "マークしました" : "ここをマーク（M）"}
+					</Button>
+
+					{isUpcoming && (
+						<p className="text-xs text-muted-foreground">
+							配信開始前です。開始後にプレイヤーが再生されてからマークしてください。
+						</p>
+					)}
+				</div>
 			) : (
 				<div className="border rounded-lg p-6 space-y-4 text-center">
 					<p className="text-muted-foreground">現在、配信中・配信予定の動画が見つかりません。</p>
