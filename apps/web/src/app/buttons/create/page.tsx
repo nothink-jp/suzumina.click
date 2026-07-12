@@ -152,9 +152,12 @@ export default async function CreateAudioButtonPage({ searchParams }: CreateAudi
 	// フォールバック: 取得失敗時は10分
 	const videoDuration = videoDurationSeconds > 0 ? videoDurationSeconds : 600;
 
-	const callbackPath = `/buttons/create?video_id=${videoId}${
-		resolvedSearchParams.start_time ? `&start_time=${resolvedSearchParams.start_time}` : ""
-	}`;
+	const callbackQuery = new URLSearchParams(
+		Object.entries({ video_id: videoId, start_time: resolvedSearchParams.start_time }).filter(
+			(entry): entry is [string, string] => entry[1] !== undefined,
+		),
+	).toString();
+	const callbackPath = `/buttons/create?${callbackQuery}`;
 
 	return (
 		<ProtectedRoute callbackPath={callbackPath}>
