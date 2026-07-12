@@ -15,7 +15,11 @@
 
 const STORAGE_KEY = "suzumina-internal-traffic";
 
-/** オーナーの Discord ID（audioButtons.creatorId として公開済みの値のため秘匿情報ではない） */
+/**
+ * オーナーの Discord ID（audioButtons.creatorId として公開済みの値のため秘匿情報ではない）。
+ * 単一オーナー前提の意図的なハードコード。複数管理者化・オーナー交代が起きたら
+ * env / ロール判定への昇格を検討する（現状その予定はない）。
+ */
 export const OWNER_DISCORD_ID = "570920263135264778";
 
 function setGtagInternalTraffic(): void {
