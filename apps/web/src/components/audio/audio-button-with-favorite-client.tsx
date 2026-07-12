@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { getLikeDislikeStatusAction, toggleDislikeAction } from "@/actions/dislikes";
 import { toggleFavoriteAction } from "@/actions/favorites";
 import { toggleLikeAction } from "@/actions/likes";
+import { trackFavoriteToggle } from "@/lib/analytics/events";
 import { useSession } from "@/lib/auth/client";
 import { buildXShareUrl } from "@/lib/x-share";
 
@@ -77,6 +78,7 @@ export function AudioButtonWithFavoriteClient({
 				const result = await toggleFavoriteAction(audioButton.id);
 				if (result.success) {
 					setIsFavorited(result.isFavorited ?? false);
+					trackFavoriteToggle(audioButton.id, result.isFavorited ?? false);
 					toast.success(
 						result.isFavorited ? "お気に入りに追加しました" : "お気に入りから削除しました",
 					);

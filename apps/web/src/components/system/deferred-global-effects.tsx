@@ -1,6 +1,7 @@
 "use client";
 
 import { lazy, Suspense, useEffect, useState } from "react";
+import { InternalTrafficMarker } from "@/components/analytics/internal-traffic-marker";
 
 /**
  * 全ページで mount される非クリティカルな client 副作用 / UI を、hydration 後
@@ -39,10 +40,15 @@ export function DeferredGlobalEffects() {
 	if (!mounted) return null;
 
 	return (
-		<Suspense fallback={null}>
-			<PerformanceMonitor />
-			<PageViewTracker />
-			<CookieConsentBanner />
-		</Suspense>
+		<>
+			{/* lazy 群より先に mount し、PageViewTracker の page_view 送信前に内部トラフィックの
+				タグ適用を済ませる（SPR-149。lazy chunk 間では effect 順序が保証されないため直接 import） */}
+			<InternalTrafficMarker />
+			<Suspense fallback={null}>
+				<PerformanceMonitor />
+				<PageViewTracker />
+				<CookieConsentBanner />
+			</Suspense>
+		</>
 	);
 }

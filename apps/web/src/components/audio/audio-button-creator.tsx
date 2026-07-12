@@ -9,6 +9,7 @@ import { useCallback } from "react";
 import { deleteButtonDraft } from "@/actions/button-drafts";
 import { createAudioButton } from "@/app/buttons/actions";
 import { useAudioButtonEditor } from "@/hooks/use-audio-button-editor";
+import { trackCreateError, trackCreateStart, trackCreateSuccess } from "@/lib/analytics/events";
 import { useSession } from "@/lib/auth/client";
 import { BasicInfoPanel } from "./basic-info-panel";
 import { CreateButtonLimit } from "./create-button-limit";
@@ -67,6 +68,7 @@ export function AudioButtonCreator({
 
 		setIsCreating(true);
 		setError("");
+		trackCreateStart(videoId, Boolean(draftId));
 
 		try {
 			const input: CreateAudioButtonInput = {
@@ -82,6 +84,11 @@ export function AudioButtonCreator({
 			const result = await createAudioButton(input);
 
 			if (result.success) {
+				trackCreateSuccess({
+					audioButtonId: result.data.id,
+					videoId,
+					fromDraft: Boolean(draftId),
+				});
 				// 下書きから開いた場合は消化（削除）する。ベストエフォート＝失敗してもボタン作成は
 				// 成立しているため遷移を止めない（残った下書きは /live から手動削除できる）。
 				if (draftId) {
@@ -96,9 +103,11 @@ export function AudioButtonCreator({
 				return;
 			}
 
+			trackCreateError(videoId, result.error || "unknown");
 			setError(result.error || "作成に失敗しました");
 			setIsCreating(false);
 		} catch (_error) {
+			trackCreateError(videoId, "unexpected");
 			setError("予期しないエラーが発生しました");
 			setIsCreating(false);
 		}

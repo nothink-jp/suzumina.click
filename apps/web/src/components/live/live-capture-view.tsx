@@ -10,6 +10,7 @@ import { Bookmark, ExternalLink, Loader2, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createButtonDraft, deleteButtonDraft } from "@/actions/button-drafts";
+import { trackMarkDraft } from "@/lib/analytics/events";
 
 interface LiveCaptureViewProps {
 	video: VideoPlainObject | null;
@@ -99,6 +100,7 @@ export function LiveCaptureView({ video, initialDrafts }: LiveCaptureViewProps) 
 
 			if (result.success) {
 				setDrafts((prev) => [result.data, ...prev]);
+				trackMarkDraft(video.videoId, playerTime != null);
 				setJustMarked(true);
 				setTimeout(() => setJustMarked(false), 600);
 			} else {

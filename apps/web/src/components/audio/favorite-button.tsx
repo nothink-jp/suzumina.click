@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { getFavoritesStatusAction, toggleFavoriteAction } from "@/actions/favorites";
+import { trackFavoriteToggle } from "@/lib/analytics/events";
 import { useSession } from "@/lib/auth/client";
 
 interface FavoriteButtonProps {
@@ -68,6 +69,7 @@ export function FavoriteButton({
 				const result = await toggleFavoriteAction(audioButtonId);
 				if (result.success && result.isFavorited !== undefined) {
 					setIsFavorited(result.isFavorited);
+					trackFavoriteToggle(audioButtonId, result.isFavorited);
 					toast.success(
 						result.isFavorited ? "お気に入りに追加しました" : "お気に入りから削除しました",
 					);

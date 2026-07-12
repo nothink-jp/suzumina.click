@@ -1,5 +1,6 @@
 import { useCallback, useRef } from "react";
 import { incrementPlayCount } from "@/app/buttons/actions";
+import { trackPlayButton } from "@/lib/analytics/events";
 
 /**
  * Hook to handle play count increments with debouncing
@@ -56,6 +57,11 @@ export function usePlayCount() {
 
 			// Mark as played in this session
 			playedInSession.current.add(audioButtonId);
+
+			// GA4 再生イベント。デデュープ通過後に送る＝ stats.playCount と同じデデュープ規則（SPR-149）。
+			// 計測対象は「再生した」というクライアント行動の事実のため、後続 incrementPlayCount の
+			// 成否には連動させない（サーバー書き込み失敗時は playCount と僅かに乖離しうる＝既知の許容誤差）
+			trackPlayButton(audioButtonId);
 
 			// Add to pending batch instead of immediate processing
 			pendingIncrements.current.add(audioButtonId);
