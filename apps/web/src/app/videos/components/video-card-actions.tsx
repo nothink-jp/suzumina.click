@@ -8,7 +8,7 @@ import {
 	isVideoLive,
 } from "@suzumina.click/shared-types";
 import { Button } from "@suzumina.click/ui/components/ui/button";
-import { Bookmark, ExternalLink, Eye, LogIn, Plus } from "lucide-react";
+import { Bookmark, Clock, ExternalLink, Eye, LogIn, Plus } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { useSession } from "@/lib/auth/client";
@@ -20,7 +20,7 @@ interface VideoCardActionsProps {
 
 type ButtonGate =
 	| { canCreate: true }
-	| { canCreate: false; liveMarking: true }
+	| { canCreate: false; liveMarking: "live" | "upcoming" }
 	| { canCreate: false; needsLogin: true }
 	| { canCreate: false; needsLogin: false; reason: string };
 
@@ -28,8 +28,11 @@ function evaluateButtonGate(video: VideoPlainObject, isLoggedIn: boolean): Butto
 	// 配信中/配信予定は「作成不可」ではなく配信中マーキング（/live）への導線に切り替える（SPR-146）。
 	// この時間帯の正しい作成手段はマーク→アーカイブ後の仕上げのため。ログイン判定より先に返すことで
 	// 未ログインでも導線が見え、認証は /live 側の ProtectedRoute（callbackPath 付き）に委ねる
-	if (isVideoLive(video) || isUpcoming(video)) {
-		return { canCreate: false, liveMarking: true };
+	if (isVideoLive(video)) {
+		return { canCreate: false, liveMarking: "live" };
+	}
+	if (isUpcoming(video)) {
+		return { canCreate: false, liveMarking: "upcoming" };
 	}
 	if (!isLoggedIn) {
 		return { canCreate: false, needsLogin: true };
@@ -107,15 +110,35 @@ export default function VideoCardActions({ video, variant }: VideoCardActionsPro
 			</Button>
 		);
 	} else if ("liveMarking" in gate) {
+		// バッジと同色ペアで時制を明示する: live = destructive 赤（「配信中」バッジと同色・赤は live 専用）、
+		// upcoming = info 青（「配信予告」バッジと同色）。待機ファンは配信前から /live で M キーを構えられる
+		const isLiveNow = gate.liveMarking === "live";
 		createAction = (
-			<Button size="sm" variant="default" className="flex-1 min-h-[44px] text-sm" asChild>
+			<Button
+				size="sm"
+				variant={isLiveNow ? "destructive" : "default"}
+				className={
+					isLiveNow
+						? "flex-1 min-h-[44px] text-sm"
+						: "flex-1 min-h-[44px] text-sm bg-info text-info-foreground hover:bg-info/90"
+				}
+				asChild
+			>
 				<Link
 					href={`/live?v=${video.videoId}`}
-					aria-label={`${video.title}の配信中マーキングを開く`}
+					aria-label={
+						isLiveNow
+							? `${video.title}の配信中マーキングを開く`
+							: `${video.title}の配信待機（マーキング）を開く`
+					}
 					className="flex items-center whitespace-nowrap"
 				>
-					<Bookmark className="h-4 w-4 mr-1" aria-hidden="true" />
-					配信中マーク
+					{isLiveNow ? (
+						<Bookmark className="h-4 w-4 mr-1" aria-hidden="true" />
+					) : (
+						<Clock className="h-4 w-4 mr-1" aria-hidden="true" />
+					)}
+					{isLiveNow ? "配信中マーク" : "配信待機"}
 				</Link>
 			</Button>
 		);

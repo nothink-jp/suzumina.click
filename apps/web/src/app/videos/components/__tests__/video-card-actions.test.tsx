@@ -89,10 +89,12 @@ describe("VideoCardActions", () => {
 
 		const markLink = screen.getByText("配信中マーク").closest("a");
 		expect(markLink).toHaveAttribute("href", "/live?v=abc123");
+		// live は destructive 赤（「配信中」バッジと同色ペア・赤は live 専用）
+		expect(markLink?.className).toContain("bg-destructive");
 		expect(screen.queryByText("ボタン作成")).not.toBeInTheDocument();
 	});
 
-	it("配信予定の動画も『配信中マーク』リンクを表示する", () => {
+	it("配信予定の動画は『配信待機』リンク（info 青）を表示する", () => {
 		mockUseSession(loggedIn);
 		const video = createMockVideo({
 			liveBroadcastContent: "upcoming",
@@ -106,7 +108,10 @@ describe("VideoCardActions", () => {
 		});
 		render(<VideoCardActions video={video} variant="grid" />);
 
-		expect(screen.getByText("配信中マーク").closest("a")).toHaveAttribute("href", "/live?v=abc123");
+		const waitLink = screen.getByText("配信待機").closest("a");
+		expect(waitLink).toHaveAttribute("href", "/live?v=abc123");
+		// upcoming は info 青（「配信予告」バッジと同色ペア）
+		expect(waitLink?.className).toContain("bg-info");
 	});
 
 	it("未ログインでも配信中はログイン導線でなく『配信中マーク』を表示する（認証は /live 側に委譲）", () => {
