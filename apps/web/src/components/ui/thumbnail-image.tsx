@@ -65,6 +65,7 @@ const ThumbnailImage = memo(function ThumbnailImage({
 	});
 	const [hasError, setHasError] = useState(false);
 	const [hasFallbackError, setHasFallbackError] = useState(false);
+	const [isLoaded, setIsLoaded] = useState(false);
 
 	// srcプロップが変更された際に内部状態をリセット
 	useEffect(() => {
@@ -74,6 +75,7 @@ const ThumbnailImage = memo(function ThumbnailImage({
 		setImageSrc(normalizedSrc);
 		setHasError(false);
 		setHasFallbackError(false);
+		setIsLoaded(false);
 	}, [src]);
 
 	const handleError = () => {
@@ -87,6 +89,7 @@ const ThumbnailImage = memo(function ThumbnailImage({
 			const normalizedFallbackSrc = normalizeDLsiteUrl(fallbackSrc);
 			setImageSrc(normalizedFallbackSrc);
 			setHasError(true);
+			setIsLoaded(false);
 		} else if (!hasFallbackError) {
 			// フォールバック画像もエラーの場合、またはフォールバック画像がない場合
 			setImageSrc(PLACEHOLDER_IMAGE);
@@ -94,7 +97,7 @@ const ThumbnailImage = memo(function ThumbnailImage({
 		}
 	};
 
-	// プレースホルダー画像の場合はblur効果を無効化
+	// プレースホルダー画像自体を表示している場合は、その下に同じ画像のぼかし背景を重ねない
 	const isPlaceholderImage = imageSrc === PLACEHOLDER_IMAGE;
 
 	return (
@@ -107,6 +110,21 @@ const ThumbnailImage = memo(function ThumbnailImage({
 			}}
 			className={className}
 		>
+			{/*
+			 * next/image 標準の placeholder="blur" は feGaussianBlur の stdDeviation が
+			 * 20 に固定されており props で調整できず、かつ fill + 動的 src では viewBox を
+			 * 正しく計算できないため想定より強くぼける（Next.js 内部実装依存）。
+			 * 自前の背景レイヤーで blur-sm（4px）に固定し、強さを直接制御する。
+			 * 実画像の読み込み完了（onLoad）で外し、blur フィルタの合成コストを
+			 * 常駐させない（一覧ページで多数並ぶ際のパフォーマンス対策）。
+			 */}
+			{!isPlaceholderImage && !isLoaded && (
+				<div
+					aria-hidden="true"
+					className="absolute inset-0 scale-110 bg-cover bg-center blur-sm"
+					style={{ backgroundImage: `url(${PLACEHOLDER_IMAGE})` }}
+				/>
+			)}
 			<Image
 				src={imageSrc}
 				alt={alt}
@@ -119,9 +137,9 @@ const ThumbnailImage = memo(function ThumbnailImage({
 				sizes={sizes}
 				loading={priority ? "eager" : loading}
 				quality={quality}
+				onLoad={() => setIsLoaded(true)}
 				onError={handleError}
-				placeholder={isPlaceholderImage ? "empty" : "blur"}
-				blurDataURL={isPlaceholderImage ? undefined : PLACEHOLDER_IMAGE}
+				placeholder="empty"
 				unoptimized={optimized ? undefined : true}
 				style={{
 					// CLS削減: object-fitでレイアウト安定化
