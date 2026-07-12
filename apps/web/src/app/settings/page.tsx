@@ -21,12 +21,12 @@ export default async function SettingsPage() {
 	const currentUser = await getCurrentUser();
 
 	if (!currentUser?.discordId) {
-		redirect("/auth/signin");
+		redirect("/auth/signin?callbackUrl=%2Fsettings");
 	}
 
 	const user = await getUserByDiscordId(currentUser.discordId);
 	if (!user) {
-		redirect("/auth/signin");
+		redirect("/auth/signin?callbackUrl=%2Fsettings");
 	}
 
 	return <UnifiedSettingsContent user={user} />;

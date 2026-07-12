@@ -152,8 +152,12 @@ export default async function CreateAudioButtonPage({ searchParams }: CreateAudi
 	// フォールバック: 取得失敗時は10分
 	const videoDuration = videoDurationSeconds > 0 ? videoDurationSeconds : 600;
 
+	const callbackPath = `/buttons/create?video_id=${videoId}${
+		resolvedSearchParams.start_time ? `&start_time=${resolvedSearchParams.start_time}` : ""
+	}`;
+
 	return (
-		<ProtectedRoute>
+		<ProtectedRoute callbackPath={callbackPath}>
 			{/*
 			 * key で動画/開始時刻ごとに remount。App Router は同一 /buttons/create セグメントの
 			 * 再訪で page instance を使い回すため、別動画で来たときに前回のフォーム値が残るのを防ぐ。

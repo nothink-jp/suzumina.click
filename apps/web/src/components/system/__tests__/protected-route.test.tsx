@@ -5,16 +5,6 @@ import ProtectedRoute, { requireAuth } from "../protected-route";
 
 vi.mock("@/lib/auth/server");
 
-// next/headers の headers() を制御する
-const { headersStore } = vi.hoisted(() => ({
-	headersStore: { xUrl: null as string | null },
-}));
-vi.mock("next/headers", () => ({
-	headers: vi.fn(async () => ({
-		get: (key: string) => (key === "x-url" ? headersStore.xUrl : null),
-	})),
-}));
-
 // Next の redirect は実装上 throw して以降の処理を止める。テストでも同じ挙動にする。
 vi.mock("next/navigation", () => ({
 	redirect: vi.fn((url: string) => {
@@ -33,7 +23,6 @@ const makeUser = (overrides: Record<string, unknown> = {}) => ({
 describe("ProtectedRoute", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		headersStore.xUrl = null;
 	});
 
 	it("認証済み・アクティブ・権限十分なら children を描画する", async () => {
@@ -46,28 +35,32 @@ describe("ProtectedRoute", () => {
 		expect(redirect).not.toHaveBeenCalled();
 	});
 
-	it("未認証なら fallback へ x-url を callbackUrl 付きでリダイレクトする", async () => {
+	it("未認証なら呼び出し元が渡した callbackPath を callbackUrl に付与してリダイレクトする", async () => {
 		mockCurrentUser(null);
-		headersStore.xUrl = "/works/RJ123456";
 
-		await expect(ProtectedRoute({ children: <div>secret</div> })).rejects.toThrow("REDIRECT:");
+		await expect(
+			ProtectedRoute({ children: <div>secret</div>, callbackPath: "/works/RJ123456" }),
+		).rejects.toThrow("REDIRECT:");
 		expect(redirect).toHaveBeenCalledWith("/auth/signin?callbackUrl=%2Fworks%2FRJ123456");
 	});
 
-	it("未認証かつ x-url ヘッダが無い場合は /buttons/create を callbackUrl に使う", async () => {
+	it("未認証かつ callbackPath 未指定なら callbackUrl 無しでリダイレクトする", async () => {
 		mockCurrentUser(null);
-		headersStore.xUrl = null;
 
 		await expect(ProtectedRoute({ children: <div>x</div> })).rejects.toThrow("REDIRECT:");
-		expect(redirect).toHaveBeenCalledWith("/auth/signin?callbackUrl=%2Fbuttons%2Fcreate");
+		expect(redirect).toHaveBeenCalledWith("/auth/signin");
 	});
 
 	it("fallbackUrl を指定するとその URL にリダイレクトする", async () => {
 		mockCurrentUser(null);
 
-		await expect(ProtectedRoute({ children: <div>x</div>, fallbackUrl: "/login" })).rejects.toThrow(
-			"REDIRECT:",
-		);
+		await expect(
+			ProtectedRoute({
+				children: <div>x</div>,
+				fallbackUrl: "/login",
+				callbackPath: "/buttons/create",
+			}),
+		).rejects.toThrow("REDIRECT:");
 		expect(redirect).toHaveBeenCalledWith("/login?callbackUrl=%2Fbuttons%2Fcreate");
 	});
 

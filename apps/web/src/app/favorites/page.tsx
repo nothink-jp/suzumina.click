@@ -17,12 +17,17 @@ interface FavoritesPageProps {
 }
 
 export default async function FavoritesPage({ searchParams }: FavoritesPageProps) {
+	const params = await searchParams;
+
 	const user = await getCurrentUser();
 	if (!user?.discordId) {
-		redirect("/auth/signin");
+		const query = new URLSearchParams(
+			Object.entries(params).filter((entry): entry is [string, string] => entry[1] !== undefined),
+		).toString();
+		const callbackPath = query ? `/favorites?${query}` : "/favorites";
+		redirect(`/auth/signin?callbackUrl=${encodeURIComponent(callbackPath)}`);
 	}
 
-	const params = await searchParams;
 	const page = Number(params.page) || 1;
 	const sort = params.sort || "newest";
 
