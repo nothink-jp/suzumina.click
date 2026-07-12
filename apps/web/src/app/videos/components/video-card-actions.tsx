@@ -4,8 +4,6 @@ import type { VideoPlainObject } from "@suzumina.click/shared-types";
 import {
 	canCreateAudioButton,
 	getAudioButtonCreationErrorMessage,
-	isUpcoming,
-	isVideoLive,
 } from "@suzumina.click/shared-types";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Bookmark, Clock, ExternalLink, Eye, LogIn, Plus } from "lucide-react";
@@ -27,11 +25,15 @@ type ButtonGate =
 function evaluateButtonGate(video: VideoPlainObject, isLoggedIn: boolean): ButtonGate {
 	// 配信中/配信予定は「作成不可」ではなく配信中マーキング（/live）への導線に切り替える（SPR-146）。
 	// この時間帯の正しい作成手段はマーク→アーカイブ後の仕上げのため。ログイン判定より先に返すことで
-	// 未ログインでも導線が見え、認証は /live 側の ProtectedRoute（callbackPath 付き）に委ねる
-	if (isVideoLive(video)) {
+	// 未ログインでも導線が見え、認証は /live 側の ProtectedRoute（callbackPath 付き）に委ねる。
+	// 判定の正本はバッジ（video-badge.ts）と同じ _computed.videoType。raw の liveBroadcastContent は
+	// stale がありうる（アーカイブ済みでも live のまま残る）。operations の isLive や _computed.isLive は
+	// raw を OR しているため使わない — actualEndTime を見て archived を優先する videoType が唯一 stale に強い
+	const { videoType } = video._computed;
+	if (videoType === "live" || videoType === "possibly_live") {
 		return { canCreate: false, liveMarking: "live" };
 	}
-	if (isUpcoming(video)) {
+	if (videoType === "upcoming") {
 		return { canCreate: false, liveMarking: "upcoming" };
 	}
 	if (!isLoggedIn) {

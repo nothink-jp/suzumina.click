@@ -65,8 +65,10 @@ export function LiveCaptureView({ video, initialDrafts }: LiveCaptureViewProps) 
 	const [justMarked, setJustMarked] = useState(false);
 	const playerRef = useRef<YTPlayer | null>(null);
 
-	const isLiveNow = video?.liveBroadcastContent === "live";
-	const isUpcoming = video?.liveBroadcastContent === "upcoming";
+	// 判定の正本は _computed.videoType（video-card-actions / video-badge と同一。raw は stale がありうる）
+	const videoType = video?._computed.videoType;
+	const isLiveNow = videoType === "live" || videoType === "possibly_live";
+	const isUpcoming = videoType === "upcoming";
 
 	const handleMark = useCallback(async () => {
 		// isMarking ガードは M キーの素早い2連打による二重作成防止（ボタンの disabled では keydown を防げない）

@@ -36,13 +36,17 @@ async function findTargetVideo(manualVideoId?: string): Promise<VideoPlainObject
 		filters: { videoType: "live_upcoming" },
 	});
 
-	const live = items.find((v) => v.liveBroadcastContent === "live");
+	// 判定の正本は _computed.videoType（video-card-actions / video-badge と同一。
+	// raw の liveBroadcastContent は stale がありうるため使わない）
+	const live = items.find(
+		(v) => v._computed.videoType === "live" || v._computed.videoType === "possibly_live",
+	);
 	if (live) {
 		return live;
 	}
 
 	const upcoming = items
-		.filter((v) => v.liveBroadcastContent === "upcoming")
+		.filter((v) => v._computed.videoType === "upcoming")
 		.sort((a, b) =>
 			(a.liveStreamingDetails?.scheduledStartTime ?? "9999").localeCompare(
 				b.liveStreamingDetails?.scheduledStartTime ?? "9999",

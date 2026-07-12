@@ -132,6 +132,18 @@ describe("VideoCardActions", () => {
 		expect(screen.queryByText("ログイン")).not.toBeInTheDocument();
 	});
 
+	it("stale な liveBroadcastContent=live でも _computed が archived なら通常のボタン作成に進める（正本は videoType）", () => {
+		mockUseSession(loggedIn);
+		// fetchYouTubeVideos の更新遅延で raw フィールドだけ live のまま残るケース。
+		// _computed.videoType は actualEndTime から archived を判定済み＝バッジも「配信アーカイブ」表示
+		const video = createMockVideo({ liveBroadcastContent: "live" });
+		render(<VideoCardActions video={video} variant="grid" />);
+
+		const createLink = screen.getByText("ボタン作成").closest("a");
+		expect(createLink).toHaveAttribute("href", "/buttons/create?video_id=video123");
+		expect(screen.queryByText("配信中マーク")).not.toBeInTheDocument();
+	});
+
 	it("ログイン済みでも作成不可（配信でない動画）なら理由を tooltip に持つ aria-disabled ボタンを表示する", () => {
 		mockUseSession(loggedIn);
 		const video = createMockVideo({
