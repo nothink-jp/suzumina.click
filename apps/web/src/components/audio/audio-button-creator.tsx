@@ -6,6 +6,7 @@ import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Loader2, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
+import { deleteButtonDraft } from "@/actions/button-drafts";
 import { createAudioButton } from "@/app/buttons/actions";
 import { useAudioButtonEditor } from "@/hooks/use-audio-button-editor";
 import { useSession } from "@/lib/auth/client";
@@ -19,6 +20,8 @@ interface AudioButtonCreatorProps {
 	videoTitle: string;
 	videoDuration?: number;
 	initialStartTime?: number;
+	/** /live の下書きから開いた場合の下書きID。作成成功時に消化（削除）する（SPR-146） */
+	draftId?: string;
 }
 
 /**
@@ -34,6 +37,7 @@ export function AudioButtonCreator({
 	videoTitle,
 	videoDuration = 600,
 	initialStartTime = 0,
+	draftId,
 }: AudioButtonCreatorProps) {
 	const router = useRouter();
 	const user = useSession();
@@ -78,6 +82,11 @@ export function AudioButtonCreator({
 			const result = await createAudioButton(input);
 
 			if (result.success) {
+				// 下書きから開いた場合は消化（削除）する。ベストエフォート＝失敗してもボタン作成は
+				// 成立しているため遷移を止めない（残った下書きは /live から手動削除できる）。
+				if (draftId) {
+					await deleteButtonDraft(draftId).catch(() => undefined);
+				}
 				// 詳細ページへフルロード遷移（SPR-252）。router.push だと /buttons ツリー内の soft nav が
 				// @modal にインターセプトされ、作成フォームの上にクイックビューが重なってしまう
 				// （フォーム instance も破棄されず「作成中…」が固着する）。フルロードなら
@@ -103,6 +112,7 @@ export function AudioButtonCreator({
 		setIsCreating,
 		setError,
 		videoTitle,
+		draftId,
 	]);
 
 	// 時間調整用のハンドラーは共通フックから取得

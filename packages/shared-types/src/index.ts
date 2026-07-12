@@ -77,6 +77,7 @@ export * from "./plain-objects/work-plain";
 //   AudioButton → audioButtonTransformers.fromFirestore
 // 旧 utilities/work-conversions.ts（convertToWorkPlainObject 等）は呼び出しゼロの死蔵だったため削除。
 export { audioButtonTransformers } from "./transformers/audio-button";
+export { audioButtonDraftTransformers } from "./transformers/audio-button-draft";
 export {
 	convertToFrontendVideo,
 	fromFirestore as videoFromFirestore,
@@ -97,6 +98,16 @@ export type {
 	FirestoreServerAudioButtonData, // Deprecated alias
 	UpdateAudioButtonInput,
 } from "./types/audio-button";
+export type {
+	AudioButtonDraft,
+	AudioButtonDraftDocument,
+	CreateAudioButtonDraftInput,
+} from "./types/audio-button-draft";
+// AudioButtonDraft（配信中マーキングの下書き・SPR-146。Entity ゲートに従い plain type）
+export {
+	AUDIO_BUTTON_DRAFT_PREROLL_SECONDS,
+	calculateDraftSuggestedStartTime,
+} from "./types/audio-button-draft";
 export type { CircleDocument } from "./types/firestore/circle";
 export { isCircleDocument } from "./types/firestore/circle";
 export type { CollectionMetadata } from "./types/firestore/collection-metadata";
