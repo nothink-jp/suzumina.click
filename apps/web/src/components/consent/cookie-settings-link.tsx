@@ -7,8 +7,9 @@ import { updateConsent } from "@/lib/consent/google-consent-mode";
 import { CookiePreferencesPanel } from "./cookie-preferences-panel";
 
 /**
- * Cookie settings link component for footer and other locations
- * Allows users to modify their consent choices at any time
+ * フッターの Cookie 設定リンク。唯一の呼び出し元である SiteFooter の暗色帯
+ * （minase-800）前提の配色にしている（他画面で流用する場合は要調整）。
+ * いつでも同意設定を変更できるようにする。
  */
 export function CookieSettingsLink() {
 	const [showSettings, setShowSettings] = useState(false);
@@ -48,7 +49,7 @@ export function CookieSettingsLink() {
 				variant="ghost"
 				size="sm"
 				onClick={handleOpenSettings}
-				className="text-sm text-minase-200 hover:text-minase-50 py-2 px-3.5 h-auto underline underline-offset-4 hover:bg-transparent"
+				className="text-sm text-minase-200 hover:text-minase-50 py-2 px-3.5 h-auto underline underline-offset-4 hover:bg-transparent focus-visible:border-minase-50 focus-visible:ring-minase-50"
 			>
 				クッキー設定
 			</Button>

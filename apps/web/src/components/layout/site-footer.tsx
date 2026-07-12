@@ -25,7 +25,7 @@ export default function SiteFooter() {
 							<Link
 								key={link.href}
 								href={link.href}
-								className="text-minase-200 hover:text-minase-50 transition-colors text-sm py-2 px-3.5 rounded-md hover:bg-minase-700 focus:bg-minase-700 focus:outline-none focus:ring-2 focus:ring-ring"
+								className="text-minase-200 hover:text-minase-50 transition-colors text-sm py-2 px-3.5 rounded-md hover:bg-minase-700 focus:bg-minase-700 focus:outline-none focus:ring-2 focus:ring-minase-50"
 							>
 								{link.label}
 							</Link>
