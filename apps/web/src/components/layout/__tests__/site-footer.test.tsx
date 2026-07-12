@@ -13,26 +13,20 @@ describe("SiteFooter", () => {
 	// 基本的なレンダリングテストは統合テストに移行済み
 	// (src/__tests__/integration/basicComponentRendering.test.tsx)
 
-	it("レスポンシブグリッドレイアウトが適用される", () => {
+	it("リンクが折り返し可能な中央寄せの横並びで配置される", () => {
 		render(<SiteFooter />);
 
-		// リンクコンテナのグリッドレイアウト
+		// リンクコンテナのレイアウト
 		const aboutLink = screen.getByText("このサイトについて");
 		const linkContainer = aboutLink.closest("div");
 
-		// grid-cols-2 md:grid-cols-4 クラスを持つ親要素を探す
-		let gridContainer: HTMLElement | null = linkContainer;
-		while (gridContainer && !gridContainer.className.includes("grid-cols-2")) {
-			gridContainer = gridContainer.parentElement;
+		// flex flex-wrap justify-center クラスを持つ親要素を探す
+		let flexContainer: HTMLElement | null = linkContainer;
+		while (flexContainer && !flexContainer.className.includes("flex-wrap")) {
+			flexContainer = flexContainer.parentElement;
 		}
 
-		expect(gridContainer).toHaveClass(
-			"grid",
-			"grid-cols-2",
-			"md:grid-cols-4",
-			"gap-4",
-			"text-center",
-		);
+		expect(flexContainer).toHaveClass("flex", "flex-wrap", "justify-center");
 	});
 
 	it("ホバー効果とトランジションが設定される", () => {
@@ -85,11 +79,11 @@ describe("SiteFooter", () => {
 
 		// メインタイトル
 		const title = screen.getByText("suzumina.click");
-		expect(title).toHaveClass("font-bold", "text-lg", "mb-2");
+		expect(title).toHaveClass("font-extrabold", "text-lg", "text-minase-50");
 
 		// 説明文
 		const description = screen.getByText("ファンによる、ファンのためのコミュニティサイト");
-		expect(description).toHaveClass("text-muted-foreground", "text-sm");
+		expect(description).toHaveClass("text-minase-200", "text-sm");
 
 		// フッターリンクとコピーライトの存在確認
 		const aboutLink = screen.getByText("このサイトについて");
