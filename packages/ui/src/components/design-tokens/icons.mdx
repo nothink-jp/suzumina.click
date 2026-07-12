@@ -1,5 +1,6 @@
 import { Meta, IconGallery, IconItem, Title, Subtitle } from "@storybook/addon-docs/blocks";
 import { YoutubeIcon } from "../custom/youtube-icon";
+import { RabbitMark, SakuraMark } from "../custom/brand-mark";
 import {
   AlertCircle,
   ArrowLeft,
@@ -98,6 +99,16 @@ import {
   <IconItem name="User"><User /></IconItem>
   <IconItem name="Users"><Users /></IconItem>
   <IconItem name="LogOut"><LogOut /></IconItem>
+</IconGallery>
+
+## ブランドマーク
+
+サイトのブランドマーク（さくら / うさぎ）。詳細な使い分けは `Custom/Brand/BrandMark` ストーリーを参照。
+色は `text-suzuka-500 dark:text-suzuka-600`（heart / minase は使わない）、最小サイズ 16px。
+
+<IconGallery>
+  <IconItem name="SakuraMark"><SakuraMark className="text-suzuka-500 dark:text-suzuka-600" /></IconItem>
+  <IconItem name="RabbitMark"><RabbitMark className="text-suzuka-500 dark:text-suzuka-600" /></IconItem>
 </IconGallery>
 
 ## サイズスケール
