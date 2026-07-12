@@ -2,6 +2,8 @@
 export { ActionPillRow } from "./action-pill-row";
 export { AudioButton } from "./audio-button";
 export { AudioPlayer } from "./audio-player";
+// Brand marks（さくら / うさぎ）
+export { RabbitMark, SakuraMark } from "./brand-mark";
 export { ConfigurableList } from "./configurable-list";
 // List components
 export type {
