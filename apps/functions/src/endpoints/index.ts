@@ -10,6 +10,7 @@
 import * as functions from "@google-cloud/functions-framework";
 // 適切なロギング
 import * as logger from "../shared/logger";
+import type { MessagePublishedData } from "../shared/pubsub-utils";
 // 各モジュールから関数をインポート（統合アーキテクチャ）
 import { checkDataIntegrity } from "./data-integrity-check";
 import { fetchDLsiteUnifiedData } from "./dlsite-individual-info-api";
@@ -40,15 +41,10 @@ export function initializeApplication(): boolean {
 initializeApplication();
 
 // GCFv2用のCloudEventハンドラーを登録（Pub/Subトリガー関数用）
-interface PubsubMessage {
-	data?: string;
-	attributes?: Record<string, string>;
-}
-
 // 統合アーキテクチャによる Cloud Functions 登録
-functions.cloudEvent<PubsubMessage>("fetchYouTubeVideos", fetchYouTubeVideos);
-functions.cloudEvent<PubsubMessage>("fetchDLsiteUnifiedData", fetchDLsiteUnifiedData);
-functions.cloudEvent<PubsubMessage>("checkDataIntegrity", checkDataIntegrity);
+functions.cloudEvent<MessagePublishedData>("fetchYouTubeVideos", fetchYouTubeVideos);
+functions.cloudEvent<MessagePublishedData>("fetchDLsiteUnifiedData", fetchDLsiteUnifiedData);
+functions.cloudEvent<unknown>("checkDataIntegrity", checkDataIntegrity);
 
 /**
  * プロセス終了処理

@@ -60,11 +60,16 @@ const getMetadataMock = (firestoreMock as unknown as { __getMock: ReturnType<typ
 
 const dummyClient = {} as youtube_v3.Youtube;
 
+// 本番GCFv2（Eventarc経由）と同じMessagePublishedData envelope（message一段ネスト）で
+// 組み立てる。平坦形（event.data.data直下）でモックするとテストだけ通って本番で
+// mode検出が縮退する（SPR-229/230の週次フルスイープ未発火の回帰）。
 function pubsubEvent(payload?: Record<string, unknown>) {
 	return {
 		type: "google.cloud.pubsub.topic.v1.messagePublished",
 		data: {
-			data: payload ? Buffer.from(JSON.stringify(payload)).toString("base64") : undefined,
+			message: {
+				data: payload ? Buffer.from(JSON.stringify(payload)).toString("base64") : undefined,
+			},
 		},
 	} as unknown as Parameters<typeof fetchYouTubeVideos>[0];
 }

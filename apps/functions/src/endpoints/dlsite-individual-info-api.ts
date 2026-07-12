@@ -40,7 +40,7 @@ import { bulkCheckPriceHistoryExistsToday, getJSTDate } from "../services/price-
 import { chunkArray } from "../shared/array-utils";
 import { withClearedUndefined } from "../shared/firestore-write";
 import * as logger from "../shared/logger";
-import { decodePubsubMode, type PubsubMessage } from "../shared/pubsub-utils";
+import { decodePubsubMode, type MessagePublishedData } from "../shared/pubsub-utils";
 
 /**
  * SPR-229 Stage②: ティア差分によるdue-setフィルタの有効/無効フラグ。
@@ -893,7 +893,9 @@ async function executeUnifiedDataCollection(forceFullSweep = false): Promise<Uni
 /**
  * Cloud Functions エントリーポイント
  */
-export async function fetchDLsiteUnifiedData(event: CloudEvent<PubsubMessage>): Promise<void> {
+export async function fetchDLsiteUnifiedData(
+	event: CloudEvent<MessagePublishedData>,
+): Promise<void> {
 	const mode = decodePubsubMode(event.data);
 	const isWeeklyFullSweep = mode === "weekly_full_sweep";
 

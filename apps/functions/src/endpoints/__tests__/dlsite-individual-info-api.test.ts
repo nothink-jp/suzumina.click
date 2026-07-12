@@ -94,10 +94,15 @@ function makeApiResponse(workno: string): DLsiteApiResponse {
 	return { workno, work_name: `テスト作品${workno}`, price: 1000 } as unknown as DLsiteApiResponse;
 }
 
+// 本番GCFv2（Eventarc経由）と同じMessagePublishedData envelope（message一段ネスト）で
+// 組み立てる。平坦形（event.data.data直下）でモックするとテストだけ通って本番で
+// mode検出が縮退する（SPR-229/230の週次フルスイープ未発火の回帰）。
 function pubsubEvent(payload?: Record<string, unknown>) {
 	return {
 		type: "google.cloud.pubsub.topic.v1.messagePublished",
-		data: payload ? { data: Buffer.from(JSON.stringify(payload)).toString("base64") } : undefined,
+		data: payload
+			? { message: { data: Buffer.from(JSON.stringify(payload)).toString("base64") } }
+			: undefined,
 	} as unknown as Parameters<typeof fetchDLsiteUnifiedData>[0];
 }
 
