@@ -1,5 +1,6 @@
 import { useCallback, useRef } from "react";
 import { incrementPlayCount } from "@/app/buttons/actions";
+import { trackPlayButton } from "@/lib/analytics/events";
 
 /**
  * Hook to handle play count increments with debouncing
@@ -56,6 +57,9 @@ export function usePlayCount() {
 
 			// Mark as played in this session
 			playedInSession.current.add(audioButtonId);
+
+			// GA4 再生イベント。デデュープ通過後に送る＝ stats.playCount と同じ意味論（SPR-149）
+			trackPlayButton(audioButtonId);
 
 			// Add to pending batch instead of immediate processing
 			pendingIncrements.current.add(audioButtonId);
