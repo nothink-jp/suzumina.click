@@ -84,6 +84,31 @@ describe("ThumbnailImage", () => {
 		expect(backdrop?.getAttribute("style")).toContain("data:image/svg+xml");
 	});
 
+	it("画像の読み込み完了後はぼかし背景レイヤーが外れる", () => {
+		render(<ThumbnailImage {...defaultProps} />);
+
+		const image = screen.getByTestId("next-image");
+		const container = image.parentElement;
+		expect(container?.querySelector('[aria-hidden="true"].blur-sm')).toBeInTheDocument();
+
+		fireEvent.load(image);
+
+		expect(container?.querySelector('[aria-hidden="true"].blur-sm')).not.toBeInTheDocument();
+	});
+
+	it("srcが変更されると読み込み完了状態がリセットされ、ぼかし背景が再表示される", () => {
+		const { rerender } = render(<ThumbnailImage {...defaultProps} />);
+
+		const image = screen.getByTestId("next-image");
+		const container = image.parentElement;
+		fireEvent.load(image);
+		expect(container?.querySelector('[aria-hidden="true"].blur-sm')).not.toBeInTheDocument();
+
+		rerender(<ThumbnailImage {...defaultProps} src="https://example.com/new-image.jpg" />);
+
+		expect(container?.querySelector('[aria-hidden="true"].blur-sm')).toBeInTheDocument();
+	});
+
 	it("エラー後に再度エラーが発生しても重複して処理されない", async () => {
 		render(<ThumbnailImage {...defaultProps} />);
 
