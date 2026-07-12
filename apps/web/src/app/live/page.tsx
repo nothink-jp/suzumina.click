@@ -1,0 +1,73 @@
+import type { VideoPlainObject } from "@suzumina.click/shared-types";
+import type { Metadata } from "next";
+import { getMyButtonDrafts } from "@/actions/button-drafts";
+import { getVideoById, getVideosList } from "@/app/videos/actions";
+import { LiveCaptureView } from "@/components/live/live-capture-view";
+import ProtectedRoute from "@/components/system/protected-route";
+
+export const metadata: Metadata = {
+	title: "配信中マーキング",
+	description: "配信視聴中に「ここ！」をマークして、音声ボタンの下書きを残せます",
+	// ログイン前提の作業用ページのためインデックス不要
+	robots: { index: false, follow: false },
+};
+
+interface LivePageProps {
+	searchParams: Promise<{ v?: string }>;
+}
+
+/**
+ * マーキング対象の動画を選ぶ。
+ * 手動指定（?v=）が最優先。なければ配信中 → 直近の配信予定の順。
+ * liveBroadcastContent の鮮度は fetchYouTubeVideos の更新頻度に依存するため、
+ * 拾えないときの逃げ道として手動指定を残している（SPR-230 の stale 対策と同じ理由）。
+ */
+async function findTargetVideo(manualVideoId?: string): Promise<VideoPlainObject | null> {
+	if (manualVideoId) {
+		return await getVideoById(manualVideoId);
+	}
+
+	const { items } = await getVideosList({
+		page: 1,
+		limit: 12,
+		filters: { videoType: "live_upcoming" },
+	});
+
+	const live = items.find((v) => v.liveBroadcastContent === "live");
+	if (live) {
+		return live;
+	}
+
+	const upcoming = items
+		.filter((v) => v.liveBroadcastContent === "upcoming")
+		.sort((a, b) =>
+			(a.liveStreamingDetails?.scheduledStartTime ?? "9999").localeCompare(
+				b.liveStreamingDetails?.scheduledStartTime ?? "9999",
+			),
+		);
+	return upcoming[0] ?? null;
+}
+
+/**
+ * データ取得は ProtectedRoute の内側で行う（未認証時はリダイレクトされ、ここは実行されない）。
+ */
+async function LiveCaptureContent({ manualVideoId }: { manualVideoId?: string }) {
+	const [video, draftsResult] = await Promise.all([
+		findTargetVideo(manualVideoId),
+		getMyButtonDrafts(),
+	]);
+
+	return (
+		<LiveCaptureView video={video} initialDrafts={draftsResult.success ? draftsResult.data : []} />
+	);
+}
+
+export default async function LivePage({ searchParams }: LivePageProps) {
+	const { v } = await searchParams;
+
+	return (
+		<ProtectedRoute callbackPath={v ? `/live?v=${encodeURIComponent(v)}` : "/live"}>
+			<LiveCaptureContent manualVideoId={v} />
+		</ProtectedRoute>
+	);
+}

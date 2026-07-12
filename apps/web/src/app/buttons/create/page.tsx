@@ -15,6 +15,8 @@ interface CreateAudioButtonPageProps {
 	searchParams: Promise<{
 		video_id?: string;
 		start_time?: string;
+		/** /live の下書きから開いた場合に付与。作成成功時にその下書きを消化する（SPR-146） */
+		draft_id?: string;
 	}>;
 }
 
@@ -153,9 +155,11 @@ export default async function CreateAudioButtonPage({ searchParams }: CreateAudi
 	const videoDuration = videoDurationSeconds > 0 ? videoDurationSeconds : 600;
 
 	const callbackQuery = new URLSearchParams(
-		Object.entries({ video_id: videoId, start_time: resolvedSearchParams.start_time }).filter(
-			(entry): entry is [string, string] => entry[1] !== undefined,
-		),
+		Object.entries({
+			video_id: videoId,
+			start_time: resolvedSearchParams.start_time,
+			draft_id: resolvedSearchParams.draft_id,
+		}).filter((entry): entry is [string, string] => entry[1] !== undefined),
 	).toString();
 	const callbackPath = `/buttons/create?${callbackQuery}`;
 
@@ -171,6 +175,7 @@ export default async function CreateAudioButtonPage({ searchParams }: CreateAudi
 				videoTitle={videoResult.title}
 				videoDuration={videoDuration}
 				initialStartTime={startTime}
+				draftId={resolvedSearchParams.draft_id}
 			/>
 		</ProtectedRoute>
 	);
