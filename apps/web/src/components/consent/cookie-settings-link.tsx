@@ -1,7 +1,6 @@
 "use client";
 
 import { Button } from "@suzumina.click/ui/components/ui/button";
-import { Settings } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { ConsentState } from "@/lib/consent/google-consent-mode";
 import { updateConsent } from "@/lib/consent/google-consent-mode";
@@ -49,9 +48,8 @@ export function CookieSettingsLink() {
 				variant="ghost"
 				size="sm"
 				onClick={handleOpenSettings}
-				className="text-xs text-muted-foreground hover:text-foreground p-0 h-auto hover:bg-accent transition-colors"
+				className="text-sm text-minase-200 hover:text-minase-50 py-2 px-3.5 h-auto underline underline-offset-4 hover:bg-transparent"
 			>
-				<Settings className="h-3 w-3 mr-1" />
 				クッキー設定
 			</Button>
 

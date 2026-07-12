@@ -40,7 +40,7 @@ const HomeSearch = memo(function HomeSearch() {
 	);
 
 	return (
-		<div className="max-w-md mx-auto space-y-3">
+		<div className="max-w-md mx-auto space-y-3 md:mx-0">
 			<ToggleGroup
 				type="single"
 				value={target}
