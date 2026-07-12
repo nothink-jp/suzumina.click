@@ -49,7 +49,11 @@ export async function refreshGuildStatusIfNeeded(
 	if (!token) return userData;
 	try {
 		const guildMembership = await fetchDiscordGuildMembership(token, discordId);
-		const isFamilyMember = guildMembership ? isValidGuildMember(guildMembership) : false;
+		// null は API 呼び出し自体の失敗（トークン失効・レート制限等）を示す。
+		// 「非メンバー確定」と取り違えて false を書き込むと、以後ずっと復旧できなくなるため
+		// 失敗時は判定を更新せず現状の userData をそのまま維持する。
+		if (!guildMembership) return userData;
+		const isFamilyMember = isValidGuildMember(guildMembership);
 		const today = getJSTDateString();
 		const newLimit = calculateDailyLimit({ isFamilyMember });
 		// 日付が変わっていればカウントをリセット
