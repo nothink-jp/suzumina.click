@@ -233,6 +233,7 @@ vi.mock("lucide-react", () => {
 		Eye: createMockIcon("Eye"),
 		Radio: createMockIcon("Radio"),
 		LogIn: createMockIcon("LogIn"),
+		Bookmark: createMockIcon("Bookmark"),
 		// Icons for UserMenu
 		LogOut: createMockIcon("LogOut"),
 		// Icons for tag editors / WorkDetail など

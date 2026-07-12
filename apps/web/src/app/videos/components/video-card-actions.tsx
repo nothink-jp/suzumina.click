@@ -4,9 +4,11 @@ import type { VideoPlainObject } from "@suzumina.click/shared-types";
 import {
 	canCreateAudioButton,
 	getAudioButtonCreationErrorMessage,
+	isUpcoming,
+	isVideoLive,
 } from "@suzumina.click/shared-types";
 import { Button } from "@suzumina.click/ui/components/ui/button";
-import { ExternalLink, Eye, LogIn, Plus } from "lucide-react";
+import { Bookmark, ExternalLink, Eye, LogIn, Plus } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { useSession } from "@/lib/auth/client";
@@ -18,10 +20,17 @@ interface VideoCardActionsProps {
 
 type ButtonGate =
 	| { canCreate: true }
+	| { canCreate: false; liveMarking: true }
 	| { canCreate: false; needsLogin: true }
 	| { canCreate: false; needsLogin: false; reason: string };
 
 function evaluateButtonGate(video: VideoPlainObject, isLoggedIn: boolean): ButtonGate {
+	// 配信中/配信予定は「作成不可」ではなく配信中マーキング（/live）への導線に切り替える（SPR-146）。
+	// この時間帯の正しい作成手段はマーク→アーカイブ後の仕上げのため。ログイン判定より先に返すことで
+	// 未ログインでも導線が見え、認証は /live 側の ProtectedRoute（callbackPath 付き）に委ねる
+	if (isVideoLive(video) || isUpcoming(video)) {
+		return { canCreate: false, liveMarking: true };
+	}
 	if (!isLoggedIn) {
 		return { canCreate: false, needsLogin: true };
 	}
@@ -94,6 +103,19 @@ export default function VideoCardActions({ video, variant }: VideoCardActionsPro
 				>
 					<Plus className="h-4 w-4 mr-1" aria-hidden="true" />
 					ボタン作成
+				</Link>
+			</Button>
+		);
+	} else if ("liveMarking" in gate) {
+		createAction = (
+			<Button size="sm" variant="default" className="flex-1 min-h-[44px] text-sm" asChild>
+				<Link
+					href={`/live?v=${video.videoId}`}
+					aria-label={`${video.title}の配信中マーキングを開く`}
+					className="flex items-center whitespace-nowrap"
+				>
+					<Bookmark className="h-4 w-4 mr-1" aria-hidden="true" />
+					配信中マーク
 				</Link>
 			</Button>
 		);

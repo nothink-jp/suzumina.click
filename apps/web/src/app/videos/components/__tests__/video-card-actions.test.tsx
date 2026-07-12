@@ -73,7 +73,7 @@ describe("VideoCardActions", () => {
 		expect(screen.queryByText("ボタン作成")).not.toBeInTheDocument();
 	});
 
-	it("ログイン済みでも作成不可なら理由を tooltip に持つ aria-disabled ボタンを表示する", () => {
+	it("配信中の動画は『配信中マーク』リンク（/live?v=）を表示する（SPR-146）", () => {
 		mockUseSession(loggedIn);
 		const video = createMockVideo({
 			liveBroadcastContent: "live",
@@ -87,11 +87,67 @@ describe("VideoCardActions", () => {
 		});
 		render(<VideoCardActions video={video} variant="grid" />);
 
+		const markLink = screen.getByText("配信中マーク").closest("a");
+		expect(markLink).toHaveAttribute("href", "/live?v=abc123");
+		expect(screen.queryByText("ボタン作成")).not.toBeInTheDocument();
+	});
+
+	it("配信予定の動画も『配信中マーク』リンクを表示する", () => {
+		mockUseSession(loggedIn);
+		const video = createMockVideo({
+			liveBroadcastContent: "upcoming",
+			_computed: {
+				...createMockVideo()._computed,
+				isArchived: false,
+				isUpcoming: true,
+				canCreateButton: false,
+				videoType: "upcoming",
+			},
+		});
+		render(<VideoCardActions video={video} variant="grid" />);
+
+		expect(screen.getByText("配信中マーク").closest("a")).toHaveAttribute("href", "/live?v=abc123");
+	});
+
+	it("未ログインでも配信中はログイン導線でなく『配信中マーク』を表示する（認証は /live 側に委譲）", () => {
+		mockUseSession(loggedOut);
+		const video = createMockVideo({
+			liveBroadcastContent: "live",
+			_computed: {
+				...createMockVideo()._computed,
+				isArchived: false,
+				isLive: true,
+				canCreateButton: false,
+				videoType: "live",
+			},
+		});
+		render(<VideoCardActions video={video} variant="grid" />);
+
+		expect(screen.getByText("配信中マーク")).toBeInTheDocument();
+		expect(screen.queryByText("ログイン")).not.toBeInTheDocument();
+	});
+
+	it("ログイン済みでも作成不可（配信でない動画）なら理由を tooltip に持つ aria-disabled ボタンを表示する", () => {
+		mockUseSession(loggedIn);
+		const video = createMockVideo({
+			duration: "PT0S",
+			_computed: {
+				...createMockVideo()._computed,
+				isArchived: false,
+				canCreateButton: false,
+				videoType: "normal",
+			},
+		});
+		render(<VideoCardActions video={video} variant="grid" />);
+
 		const createButton = screen.getByText("ボタン作成").closest("button");
 		// native disabled は pointer-events-none で tooltip が出ないため aria-disabled を使う
 		expect(createButton).toHaveAttribute("aria-disabled", "true");
 		expect(createButton).not.toBeDisabled();
-		expect(createButton).toHaveAttribute("title", "ライブ配信中は音声ボタンを作成できません");
+		expect(createButton).toHaveAttribute(
+			"title",
+			"動画の長さが不明なため音声ボタンを作成できません",
+		);
 		// ホバー/フォーカスで理由が届くよう href を持たない（遷移しない）
 		expect(createButton).not.toHaveAttribute("href");
 	});
