@@ -19,7 +19,7 @@ import {
 } from "../services/youtube/youtube-firestore";
 import { SUZUKA_MINASE_CHANNEL_ID } from "../shared/common";
 import * as logger from "../shared/logger";
-import { decodePubsubMode, type PubsubMessage } from "../shared/pubsub-utils";
+import { decodePubsubMode, type MessagePublishedData } from "../shared/pubsub-utils";
 
 // メタデータ保存用のドキュメントID
 const METADATA_DOC_ID = "fetch_metadata";
@@ -717,40 +717,22 @@ async function fetchYouTubeVideosLogic(isWeeklyFullSweep = false): Promise<Fetch
  * @param event - Pub/SubトリガーからのCloudEvent
  * @returns Promise<void> - 非同期処理の完了を表すPromise
  */
-export const fetchYouTubeVideos = async (event: CloudEvent<PubsubMessage>): Promise<void> => {
+export const fetchYouTubeVideos = async (
+	event: CloudEvent<MessagePublishedData>,
+): Promise<void> => {
 	logger.info("fetchYouTubeVideos 関数を開始しました (GCFv2 CloudEvent Handler)");
 
 	try {
 		// CloudEvent（Pub/Sub）の場合
 		logger.info("Pub/Subトリガーからの実行を検出しました");
-		const message = event.data;
 
-		if (!message) {
+		if (!event.data) {
 			logger.error("CloudEventデータが不足しています", { event });
 			return;
 		}
 
-		// 属性情報の処理 - テストに合わせてフォーマットを変更
-		if (message.attributes) {
-			logger.info("受信した属性情報:", message.attributes);
-		}
-
-		// Base64エンコードされたデータがあれば復号 - テストに合わせてフォーマットを変更
-		if (message.data) {
-			try {
-				const decodedData = Buffer.from(message.data, "base64").toString("utf-8");
-				// TypeScriptの型チェックに合格するようオブジェクト形式で渡す
-				logger.info("デコードされたメッセージデータ:", {
-					message: decodedData,
-				});
-			} catch (err) {
-				logger.error("Base64メッセージデータのデコードに失敗しました:", err);
-				return;
-			}
-		}
-
 		// SPR-230: ペイロードのmodeを確認し、週次フルスイープかどうかを判定する
-		const mode = decodePubsubMode(message);
+		const mode = decodePubsubMode(event.data);
 		const isWeeklyFullSweep = mode === "weekly_full_sweep";
 		if (isWeeklyFullSweep) {
 			logger.info("週次フルスイープトリガーを検出しました");
