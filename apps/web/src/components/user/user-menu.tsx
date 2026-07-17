@@ -10,7 +10,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@suzumina.click/ui/components/ui/dropdown-menu";
-import { Heart, LogOut, Settings, User } from "lucide-react";
+import { Bookmark, Heart, LogOut, Settings, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { isAuthGatedPath } from "@/lib/auth/auth-redirect";
@@ -83,6 +83,13 @@ export default function UserMenu({ user }: UserMenuProps) {
 					<Link href="/favorites" className="flex items-center gap-2 cursor-pointer">
 						<Heart className="h-4 w-4" />
 						<span>お気に入り</span>
+					</Link>
+				</DropdownMenuItem>
+				{/* 配信終了後も下書きの仕上げに戻れるよう常設する（動画カード側の導線は live/upcoming 時のみ） */}
+				<DropdownMenuItem asChild>
+					<Link href="/live" className="flex items-center gap-2 cursor-pointer">
+						<Bookmark className="h-4 w-4" />
+						<span>配信中マーキング</span>
 					</Link>
 				</DropdownMenuItem>
 				<DropdownMenuItem asChild>

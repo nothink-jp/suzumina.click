@@ -65,6 +65,13 @@ export default function MobileMenu({ user }: MobileMenuProps) {
 							>
 								👤 マイページ
 							</Link>
+							{/* 配信終了後も下書きの仕上げに戻れるよう常設する（動画カード側の導線は live/upcoming 時のみ） */}
+							<Link
+								href="/live"
+								className="text-lg font-medium text-foreground hover:text-foreground/80 hover:bg-accent min-h-[48px] px-4 py-3 rounded-lg transition-colors flex items-center"
+							>
+								🔖 配信中マーキング
+							</Link>
 							<Link
 								href="/settings"
 								className="text-lg font-medium text-foreground hover:text-foreground/80 hover:bg-accent min-h-[48px] px-4 py-3 rounded-lg transition-colors flex items-center"
