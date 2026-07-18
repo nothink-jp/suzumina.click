@@ -206,7 +206,8 @@ resource "google_project_iam_custom_role" "github_actions_artifact_registry_role
     "artifactregistry.tags.create",
     "artifactregistry.tags.update",
     "artifactregistry.tags.get",
-    "artifactregistry.tags.list"
+    "artifactregistry.tags.list",
+    "artifactregistry.tags.delete" # SPR-247: versions delete --delete-tags に必要（tags.delete不足でPERMISSION_DENIED実測）
   ]
 }
 
