@@ -229,6 +229,7 @@ vi.mock("lucide-react", () => {
 		RotateCcw: createMockIcon("RotateCcw"),
 		// Icons for AudioButtonCreator
 		Plus: createMockIcon("Plus"),
+		SkipForward: createMockIcon("SkipForward"),
 		// Icons for VideoCard
 		Eye: createMockIcon("Eye"),
 		Radio: createMockIcon("Radio"),

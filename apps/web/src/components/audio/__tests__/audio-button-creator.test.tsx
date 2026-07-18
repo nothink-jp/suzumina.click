@@ -13,6 +13,12 @@ vi.mock("@/app/buttons/actions", () => ({
 	}),
 }));
 
+// Mock draft actions（連続仕上げ・SPR-266）
+const mockDeleteButtonDraft = vi.fn().mockResolvedValue({ success: true });
+vi.mock("@/actions/button-drafts", () => ({
+	deleteButtonDraft: (draftId: string) => mockDeleteButtonDraft(draftId),
+}));
+
 // Mock rate limit actions
 vi.mock("@/actions/rate-limit-actions", () => ({
 	getUserRateLimitInfo: vi.fn().mockResolvedValue({
@@ -444,6 +450,112 @@ describe("AudioButtonCreator - Refactored Architecture", () => {
 			rerender(<AudioButtonCreator key="video-b" {...defaultProps} videoId="other-video" />);
 
 			expect(screen.getByPlaceholderText("例: おはようございます")).toHaveValue("");
+		});
+	});
+
+	describe("連続仕上げ（下書きキュー・SPR-266 第2段）", () => {
+		const makeDraft = (id: string, suggestedStartTime: number) => ({
+			id,
+			videoId: "test-video-id",
+			videoTitle: "テスト動画タイトル",
+			playerTime: suggestedStartTime + 15,
+			markedAt: "2026-07-15T12:00:00.000Z",
+			createdAt: "2026-07-15T12:00:00.000Z",
+			suggestedStartTime,
+		});
+
+		async function createWithTitle(user: ReturnType<typeof userEvent.setup>, title: string) {
+			await user.type(screen.getByPlaceholderText("例: おはようございます"), title);
+			const createButton = screen.getByRole("button", { name: /音声ボタンを作成/ });
+			await waitFor(() => expect(createButton).toBeEnabled());
+			await user.click(createButton);
+		}
+
+		it("キューに残りがあれば遷移せず次の下書きへ進む（フォームリセット＋プレイヤー維持）", async () => {
+			const user = userEvent.setup();
+			render(
+				<AudioButtonCreator
+					{...defaultProps}
+					initialStartTime={30}
+					draftId="draft-1"
+					videoDrafts={[makeDraft("draft-1", 30), makeDraft("draft-2", 120)]}
+				/>,
+			);
+
+			// キューパネルに次の下書きが見えている
+			expect(screen.getByText("仕上げキュー")).toBeInTheDocument();
+			expect(screen.getByText(/次: 02:00 付近/)).toBeInTheDocument();
+
+			await createWithTitle(user, "1個目のボタン");
+
+			// 消化（削除）される
+			await waitFor(() => {
+				expect(mockDeleteButtonDraft).toHaveBeenCalledWith("draft-1");
+			});
+			// 遷移せずフォームが次の下書きへ: タイトルはリセット・開始時間は次の下書きの推奨秒
+			expect(mockPush).not.toHaveBeenCalled();
+			expect(screen.getByRole("heading", { name: /音声ボタンを作成/ })).toBeInTheDocument();
+			expect(screen.getByPlaceholderText("例: おはようございます")).toHaveValue("");
+			await waitFor(() => {
+				expect(screen.getByDisplayValue("2:00.0")).toBeInTheDocument();
+			});
+			// プレイヤーは遷移せず seek で次の位置へ
+			expect(mockYouTubePlayer.seekTo).toHaveBeenCalledWith(120, true);
+			// 成功バナーが出る（作成したボタンへは新規タブリンク）
+			expect(screen.getByText(/「1個目のボタン」を作成しました/)).toBeInTheDocument();
+			expect(screen.getByRole("link", { name: /開く/ })).toHaveAttribute(
+				"href",
+				"/buttons/new-audio-button-id",
+			);
+		});
+
+		it("最後の下書きなら従来どおり詳細ページへフルロード遷移する", async () => {
+			const user = userEvent.setup();
+			render(
+				<AudioButtonCreator
+					{...defaultProps}
+					initialStartTime={30}
+					draftId="draft-1"
+					videoDrafts={[makeDraft("draft-1", 30)]}
+				/>,
+			);
+
+			await createWithTitle(user, "最後のボタン");
+
+			await waitFor(() => {
+				expect(mockDeleteButtonDraft).toHaveBeenCalledWith("draft-1");
+			});
+			await waitFor(() => {
+				expect(window.location.href).toContain("/buttons/new-audio-button-id");
+			});
+			expect(mockPush).not.toHaveBeenCalled();
+		});
+
+		it("スキップは下書きを消化せず次へ進む", async () => {
+			const user = userEvent.setup();
+			render(
+				<AudioButtonCreator
+					{...defaultProps}
+					initialStartTime={30}
+					draftId="draft-1"
+					videoDrafts={[makeDraft("draft-1", 30), makeDraft("draft-2", 120)]}
+				/>,
+			);
+
+			await user.click(screen.getByRole("button", { name: /スキップして次へ/ }));
+
+			expect(mockDeleteButtonDraft).not.toHaveBeenCalled();
+			await waitFor(() => {
+				expect(screen.getByDisplayValue("2:00.0")).toBeInTheDocument();
+			});
+			// キューが尽きたら「最後の下書き」の案内に変わる
+			expect(screen.getByText(/これが最後の下書きです/)).toBeInTheDocument();
+		});
+
+		it("下書きキューなし（通常作成）ではキューパネルを出さない", () => {
+			render(<AudioButtonCreator {...defaultProps} />);
+
+			expect(screen.queryByText("仕上げキュー")).not.toBeInTheDocument();
 		});
 	});
 
