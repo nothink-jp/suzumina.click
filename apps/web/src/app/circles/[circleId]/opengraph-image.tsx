@@ -1,4 +1,4 @@
-import { buildOgImageResponse } from "@/lib/og-response";
+import { buildOgImageResponse, OG_IMAGE_CONTENT_TYPE, OG_IMAGE_SIZE } from "@/lib/og-response";
 import { asciiOrEmpty, formatDisplayTitle } from "@/lib/og-text";
 import { TextOgCard } from "@/lib/og-text-card";
 import { getCircleInfo } from "./actions";
@@ -11,8 +11,8 @@ import { getCircleInfo } from "./actions";
  * どの失敗経路でも 500 は返さない（サークル未取得→サイト名版 / フォント取得失敗→ASCII 縮退版）。
  */
 
-export const size = { width: 1200, height: 630 };
-export const contentType = "image/png";
+export const size = OG_IMAGE_SIZE;
+export const contentType = OG_IMAGE_CONTENT_TYPE;
 export const alt = "サークル情報 - すずみなくりっく！";
 
 interface OgImageParams {

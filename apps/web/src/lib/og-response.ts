@@ -11,6 +11,14 @@ import { loadMPlusRoundedSubset } from "@/lib/og-font";
  * ここで一度だけ実装する。
  */
 
+/**
+ * OG 画像の共通寸法（X card 等の推奨サイズ）。全 opengraph-image.tsx の
+ * `export const size` / `export const contentType` はこの値を再輸出する
+ * （Next.js の file-convention 上、各ルートで直接 export する必要があるため定数化のみ）
+ */
+export const OG_IMAGE_SIZE = { width: 1200, height: 630 };
+export const OG_IMAGE_CONTENT_TYPE = "image/png";
+
 interface BuildOgImageResponseParams {
 	size: { width: number; height: number };
 	/** M PLUS Rounded 1c bold(700) サブセット取得に使う文字列（表示に使う全文字を含める） */

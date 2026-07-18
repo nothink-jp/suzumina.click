@@ -14,7 +14,7 @@ import {
 	OG_SUZUKA_500 as SUZUKA_500,
 	OG_SUZUKA_700 as SUZUKA_700,
 } from "@/lib/og-palette";
-import { buildOgImageResponse } from "@/lib/og-response";
+import { buildOgImageResponse, OG_IMAGE_CONTENT_TYPE, OG_IMAGE_SIZE } from "@/lib/og-response";
 import {
 	asciiOrEmpty,
 	estimateTextWidth as estimateTextWidthShared,
@@ -30,8 +30,8 @@ import {
  * どの失敗経路でも 500 は返さない（ボタン未取得→サイト名版 / フォント取得失敗→ASCII 縮退版）。
  */
 
-export const size = { width: 1200, height: 630 };
-export const contentType = "image/png";
+export const size = OG_IMAGE_SIZE;
+export const contentType = OG_IMAGE_CONTENT_TYPE;
 export const alt = "涼花みなせ音声ボタン - すずみなくりっく！";
 
 /** ボタン名の表示用整形。折り返し幅 750px × 4行に収まる長さへ末尾省略する */

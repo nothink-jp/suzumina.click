@@ -10,7 +10,7 @@ import {
 	OG_SUZUKA_500 as SUZUKA_500,
 	OG_SUZUKA_700 as SUZUKA_700,
 } from "@/lib/og-palette";
-import { buildOgImageResponse } from "@/lib/og-response";
+import { buildOgImageResponse, OG_IMAGE_CONTENT_TYPE, OG_IMAGE_SIZE } from "@/lib/og-response";
 
 /**
  * サイト共通のデフォルト OG 画像（SPR-171）。
@@ -20,8 +20,8 @@ import { buildOgImageResponse } from "@/lib/og-response";
  * フォールバックする。フォント取得失敗でも 500 は返さない（ASCII 縮退版を描画）。
  */
 
-export const size = { width: 1200, height: 630 };
-export const contentType = "image/png";
+export const size = OG_IMAGE_SIZE;
+export const contentType = OG_IMAGE_CONTENT_TYPE;
 export const alt = "すずみなくりっく！ - 涼花みなせ 非公式ファンサイト";
 
 /** 桜の花（5枚花弁・先端に切れ込み）。装飾用の SVG で、satori がそのまま描画できる */
