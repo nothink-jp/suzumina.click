@@ -1,20 +1,21 @@
+import { parseDurationToSeconds } from "@suzumina.click/shared-types";
 import { ImageResponse } from "next/og";
-import { getWorkById } from "@/app/works/actions";
+import { getVideoById } from "@/app/videos/actions";
 import { loadMPlusRoundedSubset } from "@/lib/og-font";
 import { loadRemoteImageDataUri } from "@/lib/og-remote-image";
-import { estimateTextWidth, formatDisplayTitle, truncateWithEllipsis } from "@/lib/og-text";
+import { formatDisplayTitle, truncateWithEllipsis } from "@/lib/og-text";
 
 /**
- * DLsite作品詳細の動的 OG 画像（SPR-268 / /buttons/[id] の opengraph-image と同じ file-convention パターン）。
+ * YouTube動画詳細の動的 OG 画像（SPR-268 段階導入② / /works/[workId] と同じ file-convention パターン）。
  * X のリンクカードは「画像 + 小タイトル + ドメイン」しか表示しないため（SPR-17 調査）、
- * 作品ジャケット + タイトル + サークル名 + 価格を画像内に構成し、カード単体で内容が伝わるようにする。
+ * YouTubeサムネイル + タイトル + チャンネル名 + 再生時間を画像内に構成し、カード単体で内容が伝わるようにする。
  * og:image / twitter:image はこの規約ファイルから自動出力される（generateMetadata の images 手書きはしない）。
- * どの失敗経路でも 500 は返さない（作品未取得→サイト名版 / ジャケット取得失敗→ジャケット無し版 / フォント取得失敗→ASCII 縮退版）。
+ * どの失敗経路でも 500 は返さない（動画未取得→サイト名版 / サムネイル取得失敗→サムネイル無し版 / フォント取得失敗→ASCII 縮退版）。
  */
 
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
-export const alt = "DLsite作品情報 - すずみなくりっく！";
+export const alt = "動画情報 - すずみなくりっく！";
 
 // 桜霞パレット（正本は packages/ui/src/styles/globals.css の :root。
 // ImageResponse は CSS 変数を解決できないためライトモード値を転記している）
@@ -27,23 +28,36 @@ const MINASE_800 = "hsl(27, 32%, 37%)";
 const MINASE_950 = "hsl(25, 28%, 18%)";
 const MUTED_FOREGROUND = "hsl(324, 8%, 40%)";
 
-const TITLE_MAX_WIDTH = 620;
-const TITLE_FONT_SIZE = 48;
+// カード幅1200 - 左右padding128 - サムネ480 - gap56 = 536px（タイトル列の折り返し幅）
+const TITLE_MAX_WIDTH = 536;
+const TITLE_FONT_SIZE = 40;
+const TITLE_MAX_LEN = 40;
 
-// next.config.mjs の images.remotePatterns と同じ許可ホスト（DLsite CDN限定）
-const ALLOWED_JACKET_HOSTNAMES = ["img.dlsite.jp"];
+// next.config.mjs の images.remotePatterns と同じ許可ホスト（YouTube サムネイルCDN限定）
+const ALLOWED_THUMBNAIL_HOSTNAMES = ["i.ytimg.com", "img.youtube.com"];
+
+/** 秒数を m:ss / h:mm:ss にフォーマットする（OG画像表示用。小数は出さない） */
+function formatDurationLabel(seconds: number): string {
+	if (seconds <= 0) return "";
+	const hours = Math.floor(seconds / 3600);
+	const minutes = Math.floor((seconds % 3600) / 60);
+	const secs = Math.floor(seconds % 60);
+	if (hours > 0) {
+		return `${hours}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+	}
+	return `${minutes}:${secs.toString().padStart(2, "0")}`;
+}
 
 interface OgCardProps {
 	badgeLabel: string;
 	title: string;
-	circle: string;
-	price: string;
-	jacketDataUri: string | null;
+	channelTitle: string;
+	durationLabel: string;
+	thumbnailDataUri: string | null;
 }
 
-/** ジャケット + タイトル/サークル/価格の2カラムレイアウト（通常版と縮退版で共用） */
-function OgCard({ badgeLabel, title, circle, price, jacketDataUri }: OgCardProps) {
-	const needsWrap = estimateTextWidth(title, TITLE_FONT_SIZE) > TITLE_MAX_WIDTH;
+/** サムネイル + タイトル/チャンネル名/再生時間の2カラムレイアウト（通常版と縮退版で共用） */
+function OgCard({ badgeLabel, title, channelTitle, durationLabel, thumbnailDataUri }: OgCardProps) {
 	return (
 		<div
 			style={{
@@ -64,13 +78,13 @@ function OgCard({ badgeLabel, title, circle, price, jacketDataUri }: OgCardProps
 					padding: "56px 64px 0",
 				}}
 			>
-				{jacketDataUri && (
+				{thumbnailDataUri && (
 					// biome-ignore lint/performance/noImgElement: ImageResponse(satori) は next/image を使えないため生 img 必須
 					<img
-						src={jacketDataUri}
+						src={thumbnailDataUri}
 						alt=""
-						width={420}
-						height={315}
+						width={480}
+						height={270}
 						style={{
 							borderRadius: 24,
 							border: `4px solid ${MINASE_300}`,
@@ -103,7 +117,7 @@ function OgCard({ badgeLabel, title, circle, price, jacketDataUri }: OgCardProps
 					</span>
 					<div
 						style={{
-							...(needsWrap ? { width: TITLE_MAX_WIDTH } : {}),
+							width: TITLE_MAX_WIDTH,
 							fontWeight: 700,
 							fontSize: TITLE_FONT_SIZE,
 							lineHeight: 1.35,
@@ -112,8 +126,12 @@ function OgCard({ badgeLabel, title, circle, price, jacketDataUri }: OgCardProps
 					>
 						{title}
 					</div>
-					<span style={{ fontSize: 28, color: MUTED_FOREGROUND }}>{circle}</span>
-					<span style={{ fontWeight: 700, fontSize: 34, color: SUZUKA_500 }}>{price}</span>
+					<span style={{ fontSize: 28, color: MUTED_FOREGROUND }}>{channelTitle}</span>
+					{durationLabel && (
+						<span style={{ fontWeight: 700, fontSize: 30, color: SUZUKA_500 }}>
+							{durationLabel}
+						</span>
+					)}
 				</div>
 			</div>
 
@@ -128,26 +146,32 @@ function OgCard({ badgeLabel, title, circle, price, jacketDataUri }: OgCardProps
 }
 
 interface OgImageParams {
-	params: Promise<{ workId: string }>;
+	params: Promise<{ videoId: string }>;
 }
 
 export default async function Image({ params }: OgImageParams) {
-	const { workId } = await params;
+	const { videoId } = await params;
 
-	const work = await getWorkById(workId).catch(() => null);
+	const video = await getVideoById(videoId).catch(() => null);
 
-	const title = work ? formatDisplayTitle(work.title, 44) : "すずみなくりっく！";
-	const circle = work ? truncateWithEllipsis(work.circle, 30) : "";
-	const price = work ? work.price.formattedPrice : "";
-	const jacketUrl = work?.highResImageUrl || work?.thumbnailUrl || null;
-	const jacketDataUri = jacketUrl
-		? await loadRemoteImageDataUri(jacketUrl, ALLOWED_JACKET_HOSTNAMES)
+	const title = video ? formatDisplayTitle(video.title, TITLE_MAX_LEN) : "すずみなくりっく！";
+	const channelTitle = video ? truncateWithEllipsis(video.channelTitle, 30) : "";
+	const durationLabel = video ? formatDurationLabel(parseDurationToSeconds(video.duration)) : "";
+	const thumbnailUrl =
+		video?.thumbnails?.maxres?.url ||
+		video?.thumbnails?.standard?.url ||
+		video?.thumbnails?.high?.url ||
+		video?.thumbnailUrl ||
+		null;
+	const thumbnailDataUri = thumbnailUrl
+		? await loadRemoteImageDataUri(thumbnailUrl, ALLOWED_THUMBNAIL_HOSTNAMES)
 		: null;
 
-	const fontBold = await loadMPlusRoundedSubset(700, `${title}DLsite作品すずみなくりっく！`).catch(
-		() => null,
-	);
-	const fontRegular = await loadMPlusRoundedSubset(400, `${circle}${price}suzumina.click`).catch(
+	const fontBold = await loadMPlusRoundedSubset(
+		700,
+		`${title}動画すずみなくりっく！${durationLabel}`,
+	).catch(() => null);
+	const fontRegular = await loadMPlusRoundedSubset(400, `${channelTitle}suzumina.click`).catch(
 		() => null,
 	);
 
@@ -155,11 +179,11 @@ export default async function Image({ params }: OgImageParams) {
 		const asciiTitle = /^[\x20-\x7E]+$/.test(title) ? title : "";
 		return new ImageResponse(
 			<OgCard
-				badgeLabel="DLSITE WORK"
+				badgeLabel="YOUTUBE VIDEO"
 				title={asciiTitle || "suzumina.click"}
-				circle=""
-				price=""
-				jacketDataUri={jacketDataUri}
+				channelTitle=""
+				durationLabel=""
+				thumbnailDataUri={thumbnailDataUri}
 			/>,
 			{ ...size },
 		);
@@ -167,11 +191,11 @@ export default async function Image({ params }: OgImageParams) {
 
 	return new ImageResponse(
 		<OgCard
-			badgeLabel="DLsite作品"
+			badgeLabel="動画"
 			title={title}
-			circle={circle}
-			price={price}
-			jacketDataUri={jacketDataUri}
+			channelTitle={channelTitle}
+			durationLabel={durationLabel}
+			thumbnailDataUri={thumbnailDataUri}
 		/>,
 		{
 			...size,
