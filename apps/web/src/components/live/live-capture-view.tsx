@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createButtonDraft, deleteButtonDraft } from "@/actions/button-drafts";
 import { trackMarkDraft } from "@/lib/analytics/events";
+import { matchShortcutKey } from "@/lib/keyboard-shortcut";
 
 interface LiveCaptureViewProps {
 	video: VideoPlainObject | null;
@@ -113,17 +114,10 @@ export function LiveCaptureView({ video, initialDrafts }: LiveCaptureViewProps) 
 		}
 	}, [video, isMarking]);
 
-	// M キーでマーク（入力欄フォーカス中とキーリピートは無視）
+	// M キーでマーク。ガードの正本は matchShortcutKey（create/edit の I/O キーと共通・SPR-266）
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
-			if (event.key.toLowerCase() !== "m" || event.repeat) {
-				return;
-			}
-			const target = event.target as HTMLElement | null;
-			if (
-				target &&
-				(/^(input|textarea|select)$/i.test(target.tagName) || target.isContentEditable)
-			) {
+			if (matchShortcutKey(event, ["m"]) === null) {
 				return;
 			}
 			event.preventDefault();

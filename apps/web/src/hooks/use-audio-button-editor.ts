@@ -1,5 +1,6 @@
 import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { matchShortcutKey } from "@/lib/keyboard-shortcut";
 import { useAudioButtonValidation } from "./use-audio-button-validation";
 import { useTimeAdjustment } from "./use-time-adjustment";
 import { useTimeHandlers } from "./use-time-handlers";
@@ -47,26 +48,6 @@ export interface AudioButtonEditorResult {
 
 	// 変更検出（編集モードの場合）
 	hasChanges: boolean;
-}
-
-/**
- * I/O ショートカットとして処理すべきキー入力なら "in" | "out" を返す。
- * ガード方針は /live の M キー（live-capture-view）と同一:
- * 入力欄フォーカス中・キーリピート・修飾キー付きは対象外（null）。
- */
-function matchInOutHotkey(event: KeyboardEvent): "in" | "out" | null {
-	if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) {
-		return null;
-	}
-	const key = event.key.toLowerCase();
-	if (key !== "i" && key !== "o") {
-		return null;
-	}
-	const target = event.target as HTMLElement | null;
-	if (target && (/^(input|textarea|select)$/i.test(target.tagName) || target.isContentEditable)) {
-		return null;
-	}
-	return key === "i" ? "in" : "out";
 }
 
 /**
@@ -142,28 +123,37 @@ export function useAudioButtonEditor(config: AudioButtonEditorConfig): AudioButt
 		description,
 	});
 
-	// I/O キーで再生位置を開始/終了時間に設定（SPR-266 区間指定UX）。
+	// I/O キーで再生位置を開始/終了時間に設定（SPR-266 区間指定UX）。ガードの正本は matchShortcutKey。
 	// 処理中（作成/更新中）はボタン disabled と挙動を揃えて無効化する。
-	const { setCurrentAsStart, setCurrentAsEnd } = timeAdjustment;
+	// setCurrentAsStart/End は currentTime 依存で毎再生ティックに再生成されるため、
+	// ref 経由で最新を呼び、リスナーの張り直しを isProcessing の変化時だけに抑える。
+	const hotkeyActionsRef = useRef({
+		setCurrentAsStart: timeAdjustment.setCurrentAsStart,
+		setCurrentAsEnd: timeAdjustment.setCurrentAsEnd,
+	});
+	hotkeyActionsRef.current = {
+		setCurrentAsStart: timeAdjustment.setCurrentAsStart,
+		setCurrentAsEnd: timeAdjustment.setCurrentAsEnd,
+	};
 	useEffect(() => {
 		if (isProcessing) {
 			return;
 		}
 		const onKeyDown = (event: KeyboardEvent) => {
-			const hotkey = matchInOutHotkey(event);
+			const hotkey = matchShortcutKey(event, ["i", "o"]);
 			if (!hotkey) {
 				return;
 			}
 			event.preventDefault();
-			if (hotkey === "in") {
-				setCurrentAsStart();
+			if (hotkey === "i") {
+				hotkeyActionsRef.current.setCurrentAsStart();
 			} else {
-				setCurrentAsEnd();
+				hotkeyActionsRef.current.setCurrentAsEnd();
 			}
 		};
 		document.addEventListener("keydown", onKeyDown);
 		return () => document.removeEventListener("keydown", onKeyDown);
-	}, [setCurrentAsStart, setCurrentAsEnd, isProcessing]);
+	}, [isProcessing]);
 
 	// 変更があるかチェック（編集モードの場合）
 	const hasChanges = useMemo(() => {
