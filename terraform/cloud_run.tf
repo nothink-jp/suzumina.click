@@ -169,6 +169,17 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
         value = var.google_tag_manager_id
       }
 
+      # Gemini API Key (Secret Managerから取得・音声ボタンのメタ入力候補生成 SPR-148)
+      env {
+        name = "GEMINI_API_KEY"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.secrets["GEMINI_API_KEY"].secret_id
+            version = "latest"
+          }
+        }
+      }
+
       # Resend API Key (Secret Managerから取得)
       env {
         name = "RESEND_API_KEY"

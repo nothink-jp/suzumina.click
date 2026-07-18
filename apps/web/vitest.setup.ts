@@ -230,6 +230,7 @@ vi.mock("lucide-react", () => {
 		// Icons for AudioButtonCreator
 		Plus: createMockIcon("Plus"),
 		SkipForward: createMockIcon("SkipForward"),
+		Sparkles: createMockIcon("Sparkles"),
 		// Icons for VideoCard
 		Eye: createMockIcon("Eye"),
 		Radio: createMockIcon("Radio"),

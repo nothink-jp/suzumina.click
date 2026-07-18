@@ -34,6 +34,7 @@ env:
   TF_VAR_admin_email: ${{ secrets.ADMIN_EMAIL }}
   # app 機密は Terraform 管理外（secrets.tf の ignore_changes=[secret_data]）。placeholder で plan/apply 可能。
   TF_VAR_youtube_api_key: 'ci-placeholder'
+  TF_VAR_gemini_api_key: 'ci-placeholder'
   TF_VAR_discord_client_id: 'ci-placeholder'
   TF_VAR_discord_client_secret: 'ci-placeholder'
   TF_VAR_better_auth_secret: 'ci-placeholder'

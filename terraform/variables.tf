@@ -42,6 +42,12 @@ variable "youtube_api_key" {
   sensitive   = true
 }
 
+variable "gemini_api_key" {
+  description = "Gemini API キー（音声ボタンのメタ入力候補生成 SPR-148）"
+  type        = string
+  sensitive   = true
+}
+
 
 variable "environment" {
   # staging は実体のない死蔵環境（state 0 リソース）だったため SPR-100 で廃止。production を唯一の環境とする。
