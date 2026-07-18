@@ -41,7 +41,7 @@ async function SignInForm({ searchParams }: SignInPageProps) {
 				<div className="text-center text-sm text-muted-foreground space-y-3">
 					<p>Discordアカウントでログインして、音声ボタンを作成・共有しましょう！</p>
 
-					{/* プレビューリリース案内 */}
+					{/* 一般公開のご案内 */}
 					<div className="bg-info/10 border border-info/30 rounded-lg p-4 text-left">
 						<div className="flex items-start gap-2">
 							<span className="text-lg">🎉</span>

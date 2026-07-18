@@ -154,7 +154,7 @@ export default function TermsPage() {
 							<div>
 								<h4 className="font-semibold text-foreground">認証方式</h4>
 								<p className="text-sm text-muted-foreground">
-									本サイトはDiscord認証を使用し、「すずみなふぁみりー」Discordサーバーのメンバーのみ利用可能です。
+									本サイトはDiscord認証を使用しています。閲覧はどなたでも可能で、音声ボタンの作成にはDiscordアカウントでのログインが必要です（「すずみなふぁみりー」Discordサーバーのメンバーは1日あたりの作成上限が拡大されます）。
 								</p>
 							</div>
 							<div>

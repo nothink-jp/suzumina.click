@@ -129,10 +129,10 @@ export default function AboutPage() {
 							</div>
 							<div className="space-y-2">
 								<h4 className="font-semibold flex items-center gap-2">
-									🔐 Discord認証（すずみなふぁみりー限定）
+									🔐 Discord認証でボタン作成
 								</h4>
 								<p className="text-sm text-muted-foreground">
-									ファンコミュニティメンバー限定でご利用いただけます
+									Discordアカウントでログインすれば、どなたでも音声ボタンを作成できます（すずみなふぁみりーメンバーは1日あたりの作成上限が拡大されます）
 								</p>
 							</div>
 						</div>
