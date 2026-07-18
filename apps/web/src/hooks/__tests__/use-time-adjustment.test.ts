@@ -258,12 +258,43 @@ describe("useTimeAdjustment", () => {
 			expect(parsed).toBe(12 * 60 + 34 + 0.5);
 		});
 
+		it("小数なしの mm:ss / h:mm:ss をパースできる（SPR-266 寛容化）", () => {
+			const { result } = renderHook(() => useTimeAdjustment(defaultProps));
+
+			expect(result.current.parseTimeString("1:23")).toBe(83);
+			expect(result.current.parseTimeString("1:02:03")).toBe(3723);
+			// 分・秒は1桁も許容（"1:2:3" = 1時間2分3秒）
+			expect(result.current.parseTimeString("1:2:3")).toBe(3723);
+			expect(result.current.parseTimeString("1:5")).toBe(65);
+			// 長時間配信対応: m:ss の分は 60 以上も受ける
+			expect(result.current.parseTimeString("90:00")).toBe(5400);
+		});
+
+		it("素の秒数をパースできる（SPR-266 寛容化）", () => {
+			const { result } = renderHook(() => useTimeAdjustment(defaultProps));
+
+			expect(result.current.parseTimeString("83")).toBe(83);
+			expect(result.current.parseTimeString("83.4")).toBe(83.4);
+			expect(result.current.parseTimeString(" 83 ")).toBe(83);
+		});
+
+		it("小数は複数桁も受ける", () => {
+			const { result } = renderHook(() => useTimeAdjustment(defaultProps));
+
+			expect(result.current.parseTimeString("1:23.45")).toBe(83.45);
+		});
+
 		it("無効な形式は null を返す", () => {
 			const { result } = renderHook(() => useTimeAdjustment(defaultProps));
 
 			expect(result.current.parseTimeString("invalid")).toBe(null);
-			expect(result.current.parseTimeString("1:2:3")).toBe(null);
 			expect(result.current.parseTimeString("")).toBe(null);
+			// 値として 60 以上の分・秒は不正
+			expect(result.current.parseTimeString("1:60")).toBe(null);
+			expect(result.current.parseTimeString("1:2:60")).toBe(null);
+			expect(result.current.parseTimeString("1:60:03")).toBe(null);
+			expect(result.current.parseTimeString("-5")).toBe(null);
+			expect(result.current.parseTimeString("1:23:45:6")).toBe(null);
 		});
 
 		it("境界値が正しく処理される", () => {

@@ -77,8 +77,12 @@ export function TimeControlPanel({
 
 			{/* 範囲選択 */}
 			<div className="space-y-4">
-				<div className="text-sm sm:text-base font-medium">
+				<div className="text-sm sm:text-base font-medium flex items-baseline justify-between gap-2">
 					<span>切り抜き範囲</span>
+					{/* キーボード前提の端末だけに出す（モバイルでは意味を成さないヒント） */}
+					<span className="hidden sm:inline text-xs text-muted-foreground font-normal">
+						I キー = 開始 / O キー = 終了
+					</span>
 				</div>
 
 				{/* 時間設定ボタン: モバイル対応 */}

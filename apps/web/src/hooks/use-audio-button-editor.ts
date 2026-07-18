@@ -1,5 +1,6 @@
 import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { matchShortcutKey } from "@/lib/keyboard-shortcut";
 import { useAudioButtonValidation } from "./use-audio-button-validation";
 import { useTimeAdjustment } from "./use-time-adjustment";
 import { useTimeHandlers } from "./use-time-handlers";
@@ -121,6 +122,38 @@ export function useAudioButtonEditor(config: AudioButtonEditorConfig): AudioButt
 		tags,
 		description,
 	});
+
+	// I/O キーで再生位置を開始/終了時間に設定（SPR-266 区間指定UX）。ガードの正本は matchShortcutKey。
+	// 処理中（作成/更新中）はボタン disabled と挙動を揃えて無効化する。
+	// setCurrentAsStart/End は currentTime 依存で毎再生ティックに再生成されるため、
+	// ref 経由で最新を呼び、リスナーの張り直しを isProcessing の変化時だけに抑える。
+	const hotkeyActionsRef = useRef({
+		setCurrentAsStart: timeAdjustment.setCurrentAsStart,
+		setCurrentAsEnd: timeAdjustment.setCurrentAsEnd,
+	});
+	hotkeyActionsRef.current = {
+		setCurrentAsStart: timeAdjustment.setCurrentAsStart,
+		setCurrentAsEnd: timeAdjustment.setCurrentAsEnd,
+	};
+	useEffect(() => {
+		if (isProcessing) {
+			return;
+		}
+		const onKeyDown = (event: KeyboardEvent) => {
+			const hotkey = matchShortcutKey(event, ["i", "o"]);
+			if (!hotkey) {
+				return;
+			}
+			event.preventDefault();
+			if (hotkey === "i") {
+				hotkeyActionsRef.current.setCurrentAsStart();
+			} else {
+				hotkeyActionsRef.current.setCurrentAsEnd();
+			}
+		};
+		document.addEventListener("keydown", onKeyDown);
+		return () => document.removeEventListener("keydown", onKeyDown);
+	}, [isProcessing]);
 
 	// 変更があるかチェック（編集モードの場合）
 	const hasChanges = useMemo(() => {
