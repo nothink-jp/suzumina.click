@@ -27,16 +27,26 @@ export async function generateMetadata({ params }: UserProfilePageProps): Promis
 			};
 		}
 
+		// 非公開プロフィールは本人以外 notFound だが、metadata は viewer 非依存のため
+		// displayName 等を出さない汎用表記に落とす（公開出力への個人情報漏れ防止）
+		if (!user.isPublicProfile) {
+			return {
+				title: "プロフィール",
+				description: "ユーザープロフィールページ",
+				robots: { index: false, follow: false },
+			};
+		}
+
 		return {
 			title: `${user.displayName}のプロフィール`,
 			description: `${user.displayName}さんの作成した音声ボタンをチェック。涼花みなせファンコミュニティ suzumina.click`,
 			alternates: {
 				canonical: `/users/${resolvedParams.userId}`,
 			},
+			// og:image は同セグメントの opengraph-image.tsx（file-convention）が自動出力する
 			openGraph: {
 				title: `${user.displayName}のプロフィール`,
 				description: `${user.displayName}さんのプロフィール`,
-				images: user.avatarUrl ? [{ url: user.avatarUrl }] : undefined,
 			},
 		};
 	} catch {
