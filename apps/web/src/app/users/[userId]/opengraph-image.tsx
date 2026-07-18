@@ -38,6 +38,7 @@ export default async function Image({ params }: OgImageParams) {
 	const publicUser = user?.isPublicProfile ? user : null;
 
 	const name = publicUser ? formatDisplayTitle(publicUser.displayName, 30) : "すずみなくりっく！";
+	const secondaryLine = publicUser ? "音声ボタン作成メンバー" : "";
 	const avatarDataUri = publicUser?.avatarUrl
 		? await loadRemoteImageDataUri(publicUser.avatarUrl, ALLOWED_AVATAR_HOSTNAMES)
 		: null;
@@ -45,7 +46,10 @@ export default async function Image({ params }: OgImageParams) {
 	return buildOgImageResponse({
 		size,
 		// suzumina.click は底部署名（OgFooter）用
-		boldText: `${name}ユーザープロフィールすずみなくりっく！suzumina.click`,
+		boldText: `${name}ユーザーすずみなくりっく！suzumina.click`,
+		// secondaryLine（regular ウェイト描画）の文字をサブセットに含める（works/videos と同じ規約）。
+		// 非公開/未取得でセカンダリ行が無い場合はフェッチ自体を省く
+		regularText: secondaryLine ? `${secondaryLine}suzumina.click` : undefined,
 		renderFallback: () => (
 			<MediaOgCard
 				badgeLabel="USER"
@@ -67,7 +71,7 @@ export default async function Image({ params }: OgImageParams) {
 				imageDataUri={avatarDataUri}
 				imageWidth={AVATAR_SIZE}
 				imageHeight={AVATAR_SIZE}
-				secondaryLine={publicUser ? "音声ボタン作成メンバー" : ""}
+				secondaryLine={secondaryLine}
 			/>
 		),
 	});

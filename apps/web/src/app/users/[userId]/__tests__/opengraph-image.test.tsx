@@ -57,7 +57,13 @@ describe("ユーザープロフィールの OG 画像（app/users/[userId]/openg
 		})) as unknown as { element: React.ReactElement<OgCardProps> };
 
 		expect(response.element.props.title).toBe("テストユーザー");
+		expect(response.element.props.secondaryLine).toBe("音声ボタン作成メンバー");
 		expect(response.element.props.imageDataUri).toMatch(/^data:image\/png;base64,/);
+		// secondaryLine の文字が regular(400) サブセットに含まれること（欠けると tofu 化する）
+		expect(loadMPlusRoundedSubset).toHaveBeenCalledWith(
+			400,
+			expect.stringContaining("音声ボタン作成メンバー"),
+		);
 
 		vi.unstubAllGlobals();
 	});
@@ -85,7 +91,7 @@ describe("ユーザープロフィールの OG 画像（app/users/[userId]/openg
 		vi.mocked(getUserByDiscordId).mockResolvedValueOnce(
 			makeUser({ isPublicProfile: false }) as never,
 		);
-		vi.mocked(loadMPlusRoundedSubset).mockResolvedValue(new ArrayBuffer(8));
+		vi.mocked(loadMPlusRoundedSubset).mockClear().mockResolvedValue(new ArrayBuffer(8));
 		const fetchMock = vi.fn();
 		vi.stubGlobal("fetch", fetchMock);
 
@@ -95,7 +101,10 @@ describe("ユーザープロフィールの OG 画像（app/users/[userId]/openg
 
 		expect(fetchMock).not.toHaveBeenCalled();
 		expect(response.element.props.title).toBe("すずみなくりっく！");
+		expect(response.element.props.secondaryLine).toBe("");
 		expect(response.element.props.imageDataUri).toBeNull();
+		// セカンダリ行が無いため regular(400) のフェッチ自体を省く
+		expect(loadMPlusRoundedSubset).not.toHaveBeenCalledWith(400, expect.anything());
 
 		vi.unstubAllGlobals();
 	});
