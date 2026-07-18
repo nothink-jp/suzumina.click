@@ -9,6 +9,8 @@ import {
 	trackLoginSuccess,
 	trackMarkDraft,
 	trackPlayButton,
+	trackSuggestionApply,
+	trackSuggestionGenerate,
 } from "../events";
 
 const gtag = vi.fn();
@@ -103,5 +105,47 @@ describe("GA4 カスタムイベント語彙 (SPR-149)", () => {
 		trackLoginError("x".repeat(150));
 		const call = gtag.mock.calls.find((c) => c[1] === "login_error");
 		expect((call?.[2] as { reason: string } | undefined)?.reason).toHaveLength(100);
+	});
+
+	it("suggestion_generate (SPR-148): 成功時は reason なし、失敗時は reason を送る", () => {
+		grantAnalyticsConsent();
+		trackSuggestionGenerate({ videoId: "vid00000001", success: true });
+		trackSuggestionGenerate({
+			videoId: "vid00000001",
+			success: false,
+			reason: "ログインが必要です",
+		});
+
+		expect(gtag).toHaveBeenCalledWith("event", "suggestion_generate", {
+			video_id: "vid00000001",
+			success: true,
+		});
+		expect(gtag).toHaveBeenCalledWith("event", "suggestion_generate", {
+			video_id: "vid00000001",
+			success: false,
+			reason: "ログインが必要です",
+		});
+	});
+
+	it("suggestion_generate: reason は GA4 のパラメータ上限（100文字）に切り詰める", () => {
+		grantAnalyticsConsent();
+		trackSuggestionGenerate({ videoId: "vid00000001", success: false, reason: "x".repeat(150) });
+		const call = gtag.mock.calls.find((c) => c[1] === "suggestion_generate");
+		expect((call?.[2] as { reason: string } | undefined)?.reason).toHaveLength(100);
+	});
+
+	it("suggestion_apply: target(title/tag) で内訳を分ける", () => {
+		grantAnalyticsConsent();
+		trackSuggestionApply("vid00000001", "title");
+		trackSuggestionApply("vid00000001", "tag");
+
+		expect(gtag).toHaveBeenCalledWith("event", "suggestion_apply", {
+			video_id: "vid00000001",
+			target: "title",
+		});
+		expect(gtag).toHaveBeenCalledWith("event", "suggestion_apply", {
+			video_id: "vid00000001",
+			target: "tag",
+		});
 	});
 });
