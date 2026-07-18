@@ -69,21 +69,14 @@ export const metadata: Metadata = {
 		description:
 			"涼花みなせさんの音声ボタンを楽しめる非公式ファンサイトです。YouTube動画から音声ボタンを作成・共有し、DLsite作品情報も閲覧できます。",
 		siteName: "suzumina.click",
-		images: [
-			{
-				url: "/opengraph-image.png",
-				width: 1200,
-				height: 630,
-				alt: "suzumina.click - 涼花みなせファンサイト",
-			},
-		],
+		// og:image は app/opengraph-image.tsx（file-convention）が自動出力する。
+		// 旧・手書きの /opengraph-image.png / /twitter-image.png は実体が無く404だった（SPR-171）
 	},
 	twitter: {
 		card: "summary_large_image",
 		title: "すずみなくりっく！ - 涼花みなせファンサイト",
 		description:
 			"涼花みなせさんの音声ボタンを楽しめる非公式ファンサイトです。YouTube動画から音声ボタンを作成・共有し、DLsite作品情報も閲覧できます。",
-		images: ["/twitter-image.png"],
 	},
 	robots: {
 		index: true,
