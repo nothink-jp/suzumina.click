@@ -164,7 +164,7 @@ export default function TermsPage() {
 								</p>
 								<ul className="text-sm text-muted-foreground mt-2 space-y-1">
 									<li>• 投稿コンテンツの削除</li>
-									<li>• アクセス制限またはアカウント停止</li>
+									<li>• アクセス制限</li>
 									<li>• 必要に応じて関係当局への報告</li>
 								</ul>
 							</div>

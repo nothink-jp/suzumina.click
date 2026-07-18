@@ -176,7 +176,7 @@ export default function AboutPage() {
 				{/* フッター */}
 				<div className="text-center pt-8 border-t">
 					<p className="text-sm text-muted-foreground">
-						最終更新: 2025年6月 • 個人運営のファンサイトです
+						最終更新: 2026年7月18日 • 個人運営のファンサイトです
 					</p>
 				</div>
 			</div>
