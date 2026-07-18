@@ -1,3 +1,4 @@
+import { cacheLife } from "next/cache";
 import { getWorkById } from "@/app/works/actions";
 import { MediaOgCard } from "@/lib/og-media-card";
 import { loadRemoteImageDataUri } from "@/lib/og-remote-image";
@@ -31,10 +32,23 @@ interface OgImageParams {
 	params: Promise<{ workId: string }>;
 }
 
+/**
+ * OG 画像用の作品取得キャッシュ（約1日で再検証＝価格改定・タイトル変更の反映猶予）。
+ * null（未取得・エラー。getWorkById はエラーも null に畳む）は throw してキャッシュに残さず、
+ * 呼び出し側の catch でサイト名版へ縮退する（縮退結果を1日固定しないため）
+ */
+async function getWorkForOg(workId: string) {
+	"use cache";
+	cacheLife("days");
+	const work = await getWorkById(workId);
+	if (!work) throw new Error(`OG画像用の作品取得に失敗しました: ${workId}`);
+	return work;
+}
+
 export default async function Image({ params }: OgImageParams) {
 	const { workId } = await params;
 
-	const work = await getWorkById(workId).catch(() => null);
+	const work = await getWorkForOg(workId).catch(() => null);
 
 	const title = work ? formatDisplayTitle(work.title, 44) : "すずみなくりっく！";
 	const circle = work ? truncateWithEllipsis(work.circle, 30) : "";

@@ -1,4 +1,5 @@
 import { parseDurationToSeconds } from "@suzumina.click/shared-types";
+import { cacheLife } from "next/cache";
 import { getVideoById } from "@/app/videos/actions";
 import { MediaOgCard } from "@/lib/og-media-card";
 import { loadRemoteImageDataUri } from "@/lib/og-remote-image";
@@ -44,10 +45,23 @@ interface OgImageParams {
 	params: Promise<{ videoId: string }>;
 }
 
+/**
+ * OG 画像用の動画取得キャッシュ（約1日で再検証＝タイトル変更等の反映猶予）。
+ * null（未取得・エラー。getVideoById はエラーも null に畳む）は throw してキャッシュに残さず、
+ * 呼び出し側の catch でサイト名版へ縮退する（縮退結果を1日固定しないため）
+ */
+async function getVideoForOg(videoId: string) {
+	"use cache";
+	cacheLife("days");
+	const video = await getVideoById(videoId);
+	if (!video) throw new Error(`OG画像用の動画取得に失敗しました: ${videoId}`);
+	return video;
+}
+
 export default async function Image({ params }: OgImageParams) {
 	const { videoId } = await params;
 
-	const video = await getVideoById(videoId).catch(() => null);
+	const video = await getVideoForOg(videoId).catch(() => null);
 
 	const title = video ? formatDisplayTitle(video.title, TITLE_MAX_LEN) : "すずみなくりっく！";
 	const channelTitle = video ? truncateWithEllipsis(video.channelTitle, 30) : "";

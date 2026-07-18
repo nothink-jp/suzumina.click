@@ -4,6 +4,8 @@ import { describe, expect, it, vi } from "vitest";
 // 純関数（truncate / 字幅概算 / タイトル整形）のテストに必要な分だけモックする
 vi.mock("next/og", () => ({ ImageResponse: class {} }));
 vi.mock("@/app/buttons/actions", () => ({ getAudioButtonById: vi.fn() }));
+// vitest では "use cache" ディレクティブは no-op になり cacheLife が cache スコープ外呼び出しになるためモックする
+vi.mock("next/cache", () => ({ cacheLife: vi.fn() }));
 
 import { estimateTextWidth, formatVideoTitle, truncateButtonText } from "../opengraph-image";
 

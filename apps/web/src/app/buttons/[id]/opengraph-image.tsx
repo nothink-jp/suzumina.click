@@ -1,3 +1,4 @@
+import { cacheLife } from "next/cache";
 import { getAudioButtonById } from "@/app/buttons/actions";
 import { OgBadge, OgFooter } from "@/lib/og-branding";
 import {
@@ -287,19 +288,31 @@ interface OgImageParams {
 	params: Promise<{ id: string }>;
 }
 
+/**
+ * OG 画像用の音声ボタン取得キャッシュ（約1日で再検証）。
+ * getAudioButtonById は withErrorHandling で例外を握り常に {success} を返すため、
+ * 失敗 envelope は throw に変換してキャッシュに残さず、呼び出し側の catch でサイト名版へ縮退する
+ */
+async function getAudioButtonForOg(id: string) {
+	"use cache";
+	cacheLife("days");
+	const result = await getAudioButtonById(id);
+	if (!result?.success) throw new Error(`OG画像用の音声ボタン取得に失敗しました: ${id}`);
+	return result.data;
+}
+
 export default async function Image({ params }: OgImageParams) {
 	const { id } = await params;
 
-	// getAudioButtonById は withErrorHandling で例外を握り常に {success} を返すが、
-	// OG 画像はどの経路でも 500 にしないルートなので念のため reject も null に落とす
-	const result = await getAudioButtonById(id).catch(() => null);
+	// OG 画像はどの経路でも 500 にしないルートなので、取得失敗はここで null に落とす
+	const button = await getAudioButtonForOg(id).catch(() => null);
 	let buttonText = "";
 	let durationSec: number | null = null;
 	let videoTitle = "";
-	if (result?.success) {
-		buttonText = truncateButtonText(result.data.buttonText);
-		durationSec = (result.data.endTime || result.data.startTime) - result.data.startTime;
-		videoTitle = formatVideoTitle(result.data.videoTitle || "");
+	if (button) {
+		buttonText = truncateButtonText(button.buttonText);
+		durationSec = (button.endTime || button.startTime) - button.startTime;
+		videoTitle = formatVideoTitle(button.videoTitle || "");
 	}
 
 	const heading = buttonText || "すずみなくりっく！";
