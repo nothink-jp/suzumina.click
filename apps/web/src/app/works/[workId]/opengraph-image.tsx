@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 import { getWorkById } from "@/app/works/actions";
 import { loadMPlusRoundedSubset } from "@/lib/og-font";
 import { loadRemoteImageDataUri } from "@/lib/og-remote-image";
-import { estimateTextWidth, formatDisplayTitle, truncateWithEllipsis } from "@/lib/og-text";
+import { formatDisplayTitle, truncateWithEllipsis } from "@/lib/og-text";
 
 /**
  * DLsite作品詳細の動的 OG 画像（SPR-268 / /buttons/[id] の opengraph-image と同じ file-convention パターン）。
@@ -27,7 +27,8 @@ const MINASE_800 = "hsl(27, 32%, 37%)";
 const MINASE_950 = "hsl(25, 28%, 18%)";
 const MUTED_FOREGROUND = "hsl(324, 8%, 40%)";
 
-const TITLE_MAX_WIDTH = 620;
+// カード幅1200 - 左右padding128 - ジャケット420 - gap56 = 596px（タイトル列の折り返し幅）
+const TITLE_MAX_WIDTH = 590;
 const TITLE_FONT_SIZE = 48;
 
 // next.config.mjs の images.remotePatterns と同じ許可ホスト（DLsite CDN限定）
@@ -43,7 +44,6 @@ interface OgCardProps {
 
 /** ジャケット + タイトル/サークル/価格の2カラムレイアウト（通常版と縮退版で共用） */
 function OgCard({ badgeLabel, title, circle, price, jacketDataUri }: OgCardProps) {
-	const needsWrap = estimateTextWidth(title, TITLE_FONT_SIZE) > TITLE_MAX_WIDTH;
 	return (
 		<div
 			style={{
@@ -103,7 +103,7 @@ function OgCard({ badgeLabel, title, circle, price, jacketDataUri }: OgCardProps
 					</span>
 					<div
 						style={{
-							...(needsWrap ? { width: TITLE_MAX_WIDTH } : {}),
+							width: TITLE_MAX_WIDTH,
 							fontWeight: 700,
 							fontSize: TITLE_FONT_SIZE,
 							lineHeight: 1.35,
