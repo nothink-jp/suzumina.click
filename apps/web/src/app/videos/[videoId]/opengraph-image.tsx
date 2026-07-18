@@ -1,17 +1,8 @@
 import { parseDurationToSeconds } from "@suzumina.click/shared-types";
 import { getVideoById } from "@/app/videos/actions";
-import {
-	OG_BACKGROUND as BACKGROUND,
-	OG_MINASE_300 as MINASE_300,
-	OG_MINASE_800 as MINASE_800,
-	OG_MINASE_950 as MINASE_950,
-	OG_MUTED_FOREGROUND as MUTED_FOREGROUND,
-	OG_SUZUKA_100 as SUZUKA_100,
-	OG_SUZUKA_500 as SUZUKA_500,
-	OG_SUZUKA_700 as SUZUKA_700,
-} from "@/lib/og-palette";
+import { MediaOgCard } from "@/lib/og-media-card";
 import { loadRemoteImageDataUri } from "@/lib/og-remote-image";
-import { buildOgImageResponse } from "@/lib/og-response";
+import { buildOgImageResponse, OG_IMAGE_CONTENT_TYPE, OG_IMAGE_SIZE } from "@/lib/og-response";
 import { asciiOrEmpty, formatDisplayTitle, truncateWithEllipsis } from "@/lib/og-text";
 
 /**
@@ -20,12 +11,15 @@ import { asciiOrEmpty, formatDisplayTitle, truncateWithEllipsis } from "@/lib/og
  * YouTubeサムネイル + タイトル + チャンネル名 + 再生時間を画像内に構成し、カード単体で内容が伝わるようにする。
  * og:image / twitter:image はこの規約ファイルから自動出力される（generateMetadata の images 手書きはしない）。
  * どの失敗経路でも 500 は返さない（動画未取得→サイト名版 / サムネイル取得失敗→サムネイル無し版 / フォント取得失敗→ASCII 縮退版）。
+ * カード自体のレイアウトは lib/og-media-card.tsx（/works/[workId] と共用）。
  */
 
-export const size = { width: 1200, height: 630 };
-export const contentType = "image/png";
+export const size = OG_IMAGE_SIZE;
+export const contentType = OG_IMAGE_CONTENT_TYPE;
 export const alt = "動画情報 - すずみなくりっく！";
 
+const THUMBNAIL_WIDTH = 480;
+const THUMBNAIL_HEIGHT = 270;
 // カード幅1200 - 左右padding128 - サムネ480 - gap56 = 536px（タイトル列の折り返し幅）
 const TITLE_MAX_WIDTH = 536;
 const TITLE_FONT_SIZE = 40;
@@ -44,103 +38,6 @@ function formatDurationLabel(seconds: number): string {
 		return `${hours}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
 	}
 	return `${minutes}:${secs.toString().padStart(2, "0")}`;
-}
-
-interface OgCardProps {
-	badgeLabel: string;
-	title: string;
-	channelTitle: string;
-	durationLabel: string;
-	thumbnailDataUri: string | null;
-}
-
-/** サムネイル + タイトル/チャンネル名/再生時間の2カラムレイアウト（通常版と縮退版で共用） */
-function OgCard({ badgeLabel, title, channelTitle, durationLabel, thumbnailDataUri }: OgCardProps) {
-	return (
-		<div
-			style={{
-				display: "flex",
-				flexDirection: "column",
-				width: "100%",
-				height: "100%",
-				backgroundColor: BACKGROUND,
-				fontFamily: "M PLUS Rounded 1c",
-			}}
-		>
-			<div
-				style={{
-					display: "flex",
-					alignItems: "center",
-					gap: 56,
-					flexGrow: 1,
-					padding: "56px 64px 0",
-				}}
-			>
-				{thumbnailDataUri && (
-					// biome-ignore lint/performance/noImgElement: ImageResponse(satori) は next/image を使えないため生 img 必須
-					<img
-						src={thumbnailDataUri}
-						alt=""
-						width={480}
-						height={270}
-						style={{
-							borderRadius: 24,
-							border: `4px solid ${MINASE_300}`,
-							boxShadow: "0 12px 40px hsla(30, 38%, 66%, 0.35)",
-							objectFit: "cover",
-							flexShrink: 0,
-						}}
-					/>
-				)}
-				<div
-					style={{
-						display: "flex",
-						flexDirection: "column",
-						gap: 22,
-						minWidth: 0,
-					}}
-				>
-					<span
-						style={{
-							alignSelf: "flex-start",
-							backgroundColor: SUZUKA_100,
-							color: SUZUKA_700,
-							fontWeight: 700,
-							fontSize: 25,
-							padding: "10px 30px",
-							borderRadius: 9999,
-						}}
-					>
-						{badgeLabel}
-					</span>
-					<div
-						style={{
-							width: TITLE_MAX_WIDTH,
-							fontWeight: 700,
-							fontSize: TITLE_FONT_SIZE,
-							lineHeight: 1.35,
-							color: MINASE_950,
-						}}
-					>
-						{title}
-					</div>
-					<span style={{ fontSize: 28, color: MUTED_FOREGROUND }}>{channelTitle}</span>
-					{durationLabel && (
-						<span style={{ fontWeight: 700, fontSize: 30, color: SUZUKA_500 }}>
-							{durationLabel}
-						</span>
-					)}
-				</div>
-			</div>
-
-			<div style={{ display: "flex", alignItems: "center", gap: 14, padding: "0 64px 40px" }}>
-				<span style={{ fontWeight: 700, fontSize: 30, color: SUZUKA_500 }}>すずみなくりっく！</span>
-				<span style={{ fontSize: 22, color: MINASE_800 }}>suzumina.click</span>
-			</div>
-
-			<div style={{ display: "flex", height: 14, flexShrink: 0, backgroundColor: SUZUKA_500 }} />
-		</div>
-	);
 }
 
 interface OgImageParams {
@@ -170,21 +67,27 @@ export default async function Image({ params }: OgImageParams) {
 		boldText: `${title}動画すずみなくりっく！${durationLabel}`,
 		regularText: `${channelTitle}suzumina.click`,
 		renderFallback: () => (
-			<OgCard
+			<MediaOgCard
 				badgeLabel="YOUTUBE VIDEO"
 				title={asciiOrEmpty(title) || "suzumina.click"}
-				channelTitle=""
-				durationLabel=""
-				thumbnailDataUri={thumbnailDataUri}
+				titleMaxWidth={TITLE_MAX_WIDTH}
+				titleFontSize={TITLE_FONT_SIZE}
+				imageDataUri={thumbnailDataUri}
+				imageWidth={THUMBNAIL_WIDTH}
+				imageHeight={THUMBNAIL_HEIGHT}
 			/>
 		),
 		renderFull: () => (
-			<OgCard
+			<MediaOgCard
 				badgeLabel="動画"
 				title={title}
-				channelTitle={channelTitle}
-				durationLabel={durationLabel}
-				thumbnailDataUri={thumbnailDataUri}
+				titleMaxWidth={TITLE_MAX_WIDTH}
+				titleFontSize={TITLE_FONT_SIZE}
+				imageDataUri={thumbnailDataUri}
+				imageWidth={THUMBNAIL_WIDTH}
+				imageHeight={THUMBNAIL_HEIGHT}
+				secondaryLine={channelTitle}
+				emphasisLine={durationLabel}
 			/>
 		),
 	});

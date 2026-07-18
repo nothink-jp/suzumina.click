@@ -20,9 +20,9 @@ import Image, { alt, contentType, size } from "../opengraph-image";
 
 type OgCardProps = {
 	title: string;
-	circle: string;
-	price: string;
-	jacketDataUri: string | null;
+	secondaryLine?: string;
+	emphasisLine?: string;
+	imageDataUri: string | null;
 };
 
 function makeWork(overrides: Partial<Record<string, unknown>> = {}) {
@@ -60,9 +60,9 @@ describe("作品詳細の OG 画像（app/works/[workId]/opengraph-image.tsx）"
 		})) as unknown as { element: React.ReactElement<OgCardProps> };
 
 		expect(response.element.props.title).toBe("テスト作品タイトル");
-		expect(response.element.props.circle).toBe("テストサークル");
-		expect(response.element.props.price).toBe("1,320円");
-		expect(response.element.props.jacketDataUri).toMatch(/^data:image\/jpeg;base64,/);
+		expect(response.element.props.secondaryLine).toBe("テストサークル");
+		expect(response.element.props.emphasisLine).toBe("1,320円");
+		expect(response.element.props.imageDataUri).toMatch(/^data:image\/jpeg;base64,/);
 
 		vi.unstubAllGlobals();
 	});
@@ -76,7 +76,7 @@ describe("作品詳細の OG 画像（app/works/[workId]/opengraph-image.tsx）"
 		})) as unknown as { element: React.ReactElement<OgCardProps> };
 
 		expect(response.element.props.title).toBe("すずみなくりっく！");
-		expect(response.element.props.jacketDataUri).toBeNull();
+		expect(response.element.props.imageDataUri).toBeNull();
 	});
 
 	it("ジャケット取得失敗でも 500 にせず画像無しで描画を継続する", async () => {
@@ -88,7 +88,7 @@ describe("作品詳細の OG 画像（app/works/[workId]/opengraph-image.tsx）"
 			params: Promise.resolve({ workId: "RJ00000001" }),
 		})) as unknown as { element: React.ReactElement<OgCardProps> };
 
-		expect(response.element.props.jacketDataUri).toBeNull();
+		expect(response.element.props.imageDataUri).toBeNull();
 		expect(response.element.props.title).toBe("テスト作品タイトル");
 
 		vi.unstubAllGlobals();
@@ -110,7 +110,7 @@ describe("作品詳細の OG 画像（app/works/[workId]/opengraph-image.tsx）"
 		})) as unknown as { element: React.ReactElement<OgCardProps> };
 
 		expect(fetchMock).not.toHaveBeenCalled();
-		expect(response.element.props.jacketDataUri).toBeNull();
+		expect(response.element.props.imageDataUri).toBeNull();
 
 		vi.unstubAllGlobals();
 	});
