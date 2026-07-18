@@ -4,15 +4,15 @@
  * app/circles/[circleId]/opengraph-image.tsx・app/creators/[creatorId]/opengraph-image.tsx で共用する。
  */
 
-// 桜霞パレット（正本は packages/ui/src/styles/globals.css の :root。
-// ImageResponse は CSS 変数を解決できないためライトモード値を転記している）
-export const OG_BACKGROUND = "hsl(340, 40%, 99%)"; // --background（パール白）
-export const OG_SUZUKA_50 = "hsl(342, 70%, 97%)";
-export const OG_SUZUKA_100 = "hsl(341, 62%, 94%)";
-export const OG_SUZUKA_500 = "hsl(340, 58%, 46%)";
-export const OG_SUZUKA_700 = "hsl(339, 55%, 33%)";
-export const OG_MINASE_800 = "hsl(27, 32%, 37%)";
-export const OG_MUTED_FOREGROUND = "hsl(324, 8%, 40%)";
+import {
+	OG_BACKGROUND,
+	OG_MINASE_800,
+	OG_MUTED_FOREGROUND,
+	OG_SUZUKA_50,
+	OG_SUZUKA_100,
+	OG_SUZUKA_500,
+	OG_SUZUKA_700,
+} from "@/lib/og-palette";
 
 export interface TextOgCardProps {
 	badgeLabel: string;

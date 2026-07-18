@@ -1,7 +1,6 @@
 import { getCreatorTypeLabel } from "@suzumina.click/shared-types";
-import { ImageResponse } from "next/og";
-import { loadMPlusRoundedSubset } from "@/lib/og-font";
-import { formatDisplayTitle } from "@/lib/og-text";
+import { buildOgImageResponse } from "@/lib/og-response";
+import { asciiOrEmpty, formatDisplayTitle } from "@/lib/og-text";
 import { TextOgCard } from "@/lib/og-text-card";
 import { getCreatorInfo } from "./actions";
 
@@ -30,34 +29,24 @@ export default async function Image({ params }: OgImageParams) {
 	const typeLabel = creator ? getCreatorTypeLabel(creator.types) : "";
 	const statLabel = creator ? `${creator.workCount}作品` : "";
 
-	const fontBold = await loadMPlusRoundedSubset(
-		700,
-		`${name}${typeLabel}DLsiteクリエイターすずみなくりっく！${statLabel}`,
-	).catch(() => null);
-
-	if (!fontBold) {
-		const asciiName = /^[\x20-\x7E]+$/.test(name) ? name : "";
-		return new ImageResponse(
+	return buildOgImageResponse({
+		size,
+		boldText: `${name}${typeLabel}DLsiteクリエイターすずみなくりっく！${statLabel}`,
+		renderFallback: () => (
 			<TextOgCard
 				badgeLabel="DLSITE CREATOR"
-				name={asciiName || "suzumina.click"}
+				name={asciiOrEmpty(name) || "suzumina.click"}
 				subtitle=""
 				statLabel=""
-			/>,
-			{ ...size },
-		);
-	}
-
-	return new ImageResponse(
-		<TextOgCard
-			badgeLabel="DLsiteクリエイター"
-			name={name}
-			subtitle={typeLabel}
-			statLabel={statLabel}
-		/>,
-		{
-			...size,
-			fonts: [{ name: "M PLUS Rounded 1c", data: fontBold, weight: 700, style: "normal" }],
-		},
-	);
+			/>
+		),
+		renderFull: () => (
+			<TextOgCard
+				badgeLabel="DLsiteクリエイター"
+				name={name}
+				subtitle={typeLabel}
+				statLabel={statLabel}
+			/>
+		),
+	});
 }

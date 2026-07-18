@@ -1,6 +1,5 @@
-import { ImageResponse } from "next/og";
-import { loadMPlusRoundedSubset } from "@/lib/og-font";
-import { formatDisplayTitle } from "@/lib/og-text";
+import { buildOgImageResponse } from "@/lib/og-response";
+import { asciiOrEmpty, formatDisplayTitle } from "@/lib/og-text";
 import { TextOgCard } from "@/lib/og-text-card";
 import { getCircleInfo } from "./actions";
 
@@ -28,29 +27,19 @@ export default async function Image({ params }: OgImageParams) {
 	const name = circle ? formatDisplayTitle(circle.name, 30) : "すずみなくりっく！";
 	const statLabel = circle ? `${circle.workCount}作品` : "";
 
-	const fontBold = await loadMPlusRoundedSubset(
-		700,
-		`${name}DLsiteサークルすずみなくりっく！${statLabel}`,
-	).catch(() => null);
-
-	if (!fontBold) {
-		const asciiName = /^[\x20-\x7E]+$/.test(name) ? name : "";
-		return new ImageResponse(
+	return buildOgImageResponse({
+		size,
+		boldText: `${name}DLsiteサークルすずみなくりっく！${statLabel}`,
+		renderFallback: () => (
 			<TextOgCard
 				badgeLabel="DLSITE CIRCLE"
-				name={asciiName || "suzumina.click"}
+				name={asciiOrEmpty(name) || "suzumina.click"}
 				subtitle=""
 				statLabel=""
-			/>,
-			{ ...size },
-		);
-	}
-
-	return new ImageResponse(
-		<TextOgCard badgeLabel="DLsiteサークル" name={name} subtitle="" statLabel={statLabel} />,
-		{
-			...size,
-			fonts: [{ name: "M PLUS Rounded 1c", data: fontBold, weight: 700, style: "normal" }],
-		},
-	);
+			/>
+		),
+		renderFull: () => (
+			<TextOgCard badgeLabel="DLsiteサークル" name={name} subtitle="" statLabel={statLabel} />
+		),
+	});
 }

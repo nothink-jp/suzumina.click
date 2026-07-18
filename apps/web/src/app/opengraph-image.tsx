@@ -1,5 +1,16 @@
-import { ImageResponse } from "next/og";
-import { loadMPlusRoundedSubset } from "@/lib/og-font";
+import {
+	OG_BACKGROUND as BACKGROUND,
+	OG_MINASE_400 as MINASE_400,
+	OG_MINASE_800 as MINASE_800,
+	OG_MUTED_FOREGROUND as MUTED_FOREGROUND,
+	OG_SUZUKA_50 as SUZUKA_50,
+	OG_SUZUKA_100 as SUZUKA_100,
+	OG_SUZUKA_200 as SUZUKA_200,
+	OG_SUZUKA_300 as SUZUKA_300,
+	OG_SUZUKA_500 as SUZUKA_500,
+	OG_SUZUKA_700 as SUZUKA_700,
+} from "@/lib/og-palette";
+import { buildOgImageResponse } from "@/lib/og-response";
 
 /**
  * サイト共通のデフォルト OG 画像（SPR-171）。
@@ -12,19 +23,6 @@ import { loadMPlusRoundedSubset } from "@/lib/og-font";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 export const alt = "すずみなくりっく！ - 涼花みなせ 非公式ファンサイト";
-
-// 桜霞パレット（正本は packages/ui/src/styles/globals.css の :root。
-// ImageResponse は CSS 変数を解決できないためライトモード値を転記している）
-const BACKGROUND = "hsl(340, 40%, 99%)"; // --background（パール白）
-const SUZUKA_50 = "hsl(342, 70%, 97%)";
-const SUZUKA_100 = "hsl(341, 62%, 94%)";
-const SUZUKA_200 = "hsl(340, 54%, 88%)";
-const SUZUKA_300 = "hsl(339, 50%, 79%)";
-const SUZUKA_500 = "hsl(340, 58%, 46%)";
-const SUZUKA_700 = "hsl(339, 55%, 33%)";
-const MINASE_400 = "hsl(31, 38%, 73%)";
-const MINASE_800 = "hsl(27, 32%, 37%)";
-const MUTED_FOREGROUND = "hsl(324, 8%, 40%)";
 
 /** 桜の花（5枚花弁・先端に切れ込み）。装飾用の SVG で、satori がそのまま描画できる */
 function SakuraBloom({
@@ -156,26 +154,17 @@ export default async function Image() {
 		domain: "suzumina.click",
 	};
 
-	// フォント取得失敗でも 500 にしない: 内蔵デフォルトフォント（latin のみ）で ASCII 縮退版を描画
-	const fontBold = await loadMPlusRoundedSubset(
-		700,
-		`${texts.badgeLabel}${texts.title}${texts.tagline}${texts.domain}`,
-	).catch(() => null);
-
-	if (!fontBold) {
-		return new ImageResponse(
+	return buildOgImageResponse({
+		size,
+		boldText: `${texts.badgeLabel}${texts.title}${texts.tagline}${texts.domain}`,
+		renderFallback: () => (
 			<DefaultOgCard
 				badgeLabel="Suzuka Minase Fan Site"
 				title="suzumina.click"
 				tagline="Sound buttons / Videos / Works"
 				domain="suzumina.click"
-			/>,
-			{ ...size },
-		);
-	}
-
-	return new ImageResponse(<DefaultOgCard {...texts} />, {
-		...size,
-		fonts: [{ name: "M PLUS Rounded 1c", data: fontBold, weight: 700, style: "normal" }],
+			/>
+		),
+		renderFull: () => <DefaultOgCard {...texts} />,
 	});
 }

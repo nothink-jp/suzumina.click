@@ -1,7 +1,22 @@
-import { ImageResponse } from "next/og";
 import { getAudioButtonById } from "@/app/buttons/actions";
-import { loadMPlusRoundedSubset } from "@/lib/og-font";
 import {
+	OG_BACKGROUND as BACKGROUND,
+	OG_MINASE_50 as MINASE_50,
+	OG_MINASE_100 as MINASE_100,
+	OG_MINASE_200 as MINASE_200,
+	OG_MINASE_300 as MINASE_300,
+	OG_MINASE_500 as MINASE_500,
+	OG_MINASE_600 as MINASE_600,
+	OG_MINASE_800 as MINASE_800,
+	OG_MINASE_950 as MINASE_950,
+	OG_MUTED_FOREGROUND as MUTED_FOREGROUND,
+	OG_SUZUKA_100 as SUZUKA_100,
+	OG_SUZUKA_500 as SUZUKA_500,
+	OG_SUZUKA_700 as SUZUKA_700,
+} from "@/lib/og-palette";
+import { buildOgImageResponse } from "@/lib/og-response";
+import {
+	asciiOrEmpty,
 	estimateTextWidth as estimateTextWidthShared,
 	formatDisplayTitle,
 	truncateWithEllipsis,
@@ -18,22 +33,6 @@ import {
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 export const alt = "涼花みなせ音声ボタン - すずみなくりっく！";
-
-// 桜霞パレット（正本は packages/ui/src/styles/globals.css の :root。
-// ImageResponse は CSS 変数を解決できないためライトモード値を転記している）
-const BACKGROUND = "hsl(340, 40%, 99%)"; // --background（パール白）
-const SUZUKA_100 = "hsl(341, 62%, 94%)";
-const SUZUKA_500 = "hsl(340, 58%, 46%)";
-const SUZUKA_700 = "hsl(339, 55%, 33%)";
-const MINASE_50 = "hsl(36, 50%, 97%)";
-const MINASE_100 = "hsl(34, 44%, 93%)";
-const MINASE_200 = "hsl(33, 40%, 86%)";
-const MINASE_300 = "hsl(32, 38%, 79%)";
-const MINASE_500 = "hsl(30, 38%, 66%)";
-const MINASE_600 = "hsl(29, 36%, 56%)";
-const MINASE_800 = "hsl(27, 32%, 37%)";
-const MINASE_950 = "hsl(25, 28%, 18%)";
-const MUTED_FOREGROUND = "hsl(324, 8%, 40%)";
 
 /** ボタン名の表示用整形。折り返し幅 750px × 4行に収まる長さへ末尾省略する */
 export function truncateButtonText(text: string, max = 52): string {
@@ -318,53 +317,29 @@ export default async function Image({ params }: OgImageParams) {
 
 	const heading = buttonText || "すずみなくりっく！";
 	const durationLabel = durationSec != null ? `${durationSec.toFixed(1)}秒` : "";
-	const boldText = `${heading}${durationLabel}すずみなくりっく！音声ボタン`;
 
-	// フォント取得失敗でも 500 にしない: 内蔵デフォルトフォント（latin のみ）で ASCII 縮退版を描画。
-	// ボタン名が ASCII ならそのまま表示を継続できる。regular(400) はメタ行専用なので欠けても bold で代替される
-	const [fontBold, fontRegular] = await Promise.all([
-		loadMPlusRoundedSubset(700, boldText).catch(() => null),
-		// videoTitle が空（未設定・ボタン未取得のフォールバック経路）なら 400 のフェッチ自体を省く
-		videoTitle ? loadMPlusRoundedSubset(400, videoTitle).catch(() => null) : Promise.resolve(null),
-	]);
-
-	if (!fontBold) {
-		const asciiButtonText = /^[\x20-\x7E]+$/.test(buttonText) ? buttonText : "";
-		return new ImageResponse(
+	return buildOgImageResponse({
+		size,
+		boldText: `${heading}${durationLabel}すずみなくりっく！音声ボタン`,
+		// videoTitle が空（未設定・ボタン未取得のフォールバック経路）なら regular(400) のフェッチ自体を省く
+		regularText: videoTitle || undefined,
+		renderFallback: () => (
 			<OgCard
 				siteName="suzumina.click"
 				badgeLabel="SOUND BUTTON"
-				buttonText={asciiButtonText || "suzumina.click"}
+				buttonText={asciiOrEmpty(buttonText) || "suzumina.click"}
 				durationLabel={durationSec != null ? `${durationSec.toFixed(1)}s` : ""}
 				videoTitle=""
-			/>,
-			{ ...size },
-		);
-	}
-
-	return new ImageResponse(
-		<OgCard
-			siteName="すずみなくりっく！"
-			badgeLabel="音声ボタン"
-			buttonText={heading}
-			durationLabel={durationLabel}
-			videoTitle={videoTitle}
-		/>,
-		{
-			...size,
-			fonts: [
-				{ name: "M PLUS Rounded 1c", data: fontBold, weight: 700, style: "normal" },
-				...(fontRegular && videoTitle
-					? [
-							{
-								name: "M PLUS Rounded 1c",
-								data: fontRegular,
-								weight: 400 as const,
-								style: "normal" as const,
-							},
-						]
-					: []),
-			],
-		},
-	);
+			/>
+		),
+		renderFull: () => (
+			<OgCard
+				siteName="すずみなくりっく！"
+				badgeLabel="音声ボタン"
+				buttonText={heading}
+				durationLabel={durationLabel}
+				videoTitle={videoTitle}
+			/>
+		),
+	});
 }

@@ -33,3 +33,12 @@ export function stripUnsupportedGlyphs(text: string): string {
 export function formatDisplayTitle(text: string, max: number): string {
 	return truncateWithEllipsis(stripUnsupportedGlyphs(text), max);
 }
+
+/**
+ * ブランドフォント取得に失敗した ASCII 縮退版で使う値を返す。
+ * text が印字可能 ASCII のみで構成されていればそのまま、そうでなければ空文字
+ * （内蔵デフォルトフォントは latin のみのため、日本語等はそのままでは tofu 化する）
+ */
+export function asciiOrEmpty(text: string): string {
+	return /^[\x20-\x7E]+$/.test(text) ? text : "";
+}
