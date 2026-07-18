@@ -7,6 +7,14 @@
  * イメージ GC の正本はこのファイルの cleanup_policies（ADR-009 原則3: GC は Terraform ネイティブに一本化）。
  * deploy-web.yml / deploy-functions.yml の手動 image 削除は SPR-96 で撤去し、二重管理を解消した。
  *
+ * 【例外】docker_repo（web パッケージ）の cleanup_policies は SPR-220 の再観測（2026-07-06）で
+ * このリポジトリに対して実効性がないと確定した（clean manifest 化後も delete-old 対象の版が
+ * 10日超残存）。原因不明の GCP 側の挙動のため、policy 定義自体は「宣言的な意図・将来 GCP 側で
+ * 動くようになった場合の保険」として残す（実害はない）。実際の削除実行は SPR-247 により
+ * deploy-web.yml の post-deploy ステップが digest 単位で自前実施する（このファイルの
+ * ポリシーと同じ keep-recent-versions=5 / latest タグ保持 / 7日超削除のロジックを踏襲）。
+ * gcf-artifacts（Cloud Functions）側は cleanup_policies が正常に機能しており対象外。
+ *
  * cleanup_policies のセマンティクス（公式仕様）:
  *   - KEEP は DELETE に優先する（両方に一致する版は「保持」される）
  *   - most_recent_versions(keep_count) は「パッケージ単位」で最新 N 版を保持する
