@@ -29,13 +29,15 @@ export default async function Image({ params }: OgImageParams) {
 
 	return buildOgImageResponse({
 		size,
-		boldText: `${name}DLsiteサークルすずみなくりっく！${statLabel}`,
+		// suzumina.click は底部署名（OgFooter）用
+		boldText: `${name}DLsiteサークルすずみなくりっく！${statLabel}suzumina.click`,
 		renderFallback: () => (
 			<TextOgCard
 				badgeLabel="DLSITE CIRCLE"
 				name={asciiOrEmpty(name) || "suzumina.click"}
 				subtitle=""
 				statLabel=""
+				ascii
 			/>
 		),
 		renderFull: () => (

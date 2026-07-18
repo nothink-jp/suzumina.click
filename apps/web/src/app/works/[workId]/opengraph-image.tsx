@@ -57,6 +57,7 @@ export default async function Image({ params }: OgImageParams) {
 				imageDataUri={jacketDataUri}
 				imageWidth={JACKET_WIDTH}
 				imageHeight={JACKET_HEIGHT}
+				ascii
 			/>
 		),
 		renderFull: () => (
