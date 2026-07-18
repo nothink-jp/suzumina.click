@@ -1,6 +1,11 @@
 import { ImageResponse } from "next/og";
 import { getAudioButtonById } from "@/app/buttons/actions";
 import { loadMPlusRoundedSubset } from "@/lib/og-font";
+import {
+	estimateTextWidth as estimateTextWidthShared,
+	formatDisplayTitle,
+	truncateWithEllipsis,
+} from "@/lib/og-text";
 
 /**
  * 音声ボタン詳細の動的 OG 画像（SPR-249 / デザインは Claude Design「音声ボタンOGP」1a 案）。
@@ -32,31 +37,19 @@ const MUTED_FOREGROUND = "hsl(324, 8%, 40%)";
 
 /** ボタン名の表示用整形。折り返し幅 750px × 4行に収まる長さへ末尾省略する */
 export function truncateButtonText(text: string, max = 52): string {
-	return text.length > max ? `${text.slice(0, max)}…` : text;
+	return truncateWithEllipsis(text, max);
 }
 
-/**
- * テキストの概算描画幅（px）。半角 ≈ 0.6em / 全角 ≈ 1.0em の粗い見積もり。
- * satori(Yoga) は auto 幅 flex の入れ子内でテキスト折り返し幅を解決できないため、
- * 「1行に収まらない場合だけ明示幅を与えて折り返す」判定に使う（正確な字幅計測は不要）
- */
+/** テキストの概算描画幅（px）。lib/og-text の共通実装に委譲（詳細はそちらのコメント参照） */
 export function estimateTextWidth(text: string, fontSize: number): number {
-	let em = 0;
-	for (const ch of text) {
-		em += (ch.codePointAt(0) ?? 0) <= 0x024f ? 0.6 : 1.0;
-	}
-	return Math.round(em * fontSize);
+	return estimateTextWidthShared(text, fontSize);
 }
 
 /**
  * 元動画タイトルの表示用整形。フォントに無い絵文字（tofu 化する）を除去し、1行に収まる長さへ省略する
  */
 export function formatVideoTitle(title: string, max = 40): string {
-	const stripped = title
-		.replace(/\p{Extended_Pictographic}|\u{FE0F}|\u{200D}/gu, "")
-		.replace(/\s+/g, " ")
-		.trim();
-	return stripped.length > max ? `${stripped.slice(0, max)}…` : stripped;
+	return formatDisplayTitle(title, max);
 }
 
 function PlayCircle() {
