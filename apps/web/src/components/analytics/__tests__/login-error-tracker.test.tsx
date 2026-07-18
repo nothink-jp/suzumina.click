@@ -33,4 +33,12 @@ describe("LoginErrorTracker", () => {
 
 		expect(spy).not.toHaveBeenCalled();
 	});
+
+	it("pending 印が無ければ error があっても送らない（reload・戻る/進む・URL共有経由の再訪問での水増し防止）", () => {
+		const spy = vi.spyOn(events, "trackLoginError").mockImplementation(() => {});
+
+		render(<LoginErrorTracker error="AccessDenied" />);
+
+		expect(spy).not.toHaveBeenCalled();
+	});
 });
