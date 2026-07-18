@@ -1,9 +1,18 @@
 import { parseDurationToSeconds } from "@suzumina.click/shared-types";
-import { ImageResponse } from "next/og";
 import { getVideoById } from "@/app/videos/actions";
-import { loadMPlusRoundedSubset } from "@/lib/og-font";
+import {
+	OG_BACKGROUND as BACKGROUND,
+	OG_MINASE_300 as MINASE_300,
+	OG_MINASE_800 as MINASE_800,
+	OG_MINASE_950 as MINASE_950,
+	OG_MUTED_FOREGROUND as MUTED_FOREGROUND,
+	OG_SUZUKA_100 as SUZUKA_100,
+	OG_SUZUKA_500 as SUZUKA_500,
+	OG_SUZUKA_700 as SUZUKA_700,
+} from "@/lib/og-palette";
 import { loadRemoteImageDataUri } from "@/lib/og-remote-image";
-import { formatDisplayTitle, truncateWithEllipsis } from "@/lib/og-text";
+import { buildOgImageResponse } from "@/lib/og-response";
+import { asciiOrEmpty, formatDisplayTitle, truncateWithEllipsis } from "@/lib/og-text";
 
 /**
  * YouTube動画詳細の動的 OG 画像（SPR-268 段階導入② / /works/[workId] と同じ file-convention パターン）。
@@ -16,17 +25,6 @@ import { formatDisplayTitle, truncateWithEllipsis } from "@/lib/og-text";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 export const alt = "動画情報 - すずみなくりっく！";
-
-// 桜霞パレット（正本は packages/ui/src/styles/globals.css の :root。
-// ImageResponse は CSS 変数を解決できないためライトモード値を転記している）
-const BACKGROUND = "hsl(340, 40%, 99%)"; // --background（パール白）
-const SUZUKA_100 = "hsl(341, 62%, 94%)";
-const SUZUKA_500 = "hsl(340, 58%, 46%)";
-const SUZUKA_700 = "hsl(339, 55%, 33%)";
-const MINASE_300 = "hsl(32, 38%, 79%)";
-const MINASE_800 = "hsl(27, 32%, 37%)";
-const MINASE_950 = "hsl(25, 28%, 18%)";
-const MUTED_FOREGROUND = "hsl(324, 8%, 40%)";
 
 // カード幅1200 - 左右padding128 - サムネ480 - gap56 = 536px（タイトル列の折り返し幅）
 const TITLE_MAX_WIDTH = 536;
@@ -167,51 +165,27 @@ export default async function Image({ params }: OgImageParams) {
 		? await loadRemoteImageDataUri(thumbnailUrl, ALLOWED_THUMBNAIL_HOSTNAMES)
 		: null;
 
-	const fontBold = await loadMPlusRoundedSubset(
-		700,
-		`${title}動画すずみなくりっく！${durationLabel}`,
-	).catch(() => null);
-	const fontRegular = await loadMPlusRoundedSubset(400, `${channelTitle}suzumina.click`).catch(
-		() => null,
-	);
-
-	if (!fontBold) {
-		const asciiTitle = /^[\x20-\x7E]+$/.test(title) ? title : "";
-		return new ImageResponse(
+	return buildOgImageResponse({
+		size,
+		boldText: `${title}動画すずみなくりっく！${durationLabel}`,
+		regularText: `${channelTitle}suzumina.click`,
+		renderFallback: () => (
 			<OgCard
 				badgeLabel="YOUTUBE VIDEO"
-				title={asciiTitle || "suzumina.click"}
+				title={asciiOrEmpty(title) || "suzumina.click"}
 				channelTitle=""
 				durationLabel=""
 				thumbnailDataUri={thumbnailDataUri}
-			/>,
-			{ ...size },
-		);
-	}
-
-	return new ImageResponse(
-		<OgCard
-			badgeLabel="動画"
-			title={title}
-			channelTitle={channelTitle}
-			durationLabel={durationLabel}
-			thumbnailDataUri={thumbnailDataUri}
-		/>,
-		{
-			...size,
-			fonts: [
-				{ name: "M PLUS Rounded 1c", data: fontBold, weight: 700, style: "normal" },
-				...(fontRegular
-					? [
-							{
-								name: "M PLUS Rounded 1c",
-								data: fontRegular,
-								weight: 400 as const,
-								style: "normal" as const,
-							},
-						]
-					: []),
-			],
-		},
-	);
+			/>
+		),
+		renderFull: () => (
+			<OgCard
+				badgeLabel="動画"
+				title={title}
+				channelTitle={channelTitle}
+				durationLabel={durationLabel}
+				thumbnailDataUri={thumbnailDataUri}
+			/>
+		),
+	});
 }
