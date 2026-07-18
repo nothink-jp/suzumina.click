@@ -86,10 +86,12 @@ describe("MobileMenu", () => {
 		});
 	});
 
-	it("トリガーを開くまでメニューの中身は描画されない", () => {
-		render(<MobileMenu user={mockUser} />);
+	describe("Sheet の遅延描画", () => {
+		it("トリガーを開くまでメニューの中身は描画されない", () => {
+			render(<MobileMenu user={mockUser} />);
 
-		expect(screen.getByRole("button", { name: "メニューを開く" })).toBeInTheDocument();
-		expect(screen.queryByRole("link", { name: /動画一覧/ })).not.toBeInTheDocument();
+			expect(screen.getByRole("button", { name: "メニューを開く" })).toBeInTheDocument();
+			expect(screen.queryByRole("link", { name: /動画一覧/ })).not.toBeInTheDocument();
+		});
 	});
 });
