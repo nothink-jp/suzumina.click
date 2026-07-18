@@ -1,4 +1,5 @@
 import { getCreatorTypeLabel } from "@suzumina.click/shared-types";
+import { cacheLife } from "next/cache";
 import { buildOgImageResponse, OG_IMAGE_CONTENT_TYPE, OG_IMAGE_SIZE } from "@/lib/og-response";
 import { asciiOrEmpty, formatDisplayTitle } from "@/lib/og-text";
 import { TextOgCard } from "@/lib/og-text-card";
@@ -20,10 +21,23 @@ interface OgImageParams {
 	params: Promise<{ creatorId: string }>;
 }
 
+/**
+ * OG 画像用のクリエイター取得キャッシュ（約1日で再検証＝作品数変動の反映猶予）。
+ * null（未取得・エラー。getCreatorInfo はエラーも null に畳む）は throw してキャッシュに残さず、
+ * 呼び出し側の catch でサイト名版へ縮退する（縮退結果を1日固定しないため）
+ */
+async function getCreatorForOg(creatorId: string) {
+	"use cache";
+	cacheLife("days");
+	const creator = await getCreatorInfo(creatorId);
+	if (!creator) throw new Error(`OG画像用のクリエイター取得に失敗しました: ${creatorId}`);
+	return creator;
+}
+
 export default async function Image({ params }: OgImageParams) {
 	const { creatorId } = await params;
 
-	const creator = await getCreatorInfo(creatorId).catch(() => null);
+	const creator = await getCreatorForOg(creatorId).catch(() => null);
 
 	const name = creator ? formatDisplayTitle(creator.name, 30) : "すずみなくりっく！";
 	const typeLabel = creator ? getCreatorTypeLabel(creator.types) : "";

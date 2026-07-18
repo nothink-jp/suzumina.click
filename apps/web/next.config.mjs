@@ -345,6 +345,45 @@ const nextConfig = {
 					},
 				],
 			},
+			// OG 画像（opengraph-image.tsx / SPR-171,249,268）は cacheComponents 下でも
+			// file-convention の image route（route.ts 相当）が prerender 対象にならず常に
+			// ƒ Dynamic のまま（実ビルドで検証済み・空の ImageResponse だけの最小構成でも同様）。
+			// Next 側の静的化が効かない以上、CDN エッジキャッシュで代替する:
+			//   - サイト既定 OG 画像（root / about / contact / settings / 一覧系）は
+			//     いずれも app/opengraph-image.tsx を再輸出するだけの完全固定コンテンツ
+			//     （Firestore 参照なし）のため長め（1日 fresh・7日 SWR）。
+			//   - 個別（buttons/[id] 等）の OG 画像は作品タイトル・価格等コンテンツ依存のため、
+			//     lib/og-*.ts 側の use cache（cacheLife('days')）と揃えて 1日 fresh に留める。
+			// /settings/opengraph-image は上の /(admin|settings|...)/:path* の private no-store と
+			// パスが重なるが、Next の headers は同一キーで後勝ちのためこちらが優先される。
+			{
+				source: "/opengraph-image",
+				headers: [
+					{
+						key: "Cache-Control",
+						value: "public, s-maxage=86400, stale-while-revalidate=604800",
+					},
+				],
+			},
+			{
+				source:
+					"/:base(about|contact|settings|buttons|circles|works|videos|creators)/opengraph-image",
+				headers: [
+					{
+						key: "Cache-Control",
+						value: "public, s-maxage=86400, stale-while-revalidate=604800",
+					},
+				],
+			},
+			{
+				source: "/:section(buttons|works|videos|circles|creators)/:id/opengraph-image",
+				headers: [
+					{
+						key: "Cache-Control",
+						value: "public, s-maxage=86400, stale-while-revalidate=604800",
+					},
+				],
+			},
 		];
 	},
 };
