@@ -233,3 +233,80 @@ jobs:
           fi
 
           echo "✅ Revision cleanup completed"
+
+      # Artifact Registry イメージバージョンの掃除
+      # SPR-247: terraform cleanup_policies（artifact_registry.tf）は "web" パッケージで実効性なしと
+      # SPR-220 の再観測で確定した（clean manifest 化後も削除適格な版が10日超残存）。
+      # GCP側のpolicy評価に依存せず、ここでdigest単位のGCを自前実行する。
+      # ロジックは既存policyのセマンティクスを踏襲: keep-recent-versions(5) / keep latest tag / delete older than 7日。
+      # AR_CLEANUP_DRY_RUN=true の間は削除せずログ出力のみ。初回デプロイでdry-run結果を確認してから false にする。
+      - name: Cleanup old Artifact Registry image versions
+        if: always()
+        env:
+          AR_CLEANUP_DRY_RUN: 'true'
+        run: |
+          echo "🧹 Cleaning up old Artifact Registry image versions (dry_run=${AR_CLEANUP_DRY_RUN})..."
+
+          KEEP_COUNT=5
+          CUTOFF_EPOCH=$(date -u -d '7 days ago' +%s)
+
+          IMAGE_PATH="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}"
+
+          # latestタグが指す版のdigest（keep-minimum-versions相当）
+          LATEST_DIGEST=$(gcloud artifacts docker images describe "${IMAGE_PATH}:latest" \
+            --format="value(image_summary.digest)" 2>/dev/null || true)
+
+          # デプロイ自体は既に成功済みのため、一時的なAPIエラーでこのステップ（延いてはjob）を
+          # 失敗扱いにしない。list失敗時はスキップしてexit 0する（削除失敗時の `|| true` と同様の考え方）。
+          if ! ALL_VERSIONS=$(gcloud artifacts versions list \
+            --package="${{ env.IMAGE_NAME }}" \
+            --repository="${{ env.REPOSITORY }}" \
+            --location="${{ env.REGION }}" \
+            --sort-by="~createTime" \
+            --format="csv[no-heading](name.basename(),createTime)" 2>&1); then
+            echo "⚠️ Failed to list Artifact Registry versions (transient API error?), skipping cleanup this run"
+            echo "$ALL_VERSIONS"
+            exit 0
+          fi
+
+          if [ -z "$ALL_VERSIONS" ]; then
+            echo "No versions found, skipping"
+            exit 0
+          fi
+
+          INDEX=0
+          PROCESSED=0
+          while IFS=',' read -r DIGEST CREATE_TIME; do
+            [ -z "$DIGEST" ] && continue
+            INDEX=$((INDEX + 1))
+
+            # keep-recent-versions: 直近5版は経過日数に関係なく保持
+            if [ "$INDEX" -le "$KEEP_COUNT" ]; then
+              continue
+            fi
+
+            # keep-minimum-versions: latestタグが指す版は保持
+            if [ -n "$LATEST_DIGEST" ] && [ "$DIGEST" = "$LATEST_DIGEST" ]; then
+              continue
+            fi
+
+            # delete-old: 7日より古い版のみ削除対象
+            CREATE_EPOCH=$(date -u -d "$CREATE_TIME" +%s 2>/dev/null || echo 0)
+            if [ "$CREATE_EPOCH" -eq 0 ] || [ "$CREATE_EPOCH" -ge "$CUTOFF_EPOCH" ]; then
+              continue
+            fi
+
+            if [ "$AR_CLEANUP_DRY_RUN" = "true" ]; then
+              echo "[dry-run] Would delete: $DIGEST (created $CREATE_TIME)"
+            else
+              echo "Deleting old version: $DIGEST (created $CREATE_TIME)"
+              gcloud artifacts versions delete "$DIGEST" \
+                --package="${{ env.IMAGE_NAME }}" \
+                --repository="${{ env.REPOSITORY }}" \
+                --location="${{ env.REGION }}" \
+                --quiet || echo "  ⚠️ Failed to delete $DIGEST"
+            fi
+            PROCESSED=$((PROCESSED + 1))
+          done <<< "$ALL_VERSIONS"
+
+          echo "✅ Processed $PROCESSED old Artifact Registry version(s) (dry_run=${AR_CLEANUP_DRY_RUN})"
