@@ -61,7 +61,9 @@ async function findTargetVideo(manualVideoId?: string): Promise<VideoPlainObject
 async function LiveCaptureContent({ manualVideoId }: { manualVideoId?: string }) {
 	const [video, draftsResult] = await Promise.all([
 		findTargetVideo(manualVideoId),
-		getMyButtonDrafts(),
+		// 既定 limit=100 だと下書き多数のユーザーで一覧が黙って欠けるため、保持上限の500で全件取る
+		// （/buttons/create のキュー取得と同じ判断・SPR-266）
+		getMyButtonDrafts(500),
 	]);
 
 	return (
