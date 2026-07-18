@@ -50,6 +50,26 @@ export interface AudioButtonEditorResult {
 }
 
 /**
+ * I/O ショートカットとして処理すべきキー入力なら "in" | "out" を返す。
+ * ガード方針は /live の M キー（live-capture-view）と同一:
+ * 入力欄フォーカス中・キーリピート・修飾キー付きは対象外（null）。
+ */
+function matchInOutHotkey(event: KeyboardEvent): "in" | "out" | null {
+	if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) {
+		return null;
+	}
+	const key = event.key.toLowerCase();
+	if (key !== "i" && key !== "o") {
+		return null;
+	}
+	const target = event.target as HTMLElement | null;
+	if (target && (/^(input|textarea|select)$/i.test(target.tagName) || target.isContentEditable)) {
+		return null;
+	}
+	return key === "i" ? "in" : "out";
+}
+
+/**
  * 音声ボタン作成・編集の共通ロジックを提供するフック
  */
 export function useAudioButtonEditor(config: AudioButtonEditorConfig): AudioButtonEditorResult {
@@ -121,6 +141,29 @@ export function useAudioButtonEditor(config: AudioButtonEditorConfig): AudioButt
 		tags,
 		description,
 	});
+
+	// I/O キーで再生位置を開始/終了時間に設定（SPR-266 区間指定UX）。
+	// 処理中（作成/更新中）はボタン disabled と挙動を揃えて無効化する。
+	const { setCurrentAsStart, setCurrentAsEnd } = timeAdjustment;
+	useEffect(() => {
+		if (isProcessing) {
+			return;
+		}
+		const onKeyDown = (event: KeyboardEvent) => {
+			const hotkey = matchInOutHotkey(event);
+			if (!hotkey) {
+				return;
+			}
+			event.preventDefault();
+			if (hotkey === "in") {
+				setCurrentAsStart();
+			} else {
+				setCurrentAsEnd();
+			}
+		};
+		document.addEventListener("keydown", onKeyDown);
+		return () => document.removeEventListener("keydown", onKeyDown);
+	}, [setCurrentAsStart, setCurrentAsEnd, isProcessing]);
 
 	// 変更があるかチェック（編集モードの場合）
 	const hasChanges = useMemo(() => {
