@@ -75,6 +75,7 @@ export default async function Image({ params }: OgImageParams) {
 				imageDataUri={thumbnailDataUri}
 				imageWidth={THUMBNAIL_WIDTH}
 				imageHeight={THUMBNAIL_HEIGHT}
+				ascii
 			/>
 		),
 		renderFull: () => (

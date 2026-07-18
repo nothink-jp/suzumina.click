@@ -1,14 +1,13 @@
+import { OgBadge, OgFooter } from "@/lib/og-branding";
 import {
 	OG_BACKGROUND as BACKGROUND,
 	OG_MINASE_400 as MINASE_400,
-	OG_MINASE_800 as MINASE_800,
 	OG_MUTED_FOREGROUND as MUTED_FOREGROUND,
 	OG_SUZUKA_50 as SUZUKA_50,
 	OG_SUZUKA_100 as SUZUKA_100,
 	OG_SUZUKA_200 as SUZUKA_200,
 	OG_SUZUKA_300 as SUZUKA_300,
 	OG_SUZUKA_500 as SUZUKA_500,
-	OG_SUZUKA_700 as SUZUKA_700,
 } from "@/lib/og-palette";
 import { buildOgImageResponse, OG_IMAGE_CONTENT_TYPE, OG_IMAGE_SIZE } from "@/lib/og-response";
 
@@ -58,11 +57,12 @@ interface DefaultOgCardProps {
 	badgeLabel: string;
 	title: string;
 	tagline: string;
-	domain: string;
+	/** ASCII 縮退版（ブランドフォント無し）。署名の日本語サイト名を tofu 化させないため省略する */
+	ascii?: boolean;
 }
 
-/** 中央ブランドロックアップ + 桜装飾 + 底部バー（/buttons/[id] の OG と視覚言語を揃える） */
-function DefaultOgCard({ badgeLabel, title, tagline, domain }: DefaultOgCardProps) {
+/** 中央ブランドロックアップ + 桜装飾 + 底部署名（署名・バッジは lib/og-branding.tsx が正本） */
+function DefaultOgCard({ badgeLabel, title, tagline, ascii = false }: DefaultOgCardProps) {
 	return (
 		<div
 			style={{
@@ -112,36 +112,12 @@ function DefaultOgCard({ badgeLabel, title, tagline, domain }: DefaultOgCardProp
 					flexGrow: 1,
 				}}
 			>
-				<span
-					style={{
-						backgroundColor: SUZUKA_100,
-						color: SUZUKA_700,
-						fontWeight: 700,
-						fontSize: 28,
-						padding: "12px 36px",
-						borderRadius: 9999,
-					}}
-				>
-					{badgeLabel}
-				</span>
+				<OgBadge label={badgeLabel} />
 				<span style={{ fontWeight: 700, fontSize: 104, color: SUZUKA_500 }}>{title}</span>
 				<span style={{ fontWeight: 700, fontSize: 32, color: MUTED_FOREGROUND }}>{tagline}</span>
 			</div>
 
-			{/* 底部: ドメイン + suzuka バー（/buttons/[id] の OG と共通の締め） */}
-			<div
-				style={{
-					display: "flex",
-					justifyContent: "center",
-					paddingBottom: 26,
-					fontWeight: 700,
-					fontSize: 26,
-					color: MINASE_800,
-				}}
-			>
-				{domain}
-			</div>
-			<div style={{ display: "flex", height: 14, flexShrink: 0, backgroundColor: SUZUKA_500 }} />
+			<OgFooter ascii={ascii} />
 		</div>
 	);
 }
@@ -151,18 +127,18 @@ export default async function Image() {
 		badgeLabel: "涼花みなせ 非公式ファンサイト",
 		title: "すずみなくりっく！",
 		tagline: "音声ボタン・動画・DLsite作品情報",
-		domain: "suzumina.click",
 	};
 
 	return buildOgImageResponse({
 		size,
-		boldText: `${texts.badgeLabel}${texts.title}${texts.tagline}${texts.domain}`,
+		// suzumina.click は底部署名（OgFooter）用
+		boldText: `${texts.badgeLabel}${texts.title}${texts.tagline}suzumina.click`,
 		renderFallback: () => (
 			<DefaultOgCard
 				badgeLabel="Suzuka Minase Fan Site"
 				title="suzumina.click"
 				tagline="Sound buttons / Videos / Works"
-				domain="suzumina.click"
+				ascii
 			/>
 		),
 		renderFull: () => <DefaultOgCard {...texts} />,

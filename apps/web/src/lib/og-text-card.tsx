@@ -2,16 +2,16 @@
  * テキスト主体のOG画像カード（SPR-268 段階導入③）。
  * サークル・クリエイターのように画像素材を持たないエンティティ向けの共通レイアウト。
  * app/circles/[circleId]/opengraph-image.tsx・app/creators/[creatorId]/opengraph-image.tsx で共用する。
+ * 署名・バッジは lib/og-branding.tsx が正本。
  */
 
+import { OgBadge, OgFooter } from "@/lib/og-branding";
 import {
 	OG_BACKGROUND,
 	OG_MINASE_800,
 	OG_MUTED_FOREGROUND,
 	OG_SUZUKA_50,
-	OG_SUZUKA_100,
 	OG_SUZUKA_500,
-	OG_SUZUKA_700,
 } from "@/lib/og-palette";
 
 export interface TextOgCardProps {
@@ -19,12 +19,20 @@ export interface TextOgCardProps {
 	name: string;
 	subtitle: string;
 	statLabel: string;
+	/** ASCII 縮退版（ブランドフォント無し）。署名の日本語サイト名を tofu 化させないため省略する */
+	ascii?: boolean;
 }
 
 const NAME_MAX_WIDTH = 1000;
 
 /** バッジ + 名称 + サブタイトル + 件数を中央揃えで構成するテキスト主体レイアウト */
-export function TextOgCard({ badgeLabel, name, subtitle, statLabel }: TextOgCardProps) {
+export function TextOgCard({
+	badgeLabel,
+	name,
+	subtitle,
+	statLabel,
+	ascii = false,
+}: TextOgCardProps) {
 	return (
 		<div
 			style={{
@@ -47,18 +55,7 @@ export function TextOgCard({ badgeLabel, name, subtitle, statLabel }: TextOgCard
 					padding: "0 64px",
 				}}
 			>
-				<span
-					style={{
-						backgroundColor: OG_SUZUKA_100,
-						color: OG_SUZUKA_700,
-						fontWeight: 700,
-						fontSize: 26,
-						padding: "10px 32px",
-						borderRadius: 9999,
-					}}
-				>
-					{badgeLabel}
-				</span>
+				<OgBadge label={badgeLabel} />
 				<div
 					style={{
 						display: "flex",
@@ -80,19 +77,7 @@ export function TextOgCard({ badgeLabel, name, subtitle, statLabel }: TextOgCard
 				)}
 			</div>
 
-			<div
-				style={{
-					display: "flex",
-					justifyContent: "center",
-					paddingBottom: 26,
-					fontWeight: 700,
-					fontSize: 26,
-					color: OG_MINASE_800,
-				}}
-			>
-				suzumina.click
-			</div>
-			<div style={{ display: "flex", height: 14, flexShrink: 0, backgroundColor: OG_SUZUKA_500 }} />
+			<OgFooter ascii={ascii} />
 		</div>
 	);
 }

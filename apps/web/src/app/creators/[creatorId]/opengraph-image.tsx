@@ -31,13 +31,15 @@ export default async function Image({ params }: OgImageParams) {
 
 	return buildOgImageResponse({
 		size,
-		boldText: `${name}${typeLabel}DLsiteクリエイターすずみなくりっく！${statLabel}`,
+		// suzumina.click は底部署名（OgFooter）用
+		boldText: `${name}${typeLabel}DLsiteクリエイターすずみなくりっく！${statLabel}suzumina.click`,
 		renderFallback: () => (
 			<TextOgCard
 				badgeLabel="DLSITE CREATOR"
 				name={asciiOrEmpty(name) || "suzumina.click"}
 				subtitle=""
 				statLabel=""
+				ascii
 			/>
 		),
 		renderFull: () => (

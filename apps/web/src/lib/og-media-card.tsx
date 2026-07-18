@@ -1,19 +1,17 @@
+import { OgBadge, OgFooter } from "@/lib/og-branding";
 import {
 	OG_BACKGROUND,
 	OG_MINASE_300,
-	OG_MINASE_800,
 	OG_MINASE_950,
 	OG_MUTED_FOREGROUND,
-	OG_SUZUKA_100,
 	OG_SUZUKA_500,
-	OG_SUZUKA_700,
 } from "@/lib/og-palette";
 
 /**
  * 画像（ジャケット/サムネイル）+ タイトル + 2行のメタ情報の2カラムレイアウト。
  * app/works/[workId]/opengraph-image.tsx・app/videos/[videoId]/opengraph-image.tsx で共用する
  * （両ルートの OgCard がジャケット/サムネイルの差異以外ほぼ同一だったため SPR-268 完了時点で統合）。
- * 通常版と ASCII 縮退版の両方でこのコンポーネントを使う。
+ * 通常版と ASCII 縮退版の両方でこのコンポーネントを使う。署名・バッジは lib/og-branding.tsx が正本。
  */
 
 const DEFAULT_EMPHASIS_FONT_SIZE = 30;
@@ -32,6 +30,8 @@ export interface MediaOgCardProps {
 	/** 強調行（価格・再生時間等）。空文字なら非表示 */
 	emphasisLine?: string;
 	emphasisFontSize?: number;
+	/** ASCII 縮退版（ブランドフォント無し）。署名の日本語サイト名を tofu 化させないため省略する */
+	ascii?: boolean;
 }
 
 export function MediaOgCard({
@@ -45,6 +45,7 @@ export function MediaOgCard({
 	secondaryLine,
 	emphasisLine,
 	emphasisFontSize = DEFAULT_EMPHASIS_FONT_SIZE,
+	ascii = false,
 }: MediaOgCardProps) {
 	return (
 		<div
@@ -90,19 +91,7 @@ export function MediaOgCard({
 						minWidth: 0,
 					}}
 				>
-					<span
-						style={{
-							alignSelf: "flex-start",
-							backgroundColor: OG_SUZUKA_100,
-							color: OG_SUZUKA_700,
-							fontWeight: 700,
-							fontSize: 25,
-							padding: "10px 30px",
-							borderRadius: 9999,
-						}}
-					>
-						{badgeLabel}
-					</span>
+					<OgBadge label={badgeLabel} style={{ alignSelf: "flex-start" }} />
 					<div
 						style={{
 							width: titleMaxWidth,
@@ -125,14 +114,7 @@ export function MediaOgCard({
 				</div>
 			</div>
 
-			<div style={{ display: "flex", alignItems: "center", gap: 14, padding: "0 64px 40px" }}>
-				<span style={{ fontWeight: 700, fontSize: 30, color: OG_SUZUKA_500 }}>
-					すずみなくりっく！
-				</span>
-				<span style={{ fontSize: 22, color: OG_MINASE_800 }}>suzumina.click</span>
-			</div>
-
-			<div style={{ display: "flex", height: 14, flexShrink: 0, backgroundColor: OG_SUZUKA_500 }} />
+			<OgFooter ascii={ascii} />
 		</div>
 	);
 }

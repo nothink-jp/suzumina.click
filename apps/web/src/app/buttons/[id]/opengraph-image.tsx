@@ -1,4 +1,5 @@
 import { getAudioButtonById } from "@/app/buttons/actions";
+import { OgBadge, OgFooter } from "@/lib/og-branding";
 import {
 	OG_BACKGROUND as BACKGROUND,
 	OG_MINASE_50 as MINASE_50,
@@ -10,9 +11,6 @@ import {
 	OG_MINASE_800 as MINASE_800,
 	OG_MINASE_950 as MINASE_950,
 	OG_MUTED_FOREGROUND as MUTED_FOREGROUND,
-	OG_SUZUKA_100 as SUZUKA_100,
-	OG_SUZUKA_500 as SUZUKA_500,
-	OG_SUZUKA_700 as SUZUKA_700,
 } from "@/lib/og-palette";
 import { buildOgImageResponse, OG_IMAGE_CONTENT_TYPE, OG_IMAGE_SIZE } from "@/lib/og-response";
 import {
@@ -131,11 +129,12 @@ function VideoIcon() {
 }
 
 interface OgCardProps {
-	siteName: string;
 	badgeLabel: string;
 	buttonText: string;
 	durationLabel: string;
 	videoTitle: string;
+	/** ASCII 縮退版（ブランドフォント無し）。署名の日本語サイト名を tofu 化させないため省略する */
+	ascii?: boolean;
 }
 
 // AudioButton 再現カードの寸法（1200 - 左右 padding 64×2 = カード最大幅 1072。
@@ -144,8 +143,9 @@ const CARD_MAX_WIDTH = 1072;
 const BUTTON_TEXT_MAX_WIDTH = 750;
 const BUTTON_TEXT_FONT_SIZE = 56;
 
-/** 1a 案レイアウト: ヘッダー + AudioButton 再現カード + メタ行 + 底部バー（通常版と ASCII 縮退版で共用） */
-function OgCard({ siteName, badgeLabel, buttonText, durationLabel, videoTitle }: OgCardProps) {
+/** 1a 案レイアウト: ヘッダー + AudioButton 再現カード + メタ行 + 底部署名（通常版と ASCII 縮退版で共用。
+ * 旧ヘッダー左のサイト名は底部署名（lib/og-branding.tsx の OgFooter）へ統一移動した） */
+function OgCard({ badgeLabel, buttonText, durationLabel, videoTitle, ascii = false }: OgCardProps) {
 	// 1行に収まらない場合のみ明示幅を与えて折り返す（satori は auto 幅入れ子で折り返せない）
 	const needsWrap = estimateTextWidth(buttonText, BUTTON_TEXT_FONT_SIZE) > BUTTON_TEXT_MAX_WIDTH;
 	return (
@@ -159,28 +159,16 @@ function OgCard({ siteName, badgeLabel, buttonText, durationLabel, videoTitle }:
 				fontFamily: "M PLUS Rounded 1c",
 			}}
 		>
-			{/* ヘッダー: サイト名 + 音声ボタンピル */}
+			{/* ヘッダー: 音声ボタンピル（右寄せ） */}
 			<div
 				style={{
 					display: "flex",
 					alignItems: "center",
-					justifyContent: "space-between",
+					justifyContent: "flex-end",
 					padding: "48px 64px 0",
 				}}
 			>
-				<span style={{ fontWeight: 700, fontSize: 36, color: SUZUKA_500 }}>{siteName}</span>
-				<span
-					style={{
-						backgroundColor: SUZUKA_100,
-						color: SUZUKA_700,
-						fontWeight: 700,
-						fontSize: 25,
-						padding: "10px 30px",
-						borderRadius: 9999,
-					}}
-				>
-					{badgeLabel}
-				</span>
+				<OgBadge label={badgeLabel} />
 			</div>
 
 			{/* 中央: サイトの AudioButton を再現したカード */}
@@ -243,8 +231,8 @@ function OgCard({ siteName, badgeLabel, buttonText, durationLabel, videoTitle }:
 				</div>
 			</div>
 
-			{/* メタ行: 再生秒数ピル + 元動画タイトル */}
-			<div style={{ display: "flex", alignItems: "center", gap: 28, padding: "0 64px 44px" }}>
+			{/* メタ行: 再生秒数ピル + 元動画タイトル（下に底部署名が続くため間隔を詰める） */}
+			<div style={{ display: "flex", alignItems: "center", gap: 28, padding: "0 64px 28px" }}>
 				{durationLabel && (
 					<div
 						style={{
@@ -290,8 +278,7 @@ function OgCard({ siteName, badgeLabel, buttonText, durationLabel, videoTitle }:
 				)}
 			</div>
 
-			{/* 底部バー */}
-			<div style={{ display: "flex", height: 14, flexShrink: 0, backgroundColor: SUZUKA_500 }} />
+			<OgFooter ascii={ascii} />
 		</div>
 	);
 }
@@ -320,21 +307,21 @@ export default async function Image({ params }: OgImageParams) {
 
 	return buildOgImageResponse({
 		size,
-		boldText: `${heading}${durationLabel}すずみなくりっく！音声ボタン`,
+		// suzumina.click は底部署名（OgFooter）用
+		boldText: `${heading}${durationLabel}すずみなくりっく！音声ボタンsuzumina.click`,
 		// videoTitle が空（未設定・ボタン未取得のフォールバック経路）なら regular(400) のフェッチ自体を省く
 		regularText: videoTitle || undefined,
 		renderFallback: () => (
 			<OgCard
-				siteName="suzumina.click"
 				badgeLabel="SOUND BUTTON"
 				buttonText={asciiOrEmpty(buttonText) || "suzumina.click"}
 				durationLabel={durationSec != null ? `${durationSec.toFixed(1)}s` : ""}
 				videoTitle=""
+				ascii
 			/>
 		),
 		renderFull: () => (
 			<OgCard
-				siteName="すずみなくりっく！"
 				badgeLabel="音声ボタン"
 				buttonText={heading}
 				durationLabel={durationLabel}
