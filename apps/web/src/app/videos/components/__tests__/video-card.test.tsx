@@ -1,11 +1,7 @@
 import type { VideoPlainObject } from "@suzumina.click/shared-types";
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { mockUseSession } from "@/test-utils/auth";
 import VideoCard from "../video-card";
-
-// モックの設定（認証ゲートは VideoCardActions client island が useSession を使う）
-vi.mock("@/lib/auth/client");
 
 vi.mock("@/components/ui/thumbnail-image", () => ({
 	// biome-ignore lint/performance/noImgElement: モックコンポーネントでは<img>の使用を許可
@@ -67,7 +63,6 @@ function createMockVideo(overrides?: Partial<any>): VideoPlainObject {
 describe("VideoCard", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mockUseSession(null);
 	});
 
 	it("動画の基本情報が表示される", () => {

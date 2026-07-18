@@ -1,10 +1,7 @@
 import type { VideoPlainObject } from "@suzumina.click/shared-types";
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { mockUseSession } from "@/test-utils/auth";
 import VideoCardActions from "../video-card-actions";
-
-vi.mock("@/lib/auth/client");
 
 function createMockVideo(overrides?: Partial<any>): VideoPlainObject {
 	const base = {
@@ -35,16 +32,12 @@ function createMockVideo(overrides?: Partial<any>): VideoPlainObject {
 	return { ...base, ...overrides } as unknown as VideoPlainObject;
 }
 
-const loggedIn = { discordId: "user123", displayName: "テストユーザー" };
-const loggedOut = null;
-
 describe("VideoCardActions", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 	});
 
 	it("sidebar variant では『動画を見る』リンクのみ表示する", () => {
-		mockUseSession(loggedOut);
 		render(<VideoCardActions video={createMockVideo()} variant="sidebar" />);
 
 		const link = screen.getByText("動画を見る").closest("a");
@@ -52,29 +45,17 @@ describe("VideoCardActions", () => {
 		expect(screen.queryByText("ボタン作成")).not.toBeInTheDocument();
 	});
 
-	it("ログイン済み・作成可能ならボタン作成リンクを表示する", () => {
-		mockUseSession(loggedIn);
+	it("作成可能ならボタン作成リンクを表示する（ログイン状態に依存しない・認証は /buttons/create 側に委譲）", () => {
 		render(<VideoCardActions video={createMockVideo()} variant="grid" />);
 
 		const createLink = screen.getByText("ボタン作成").closest("a");
 		expect(createLink).toHaveAttribute("href", "/buttons/create?video_id=video123");
 		expect(screen.getByText("詳細を見る")).toBeInTheDocument();
-	});
-
-	it("未ログインならログイン導線を表示する（callbackUrl 付き）", () => {
-		mockUseSession(loggedOut);
-		render(<VideoCardActions video={createMockVideo()} variant="grid" />);
-
-		const loginLink = screen.getByText("ログイン").closest("a");
-		expect(loginLink).toHaveAttribute(
-			"href",
-			"/auth/signin?callbackUrl=%2Fbuttons%2Fcreate%3Fvideo_id%3Dvideo123",
-		);
-		expect(screen.queryByText("ボタン作成")).not.toBeInTheDocument();
+		// ログイン分岐は撤去済み（/live 導線と同じく目的地の ProtectedRoute が認証の正本）
+		expect(screen.queryByText("ログイン")).not.toBeInTheDocument();
 	});
 
 	it("配信中の動画は『配信中マーク』リンク（/live?v=）を表示する（SPR-146）", () => {
-		mockUseSession(loggedIn);
 		const video = createMockVideo({
 			liveBroadcastContent: "live",
 			_computed: {
@@ -92,10 +73,11 @@ describe("VideoCardActions", () => {
 		// live は destructive 赤（「配信中」バッジと同色ペア・赤は live 専用）
 		expect(markLink?.className).toContain("bg-destructive");
 		expect(screen.queryByText("ボタン作成")).not.toBeInTheDocument();
+		// 認証は /live 側の ProtectedRoute に委譲（カードは session 非依存でログイン導線を出さない）
+		expect(screen.queryByText("ログイン")).not.toBeInTheDocument();
 	});
 
 	it("配信予定の動画は『配信待機』リンク（info 青）を表示する", () => {
-		mockUseSession(loggedIn);
 		const video = createMockVideo({
 			liveBroadcastContent: "upcoming",
 			_computed: {
@@ -114,26 +96,7 @@ describe("VideoCardActions", () => {
 		expect(waitLink?.className).toContain("bg-info");
 	});
 
-	it("未ログインでも配信中はログイン導線でなく『配信中マーク』を表示する（認証は /live 側に委譲）", () => {
-		mockUseSession(loggedOut);
-		const video = createMockVideo({
-			liveBroadcastContent: "live",
-			_computed: {
-				...createMockVideo()._computed,
-				isArchived: false,
-				isLive: true,
-				canCreateButton: false,
-				videoType: "live",
-			},
-		});
-		render(<VideoCardActions video={video} variant="grid" />);
-
-		expect(screen.getByText("配信中マーク")).toBeInTheDocument();
-		expect(screen.queryByText("ログイン")).not.toBeInTheDocument();
-	});
-
 	it("stale な liveBroadcastContent=live でも _computed が archived なら通常のボタン作成に進める（正本は videoType）", () => {
-		mockUseSession(loggedIn);
 		// fetchYouTubeVideos の更新遅延で raw フィールドだけ live のまま残るケース。
 		// _computed.videoType は actualEndTime から archived を判定済み＝バッジも「配信アーカイブ」表示
 		const video = createMockVideo({ liveBroadcastContent: "live" });
@@ -144,8 +107,7 @@ describe("VideoCardActions", () => {
 		expect(screen.queryByText("配信中マーク")).not.toBeInTheDocument();
 	});
 
-	it("ログイン済みでも作成不可（配信でない動画）なら理由を tooltip に持つ aria-disabled ボタンを表示する", () => {
-		mockUseSession(loggedIn);
+	it("作成不可（配信でない動画）なら理由を tooltip に持つ aria-disabled ボタンを表示する", () => {
 		const video = createMockVideo({
 			duration: "PT0S",
 			_computed: {
@@ -170,7 +132,6 @@ describe("VideoCardActions", () => {
 	});
 
 	it("埋め込み制限がある場合は理由として埋め込み制限を表示する", () => {
-		mockUseSession(loggedIn);
 		const video = createMockVideo({ status: { embeddable: false } });
 		render(<VideoCardActions video={video} variant="grid" />);
 
