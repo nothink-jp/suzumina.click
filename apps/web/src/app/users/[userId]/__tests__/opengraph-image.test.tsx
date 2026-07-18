@@ -13,6 +13,8 @@ vi.mock("next/og", () => ({
 }));
 vi.mock("@/lib/user-firestore", () => ({ getUserByDiscordId: vi.fn() }));
 vi.mock("@/lib/og-font", () => ({ loadMPlusRoundedSubset: vi.fn() }));
+// vitest では "use cache" ディレクティブは no-op になり cacheLife が cache スコープ外呼び出しになるためモックする
+vi.mock("next/cache", () => ({ cacheLife: vi.fn() }));
 
 import { loadMPlusRoundedSubset } from "@/lib/og-font";
 import { getUserByDiscordId } from "@/lib/user-firestore";
