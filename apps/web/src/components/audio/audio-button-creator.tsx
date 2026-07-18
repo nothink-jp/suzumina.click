@@ -14,6 +14,7 @@ import { useSession } from "@/lib/auth/client";
 import { formatSeconds } from "@/utils/format-seconds";
 import { BasicInfoPanel } from "./basic-info-panel";
 import { CreateButtonLimit } from "./create-button-limit";
+import { MetaSuggestionPanel } from "./meta-suggestion-panel";
 import { TimeControlPanel } from "./time-control-panel";
 import { UsageGuide } from "./usage-guide";
 
@@ -300,6 +301,21 @@ export function AudioButtonCreator({
 									isCreating={isCreating}
 								/>
 							</div>
+
+							<MetaSuggestionPanel
+								videoId={videoId}
+								startTime={timeAdjustment.startTime}
+								endTime={timeAdjustment.endTime}
+								disabled={isCreating}
+								currentTags={tags}
+								onSelectTitle={setButtonText}
+								onAddTag={(tag) => {
+									// バリデーション上限（10個）内でのみ追加。重複はパネル側で disabled 済み
+									if (!tags.includes(tag) && tags.length < 10) {
+										setTags([...tags, tag]);
+									}
+								}}
+							/>
 
 							<BasicInfoPanel
 								title={buttonText}

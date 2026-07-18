@@ -21,6 +21,10 @@ locals {
     {
       id          = "YOUTUBE_API_KEY"
       description = "YouTube Data APIキー"
+    },
+    {
+      id          = "GEMINI_API_KEY"
+      description = "Gemini APIキー（音声ボタンのメタ入力候補生成 SPR-148）"
     }
   ]
 
@@ -67,7 +71,7 @@ resource "google_secret_manager_secret" "secrets" {
 
   # メタデータとしてシークレットの説明を追加
   labels = merge(local.common_secret_settings.labels, {
-    "category" = contains(["YOUTUBE_API_KEY"], each.key) ? "api" : contains(["RESEND_API_KEY", "CONTACT_EMAIL_RECIPIENTS"], each.key) ? "email" : "auth"
+    "category" = contains(["YOUTUBE_API_KEY", "GEMINI_API_KEY"], each.key) ? "api" : contains(["RESEND_API_KEY", "CONTACT_EMAIL_RECIPIENTS"], each.key) ? "email" : "auth"
   })
 
   annotations = {
@@ -103,6 +107,7 @@ resource "google_secret_manager_secret_version" "secret_versions" {
     "DISCORD_CLIENT_SECRET"    = var.discord_client_secret
     "BETTER_AUTH_SECRET"       = var.better_auth_secret
     "YOUTUBE_API_KEY"          = var.youtube_api_key
+    "GEMINI_API_KEY"           = var.gemini_api_key
     "RESEND_API_KEY"           = var.resend_api_key
     "CONTACT_EMAIL_RECIPIENTS" = var.contact_email_recipients
   }
@@ -139,7 +144,7 @@ output "secrets_info" {
     for id, secret in google_secret_manager_secret.secrets :
     id => {
       name     = secret.name
-      category = contains(["YOUTUBE_API_KEY"], id) ? "api" : contains(["RESEND_API_KEY", "CONTACT_EMAIL_RECIPIENTS"], id) ? "email" : "auth"
+      category = contains(["YOUTUBE_API_KEY", "GEMINI_API_KEY"], id) ? "api" : contains(["RESEND_API_KEY", "CONTACT_EMAIL_RECIPIENTS"], id) ? "email" : "auth"
     }
   }
   description = "作成されたシークレットの一覧"
