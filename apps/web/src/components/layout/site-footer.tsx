@@ -43,7 +43,7 @@ export default function SiteFooter() {
 							ファンによる、ファンのためのコミュニティサイト
 						</p>
 						<p className="text-minase-300 text-xs">
-							現在プレビューリリース中 - 閲覧・利用は誰でも、作成はすずみなふぁみりー限定
+							閲覧・利用は誰でも、Discordログインで音声ボタン作成も可能です
 						</p>
 					</div>
 					<div className="border-t border-minase-700 pt-4 text-center text-sm text-minase-200">
