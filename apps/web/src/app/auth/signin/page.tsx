@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { signInAction } from "@/app/auth/actions";
-import { DiscordIcon } from "@/components/user/discord-icon";
+import { LoginErrorTracker } from "@/components/analytics/login-error-tracker";
+import { DiscordSignInButton } from "@/components/user/discord-signin-button";
 
 interface SignInPageProps {
 	searchParams: Promise<{ callbackUrl?: string; error?: string }>;
@@ -10,6 +11,7 @@ async function SignInForm({ searchParams }: SignInPageProps) {
 	const { callbackUrl, error } = await searchParams;
 	return (
 		<div className="min-h-screen flex items-center justify-center bg-muted">
+			<LoginErrorTracker error={error} />
 			<div className="max-w-md w-full space-y-8 p-8 bg-card rounded-xl shadow-lg">
 				<div className="text-center">
 					<h2 className="text-3xl font-bold text-foreground mb-2">すずみなくりっく！</h2>
@@ -29,13 +31,11 @@ async function SignInForm({ searchParams }: SignInPageProps) {
 				</div>
 
 				<form action={signInAction.bind(null, callbackUrl ?? "/")} className="space-y-4">
-					<button
-						type="submit"
+					<DiscordSignInButton
 						className="w-full flex items-center justify-center gap-3 bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-3 px-4 rounded-lg transition-colors duration-200"
-					>
-						<DiscordIcon className="w-5 h-5" />
-						Discordでログイン
-					</button>
+						iconClassName="w-5 h-5"
+						label="Discordでログイン"
+					/>
 				</form>
 
 				<div className="text-center text-sm text-muted-foreground space-y-3">

@@ -5,6 +5,7 @@ import { AlertTriangle, Home, RotateCw } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { LoginErrorTracker } from "@/components/analytics/login-error-tracker";
 
 export const metadata: Metadata = {
 	title: "エラー",
@@ -70,6 +71,7 @@ async function ErrorContent({ searchParams }: AuthErrorPageProps) {
 
 	return (
 		<div className="min-h-screen flex items-center justify-center bg-background px-4">
+			<LoginErrorTracker error={error} />
 			<Card className="max-w-md w-full shadow-xl animate-in fade-in-0 zoom-in-95 duration-500">
 				<CardContent className="p-8 text-center space-y-6">
 					<div className="mx-auto w-16 h-16 bg-gradient-to-br from-suzuka-100 to-minase-100 rounded-full flex items-center justify-center">
