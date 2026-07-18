@@ -63,6 +63,27 @@ export function trackMarkDraft(videoId: string, hasPlayerTime: boolean): void {
 }
 
 /**
+ * AI候補生成（SPR-148）。success=false の reason は Server Action のエラー文言
+ * （「ログインが必要です」等）。Phase 2（マーク時事前生成）投資判断の実測データ。
+ */
+export function trackSuggestionGenerate(input: {
+	videoId: string;
+	success: boolean;
+	reason?: string;
+}): void {
+	sendGoogleAnalyticsEvent("suggestion_generate", {
+		video_id: input.videoId,
+		success: input.success,
+		...(input.reason ? { reason: input.reason.slice(0, MAX_PARAM_LENGTH) } : {}),
+	});
+}
+
+/** AI候補の採用（タイトルクリック or タグクリック）。target で内訳を分ける */
+export function trackSuggestionApply(videoId: string, target: "title" | "tag"): void {
+	sendGoogleAnalyticsEvent("suggestion_apply", { video_id: videoId, target });
+}
+
+/**
  * ログインファネル: ボタン押下（OAuth プロバイダへのリダイレクト直前）。
  * ページ遷移前の最後のタイミングで送るため、他イベントより取りこぼしのリスクが高い点に留意。
  */

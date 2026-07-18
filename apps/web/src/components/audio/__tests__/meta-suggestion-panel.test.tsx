@@ -6,6 +6,14 @@ vi.mock("@/actions/audio-button-suggestions", () => ({
 	generateAudioButtonSuggestions: (input: unknown) => mockGenerate(input),
 }));
 
+const mockTrackSuggestionGenerate = vi.fn();
+const mockTrackSuggestionApply = vi.fn();
+vi.mock("@/lib/analytics/events", () => ({
+	trackSuggestionGenerate: (input: unknown) => mockTrackSuggestionGenerate(input),
+	trackSuggestionApply: (videoId: string, target: string) =>
+		mockTrackSuggestionApply(videoId, target),
+}));
+
 const { MetaSuggestionPanel } = await import("../meta-suggestion-panel");
 
 const SUGGESTION = {
@@ -54,9 +62,13 @@ describe("MetaSuggestionPanel (SPR-148)", () => {
 		expect(screen.getByText("ゲーム")).toBeInTheDocument();
 		// 取得後は再生成ボタンに変わる
 		expect(screen.getByRole("button", { name: "再生成" })).toBeInTheDocument();
+		expect(mockTrackSuggestionGenerate).toHaveBeenCalledWith({
+			videoId: "S534eutWhUY",
+			success: true,
+		});
 	});
 
-	it("タイトル候補クリックで onSelectTitle、タグ候補クリックで onAddTag が呼ばれる", async () => {
+	it("タイトル候補クリックで onSelectTitle、タグ候補クリックで onAddTag が呼ばれ、それぞれ計器化される", async () => {
 		const { onSelectTitle, onAddTag } = renderPanel();
 
 		fireEvent.click(screen.getByRole("button", { name: "選択区間から生成" }));
@@ -66,9 +78,11 @@ describe("MetaSuggestionPanel (SPR-148)", () => {
 
 		fireEvent.click(screen.getByRole("button", { name: "やべ、いるわ" }));
 		expect(onSelectTitle).toHaveBeenCalledWith("やべ、いるわ");
+		expect(mockTrackSuggestionApply).toHaveBeenCalledWith("S534eutWhUY", "title");
 
 		fireEvent.click(screen.getByRole("button", { name: "ゲーム" }));
 		expect(onAddTag).toHaveBeenCalledWith("ゲーム");
+		expect(mockTrackSuggestionApply).toHaveBeenCalledWith("S534eutWhUY", "tag");
 	});
 
 	it("追加済みタグの候補は無効化される", async () => {
@@ -91,6 +105,11 @@ describe("MetaSuggestionPanel (SPR-148)", () => {
 		});
 		// 失敗後も再試行できる
 		expect(screen.getByRole("button", { name: "選択区間から生成" })).toBeEnabled();
+		expect(mockTrackSuggestionGenerate).toHaveBeenCalledWith({
+			videoId: "S534eutWhUY",
+			success: false,
+			reason: "ログインが必要です",
+		});
 	});
 
 	it("disabled中は生成ボタンが押せない", () => {

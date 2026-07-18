@@ -4,6 +4,7 @@ import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Loader2, Plus, Sparkles } from "lucide-react";
 import { useCallback, useState } from "react";
 import { generateAudioButtonSuggestions } from "@/actions/audio-button-suggestions";
+import { trackSuggestionApply, trackSuggestionGenerate } from "@/lib/analytics/events";
 import type { AudioButtonSuggestion } from "@/lib/gemini/suggestion-core";
 
 interface MetaSuggestionPanelProps {
@@ -42,15 +43,34 @@ export function MetaSuggestionPanel({
 			const result = await generateAudioButtonSuggestions({ videoId, startTime, endTime });
 			if (result.success) {
 				setSuggestion(result.data);
+				trackSuggestionGenerate({ videoId, success: true });
 			} else {
 				setError(result.error);
+				trackSuggestionGenerate({ videoId, success: false, reason: result.error });
 			}
 		} catch (_error) {
 			setError("候補の生成に失敗しました");
+			trackSuggestionGenerate({ videoId, success: false, reason: "unexpected" });
 		} finally {
 			setIsGenerating(false);
 		}
 	}, [videoId, startTime, endTime]);
+
+	const handleSelectTitle = useCallback(
+		(title: string) => {
+			trackSuggestionApply(videoId, "title");
+			onSelectTitle(title);
+		},
+		[videoId, onSelectTitle],
+	);
+
+	const handleAddTag = useCallback(
+		(tag: string) => {
+			trackSuggestionApply(videoId, "tag");
+			onAddTag(tag);
+		},
+		[videoId, onAddTag],
+	);
 
 	return (
 		<div className="bg-card border rounded-lg p-4 lg:p-6 shadow-sm">
@@ -99,7 +119,7 @@ export function MetaSuggestionPanel({
 									key={title}
 									size="sm"
 									variant="secondary"
-									onClick={() => onSelectTitle(title)}
+									onClick={() => handleSelectTitle(title)}
 									disabled={disabled}
 									className="max-w-full"
 								>
@@ -117,7 +137,7 @@ export function MetaSuggestionPanel({
 										key={tag}
 										size="sm"
 										variant="ghost"
-										onClick={() => onAddTag(tag)}
+										onClick={() => handleAddTag(tag)}
 										disabled={disabled || currentTags.includes(tag)}
 										className="border border-dashed"
 									>
