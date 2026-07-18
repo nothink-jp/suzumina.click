@@ -1,16 +1,17 @@
 "use client";
 
-import type { CreateAudioButtonInput } from "@suzumina.click/shared-types";
+import type { AudioButtonDraft, CreateAudioButtonInput } from "@suzumina.click/shared-types";
 import { YouTubePlayer } from "@suzumina.click/ui/components/custom/youtube-player";
 import { Button } from "@suzumina.click/ui/components/ui/button";
-import { Loader2, Plus } from "lucide-react";
+import { ExternalLink, Loader2, Plus, SkipForward } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { deleteButtonDraft } from "@/actions/button-drafts";
 import { createAudioButton } from "@/app/buttons/actions";
 import { useAudioButtonEditor } from "@/hooks/use-audio-button-editor";
 import { trackCreateError, trackCreateStart, trackCreateSuccess } from "@/lib/analytics/events";
 import { useSession } from "@/lib/auth/client";
+import { formatSeconds } from "@/utils/format-seconds";
 import { BasicInfoPanel } from "./basic-info-panel";
 import { CreateButtonLimit } from "./create-button-limit";
 import { TimeControlPanel } from "./time-control-panel";
@@ -23,6 +24,11 @@ interface AudioButtonCreatorProps {
 	initialStartTime?: number;
 	/** /live の下書きから開いた場合の下書きID。作成成功時に消化（削除）する（SPR-146） */
 	draftId?: string;
+	/**
+	 * 同一動画の下書きキュー（suggestedStartTime 昇順・現在の下書きを含む）。
+	 * 作成成功後に遷移せず次の下書きへ進む連続仕上げに使う（SPR-266 第2段）
+	 */
+	videoDrafts?: AudioButtonDraft[];
 }
 
 /**
@@ -39,6 +45,7 @@ export function AudioButtonCreator({
 	videoDuration = 600,
 	initialStartTime = 0,
 	draftId,
+	videoDrafts,
 }: AudioButtonCreatorProps) {
 	const router = useRouter();
 	const user = useSession();
@@ -62,13 +69,60 @@ export function AudioButtonCreator({
 	} = setState;
 	const isValid = validation.isValid;
 
+	// 連続仕上げの状態（SPR-266 第2段）。activeDraftId が「今仕上げている下書き」の正本で、
+	// prop の draftId は初期値にすぎない（キューを進むと変わる）
+	const [activeDraftId, setActiveDraftId] = useState(draftId);
+	const [remainingDrafts, setRemainingDrafts] = useState<AudioButtonDraft[]>(() =>
+		(videoDrafts ?? []).filter((draft) => draft.id !== draftId),
+	);
+	const [lastCreated, setLastCreated] = useState<{ id: string; buttonText: string } | null>(null);
+
+	// 次の下書きへフォームとプレイヤーを進める（遷移なし＝プレイヤー維持が連続仕上げの本体）
+	const { setStartTime, setEndTime } = timeAdjustment;
+	const { seekTo, videoDuration: playerDuration } = youtubeManager;
+	const advanceToDraft = useCallback(
+		(next: AudioButtonDraft) => {
+			const duration = playerDuration || videoDuration;
+			// VOD は末尾が最大 ~20s 短くなる場合があるため終端付近はクランプ（SPR-145 実測）
+			const start = Math.min(next.suggestedStartTime, Math.max(0, duration - 1));
+			const end = Math.min(start + 10, duration);
+			setActiveDraftId(next.id);
+			setButtonText("");
+			setDescription("");
+			setTags([]);
+			setError("");
+			setStartTime(start);
+			setEndTime(end);
+			seekTo(start);
+		},
+		[
+			playerDuration,
+			videoDuration,
+			setButtonText,
+			setDescription,
+			setTags,
+			setError,
+			setStartTime,
+			setEndTime,
+			seekTo,
+		],
+	);
+
+	// スキップ: 現在の下書きは消化せず（/live から再度仕上げられる）次へ進む
+	const handleSkip = useCallback(() => {
+		const [next, ...rest] = remainingDrafts;
+		if (!next) return;
+		setRemainingDrafts(rest);
+		advanceToDraft(next);
+	}, [remainingDrafts, advanceToDraft]);
+
 	// 作成処理
 	const handleCreate = useCallback(async () => {
 		if (!isValid) return;
 
 		setIsCreating(true);
 		setError("");
-		trackCreateStart(videoId, Boolean(draftId));
+		trackCreateStart(videoId, Boolean(activeDraftId));
 
 		try {
 			const input: CreateAudioButtonInput = {
@@ -87,12 +141,21 @@ export function AudioButtonCreator({
 				trackCreateSuccess({
 					audioButtonId: result.data.id,
 					videoId,
-					fromDraft: Boolean(draftId),
+					fromDraft: Boolean(activeDraftId),
 				});
 				// 下書きから開いた場合は消化（削除）する。ベストエフォート＝失敗してもボタン作成は
 				// 成立しているため遷移を止めない（残った下書きは /live から手動削除できる）。
-				if (draftId) {
-					await deleteButtonDraft(draftId).catch(() => undefined);
+				if (activeDraftId) {
+					await deleteButtonDraft(activeDraftId).catch(() => undefined);
+				}
+				// 連続仕上げ: 同一動画の下書きが残っていれば遷移せず次へ（プレイヤー維持・SPR-266）
+				const [next, ...rest] = remainingDrafts;
+				if (next) {
+					setLastCreated({ id: result.data.id, buttonText: buttonText.trim() });
+					setRemainingDrafts(rest);
+					advanceToDraft(next);
+					setIsCreating(false);
+					return;
 				}
 				// 詳細ページへフルロード遷移（SPR-252）。router.push だと /buttons ツリー内の soft nav が
 				// @modal にインターセプトされ、作成フォームの上にクイックビューが重なってしまう
@@ -121,7 +184,9 @@ export function AudioButtonCreator({
 		setIsCreating,
 		setError,
 		videoTitle,
-		draftId,
+		activeDraftId,
+		remainingDrafts,
+		advanceToDraft,
 	]);
 
 	// 時間調整用のハンドラーは共通フックから取得
@@ -169,6 +234,54 @@ export function AudioButtonCreator({
 						</div>
 
 						<div className="lg:col-span-1 xl:col-span-1 space-y-4">
+							{lastCreated && (
+								<div className="p-3 bg-primary/10 border border-primary/20 rounded-lg text-sm flex items-center justify-between gap-2">
+									<span className="min-w-0 truncate">
+										「{lastCreated.buttonText}」を作成しました
+									</span>
+									{/* 連続仕上げを中断しないよう新規タブで開く */}
+									<a
+										href={`/buttons/${lastCreated.id}`}
+										target="_blank"
+										rel="noopener noreferrer"
+										className="flex items-center gap-1 text-primary hover:underline whitespace-nowrap"
+									>
+										<ExternalLink className="h-3.5 w-3.5" />
+										開く
+									</a>
+								</div>
+							)}
+
+							{activeDraftId && (videoDrafts?.length ?? 0) > 1 && (
+								<div className="bg-card border rounded-lg p-4 shadow-sm text-sm space-y-2">
+									<div className="flex items-center justify-between">
+										<span className="font-medium">仕上げキュー</span>
+										<span className="text-muted-foreground">残り {remainingDrafts.length} 件</span>
+									</div>
+									{remainingDrafts[0] ? (
+										<div className="flex items-center justify-between gap-2">
+											<span className="text-muted-foreground">
+												次: {formatSeconds(remainingDrafts[0].suggestedStartTime)} 付近
+											</span>
+											<Button
+												size="sm"
+												variant="ghost"
+												onClick={handleSkip}
+												disabled={isCreating}
+												className="whitespace-nowrap"
+											>
+												<SkipForward className="h-3.5 w-3.5 mr-1" />
+												スキップして次へ
+											</Button>
+										</div>
+									) : (
+										<p className="text-muted-foreground">
+											これが最後の下書きです。作成すると詳細ページへ移動します。
+										</p>
+									)}
+								</div>
+							)}
+
 							<div className="bg-card border rounded-lg p-4 lg:p-6 shadow-sm">
 								<div className="mb-4">
 									<h3 className="text-lg font-semibold">音声操作</h3>

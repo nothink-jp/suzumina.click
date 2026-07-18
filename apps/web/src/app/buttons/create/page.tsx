@@ -1,4 +1,5 @@
 import {
+	type AudioButtonDraft,
 	canCreateAudioButton,
 	getAudioButtonCreationErrorMessage,
 	parseDurationToSeconds,
@@ -7,6 +8,7 @@ import { Button } from "@suzumina.click/ui/components/ui/button";
 import { AlertCircle, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getMyButtonDrafts } from "@/actions/button-drafts";
 import { getVideoById } from "@/app/videos/actions";
 import { AudioButtonCreator } from "@/components/audio/audio-button-creator";
 import ProtectedRoute from "@/components/system/protected-route";
@@ -154,6 +156,19 @@ export default async function CreateAudioButtonPage({ searchParams }: CreateAudi
 	// フォールバック: 取得失敗時は10分
 	const videoDuration = videoDurationSeconds > 0 ? videoDurationSeconds : 600;
 
+	// 下書き起点のときだけ同一動画の下書きキューを渡す（連続仕上げ・SPR-266）。
+	// getMyButtonDrafts は未ログイン時に success:false を返すだけなので ProtectedRoute の外で呼んでも安全
+	let videoDrafts: AudioButtonDraft[] | undefined;
+	if (resolvedSearchParams.draft_id) {
+		// 既定 limit=100 だと下書き多数のユーザーでキューが黙って欠けるため、保持上限の500で全件取る
+		const draftsResult = await getMyButtonDrafts(500);
+		if (draftsResult.success) {
+			videoDrafts = draftsResult.data
+				.filter((draft) => draft.videoId === videoId)
+				.sort((a, b) => a.suggestedStartTime - b.suggestedStartTime);
+		}
+	}
+
 	const callbackQuery = new URLSearchParams(
 		Object.entries({
 			video_id: videoId,
@@ -176,6 +191,7 @@ export default async function CreateAudioButtonPage({ searchParams }: CreateAudi
 				videoDuration={videoDuration}
 				initialStartTime={startTime}
 				draftId={resolvedSearchParams.draft_id}
+				videoDrafts={videoDrafts}
 			/>
 		</ProtectedRoute>
 	);
