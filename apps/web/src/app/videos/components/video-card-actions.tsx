@@ -1,15 +1,12 @@
-"use client";
-
 import type { VideoPlainObject } from "@suzumina.click/shared-types";
 import {
 	canCreateAudioButton,
 	getAudioButtonCreationErrorMessage,
 } from "@suzumina.click/shared-types";
 import { Button } from "@suzumina.click/ui/components/ui/button";
-import { Bookmark, Clock, ExternalLink, Eye, LogIn, Plus } from "lucide-react";
+import { Bookmark, Clock, ExternalLink, Eye, Plus } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { useSession } from "@/lib/auth/client";
 
 interface VideoCardActionsProps {
 	video: VideoPlainObject;
@@ -19,13 +16,11 @@ interface VideoCardActionsProps {
 type ButtonGate =
 	| { canCreate: true }
 	| { canCreate: false; liveMarking: "live" | "upcoming" }
-	| { canCreate: false; needsLogin: true }
-	| { canCreate: false; needsLogin: false; reason: string };
+	| { canCreate: false; reason: string };
 
-function evaluateButtonGate(video: VideoPlainObject, isLoggedIn: boolean): ButtonGate {
+function evaluateButtonGate(video: VideoPlainObject): ButtonGate {
 	// 配信中/配信予定は「作成不可」ではなく配信中マーキング（/live）への導線に切り替える（SPR-146）。
-	// この時間帯の正しい作成手段はマーク→アーカイブ後の仕上げのため。ログイン判定より先に返すことで
-	// 未ログインでも導線が見え、認証は /live 側の ProtectedRoute（callbackPath 付き）に委ねる。
+	// この時間帯の正しい作成手段はマーク→アーカイブ後の仕上げのため。
 	// 判定の正本はバッジ（video-badge.ts）と同じ _computed.videoType。raw の liveBroadcastContent は
 	// stale がありうる（アーカイブ済みでも live のまま残る）。operations の isLive や _computed.isLive は
 	// raw を OR しているため使わない — actualEndTime を見て archived を優先する videoType が唯一 stale に強い
@@ -36,20 +31,15 @@ function evaluateButtonGate(video: VideoPlainObject, isLoggedIn: boolean): Butto
 	if (videoType === "upcoming") {
 		return { canCreate: false, liveMarking: "upcoming" };
 	}
-	if (!isLoggedIn) {
-		return { canCreate: false, needsLogin: true };
-	}
 	if (video.status?.embeddable === false) {
 		return {
 			canCreate: false,
-			needsLogin: false,
 			reason: "この動画は埋め込みが制限されているため、音声ボタンを作成できません",
 		};
 	}
 	if (!canCreateAudioButton(video)) {
 		return {
 			canCreate: false,
-			needsLogin: false,
 			reason:
 				getAudioButtonCreationErrorMessage(video) ||
 				"音声ボタンを作成できるのは配信アーカイブのみです",
@@ -59,12 +49,12 @@ function evaluateButtonGate(video: VideoPlainObject, isLoggedIn: boolean): Butto
 }
 
 /**
- * VideoCard のアクション領域（client island）。
- * 認証ゲート（useSession）をカード本体から隔離するための最小 client コンポーネント。
+ * VideoCard のアクション領域。
+ * ログイン状態は見ない（session 非依存）: 認証は各目的地（/live・/buttons/create）の
+ * ProtectedRoute（callbackPath 付き）が正本で、カードはポインタに徹する。
+ * これにより per-user 状態を SSR に焼かず、セッション解決待ちのラベルちらつきも起きない。
  */
 export default function VideoCardActions({ video, variant }: VideoCardActionsProps) {
-	const user = useSession();
-
 	const detailLink = (
 		<Button
 			size="sm"
@@ -95,7 +85,7 @@ export default function VideoCardActions({ video, variant }: VideoCardActionsPro
 		);
 	}
 
-	const gate = evaluateButtonGate(video, Boolean(user));
+	const gate = evaluateButtonGate(video);
 
 	let createAction: ReactNode;
 	if (gate.canCreate) {
@@ -141,20 +131,6 @@ export default function VideoCardActions({ video, variant }: VideoCardActionsPro
 						<Clock className="h-4 w-4 mr-1" aria-hidden="true" />
 					)}
 					{isLiveNow ? "配信中マーク" : "配信待機"}
-				</Link>
-			</Button>
-		);
-	} else if (gate.needsLogin) {
-		// 未ログイン: ログイン導線を出す
-		createAction = (
-			<Button size="sm" variant="default" className="flex-1 min-h-[44px] text-sm" asChild>
-				<Link
-					href={`/auth/signin?callbackUrl=${encodeURIComponent(`/buttons/create?video_id=${video.id}`)}`}
-					aria-label="ログインして音声ボタンを作成"
-					className="flex items-center whitespace-nowrap"
-				>
-					<LogIn className="h-4 w-4 mr-1" aria-hidden="true" />
-					ログイン
 				</Link>
 			</Button>
 		);
