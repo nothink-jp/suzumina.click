@@ -42,8 +42,11 @@ jobs:
 
       # advisory（非ブロッキング）なので失敗しても PR を赤くしない。
       # 特に「この workflow 自体を変更した PR」は validation 仕様でハードエラーになるが無害。
-      # 注意: レビュー欠落（コメント未投稿）が失敗のサイン。緑＝必ずレビュー成功、ではない。
+      # 注意: レビュー欠落（コメント未投稿）が失敗のサイン。緑＝必ずレビュー成功、ではない
+      #   （このステップ自体は continue-on-error のため conclusion は常に success になる。
+      #    実際の成否は後続の「Fail job if Claude review errored」ステップの outcome チェックで可視化する）。
       - name: Claude Code Review
+        id: claude-review
         continue-on-error: true
         uses: anthropics/claude-code-action@v1
         with:
@@ -83,8 +86,22 @@ jobs:
             - 問題が無ければ「重大所見なし」とはっきり書く。
           # モデルは固定しない（版ズレ回避: CLAUDE.md 軸1）。action 既定の最新モデルに任せる。
           # 行内コメント投稿ツールと gh コマンドを明示許可（これが無いと投稿できない）。
+          # git diff / git status: claude-code-action 組み込みシステムプロンプトが PR 差分確認に
+          #   `git diff origin/main...HEAD` / `git status` を使うよう明示的に指示してくる。これを
+          #   allowedTools から漏らすと毎回 permission denied → 再試行のループでターンを空費し、
+          #   「コンテキスト取得」段階のまま max-turns で強制終了する（run 29632314677 で確認・PR #810）。
           # max-turns 40: CLI 更新で既定モデルが変わるとターン消費が増える（sonnet-4-6→5 で 5-15→21+ に増加し
           #   20 では枯渇＝レビュー未投稿。run 28672455307）。モデル非固定の方針を維持するため余裕を持たせる。
           claude_args: |
             --max-turns 40
-            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(git diff:*),Bash(git status:*)"
+
+      # continue-on-error でこのステップ自体は success 扱いになるため、レビューが
+      # error_max_turns 等で未完了に終わった場合は job を明示的に fail させて可視化する
+      # （「重大所見なし」で通ったのか「レビューが実行できなかった」のかを gh pr checks で区別するため）。
+      # 必須チェックには設定しない方針（CLAUDE.md §1）なので、この fail は merge をブロックしない。
+      - name: Fail job if Claude review errored
+        if: steps.claude-review.outcome == 'failure'
+        run: |
+          echo "::error::Claude Code Review step failed (outcome=failure). This means the AI review did NOT complete — it is NOT the same as 'reviewed, no findings'. See the Claude Code Review step log above for details."
+          exit 1
