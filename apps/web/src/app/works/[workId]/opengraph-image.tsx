@@ -29,12 +29,18 @@ const MUTED_FOREGROUND = "hsl(324, 8%, 40%)";
 const TITLE_MAX_WIDTH = 620;
 const TITLE_FONT_SIZE = 48;
 
+// next.config.mjs の images.remotePatterns と同じ許可ホスト（DLsite CDN限定）。
+// work.highResImageUrl/thumbnailUrl はスクレイパー由来でユーザー入力ではないが、
+// fetch する経路である以上 next/image と同じ制約を明示しておく
+const ALLOWED_JACKET_HOSTNAME = "img.dlsite.jp";
+
 /**
  * ジャケット画像を data URI として取得する。取得・変換に失敗しても null を返すのみで例外を投げない
  * （satori はネットワーク不安定な remote src の直接指定より、埋め込み済み data URI の方が安定するため事前取得する）
  */
 async function loadJacketDataUri(url: string): Promise<string | null> {
 	try {
+		if (new URL(url).hostname !== ALLOWED_JACKET_HOSTNAME) return null;
 		const res = await fetch(url);
 		if (!res.ok) return null;
 		const buffer = await res.arrayBuffer();

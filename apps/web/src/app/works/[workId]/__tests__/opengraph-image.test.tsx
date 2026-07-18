@@ -94,6 +94,27 @@ describe("作品詳細の OG 画像（app/works/[workId]/opengraph-image.tsx）"
 		vi.unstubAllGlobals();
 	});
 
+	it("許可外ホストのジャケットURLは fetch せず画像無しで描画する", async () => {
+		vi.mocked(getWorkById).mockResolvedValueOnce(
+			makeWork({
+				highResImageUrl: "https://evil.example.com/steal.jpg",
+				thumbnailUrl: "https://evil.example.com/steal-thumb.jpg",
+			}) as never,
+		);
+		vi.mocked(loadMPlusRoundedSubset).mockResolvedValue(new ArrayBuffer(8));
+		const fetchMock = vi.fn();
+		vi.stubGlobal("fetch", fetchMock);
+
+		const response = (await Image({
+			params: Promise.resolve({ workId: "RJ00000001" }),
+		})) as unknown as { element: React.ReactElement<OgCardProps> };
+
+		expect(fetchMock).not.toHaveBeenCalled();
+		expect(response.element.props.jacketDataUri).toBeNull();
+
+		vi.unstubAllGlobals();
+	});
+
 	it("フォント取得失敗でも 500 にせず ASCII 縮退版を描画する", async () => {
 		vi.mocked(getWorkById).mockResolvedValueOnce(makeWork({ title: "Ascii Title" }) as never);
 		vi.mocked(loadMPlusRoundedSubset).mockRejectedValue(new Error("font error"));
