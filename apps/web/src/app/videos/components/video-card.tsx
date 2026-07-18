@@ -56,9 +56,9 @@ interface VideoCardProps {
 }
 
 /**
- * 動画カード（server shell）。
- * 認証ゲートを伴うアクションは {@link VideoCardActions}（client island）に隔離し、
- * 本体は純表示に徹する。WorkCard と同じ「shell + island」構造。
+ * 動画カード（server component）。
+ * アクション領域は {@link VideoCardActions} に分離。session 非依存のポインタ集
+ * （認証は各目的地の ProtectedRoute に委譲）のため、カード全体が server 描画で完結する。
  */
 function VideoCard({ video, variant = "grid", priority = false, searchQuery }: VideoCardProps) {
 	const actualButtonCount = video.audioButtonCount ?? 0;
