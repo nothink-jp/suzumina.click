@@ -61,3 +61,21 @@ export function trackMarkDraft(videoId: string, hasPlayerTime: boolean): void {
 		has_player_time: hasPlayerTime,
 	});
 }
+
+/**
+ * ログインファネル: ボタン押下（OAuth プロバイダへのリダイレクト直前）。
+ * ページ遷移前の最後のタイミングで送るため、他イベントより取りこぼしのリスクが高い点に留意。
+ */
+export function trackLoginStart(provider: string): void {
+	sendGoogleAnalyticsEvent("login_start", { provider });
+}
+
+/** ログインファネル: OAuth コールバック後、セッションが初めて確立した時点（成功） */
+export function trackLoginSuccess(provider: string): void {
+	sendGoogleAnalyticsEvent("login_success", { provider });
+}
+
+/** ログインファネル: OAuth コールバックがエラーで返ってきた場合（reason=better-auth のエラーコード） */
+export function trackLoginError(reason: string): void {
+	sendGoogleAnalyticsEvent("login_error", { reason: reason.slice(0, MAX_PARAM_LENGTH) });
+}

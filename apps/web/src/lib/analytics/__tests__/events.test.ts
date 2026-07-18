@@ -4,6 +4,9 @@ import {
 	trackCreateStart,
 	trackCreateSuccess,
 	trackFavoriteToggle,
+	trackLoginError,
+	trackLoginStart,
+	trackLoginSuccess,
 	trackMarkDraft,
 	trackPlayButton,
 } from "../events";
@@ -82,5 +85,23 @@ describe("GA4 カスタムイベント語彙 (SPR-149)", () => {
 			video_id: "vid00000001",
 			has_player_time: false,
 		});
+	});
+
+	it("ログインファネル: start / success / error を送る", () => {
+		grantAnalyticsConsent();
+		trackLoginStart("discord");
+		trackLoginSuccess("discord");
+		trackLoginError("AccessDenied");
+
+		expect(gtag).toHaveBeenCalledWith("event", "login_start", { provider: "discord" });
+		expect(gtag).toHaveBeenCalledWith("event", "login_success", { provider: "discord" });
+		expect(gtag).toHaveBeenCalledWith("event", "login_error", { reason: "AccessDenied" });
+	});
+
+	it("login_error: reason は GA4 のパラメータ上限（100文字）に切り詰める", () => {
+		grantAnalyticsConsent();
+		trackLoginError("x".repeat(150));
+		const call = gtag.mock.calls.find((c) => c[1] === "login_error");
+		expect((call?.[2] as { reason: string } | undefined)?.reason).toHaveLength(100);
 	});
 });

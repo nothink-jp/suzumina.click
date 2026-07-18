@@ -3,7 +3,7 @@
 import type { UserSession } from "@suzumina.click/shared-types";
 import { usePathname } from "next/navigation";
 import { signInAction } from "@/app/auth/actions";
-import { DiscordIcon } from "./discord-icon";
+import { DiscordSignInButton } from "./discord-signin-button";
 import UserMenu from "./user-menu";
 
 interface AuthButtonProps {
@@ -22,13 +22,10 @@ export default function AuthButton({ user }: AuthButtonProps) {
 
 	return (
 		<form action={signInWithCallback}>
-			<button
-				type="submit"
+			<DiscordSignInButton
 				className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-2 px-4 rounded-lg transition-colors duration-200"
-			>
-				<DiscordIcon className="w-4 h-4" />
-				<span>Discordログイン</span>
-			</button>
+				label="Discordログイン"
+			/>
 		</form>
 	);
 }

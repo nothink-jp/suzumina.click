@@ -24,6 +24,12 @@ const PageViewTracker = lazy(() =>
 	import("@/components/analytics/page-view-tracker").then((m) => ({ default: m.PageViewTracker })),
 );
 
+const LoginSuccessTracker = lazy(() =>
+	import("@/components/analytics/login-success-tracker").then((m) => ({
+		default: m.LoginSuccessTracker,
+	})),
+);
+
 const CookieConsentBanner = lazy(() =>
 	import("@/components/consent/cookie-consent-banner").then((m) => ({
 		default: m.CookieConsentBanner,
@@ -47,6 +53,7 @@ export function DeferredGlobalEffects() {
 			<Suspense fallback={null}>
 				<PerformanceMonitor />
 				<PageViewTracker />
+				<LoginSuccessTracker />
 				<CookieConsentBanner />
 			</Suspense>
 		</>
