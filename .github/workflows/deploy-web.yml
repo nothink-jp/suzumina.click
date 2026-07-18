@@ -239,11 +239,13 @@ jobs:
       # SPR-220 の再観測で確定した（clean manifest 化後も削除適格な版が10日超残存）。
       # GCP側のpolicy評価に依存せず、ここでdigest単位のGCを自前実行する。
       # ロジックは既存policyのセマンティクスを踏襲: keep-recent-versions(5) / keep latest tag / delete older than 7日。
-      # AR_CLEANUP_DRY_RUN=true の間は削除せずログ出力のみ。初回デプロイでdry-run結果を確認してから false にする。
+      # AR_CLEANUP_DRY_RUN=true の間は削除せずログ出力のみ。初回デプロイ（PR #799マージ直後・
+      # run 29622987957）のdry-run結果で削除候補32版がベースライン調査と完全一致することを確認済みのため、
+      # ここから実削除を有効化する。
       - name: Cleanup old Artifact Registry image versions
         if: always()
         env:
-          AR_CLEANUP_DRY_RUN: 'true'
+          AR_CLEANUP_DRY_RUN: 'false'
         run: |
           echo "🧹 Cleaning up old Artifact Registry image versions (dry_run=${AR_CLEANUP_DRY_RUN})..."
 
