@@ -302,10 +302,15 @@ jobs:
               echo "[dry-run] Would delete: $DIGEST (created $CREATE_TIME)"
             else
               echo "Deleting old version: $DIGEST (created $CREATE_TIME)"
+              # 各版はbuild時に commit-sha タグが必ず付くため（このwhileループの時点で
+              # latestタグの版は既に除外済み）、そのタグ削除も併せて行う --delete-tags が必須。
+              # 無指定だと "Cannot delete version ... because it is tagged" (code 9) で全件失敗する
+              # （2026-07-18 本番実測で確認）。
               gcloud artifacts versions delete "$DIGEST" \
                 --package="${{ env.IMAGE_NAME }}" \
                 --repository="${{ env.REPOSITORY }}" \
                 --location="${{ env.REGION }}" \
+                --delete-tags \
                 --quiet || echo "  ⚠️ Failed to delete $DIGEST"
             fi
             PROCESSED=$((PROCESSED + 1))
