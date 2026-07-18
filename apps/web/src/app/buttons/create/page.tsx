@@ -160,7 +160,8 @@ export default async function CreateAudioButtonPage({ searchParams }: CreateAudi
 	// getMyButtonDrafts は未ログイン時に success:false を返すだけなので ProtectedRoute の外で呼んでも安全
 	let videoDrafts: AudioButtonDraft[] | undefined;
 	if (resolvedSearchParams.draft_id) {
-		const draftsResult = await getMyButtonDrafts();
+		// 既定 limit=100 だと下書き多数のユーザーでキューが黙って欠けるため、保持上限の500で全件取る
+		const draftsResult = await getMyButtonDrafts(500);
 		if (draftsResult.success) {
 			videoDrafts = draftsResult.data
 				.filter((draft) => draft.videoId === videoId)

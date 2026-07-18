@@ -12,6 +12,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createButtonDraft, deleteButtonDraft } from "@/actions/button-drafts";
 import { trackMarkDraft } from "@/lib/analytics/events";
 import { matchShortcutKey } from "@/lib/keyboard-shortcut";
+import { formatSeconds } from "@/utils/format-seconds";
 
 interface LiveCaptureViewProps {
 	video: VideoPlainObject | null;
@@ -27,16 +28,6 @@ function parseVideoIdInput(value: string): string | null {
 		return match[1];
 	}
 	return /^[A-Za-z0-9_-]{11}$/.test(trimmed) ? trimmed : null;
-}
-
-// shared-types の formatTimestamp は小数第1位付き（"14:26.0"）表示。下書き一覧は整数秒で十分なため独自実装
-function formatSeconds(total: number): string {
-	const s = Math.floor(total % 60);
-	const m = Math.floor((total / 60) % 60);
-	const h = Math.floor(total / 3600);
-	const mm = String(m).padStart(2, "0");
-	const ss = String(s).padStart(2, "0");
-	return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
 }
 
 function formatMarkedAt(iso: string): string {

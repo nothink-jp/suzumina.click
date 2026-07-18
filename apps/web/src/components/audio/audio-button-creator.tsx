@@ -11,6 +11,7 @@ import { createAudioButton } from "@/app/buttons/actions";
 import { useAudioButtonEditor } from "@/hooks/use-audio-button-editor";
 import { trackCreateError, trackCreateStart, trackCreateSuccess } from "@/lib/analytics/events";
 import { useSession } from "@/lib/auth/client";
+import { formatSeconds } from "@/utils/format-seconds";
 import { BasicInfoPanel } from "./basic-info-panel";
 import { CreateButtonLimit } from "./create-button-limit";
 import { TimeControlPanel } from "./time-control-panel";
@@ -28,16 +29,6 @@ interface AudioButtonCreatorProps {
 	 * 作成成功後に遷移せず次の下書きへ進む連続仕上げに使う（SPR-266 第2段）
 	 */
 	videoDrafts?: AudioButtonDraft[];
-}
-
-// キュー表示用の整数秒フォーマット（live-capture-view の下書き一覧と同表記）
-function formatQueueTime(total: number): string {
-	const s = Math.floor(total % 60);
-	const m = Math.floor((total / 60) % 60);
-	const h = Math.floor(total / 3600);
-	const mm = String(m).padStart(2, "0");
-	const ss = String(s).padStart(2, "0");
-	return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
 }
 
 /**
@@ -270,7 +261,7 @@ export function AudioButtonCreator({
 									{remainingDrafts[0] ? (
 										<div className="flex items-center justify-between gap-2">
 											<span className="text-muted-foreground">
-												次: {formatQueueTime(remainingDrafts[0].suggestedStartTime)} 付近
+												次: {formatSeconds(remainingDrafts[0].suggestedStartTime)} 付近
 											</span>
 											<Button
 												size="sm"
