@@ -256,12 +256,18 @@ jobs:
           LATEST_DIGEST=$(gcloud artifacts docker images describe "${IMAGE_PATH}:latest" \
             --format="value(image_summary.digest)" 2>/dev/null || true)
 
-          ALL_VERSIONS=$(gcloud artifacts versions list \
+          # デプロイ自体は既に成功済みのため、一時的なAPIエラーでこのステップ（延いてはjob）を
+          # 失敗扱いにしない。list失敗時はスキップしてexit 0する（削除失敗時の `|| true` と同様の考え方）。
+          if ! ALL_VERSIONS=$(gcloud artifacts versions list \
             --package="${{ env.IMAGE_NAME }}" \
             --repository="${{ env.REPOSITORY }}" \
             --location="${{ env.REGION }}" \
             --sort-by="~createTime" \
-            --format="csv[no-heading](name.basename(),createTime)")
+            --format="csv[no-heading](name.basename(),createTime)" 2>&1); then
+            echo "⚠️ Failed to list Artifact Registry versions (transient API error?), skipping cleanup this run"
+            echo "$ALL_VERSIONS"
+            exit 0
+          fi
 
           if [ -z "$ALL_VERSIONS" ]; then
             echo "No versions found, skipping"
