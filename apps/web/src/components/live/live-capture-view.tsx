@@ -8,11 +8,12 @@ import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Input } from "@suzumina.click/ui/components/ui/input";
 import { Bookmark, ExternalLink, Loader2, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createButtonDraft, deleteButtonDraft } from "@/actions/button-drafts";
 import { trackMarkDraft } from "@/lib/analytics/events";
 import { matchShortcutKey } from "@/lib/keyboard-shortcut";
 import { formatSeconds } from "@/utils/format-seconds";
+import { groupDraftsByVideo } from "./draft-groups";
 
 interface LiveCaptureViewProps {
 	video: VideoPlainObject | null;
@@ -52,6 +53,8 @@ function formatMarkedAt(iso: string): string {
 export function LiveCaptureView({ video, initialDrafts }: LiveCaptureViewProps) {
 	const router = useRouter();
 	const [drafts, setDrafts] = useState<AudioButtonDraft[]>(initialDrafts);
+	// 動画単位のキュー表示（SPR-266 第2段）。直近の配信グループが先頭
+	const draftGroups = useMemo(() => groupDraftsByVideo(drafts), [drafts]);
 	const [isMarking, setIsMarking] = useState(false);
 	const [error, setError] = useState("");
 	const [manualInput, setManualInput] = useState("");
@@ -230,50 +233,83 @@ export function LiveCaptureView({ video, initialDrafts }: LiveCaptureViewProps) 
 						まだ下書きがありません。配信中にマークするとここに溜まります。
 					</p>
 				) : (
-					<ul className="divide-y border rounded-lg">
-						{drafts.map((draft) => {
+					<div className="space-y-4">
+						{draftGroups.map((group) => {
+							// 配信中/配信予定の動画はまだ仕上げられない（判定はグループ単位で足りる）
 							const isCurrentLiveVideo =
-								draft.videoId === video?.videoId && (isLiveNow || isUpcoming);
+								group.videoId === video?.videoId && (isLiveNow || isUpcoming);
+							const firstDraft = group.drafts[0];
 							return (
-								<li key={draft.id} className="flex items-center gap-3 p-3">
-									<div className="min-w-0 flex-1">
-										<p className="text-sm font-medium">
-											{formatSeconds(draft.suggestedStartTime)} から
-											{draft.playerTime == null && (
-												<span className="ml-2 text-xs text-amber-600">壁時計のみ・要頭出し</span>
-											)}
-										</p>
-										<p className="text-xs text-muted-foreground truncate">
-											{draft.videoTitle} ・ {formatMarkedAt(draft.markedAt)}
-										</p>
+								<div key={group.videoId} className="border rounded-lg overflow-hidden">
+									<div className="flex items-center gap-3 p-3 bg-muted/40 border-b">
+										<div className="min-w-0 flex-1">
+											<p className="text-sm font-medium truncate">{group.videoTitle}</p>
+											<p className="text-xs text-muted-foreground">
+												{group.drafts.length}件の下書き
+											</p>
+										</div>
+										{isCurrentLiveVideo ? (
+											<span className="text-xs text-muted-foreground whitespace-nowrap">
+												アーカイブ公開後に仕上げ
+											</span>
+										) : (
+											firstDraft && (
+												<Button asChild size="sm">
+													{/* /buttons ツリーへの遷移はフルロード（intercepting route 回避・SPR-252）。
+													    先頭の下書きから開けば同一動画のキューは create 側が読み込み、
+													    連続仕上げ（SPR-266 第2段）につながる */}
+													<a
+														href={`/buttons/create?video_id=${group.videoId}&start_time=${firstDraft.suggestedStartTime}&draft_id=${firstDraft.id}`}
+													>
+														<ExternalLink className="h-3.5 w-3.5 mr-1" />
+														まとめて仕上げる
+													</a>
+												</Button>
+											)
+										)}
 									</div>
-									{isCurrentLiveVideo ? (
-										<span className="text-xs text-muted-foreground whitespace-nowrap">
-											アーカイブ公開後に仕上げ
-										</span>
-									) : (
-										<Button asChild size="sm" variant="outline">
-											{/* /buttons ツリーへの遷移はフルロード（intercepting route 回避・SPR-252） */}
-											<a
-												href={`/buttons/create?video_id=${draft.videoId}&start_time=${draft.suggestedStartTime}&draft_id=${draft.id}`}
-											>
-												<ExternalLink className="h-3.5 w-3.5 mr-1" />
-												仕上げる
-											</a>
-										</Button>
-									)}
-									<Button
-										size="sm"
-										variant="ghost"
-										aria-label="下書きを削除"
-										onClick={() => void handleDelete(draft.id)}
-									>
-										<Trash2 className="h-4 w-4" />
-									</Button>
-								</li>
+									<ul className="divide-y">
+										{group.drafts.map((draft) => (
+											<li key={draft.id} className="flex items-center gap-3 p-3">
+												<div className="min-w-0 flex-1">
+													<p className="text-sm font-medium">
+														{formatSeconds(draft.suggestedStartTime)} から
+														{draft.playerTime == null && (
+															<span className="ml-2 text-xs text-amber-600">
+																壁時計のみ・要頭出し
+															</span>
+														)}
+													</p>
+													<p className="text-xs text-muted-foreground">
+														{formatMarkedAt(draft.markedAt)}
+													</p>
+												</div>
+												{!isCurrentLiveVideo && (
+													<Button asChild size="sm" variant="outline">
+														{/* この1件だけを仕上げたいときの個別導線（フルロード・SPR-252） */}
+														<a
+															href={`/buttons/create?video_id=${draft.videoId}&start_time=${draft.suggestedStartTime}&draft_id=${draft.id}`}
+														>
+															<ExternalLink className="h-3.5 w-3.5 mr-1" />
+															仕上げる
+														</a>
+													</Button>
+												)}
+												<Button
+													size="sm"
+													variant="ghost"
+													aria-label="下書きを削除"
+													onClick={() => void handleDelete(draft.id)}
+												>
+													<Trash2 className="h-4 w-4" />
+												</Button>
+											</li>
+										))}
+									</ul>
+								</div>
 							);
 						})}
-					</ul>
+					</div>
 				)}
 			</div>
 		</div>
