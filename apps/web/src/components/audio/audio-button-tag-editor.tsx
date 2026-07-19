@@ -5,6 +5,7 @@
 
 "use client";
 
+import { AUDIO_BUTTON_USAGE_TAGS, isAudioButtonUsageTag } from "@suzumina.click/shared-types";
 import { TagInput, type TagSuggestion } from "@suzumina.click/ui/components/custom/tag-input";
 import { cn } from "@suzumina.click/ui/lib/utils";
 import { Tag } from "lucide-react";
@@ -76,6 +77,23 @@ export function AudioButtonTagEditor({
 		},
 		[convertToTagSuggestion],
 	);
+	/**
+	 * 用途タグチップのトグル。用途タグは1ボタン1つの運用（SPR-260）のため、
+	 * 別の用途タグが付いている状態で押したら入れ替える
+	 */
+	const handleUsageTagToggle = useCallback(
+		(usageTag: string) => {
+			if (tags.includes(usageTag)) {
+				onTagsChange(tags.filter((t) => t !== usageTag));
+				return;
+			}
+			const withoutUsage = tags.filter((t) => !isAudioButtonUsageTag(t));
+			if (withoutUsage.length >= maxTags) return;
+			onTagsChange([...withoutUsage, usageTag]);
+		},
+		[tags, onTagsChange, maxTags],
+	);
+
 	return (
 		<div className={cn("space-y-2", className)}>
 			<label
@@ -85,6 +103,37 @@ export function AudioButtonTagEditor({
 				<Tag className="h-4 w-4" />
 				タグ（任意）
 			</label>
+
+			{/* 用途タグのプリセットチップ（公式語彙・1つまで） */}
+			<div className="space-y-1">
+				<p className="text-xs text-muted-foreground">
+					どんな場面で使うボタン？（1つ選べます・タップで解除）
+				</p>
+				<div className="flex flex-wrap gap-1.5">
+					{AUDIO_BUTTON_USAGE_TAGS.map((usageTag) => {
+						const active = tags.includes(usageTag);
+						return (
+							<button
+								key={usageTag}
+								type="button"
+								disabled={disabled}
+								onClick={() => handleUsageTagToggle(usageTag)}
+								aria-pressed={active}
+								className={cn(
+									"rounded-full border px-3 py-1 text-xs font-semibold transition-colors",
+									"focus-visible:outline-3 focus-visible:outline-suzuka-400 focus-visible:outline-offset-2",
+									"disabled:pointer-events-none disabled:opacity-50",
+									active
+										? "border-suzuka-500 bg-suzuka-500 text-white"
+										: "border-border bg-card text-muted-foreground hover:border-suzuka-300 hover:text-foreground",
+								)}
+							>
+								{usageTag}
+							</button>
+						);
+					})}
+				</div>
+			</div>
 
 			<TagInput
 				tags={tags}
