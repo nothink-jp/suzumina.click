@@ -27,8 +27,9 @@ export function AudioButtonWithFavoriteClient({
 	onPlay,
 	className,
 	maxTitleLength,
-	initialIsFavorited = false,
-	initialIsLiked = false,
+	// デフォルト値を与えない: undefined のまま hook に渡すことで「初期値なし＝client 自己取得」の契約を効かせる
+	initialIsFavorited,
+	initialIsLiked,
 	searchQuery,
 	highlightClassName,
 }: AudioButtonWithFavoriteClientProps) {
