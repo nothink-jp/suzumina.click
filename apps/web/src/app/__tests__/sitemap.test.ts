@@ -55,16 +55,20 @@ function buildSnapshot(docs: SnapshotDoc[]) {
 	return { docs };
 }
 
+const DEFAULT_EMPTY_COLLECTIONS = ["creators", "circles"];
+
 function buildCollectionResolvers(
 	resolvers: Record<string, () => Promise<{ docs: SnapshotDoc[] }>>,
 ) {
 	return {
 		collection: (name: string) => {
-			const resolver = resolvers[name];
+			const resolver =
+				resolvers[name] ??
+				(DEFAULT_EMPTY_COLLECTIONS.includes(name) ? async () => buildSnapshot([]) : undefined);
 			if (!resolver) {
 				throw new Error(`Unexpected collection: ${name}`);
 			}
-			// sitemap.ts は videos/works を `.collection().limit().get()`、
+			// sitemap.ts は videos/works/creators/circles を `.collection().limit().get()`、
 			// audioButtons を `.collection().where().limit().get()` で呼び分ける。
 			// 両方のチェーンを同じ resolver に解決する。
 			const limitChain = { get: () => resolver() };
@@ -134,6 +138,20 @@ describe("sitemap", () => {
 						data: () => ({ updatedAt: "2024-04-01T00:00:00Z" }),
 					},
 				]),
+			creators: async () =>
+				buildSnapshot([
+					{
+						id: "creator-1",
+						data: () => ({ updatedAt: "2024-05-01T00:00:00Z" }),
+					},
+				]),
+			circles: async () =>
+				buildSnapshot([
+					{
+						id: "circle-1",
+						data: () => ({ updatedAt: "2024-06-01T00:00:00Z" }),
+					},
+				]),
 		});
 
 		(getFirestore as any).mockReturnValue(firestoreMock);
@@ -145,7 +163,9 @@ describe("sitemap", () => {
 		expect(urls).toContain("https://suzumina.click/videos/video-2");
 		expect(urls).toContain("https://suzumina.click/works/RJ123456");
 		expect(urls).toContain("https://suzumina.click/buttons/audio-1");
-		expect(result.length).toBe(STATIC_PATHS.length + 4);
+		expect(urls).toContain("https://suzumina.click/creators/creator-1");
+		expect(urls).toContain("https://suzumina.click/circles/circle-1");
+		expect(result.length).toBe(STATIC_PATHS.length + 6);
 	});
 
 	it("Firestore 障害時の fallback: getFirestore が throw した場合は静的ページのみを返す", async () => {
