@@ -24,7 +24,7 @@ export function FeaturedVideosCarousel({ videos }: FeaturedVideosCarouselProps) 
 
 	return (
 		<Carousel
-			className="w-full sm:px-10 lg:px-12"
+			className="w-full sm:px-12"
 			opts={{
 				align: "start",
 				slidesToScroll: "auto",
@@ -45,8 +45,8 @@ export function FeaturedVideosCarousel({ videos }: FeaturedVideosCarouselProps) 
 					</CarouselItem>
 				))}
 			</CarouselContent>
-			<CarouselPrevious className="hidden sm:flex sm:left-0 lg:left-0 h-10 w-10 sm:h-12 sm:w-12" />
-			<CarouselNext className="hidden sm:flex sm:right-0 lg:right-0 h-10 w-10 sm:h-12 sm:w-12" />
+			<CarouselPrevious className="hidden sm:flex sm:left-0 h-12 w-12" />
+			<CarouselNext className="hidden sm:flex sm:right-0 h-12 w-12" />
 		</Carousel>
 	);
 }
