@@ -7,6 +7,10 @@ import { Suspense } from "react";
 import type { AudioButtonQuery } from "@/types/audio-button";
 import { getAudioButtonsList } from "./actions";
 import AudioButtonsList from "./components/audio-buttons-list";
+import { type ButtonsView, ButtonsViewNav } from "./components/buttons-view-nav";
+import { FeaturedAudioButtons } from "./components/featured-audio-buttons";
+import { GroupedButtonsView } from "./components/grouped-buttons-view";
+import { groupByUsageTag, groupByVideo } from "./lib/group-buttons";
 
 interface SearchParams {
 	q?: string;
@@ -16,6 +20,8 @@ interface SearchParams {
 	page?: string;
 	limit?: string;
 	videoId?: string;
+	/** 表示切替（すべて/用途別/動画ごと・SPR-257） */
+	view?: string;
 	// 高度フィルタパラメータ
 	playCountMin?: string;
 	playCountMax?: string;
@@ -26,6 +32,35 @@ interface SearchParams {
 	createdAfter?: string;
 	createdBefore?: string;
 	creatorId?: string;
+}
+
+/** グループビューが一度に扱う取得上限（本番80件・in-memory 基盤のため一括取得で足りる） */
+const GROUP_FETCH_LIMIT = 200;
+/** グループカードごとの表示上限（超過分は「もっと見る」へ誘導） */
+const GROUP_DISPLAY_CAP = 10;
+
+function parseView(view: string | undefined): ButtonsView {
+	return view === "usage" || view === "video" ? view : "all";
+}
+
+/** featured（よく押されてる/新着）を出すか＝絞り込み・ページ送りのない素の一覧のみ */
+function isUnfiltered(params: SearchParams): boolean {
+	const filterKeys: Array<keyof SearchParams> = [
+		"q",
+		"tags",
+		"videoId",
+		"creatorId",
+		"playCountMin",
+		"playCountMax",
+		"likeCountMin",
+		"likeCountMax",
+		"favoriteCountMin",
+		"favoriteCountMax",
+		"createdAfter",
+		"createdBefore",
+	];
+	if (filterKeys.some((key) => params[key])) return false;
+	return !params.page || Number(params.page) <= 1;
 }
 
 // タグパラメータをパースする関数（複雑度を下げるため分離）
@@ -49,8 +84,46 @@ interface AudioButtonsPageProps {
 	searchParams: Promise<SearchParams>;
 }
 
+/** 用途別/動画ごとビュー（全件を1回取得して in-memory グルーピング） */
+async function GroupedView({ view }: { view: "usage" | "video" }) {
+	const result = await getAudioButtonsList({
+		sortBy: "newest",
+		page: 1,
+		limit: GROUP_FETCH_LIMIT,
+	});
+	const buttons = result.success && result.data ? result.data.audioButtons : [];
+	const groups =
+		view === "usage"
+			? groupByUsageTag(buttons, GROUP_DISPLAY_CAP)
+			: groupByVideo(buttons, GROUP_DISPLAY_CAP);
+
+	return (
+		<GroupedButtonsView
+			heading={view === "usage" ? "用途別のボタン" : "動画ごとのボタン"}
+			totalCount={buttons.length}
+			groups={groups}
+		/>
+	);
+}
+
+/** featured セクション（よく押されてる4件 + 新着6件） */
+async function FeaturedSection() {
+	const [popularResult, freshResult] = await Promise.all([
+		getAudioButtonsList({ sortBy: "mostPlayed", page: 1, limit: 4 }),
+		getAudioButtonsList({ sortBy: "newest", page: 1, limit: 6 }),
+	]);
+	return (
+		<FeaturedAudioButtons
+			popular={popularResult.success && popularResult.data ? popularResult.data.audioButtons : []}
+			fresh={freshResult.success && freshResult.data ? freshResult.data.audioButtons : []}
+		/>
+	);
+}
+
 export default async function AudioButtonsPage({ searchParams }: AudioButtonsPageProps) {
 	const resolvedSearchParams = await searchParams;
+	const view = parseView(resolvedSearchParams.view);
+	const showFeatured = isUnfiltered(resolvedSearchParams);
 
 	// limitパラメータの処理（デフォルト: 12）
 	const limitValue = resolvedSearchParams.limit ? Number(resolvedSearchParams.limit) : 12;
@@ -91,8 +164,15 @@ export default async function AudioButtonsPage({ searchParams }: AudioButtonsPag
 		limit: validLimit,
 	};
 
-	// 初期データを取得（Server Component最適化）
-	const initialData = await getAudioButtonsList(query);
+	// 初期データを取得（Server Component最適化・「すべて」ビューのみ）
+	const initialData = view === "all" ? await getAudioButtonsList(query) : undefined;
+
+	const listFallback = (
+		<div className="text-center py-12">
+			<div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+			<p className="mt-2 text-muted-foreground">読み込み中...</p>
+		</div>
+	);
 
 	return (
 		<ListPageLayout>
@@ -102,16 +182,23 @@ export default async function AudioButtonsPage({ searchParams }: AudioButtonsPag
 			/>
 
 			<ListPageContent>
-				<Suspense
-					fallback={
-						<div className="text-center py-12">
-							<div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-							<p className="mt-2 text-muted-foreground">読み込み中...</p>
-						</div>
-					}
-				>
-					<AudioButtonsList searchParams={resolvedSearchParams} initialData={initialData} />
-				</Suspense>
+				<ButtonsViewNav currentView={view} activeTags={tags} />
+
+				{showFeatured && (
+					<Suspense fallback={null}>
+						<FeaturedSection />
+					</Suspense>
+				)}
+
+				{view === "all" ? (
+					<Suspense fallback={listFallback}>
+						<AudioButtonsList searchParams={resolvedSearchParams} initialData={initialData} />
+					</Suspense>
+				) : (
+					<Suspense fallback={listFallback}>
+						<GroupedView view={view} />
+					</Suspense>
+				)}
 			</ListPageContent>
 		</ListPageLayout>
 	);
