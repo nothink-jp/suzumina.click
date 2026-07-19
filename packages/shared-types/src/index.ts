@@ -134,6 +134,8 @@ export type {
 // === Utilities ===
 // 年齢制限・レーティング関連の型とユーティリティのエクスポート
 export * from "./utilities/age-rating";
+// 音声ボタンの公式用途タグ語彙（SPR-260 確定・正本）
+export * from "./utilities/audio-button-usage-tags";
 // Circle変換ユーティリティのエクスポート
 export * from "./utilities/circle-conversions";
 // 共通ユーティリティと型のエクスポート
