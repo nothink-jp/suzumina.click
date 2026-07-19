@@ -55,6 +55,13 @@ function buildSnapshot(docs: SnapshotDoc[]) {
 	return { docs };
 }
 
+// creators/circles は Firestore Timestamp（toDate() を持つオブジェクト）で updatedAt/createdAt を
+// 保持する（works/videos/audioButtons の string ISO とは型が異なる。CLAUDE.md §1）。
+// 実データ形状を再現するための最小フェイク。
+function fakeTimestamp(iso: string) {
+	return { toDate: () => new Date(iso) };
+}
+
 const DEFAULT_EMPTY_COLLECTIONS = ["creators", "circles"];
 
 function buildCollectionResolvers(
@@ -142,14 +149,14 @@ describe("sitemap", () => {
 				buildSnapshot([
 					{
 						id: "creator-1",
-						data: () => ({ updatedAt: "2024-05-01T00:00:00Z" }),
+						data: () => ({ updatedAt: fakeTimestamp("2024-05-01T00:00:00Z") }),
 					},
 				]),
 			circles: async () =>
 				buildSnapshot([
 					{
 						id: "circle-1",
-						data: () => ({ updatedAt: "2024-06-01T00:00:00Z" }),
+						data: () => ({ updatedAt: fakeTimestamp("2024-06-01T00:00:00Z") }),
 					},
 				]),
 		});
@@ -166,6 +173,19 @@ describe("sitemap", () => {
 		expect(urls).toContain("https://suzumina.click/creators/creator-1");
 		expect(urls).toContain("https://suzumina.click/circles/circle-1");
 		expect(result.length).toBe(STATIC_PATHS.length + 6);
+
+		// creators/circles は Firestore Timestamp（toDate() 経由）を lastModified に変換する。
+		// toDate() を無視して new Date(Timestamp) すると Invalid Date になり、Next.js の
+		// toISOString() 呼び出し時に RangeError で sitemap 全体が壊れるため回帰検知する。
+		const byUrl = new Map(result.map((entry) => [entry.url, entry]));
+		const creatorEntry = byUrl.get("https://suzumina.click/creators/creator-1");
+		const circleEntry = byUrl.get("https://suzumina.click/circles/circle-1");
+		expect(creatorEntry?.lastModified).toBeInstanceOf(Date);
+		expect(Number.isNaN((creatorEntry?.lastModified as Date)?.getTime())).toBe(false);
+		expect(creatorEntry?.lastModified).toEqual(new Date("2024-05-01T00:00:00Z"));
+		expect(circleEntry?.lastModified).toBeInstanceOf(Date);
+		expect(Number.isNaN((circleEntry?.lastModified as Date)?.getTime())).toBe(false);
+		expect(circleEntry?.lastModified).toEqual(new Date("2024-06-01T00:00:00Z"));
 	});
 
 	it("Firestore 障害時の fallback: getFirestore が throw した場合は静的ページのみを返す", async () => {
