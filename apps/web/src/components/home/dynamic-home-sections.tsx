@@ -120,8 +120,13 @@ export function CommunitySection() {
 						音声ボタンを作成・共有して、ファンコミュニティを盛り上げよう！
 					</p>
 					<div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+						{/*
+						 * video_id 無しで /buttons/create に飛ぶと「動画IDが指定されていません」エラーに
+						 * 落ちていた（SPR-150）。動画一覧では各カードに video_id 付きの作成導線
+						 * （VideoCardActions）があるため、そこへ誘導する。
+						 */}
 						<Button asChild size="lg">
-							<Link href="/buttons/create" className="font-medium">
+							<Link href="/videos" className="font-medium">
 								音声ボタンを作る
 							</Link>
 						</Button>
