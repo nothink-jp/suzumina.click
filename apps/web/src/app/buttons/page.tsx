@@ -92,6 +92,14 @@ async function GroupedView({ view }: { view: "usage" | "video" }) {
 		limit: GROUP_FETCH_LIMIT,
 	});
 	const buttons = result.success && result.data ? result.data.audioButtons : [];
+	// 見出しの総数は count() 集計の実総数を使う（取得上限で切られた件数を「総数」と偽らない）
+	const totalCount = result.success && result.data ? result.data.totalCount : buttons.length;
+	if (totalCount > buttons.length) {
+		// 上限到達＝グルーピング対象から静かに欠落する状態。無警告にしない（§1 silent fallback 禁止の精神）
+		console.warn(
+			`GroupedView: ボタン総数 ${totalCount} 件が取得上限 ${GROUP_FETCH_LIMIT} 件を超過。超過分はグループ表示から欠落しています`,
+		);
+	}
 	const groups =
 		view === "usage"
 			? groupByUsageTag(buttons, GROUP_DISPLAY_CAP)
@@ -100,7 +108,8 @@ async function GroupedView({ view }: { view: "usage" | "video" }) {
 	return (
 		<GroupedButtonsView
 			heading={view === "usage" ? "用途別のボタン" : "動画ごとのボタン"}
-			totalCount={buttons.length}
+			totalCount={totalCount}
+			truncatedTo={totalCount > buttons.length ? buttons.length : undefined}
 			groups={groups}
 		/>
 	);
@@ -123,6 +132,7 @@ async function FeaturedSection() {
 export default async function AudioButtonsPage({ searchParams }: AudioButtonsPageProps) {
 	const resolvedSearchParams = await searchParams;
 	const view = parseView(resolvedSearchParams.view);
+	// featured はビューを問わず表示する（3ビュー共通のヒーロー枠＝デザイン正本どおり。絞り込み時のみ非表示）
 	const showFeatured = isUnfiltered(resolvedSearchParams);
 
 	// limitパラメータの処理（デフォルト: 12）

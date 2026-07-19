@@ -29,11 +29,19 @@ export interface ButtonGroup {
 
 interface GroupedButtonsViewProps {
 	heading: string;
+	/** 実総数（count() 集計値） */
 	totalCount: number;
+	/** 取得上限で切られた場合の実表示対象件数（未指定なら全件表示） */
+	truncatedTo?: number;
 	groups: ButtonGroup[];
 }
 
-export function GroupedButtonsView({ heading, totalCount, groups }: GroupedButtonsViewProps) {
+export function GroupedButtonsView({
+	heading,
+	totalCount,
+	truncatedTo,
+	groups,
+}: GroupedButtonsViewProps) {
 	const allIds = useMemo(() => groups.flatMap((g) => g.buttons.map((b) => b.id)), [groups]);
 	const { favoriteStates } = useFavoriteStatusBulk(allIds);
 	const { likeDislikeStates } = useLikeDislikeStatusBulk(allIds);
@@ -51,6 +59,9 @@ export function GroupedButtonsView({ heading, totalCount, groups }: GroupedButto
 			<div className="flex items-baseline gap-2.5">
 				<h2 className="text-lg font-extrabold">{heading}</h2>
 				<span className="text-[13px] text-muted-foreground">{totalCount}件</span>
+				{truncatedTo !== undefined && (
+					<span className="text-xs text-muted-foreground">（最新 {truncatedTo} 件を表示中）</span>
+				)}
 			</div>
 
 			{groups.map((group) => (
@@ -107,9 +118,11 @@ export function GroupedButtonsView({ heading, totalCount, groups }: GroupedButto
 						})}
 					</div>
 
-					{group.total > group.buttons.length && group.moreHref && (
+					{group.total > group.buttons.length && (
 						<p className="mt-3.5 text-xs text-muted-foreground">
-							ほか {group.total - group.buttons.length} 件は「もっと見る」から
+							{group.moreHref
+								? `ほか ${group.total - group.buttons.length} 件は「もっと見る」から`
+								: `ほか ${group.total - group.buttons.length} 件`}
 						</p>
 					)}
 				</div>

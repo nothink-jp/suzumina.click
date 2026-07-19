@@ -130,6 +130,39 @@ describe("GroupedButtonsView", () => {
 
 		expect(screen.getByText("条件にあうボタンが見つかりませんでした")).toBeInTheDocument();
 	});
+
+	it("moreHref のないグループでも cap 超過の件数は表示する（未分類・AIレビュー対応）", () => {
+		render(
+			<GroupedButtonsView
+				heading="用途別のボタン"
+				totalCount={12}
+				groups={[
+					{
+						key: "未分類",
+						title: "未分類",
+						total: 12,
+						buttons: [makeButton("b1", "ボタン1")],
+					},
+				]}
+			/>,
+		);
+
+		expect(screen.getByText("ほか 11 件")).toBeInTheDocument();
+	});
+
+	it("取得上限で切られた場合は実総数と表示対象件数を併記する（AIレビュー対応）", () => {
+		render(
+			<GroupedButtonsView
+				heading="用途別のボタン"
+				totalCount={250}
+				truncatedTo={200}
+				groups={[{ key: "笑い", title: "笑い", total: 1, buttons: [makeButton("b1", "ボタン1")] }]}
+			/>,
+		);
+
+		expect(screen.getByText("250件")).toBeInTheDocument();
+		expect(screen.getByText("（最新 200 件を表示中）")).toBeInTheDocument();
+	});
 });
 
 describe("FeaturedAudioButtons", () => {
