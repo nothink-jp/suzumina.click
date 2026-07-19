@@ -199,6 +199,39 @@ describe("AudioButtonTagEditor", () => {
 
 			expect(screen.getByRole("button", { name: "あいさつ" })).toBeDisabled();
 		});
+
+		it("フリー入力で2つ目の用途タグを入れても後勝ちで置換される（AIレビュー対応）", async () => {
+			const user = userEvent.setup();
+			const onTagsChange = vi.fn();
+			render(
+				<AudioButtonTagEditor
+					{...defaultProps}
+					tags={["龍が如く極", "笑い"]}
+					onTagsChange={onTagsChange}
+				/>,
+			);
+
+			const input = screen.getByPlaceholderText("タグを入力してEnter (2文字以上で候補表示)");
+			await user.type(input, "あいさつ");
+			await user.keyboard("{Enter}");
+
+			// TagInput からは ["龍が如く極", "笑い", "あいさつ"] が来るが、用途タグ1つの不変条件で後勝ちに置換される
+			expect(onTagsChange).toHaveBeenCalledWith(["龍が如く極", "あいさつ"]);
+		});
+
+		it("フリー入力による自由タグの追加は素通しする", async () => {
+			const user = userEvent.setup();
+			const onTagsChange = vi.fn();
+			render(
+				<AudioButtonTagEditor {...defaultProps} tags={["笑い"]} onTagsChange={onTagsChange} />,
+			);
+
+			const input = screen.getByPlaceholderText("タグを入力してEnter (2文字以上で候補表示)");
+			await user.type(input, "おひょ");
+			await user.keyboard("{Enter}");
+
+			expect(onTagsChange).toHaveBeenCalledWith(["笑い", "おひょ"]);
+		});
 	});
 
 	describe("props のパススルー", () => {

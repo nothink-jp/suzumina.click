@@ -78,9 +78,24 @@ export function AudioButtonTagEditor({
 		[convertToTagSuggestion],
 	);
 	/**
-	 * 用途タグチップのトグル。用途タグは1ボタン1つの運用（SPR-260）のため、
-	 * 別の用途タグが付いている状態で押したら入れ替える
+	 * 「用途タグは1ボタン1つ」（SPR-260）の不変条件をここで一元的に強制する。
+	 * チップ経由だけでなくフリー入力・オートコンプリート経由（用途タグは本番付与済みで
+	 * 候補に出る）でも2つ目が混入しうるため、後から入った用途タグを残して置換する
 	 */
+	const enforceSingleUsageTag = useCallback(
+		(next: string[]) => {
+			const usage = next.filter(isAudioButtonUsageTag);
+			if (usage.length <= 1) {
+				onTagsChange(next);
+				return;
+			}
+			const keep = usage[usage.length - 1];
+			onTagsChange(next.filter((t) => !isAudioButtonUsageTag(t) || t === keep));
+		},
+		[onTagsChange],
+	);
+
+	/** 用途タグチップのトグル（付与済みタップで解除・別カテゴリで入れ替え） */
 	const handleUsageTagToggle = useCallback(
 		(usageTag: string) => {
 			if (tags.includes(usageTag)) {
@@ -137,7 +152,7 @@ export function AudioButtonTagEditor({
 
 			<TagInput
 				tags={tags}
-				onTagsChange={onTagsChange}
+				onTagsChange={enforceSingleUsageTag}
 				maxTags={maxTags}
 				maxTagLength={maxTagLength}
 				placeholder="タグを入力してEnter (2文字以上で候補表示)"
