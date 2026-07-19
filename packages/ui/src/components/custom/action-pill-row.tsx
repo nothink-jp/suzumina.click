@@ -20,8 +20,8 @@ interface ActionPillRowProps {
 	isLiked: boolean;
 	likeCount: number;
 	onLikeToggle?: () => void;
-	/** X 共有の intent URL（組み立ては呼び出し側の責務） */
-	shareUrl: string;
+	/** X 共有の intent URL（組み立ては呼び出し側の責務）。未指定なら共有ピルを出さない */
+	shareUrl?: string;
 	className?: string;
 }
 
@@ -74,18 +74,20 @@ export function ActionPillRow({
 				{sm ? likeCount : `高評価 ${likeCount}`}
 			</button>
 
-			<a
-				href={shareUrl}
-				target="_blank"
-				rel="noopener noreferrer"
-				className={cn(
-					pillBase,
-					"border-foreground bg-foreground text-background no-underline hover:opacity-85",
-				)}
-			>
-				<XIcon className={sm ? "h-3 w-3" : "h-3.5 w-3.5"} />
-				{sm ? "共有" : "Xで共有"}
-			</a>
+			{shareUrl && (
+				<a
+					href={shareUrl}
+					target="_blank"
+					rel="noopener noreferrer"
+					className={cn(
+						pillBase,
+						"border-foreground bg-foreground text-background no-underline hover:opacity-85",
+					)}
+				>
+					<XIcon className={sm ? "h-3 w-3" : "h-3.5 w-3.5"} />
+					{sm ? "共有" : "Xで共有"}
+				</a>
+			)}
 		</div>
 	);
 }

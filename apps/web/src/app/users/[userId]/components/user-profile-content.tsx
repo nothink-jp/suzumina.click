@@ -130,11 +130,9 @@ function AudioButtonsList({
 						<AudioButtonWithPlayCount
 							key={button.id}
 							audioButton={button}
-							showFavorite={true}
 							maxTitleLength={50}
 							className="shadow-sm hover:shadow-md transition-all duration-200"
 							initialIsLiked={likeDislikeStatus?.isLiked || false}
-							initialIsDisliked={likeDislikeStatus?.isDisliked || false}
 						/>
 					);
 				})}

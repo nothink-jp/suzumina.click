@@ -109,8 +109,6 @@ export const NotAuthenticated: Story = {
 		onFavoriteToggle: fn(),
 		isLiked: false,
 		onLikeToggle: fn(),
-		isDisliked: false,
-		onDislikeToggle: fn(),
 		isAuthenticated: false,
 	},
 };
@@ -123,13 +121,11 @@ export const AuthenticatedWithLikes: Story = {
 		onFavoriteToggle: fn(),
 		isLiked: true,
 		onLikeToggle: fn(),
-		isDisliked: false,
-		onDislikeToggle: fn(),
 		isAuthenticated: true,
 	},
 };
 
-// FavoriteButton は詳細 popover(PopoverActions)内にあるため、まず「詳細を表示」を開いてから取得する。
+// お気に入りピルは詳細 popover(ActionPillRow)内にあるため、まず「詳細を表示」を開いてから取得する。
 // radix popover は portal 描画なので within(canvasElement) では拾えず、screen(document.body) で探す。
 export const FavoriteToggleInteraction: Story = {
 	args: {
@@ -137,12 +133,13 @@ export const FavoriteToggleInteraction: Story = {
 		onPlay: fn(),
 		isFavorite: false,
 		onFavoriteToggle: fn(),
+		onLikeToggle: fn(),
 		isAuthenticated: true,
 	},
 	play: async ({ canvasElement, args }) => {
 		const canvas = within(canvasElement);
 		await userEvent.click(canvas.getByRole("button", { name: "詳細を表示" }));
-		const favoriteBtn = await screen.findByRole("button", { name: "お気に入りに追加" });
+		const favoriteBtn = await screen.findByRole("button", { name: "お気に入り" });
 		await userEvent.click(favoriteBtn);
 		await expect(args.onFavoriteToggle).toHaveBeenCalledOnce();
 	},
@@ -155,6 +152,7 @@ export const UnauthenticatedShowsLoginNote: Story = {
 		onPlay: fn(),
 		isFavorite: false,
 		onFavoriteToggle: fn(),
+		onLikeToggle: fn(),
 		isAuthenticated: false,
 	},
 	play: async ({ canvasElement, args }) => {
@@ -163,7 +161,7 @@ export const UnauthenticatedShowsLoginNote: Story = {
 		await expect(
 			await screen.findByText("お気に入り・評価にはログインが必要です"),
 		).toBeInTheDocument();
-		const favoriteBtn = await screen.findByRole("button", { name: "お気に入りに追加" });
+		const favoriteBtn = await screen.findByRole("button", { name: "お気に入り" });
 		await expect(favoriteBtn).not.toBeDisabled();
 		await userEvent.click(favoriteBtn);
 		await expect(args.onFavoriteToggle).toHaveBeenCalledOnce();

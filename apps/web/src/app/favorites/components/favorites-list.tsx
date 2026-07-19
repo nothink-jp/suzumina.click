@@ -66,7 +66,6 @@ export default function FavoritesList({ initialData, userId }: FavoritesListProp
 					audioButton={audioButton}
 					isFavorited={true}
 					isLiked={likeDislikeStatus.isLiked}
-					isDisliked={likeDislikeStatus.isDisliked}
 				/>
 			);
 		},

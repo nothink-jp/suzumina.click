@@ -97,7 +97,6 @@ export default function AudioButtonsList({ searchParams, initialData }: AudioBut
 							searchQuery={searchParams.q as string}
 							isFavorited={favoriteStates.get(audioButton.id) || false}
 							isLiked={likeDislikeStatus.isLiked}
-							isDisliked={likeDislikeStatus.isDisliked}
 						/>
 					);
 				}}

@@ -49,7 +49,6 @@ function RelatedSection({
 					<AudioButtonWithPlayCount
 						key={audioButton.id}
 						audioButton={audioButton}
-						showFavorite={true}
 						maxTitleLength={50}
 						className="shadow-sm hover:shadow-md transition-all duration-200"
 					/>

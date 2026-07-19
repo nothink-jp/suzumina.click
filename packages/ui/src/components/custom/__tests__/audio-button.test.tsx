@@ -156,6 +156,7 @@ describe("AudioButton", () => {
 				audioButton={mockAudioButton}
 				isFavorite={false}
 				onFavoriteToggle={onFavoriteToggleMock}
+				onLikeToggle={vi.fn()}
 				isAuthenticated={true}
 			/>,
 		);
@@ -164,8 +165,9 @@ describe("AudioButton", () => {
 		const infoButton = screen.getByRole("button", { name: "詳細を表示" });
 		await user.click(infoButton);
 
-		// お気に入りボタンをクリック
-		const favoriteButton = screen.getByRole("button", { name: "お気に入りに追加" });
+		// お気に入りピルをクリック（ActionPillRow・SPR-257 でピル語彙に統一）
+		const favoriteButton = screen.getByRole("button", { name: "お気に入り" });
+		expect(favoriteButton).toHaveAttribute("aria-pressed", "false");
 		await user.click(favoriteButton);
 
 		expect(onFavoriteToggleMock).toHaveBeenCalledTimes(1);
@@ -179,6 +181,7 @@ describe("AudioButton", () => {
 				audioButton={mockAudioButton}
 				isFavorite={true}
 				onFavoriteToggle={vi.fn()}
+				onLikeToggle={vi.fn()}
 				isAuthenticated={true}
 			/>,
 		);
@@ -187,7 +190,8 @@ describe("AudioButton", () => {
 		const infoButton = screen.getByRole("button", { name: "詳細を表示" });
 		await user.click(infoButton);
 
-		expect(screen.getByRole("button", { name: "お気に入りを解除" })).toBeInTheDocument();
+		const favoriteButton = screen.getByRole("button", { name: "お気に入り済み" });
+		expect(favoriteButton).toHaveAttribute("aria-pressed", "true");
 	});
 
 	it("should handle like toggle", async () => {
@@ -197,6 +201,7 @@ describe("AudioButton", () => {
 		render(
 			<AudioButton
 				audioButton={mockAudioButton}
+				onFavoriteToggle={vi.fn()}
 				isLiked={false}
 				onLikeToggle={onLikeToggleMock}
 				isAuthenticated={true}
@@ -223,6 +228,7 @@ describe("AudioButton", () => {
 		render(
 			<AudioButton
 				audioButton={mockAudioButton}
+				onFavoriteToggle={vi.fn()}
 				isLiked={true}
 				onLikeToggle={vi.fn()}
 				isAuthenticated={true}
@@ -299,11 +305,18 @@ describe("AudioButton", () => {
 		const user = userEvent.setup();
 		const shareUrl = "https://x.com/intent/post?text=test";
 
-		render(<AudioButton audioButton={mockAudioButton} xShareUrl={shareUrl} />);
+		render(
+			<AudioButton
+				audioButton={mockAudioButton}
+				onFavoriteToggle={vi.fn()}
+				onLikeToggle={vi.fn()}
+				xShareUrl={shareUrl}
+			/>,
+		);
 
 		await user.click(screen.getByRole("button", { name: "詳細を表示" }));
 
-		const shareLink = screen.getByRole("link", { name: "「テスト音声ボタン」をXで共有" });
+		const shareLink = screen.getByRole("link", { name: "共有" });
 		expect(shareLink).toHaveAttribute("href", shareUrl);
 		expect(shareLink).toHaveAttribute("target", "_blank");
 		expect(shareLink).toHaveAttribute("rel", "noopener noreferrer");
@@ -312,11 +325,17 @@ describe("AudioButton", () => {
 	it("xShareUrl 未指定なら共有リンクを表示しない", async () => {
 		const user = userEvent.setup();
 
-		render(<AudioButton audioButton={mockAudioButton} />);
+		render(
+			<AudioButton
+				audioButton={mockAudioButton}
+				onFavoriteToggle={vi.fn()}
+				onLikeToggle={vi.fn()}
+			/>,
+		);
 
 		await user.click(screen.getByRole("button", { name: "詳細を表示" }));
 
-		expect(screen.queryByRole("link", { name: /をXで共有/ })).not.toBeInTheDocument();
+		expect(screen.queryByRole("link", { name: "共有" })).not.toBeInTheDocument();
 	});
 
 	it("should keep favorite button enabled when not authenticated and let the caller decide", async () => {
@@ -328,6 +347,7 @@ describe("AudioButton", () => {
 				audioButton={mockAudioButton}
 				isFavorite={false}
 				onFavoriteToggle={onFavoriteToggleMock}
+				onLikeToggle={vi.fn()}
 				isAuthenticated={false}
 			/>,
 		);
@@ -336,26 +356,24 @@ describe("AudioButton", () => {
 		const infoButton = screen.getByRole("button", { name: "詳細を表示" });
 		await user.click(infoButton);
 
-		// お気に入りボタンは disabled にしない（クリック可能なまま、呼び出し元がログイン誘導を行う）
-		const favoriteButton = screen.getByRole("button", { name: "お気に入りに追加" });
+		// お気に入りピルは disabled にしない（クリック可能なまま、呼び出し元がログイン誘導を行う）
+		const favoriteButton = screen.getByRole("button", { name: "お気に入り" });
 		expect(favoriteButton).not.toBeDisabled();
 
 		await user.click(favoriteButton);
 		expect(onFavoriteToggleMock).toHaveBeenCalledTimes(1);
 	});
 
-	it("should keep like/dislike buttons enabled when not authenticated", async () => {
+	it("should keep like button enabled when not authenticated (低評価 UI は持たない)", async () => {
 		const user = userEvent.setup();
 		const onLikeToggleMock = vi.fn();
-		const onDislikeToggleMock = vi.fn();
 
 		render(
 			<AudioButton
 				audioButton={mockAudioButton}
+				onFavoriteToggle={vi.fn()}
 				isLiked={false}
 				onLikeToggle={onLikeToggleMock}
-				isDisliked={false}
-				onDislikeToggle={onDislikeToggleMock}
 				isAuthenticated={false}
 			/>,
 		);
@@ -365,17 +383,15 @@ describe("AudioButton", () => {
 		await user.click(infoButton);
 
 		const likeButton = screen.getByText("2").closest("button");
-		const dislikeButton = screen.getByRole("button", { name: "低評価する" });
 		expect(likeButton).not.toBeDisabled();
-		expect(dislikeButton).not.toBeDisabled();
+		// 低評価 UI は存在しない（製品判断・SPR-257）
+		expect(screen.queryByRole("button", { name: /低評価/ })).not.toBeInTheDocument();
 
 		if (likeButton) {
 			await user.click(likeButton);
 		}
-		await user.click(dislikeButton);
 
 		expect(onLikeToggleMock).toHaveBeenCalledTimes(1);
-		expect(onDislikeToggleMock).toHaveBeenCalledTimes(1);
 	});
 
 	it("should show a login note instead of tooltips when not authenticated", async () => {
@@ -388,8 +404,6 @@ describe("AudioButton", () => {
 				onFavoriteToggle={vi.fn()}
 				isLiked={false}
 				onLikeToggle={vi.fn()}
-				isDisliked={false}
-				onDislikeToggle={vi.fn()}
 				isAuthenticated={false}
 			/>,
 		);

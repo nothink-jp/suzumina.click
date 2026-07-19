@@ -144,7 +144,7 @@
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783157418,
+          "seconds": 1783218619,
           "nanoseconds": 328000000
         }
       }
@@ -270,10 +270,15 @@
           "likeCount": 240,
           "viewCount": 6063
         },
+        "status": {
+          "privacyStatus": "public",
+          "uploadStatus": "processed",
+          "embeddable": true
+        },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783164618,
-          "nanoseconds": 423000000
+          "seconds": 1783236622,
+          "nanoseconds": 119000000
         }
       }
     },
@@ -341,12 +346,12 @@
           "favoriteCount": 0,
           "commentCount": 24,
           "likeCount": 951,
-          "viewCount": 48849
+          "viewCount": 48852
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783161018,
-          "nanoseconds": 460000000
+          "seconds": 1783204218,
+          "nanoseconds": 585000000
         }
       }
     },
@@ -398,15 +403,20 @@
           "nanoseconds": 0
         },
         "thumbnailUrl": "https://i.ytimg.com/vi/-Z3GG-H_ocQ/maxresdefault.jpg",
+        "status": {
+          "privacyStatus": "public",
+          "uploadStatus": "processed",
+          "embeddable": true
+        },
         "statistics": {
           "commentCount": 16,
           "likeCount": 240,
-          "viewCount": 3794
+          "viewCount": 3795
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783164618,
-          "nanoseconds": 422000000
+          "seconds": 1783236622,
+          "nanoseconds": 119000000
         }
       }
     },
@@ -460,15 +470,20 @@
           "すみっこキングダム／Minecraft",
           "🎮ゲーム💗"
         ],
-        "lastFetchedAt": {
-          "__type__": "timestamp",
-          "seconds": 1783164618,
-          "nanoseconds": 400000000
+        "status": {
+          "privacyStatus": "public",
+          "uploadStatus": "processed",
+          "embeddable": true
         },
         "statistics": {
           "commentCount": 16,
-          "likeCount": 200,
-          "viewCount": 5359
+          "likeCount": 201,
+          "viewCount": 5362
+        },
+        "lastFetchedAt": {
+          "__type__": "timestamp",
+          "seconds": 1783236622,
+          "nanoseconds": 74000000
         }
       }
     },
@@ -538,11 +553,11 @@
           "commentCount": 12,
           "favoriteCount": 0,
           "likeCount": 638,
-          "viewCount": 20571
+          "viewCount": 20573
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783157418,
+          "seconds": 1783218619,
           "nanoseconds": 327000000
         }
       }
@@ -595,15 +610,20 @@
         "videoType": "archived",
         "liveBroadcastContent": "none",
         "thumbnailUrl": "https://i.ytimg.com/vi/-ua33VT9wa0/maxresdefault.jpg",
-        "lastFetchedAt": {
-          "__type__": "timestamp",
-          "seconds": 1783164618,
-          "nanoseconds": 399000000
+        "status": {
+          "privacyStatus": "public",
+          "uploadStatus": "processed",
+          "embeddable": true
         },
         "statistics": {
           "commentCount": 15,
           "likeCount": 192,
-          "viewCount": 3365
+          "viewCount": 3367
+        },
+        "lastFetchedAt": {
+          "__type__": "timestamp",
+          "seconds": 1783236622,
+          "nanoseconds": 74000000
         }
       }
     },
@@ -675,8 +695,8 @@
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783161018,
-          "nanoseconds": 459000000
+          "seconds": 1783204218,
+          "nanoseconds": 585000000
         }
       }
     },
@@ -730,15 +750,20 @@
           "すみっこキングダム／Minecraft",
           "🎮ゲーム💗"
         ],
+        "status": {
+          "privacyStatus": "public",
+          "uploadStatus": "processed",
+          "embeddable": true
+        },
         "statistics": {
           "commentCount": 14,
           "likeCount": 248,
-          "viewCount": 5655
+          "viewCount": 5657
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783164618,
-          "nanoseconds": 399000000
+          "seconds": 1783236622,
+          "nanoseconds": 74000000
         }
       }
     },
@@ -792,15 +817,20 @@
         "videoType": "archived",
         "liveBroadcastContent": "none",
         "thumbnailUrl": "https://i.ytimg.com/vi/0IFpcZnJPgE/maxresdefault.jpg",
+        "status": {
+          "privacyStatus": "public",
+          "uploadStatus": "processed",
+          "embeddable": true
+        },
         "statistics": {
           "likeCount": 564,
-          "viewCount": 18110,
-          "commentCount": 13
+          "commentCount": 13,
+          "viewCount": 18115
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783164618,
-          "nanoseconds": 421000000
+          "seconds": 1783236622,
+          "nanoseconds": 117000000
         }
       }
     },
@@ -872,8 +902,8 @@
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783161018,
-          "nanoseconds": 454000000
+          "seconds": 1783222217,
+          "nanoseconds": 998000000
         }
       }
     },
@@ -1014,12 +1044,12 @@
           "favoriteCount": 0,
           "commentCount": 9,
           "likeCount": 953,
-          "viewCount": 49163
+          "viewCount": 49164
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783161018,
-          "nanoseconds": 460000000
+          "seconds": 1783204218,
+          "nanoseconds": 586000000
         }
       }
     },
@@ -1071,15 +1101,20 @@
         "description": "交換は１人１回まででお願いします～！\n\n交換に出すのはなんのポケモンでもＯＫです！\nニックネームでセクハラや嫌がらせするの禁止です...！！\n\n｡*⑅୨୧┈┈┈┈┈┈┈┈┈┈┈┈୨୧⑅*｡\n\n涼花みなせオリジナル音声作品\n「望月明奈は恋を知る。～やさぐれJKと猫とあなたの青春記録～」販売中です…！！\n\n🐰詳細🌸▷ https://x.com/suzuka_minase/status/2020038625023705293\n\n｡*⑅୨୧┈┈┈┈┈┈┈┈┈┈┈┈୨୧⑅*｡\n\n毎週金曜日は、23:00から限定放送でお会いしましょう💗\n「もっとぐっと近い距離で、お耳に幸せをお届け♪」をコンセプトに、距離の近い密着感のあるコンテンツをご提供🤍\nASMR・耳○め放送や、チャンネルオリジナルキャラクターとあまあまな時間を過ごせるシチュエーション放送がメインコンテンツ🌟\nニコニコチャンネル　▶　https://ch.nicovideo.jp/suzuka-minase\nOPENREC　▶　https://www.openrec.tv/user/Suzuka_minase\nニコニコチャンネル・OPENRECの同時配信です🌸同じコンテンツをお届けしてるので、お好きな方の配信サイトでお楽しみください🌟\n\n｡*⑅୨୧┈┈┈┈┈┈┈┈┈┈┈┈୨୧⑅*｡\n\nCi-enにてファンクラブ運営中です🌸\nオリジナルのえちち……💗なボイスや、ディスコサーバーでの不定期音声配信、季節のおハガキのお届けなど……いろんな特典をお届けしてます✨\n詳細は下記をご覧くださいっ🌟\nhttps://twitter.com/suzuka_minase/status/1509547916209262599\n\n｡*⑅୨୧┈┈┈┈┈┈┈┈┈┈┈┈୨୧⑅*｡\n\nみやぢさんとのOPENREC公式番組「みやみなはっぴーちゃんねる」開設しました🌟！\n2人のシチュエーションASMRやラジオ番組、毎月第4日曜日に生放送中です(՞ ܸ. .ܸ ՞)\n\nhttps://www.openrec.tv/user/miyaminahappych\n\nここでしか聞けない両耳かきや両耳○め、番組終了後のお電話企画などなど、特典盛りだくさんです🌸\n\n｡*⑅୨୧┈┈┈┈┈┈┈┈┈┈┈┈୨୧⑅*｡\n\n＊お誕生日が近づいてきたリスナー様へ＊\n配信内の「ひとことお誕生日お祝い」コーナーにて、お名前・お誕生日の読み上げをご希望の際はこちらのフォームをご使用ください(▽`*)\nhttps://form.run/@szk-minase-1605250970\n読み漏れ防止のため、お誕生日が近づいてから（1～2週間前）お送り頂くようお願いいたします……！\n基本的にはお誕生日後の最初の定期配信にて読み上げをさせていただきます。\n※簡易的なものとなりますので、ボイスのリクエストはご遠慮ください※\n※いたずらでの送信はご遠慮ください※\n\n｡*⑅୨୧┈┈┈┈┈┈┈┈┈┈┈┈୨୧⑅*｡\n\n【Live2D】\nillust／clothes design　：　ギャラクシー伊藤様　https://twitter.com/Galaxy_ito\nmodeling　：　浅木式様　https://twitter.com/asagishiki00\n\n【Live2D(ASMR用①)】\nillust　：　華秀てんま様　https://x.com/tenma_ka\nmodeling　：　浅木式様　https://twitter.com/asagishiki00\n\n【Live2D(ASMR用②)】\nllust　：　佐藤べに仔様　https://x.com/beni_0214\nmodeling　：　浅木式様　https://twitter.com/asagishiki00\n\n【サムネ素材】\n七篠みるく様　 ‪@nanashino_milk‬ \n\n素敵なモデル・素材ありがとうございます💗\n\n｡*⑅୨୧┈┈┈┈┈┈┈┈┈┈┈┈୨୧⑅*｡\n\n涼花みなせ\nX　　https://X.com/suzuka_minase\nHP　　　https://www.szkminase.com/\nPOTOFU　https://potofu.me/suzuka-minase",
         "liveBroadcastContent": "none",
         "thumbnailUrl": "https://i.ytimg.com/vi/0lzwdVR9Res/maxresdefault.jpg",
+        "status": {
+          "privacyStatus": "public",
+          "uploadStatus": "processed",
+          "embeddable": true
+        },
         "statistics": {
           "commentCount": 14,
           "likeCount": 143,
-          "viewCount": 3578
+          "viewCount": 3579
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783164618,
-          "nanoseconds": 401000000
+          "seconds": 1783236622,
+          "nanoseconds": 117000000
         }
       }
     },
@@ -1138,10 +1173,15 @@
           "likeCount": 131,
           "viewCount": 2424
         },
+        "status": {
+          "privacyStatus": "public",
+          "uploadStatus": "processed",
+          "embeddable": true
+        },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783164618,
-          "nanoseconds": 423000000
+          "seconds": 1783225818,
+          "nanoseconds": 868000000
         }
       }
     },
@@ -1208,16 +1248,16 @@
         "id": "0sC1U5QnIzE",
         "thumbnailUrl": "https://i.ytimg.com/vi/0sC1U5QnIzE/maxresdefault.jpg",
         "updatedAt": "2025-08-22T04:05:12.875Z",
+        "lastFetchedAt": {
+          "__type__": "timestamp",
+          "seconds": 1783233019,
+          "nanoseconds": 13000000
+        },
         "statistics": {
           "favoriteCount": 0,
           "commentCount": 15,
           "likeCount": 519,
-          "viewCount": 13966
-        },
-        "lastFetchedAt": {
-          "__type__": "timestamp",
-          "seconds": 1783164618,
-          "nanoseconds": 425000000
+          "viewCount": 13968
         }
       }
     },
@@ -1291,8 +1331,8 @@
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783161018,
-          "nanoseconds": 458000000
+          "seconds": 1783222218,
+          "nanoseconds": 2000000
         }
       }
     },
@@ -1355,12 +1395,12 @@
           "commentCount": 2,
           "favoriteCount": 0,
           "likeCount": 146,
-          "viewCount": 3927
+          "viewCount": 3928
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783161018,
-          "nanoseconds": 457000000
+          "seconds": 1783222218,
+          "nanoseconds": 1000000
         }
       }
     },
@@ -1428,12 +1468,12 @@
           "commentCount": 14,
           "favoriteCount": 0,
           "likeCount": 412,
-          "viewCount": 12892
+          "viewCount": 12893
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783157418,
-          "nanoseconds": 292000000
+          "seconds": 1783233019,
+          "nanoseconds": 14000000
         }
       }
     },
@@ -1499,16 +1539,16 @@
         "id": "189e2ncurCk",
         "thumbnailUrl": "https://i.ytimg.com/vi/189e2ncurCk/maxresdefault.jpg",
         "updatedAt": "2025-08-22T04:05:13.009Z",
+        "lastFetchedAt": {
+          "__type__": "timestamp",
+          "seconds": 1783229418,
+          "nanoseconds": 328000000
+        },
         "statistics": {
           "favoriteCount": 0,
           "commentCount": 18,
           "likeCount": 678,
-          "viewCount": 23021
-        },
-        "lastFetchedAt": {
-          "__type__": "timestamp",
-          "seconds": 1783157418,
-          "nanoseconds": 290000000
+          "viewCount": 23024
         }
       }
     },
@@ -1572,16 +1612,16 @@
         "id": "1GFc0dqmyXg",
         "thumbnailUrl": "https://i.ytimg.com/vi/1GFc0dqmyXg/maxresdefault.jpg",
         "updatedAt": "2025-08-22T04:05:13.035Z",
-        "lastFetchedAt": {
-          "__type__": "timestamp",
-          "seconds": 1783157418,
-          "nanoseconds": 327000000
-        },
         "statistics": {
           "commentCount": 19,
           "favoriteCount": 0,
           "likeCount": 1436,
-          "viewCount": 54824
+          "viewCount": 54825
+        },
+        "lastFetchedAt": {
+          "__type__": "timestamp",
+          "seconds": 1783233019,
+          "nanoseconds": 16000000
         }
       }
     },
@@ -1711,10 +1751,15 @@
           "likeCount": 173,
           "viewCount": 3563
         },
+        "status": {
+          "privacyStatus": "public",
+          "uploadStatus": "processed",
+          "embeddable": true
+        },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783164618,
-          "nanoseconds": 422000000
+          "seconds": 1783236622,
+          "nanoseconds": 119000000
         }
       }
     },
@@ -1773,16 +1818,16 @@
         "id": "1Zirz4ZEHRk",
         "thumbnailUrl": "https://i.ytimg.com/vi/1Zirz4ZEHRk/maxresdefault.jpg",
         "updatedAt": "2025-08-22T04:05:13.119Z",
+        "lastFetchedAt": {
+          "__type__": "timestamp",
+          "seconds": 1783222218,
+          "nanoseconds": 2000000
+        },
         "statistics": {
           "commentCount": 6,
           "favoriteCount": 0,
           "likeCount": 280,
-          "viewCount": 8806
-        },
-        "lastFetchedAt": {
-          "__type__": "timestamp",
-          "seconds": 1783161018,
-          "nanoseconds": 458000000
+          "viewCount": 8808
         }
       }
     },
@@ -1835,15 +1880,20 @@
         },
         "thumbnailUrl": "https://i.ytimg.com/vi/1_zLJ5eihSk/maxresdefault.jpg",
         "duration": "PT1H15M20S",
+        "status": {
+          "privacyStatus": "public",
+          "uploadStatus": "processed",
+          "embeddable": true
+        },
         "statistics": {
           "likeCount": 265,
           "commentCount": 17,
-          "viewCount": 5476
+          "viewCount": 5477
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783164618,
-          "nanoseconds": 421000000
+          "seconds": 1783236622,
+          "nanoseconds": 117000000
         }
       }
     },
@@ -1915,8 +1965,8 @@
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783161018,
-          "nanoseconds": 460000000
+          "seconds": 1783204218,
+          "nanoseconds": 586000000
         }
       }
     },
@@ -1970,15 +2020,20 @@
         "videoType": "archived",
         "liveBroadcastContent": "none",
         "thumbnailUrl": "https://i.ytimg.com/vi/1iPSnBczhJE/maxresdefault.jpg",
-        "lastFetchedAt": {
-          "__type__": "timestamp",
-          "seconds": 1783164618,
-          "nanoseconds": 398000000
+        "status": {
+          "privacyStatus": "public",
+          "uploadStatus": "processed",
+          "embeddable": true
         },
         "statistics": {
           "commentCount": 11,
           "likeCount": 192,
-          "viewCount": 4384
+          "viewCount": 4392
+        },
+        "lastFetchedAt": {
+          "__type__": "timestamp",
+          "seconds": 1783236622,
+          "nanoseconds": 72000000
         }
       }
     },
@@ -2052,8 +2107,8 @@
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783157418,
-          "nanoseconds": 295000000
+          "seconds": 1783233019,
+          "nanoseconds": 15000000
         }
       }
     },
@@ -2107,15 +2162,20 @@
         "videoType": "archived",
         "liveBroadcastContent": "none",
         "thumbnailUrl": "https://i.ytimg.com/vi/21qORNLksj4/maxresdefault.jpg",
-        "lastFetchedAt": {
-          "__type__": "timestamp",
-          "seconds": 1783164618,
-          "nanoseconds": 399000000
+        "status": {
+          "privacyStatus": "public",
+          "uploadStatus": "processed",
+          "embeddable": true
         },
         "statistics": {
           "commentCount": 13,
           "likeCount": 427,
-          "viewCount": 12740
+          "viewCount": 12749
+        },
+        "lastFetchedAt": {
+          "__type__": "timestamp",
+          "seconds": 1783236622,
+          "nanoseconds": 74000000
         }
       }
     },
@@ -2187,8 +2247,8 @@
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783157418,
-          "nanoseconds": 297000000
+          "seconds": 1783218619,
+          "nanoseconds": 325000000
         }
       }
     },
@@ -2239,15 +2299,20 @@
           "🎧ASMR💗"
         ],
         "thumbnailUrl": "https://i.ytimg.com/vi/2BoVRWXykkE/maxresdefault.jpg",
-        "statistics": {
-          "likeCount": 517,
-          "commentCount": 11,
-          "viewCount": 22771
-        },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1764311414,
-          "nanoseconds": 633000000
+          "seconds": 1783213325,
+          "nanoseconds": 926000000
+        },
+        "statistics": {
+          "commentCount": 11,
+          "likeCount": 523,
+          "viewCount": 22922
+        },
+        "status": {
+          "privacyStatus": "public",
+          "uploadStatus": "processed",
+          "embeddable": true
         }
       }
     },
@@ -2321,8 +2386,8 @@
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783157418,
-          "nanoseconds": 327000000
+          "seconds": 1783218619,
+          "nanoseconds": 328000000
         }
       }
     },
@@ -2376,15 +2441,20 @@
         "videoType": "archived",
         "liveBroadcastContent": "none",
         "thumbnailUrl": "https://i.ytimg.com/vi/2Ypd_Ru9yAo/maxresdefault.jpg",
+        "status": {
+          "privacyStatus": "public",
+          "uploadStatus": "processed",
+          "embeddable": true
+        },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783164618,
-          "nanoseconds": 397000000
+          "seconds": 1783236622,
+          "nanoseconds": 72000000
         },
         "statistics": {
-          "commentCount": 14,
-          "likeCount": 184,
-          "viewCount": 4943
+          "likeCount": 185,
+          "commentCount": 15,
+          "viewCount": 4973
         }
       }
     },
@@ -2438,15 +2508,20 @@
         "videoType": "archived",
         "liveBroadcastContent": "none",
         "thumbnailUrl": "https://i.ytimg.com/vi/2kcXhb-VGQ4/maxresdefault.jpg",
+        "status": {
+          "privacyStatus": "public",
+          "uploadStatus": "processed",
+          "embeddable": true
+        },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783164618,
-          "nanoseconds": 399000000
+          "seconds": 1783236622,
+          "nanoseconds": 74000000
         },
         "statistics": {
           "commentCount": 23,
-          "likeCount": 446,
-          "viewCount": 12393
+          "likeCount": 447,
+          "viewCount": 12405
         }
       }
     },
@@ -2589,16 +2664,59 @@
         "id": "2sdE7dqP5L0",
         "thumbnailUrl": "https://i.ytimg.com/vi/2sdE7dqP5L0/maxresdefault.jpg",
         "updatedAt": "2025-08-22T04:05:13.291Z",
+        "lastFetchedAt": {
+          "__type__": "timestamp",
+          "seconds": 1783229418,
+          "nanoseconds": 329000000
+        },
         "statistics": {
           "commentCount": 22,
           "favoriteCount": 0,
           "likeCount": 858,
-          "viewCount": 20935
-        },
+          "viewCount": 20941
+        }
+      }
+    },
+    {
+      "id": "3Rb-c54D20o",
+      "data": {
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783157418,
-          "nanoseconds": 291000000
+          "seconds": 1783942219,
+          "nanoseconds": 636000000
+        },
+        "publishedAt": {
+          "__type__": "timestamp",
+          "seconds": 1783940402,
+          "nanoseconds": 0
+        },
+        "videoType": "short",
+        "description": "よかったらコメントで教えてね🩷\n\n動画編集　えぬけん様",
+        "videoId": "3Rb-c54D20o",
+        "title": "君は何フェチ？ #Shorts #Vtuber #Live2d",
+        "liveBroadcastContent": "none",
+        "tags": {
+          "userTags": [],
+          "contentTags": [],
+          "playlistTags": []
+        },
+        "duration": "PT18S",
+        "userTags": [],
+        "id": "3Rb-c54D20o",
+        "categoryId": "20",
+        "channelId": "UChiMMOhl6FpzjoRqvZ5rcaA",
+        "channelTitle": "涼花みなせ / Suzuka Minase",
+        "playlistTags": [],
+        "thumbnailUrl": "https://i.ytimg.com/vi/3Rb-c54D20o/maxresdefault.jpg",
+        "statistics": {
+          "likeCount": 58,
+          "viewCount": 426,
+          "commentCount": 20
+        },
+        "status": {
+          "privacyStatus": "public",
+          "uploadStatus": "processed",
+          "embeddable": true
         }
       }
     },
@@ -2670,8 +2788,8 @@
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783157418,
-          "nanoseconds": 351000000
+          "seconds": 1783218619,
+          "nanoseconds": 329000000
         }
       }
     },
@@ -2743,8 +2861,8 @@
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783150218,
-          "nanoseconds": 294000000
+          "seconds": 1783204218,
+          "nanoseconds": 617000000
         }
       }
     },
@@ -2891,8 +3009,8 @@
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783161018,
-          "nanoseconds": 459000000
+          "seconds": 1783222218,
+          "nanoseconds": 2000000
         }
       }
     },
@@ -2964,8 +3082,8 @@
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783157418,
-          "nanoseconds": 294000000
+          "seconds": 1783229418,
+          "nanoseconds": 332000000
         }
       }
     },
@@ -3039,8 +3157,8 @@
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783150218,
-          "nanoseconds": 294000000
+          "seconds": 1783204218,
+          "nanoseconds": 617000000
         }
       }
     },
@@ -3112,8 +3230,8 @@
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783161018,
-          "nanoseconds": 460000000
+          "seconds": 1783204218,
+          "nanoseconds": 586000000
         }
       }
     },
@@ -3258,8 +3376,8 @@
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783161018,
-          "nanoseconds": 496000000
+          "seconds": 1783204218,
+          "nanoseconds": 587000000
         }
       }
     },
@@ -3406,8 +3524,8 @@
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783157418,
-          "nanoseconds": 291000000
+          "seconds": 1783229418,
+          "nanoseconds": 328000000
         }
       }
     },
@@ -3481,8 +3599,8 @@
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783157418,
-          "nanoseconds": 293000000
+          "seconds": 1783229418,
+          "nanoseconds": 332000000
         }
       }
     },
@@ -3539,10 +3657,15 @@
           "likeCount": 381,
           "viewCount": 8237
         },
+        "status": {
+          "privacyStatus": "public",
+          "uploadStatus": "processed",
+          "embeddable": true
+        },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783164618,
-          "nanoseconds": 421000000
+          "seconds": 1783236622,
+          "nanoseconds": 117000000
         }
       }
     },
@@ -3600,10 +3723,15 @@
           "likeCount": 152,
           "viewCount": 2792
         },
+        "status": {
+          "privacyStatus": "public",
+          "uploadStatus": "processed",
+          "embeddable": true
+        },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783164618,
-          "nanoseconds": 423000000
+          "seconds": 1783236622,
+          "nanoseconds": 119000000
         }
       }
     },
@@ -3743,8 +3871,8 @@
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783157418,
-          "nanoseconds": 351000000
+          "seconds": 1783218619,
+          "nanoseconds": 329000000
         }
       }
     },
@@ -3816,8 +3944,8 @@
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783150218,
-          "nanoseconds": 294000000
+          "seconds": 1783204218,
+          "nanoseconds": 616000000
         }
       }
     },
@@ -3884,8 +4012,8 @@
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783157418,
-          "nanoseconds": 350000000
+          "seconds": 1783218619,
+          "nanoseconds": 328000000
         }
       }
     },
@@ -3953,12 +4081,12 @@
           "commentCount": 22,
           "favoriteCount": 0,
           "likeCount": 1489,
-          "viewCount": 80010
+          "viewCount": 80011
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783161018,
-          "nanoseconds": 456000000
+          "seconds": 1783222217,
+          "nanoseconds": 999000000
         }
       }
     },
@@ -4032,8 +4160,8 @@
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783150218,
-          "nanoseconds": 294000000
+          "seconds": 1783204218,
+          "nanoseconds": 616000000
         }
       }
     },
@@ -4105,8 +4233,8 @@
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783161018,
-          "nanoseconds": 495000000
+          "seconds": 1783204218,
+          "nanoseconds": 587000000
         }
       }
     },
@@ -4172,14 +4300,14 @@
         "updatedAt": "2025-08-22T04:05:13.773Z",
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783161018,
-          "nanoseconds": 454000000
+          "seconds": 1783222217,
+          "nanoseconds": 998000000
         },
         "statistics": {
           "favoriteCount": 0,
           "commentCount": 104,
           "likeCount": 9285,
-          "viewCount": 843481
+          "viewCount": 843552
         }
       }
     },
@@ -4233,15 +4361,20 @@
         "videoType": "archived",
         "liveBroadcastContent": "none",
         "thumbnailUrl": "https://i.ytimg.com/vi/6Zo5qUosmOQ/maxresdefault.jpg",
-        "lastFetchedAt": {
-          "__type__": "timestamp",
-          "seconds": 1783164618,
-          "nanoseconds": 401000000
+        "status": {
+          "privacyStatus": "public",
+          "uploadStatus": "processed",
+          "embeddable": true
         },
         "statistics": {
           "likeCount": 827,
           "commentCount": 26,
-          "viewCount": 29167
+          "viewCount": 29209
+        },
+        "lastFetchedAt": {
+          "__type__": "timestamp",
+          "seconds": 1783236622,
+          "nanoseconds": 116000000
         }
       }
     },
@@ -4315,8 +4448,8 @@
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783157418,
-          "nanoseconds": 296000000
+          "seconds": 1783233019,
+          "nanoseconds": 15000000
         }
       }
     },
@@ -4463,8 +4596,8 @@
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783161018,
-          "nanoseconds": 458000000
+          "seconds": 1783222218,
+          "nanoseconds": 2000000
         }
       }
     },
@@ -4536,8 +4669,8 @@
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783161018,
-          "nanoseconds": 461000000
+          "seconds": 1783204218,
+          "nanoseconds": 587000000
         }
       }
     },
@@ -4609,8 +4742,8 @@
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783150218,
-          "nanoseconds": 294000000
+          "seconds": 1783204218,
+          "nanoseconds": 616000000
         }
       }
     },
@@ -4667,10 +4800,15 @@
           "likeCount": 158,
           "viewCount": 3212
         },
+        "status": {
+          "privacyStatus": "public",
+          "uploadStatus": "processed",
+          "embeddable": true
+        },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783164618,
-          "nanoseconds": 420000000
+          "seconds": 1783236622,
+          "nanoseconds": 117000000
         }
       }
     },
@@ -4736,16 +4874,16 @@
         "id": "752DCsYirAg",
         "thumbnailUrl": "https://i.ytimg.com/vi/752DCsYirAg/maxresdefault.jpg",
         "updatedAt": "2025-08-22T04:05:13.940Z",
+        "lastFetchedAt": {
+          "__type__": "timestamp",
+          "seconds": 1783218619,
+          "nanoseconds": 329000000
+        },
         "statistics": {
           "favoriteCount": 0,
           "commentCount": 16,
           "likeCount": 734,
-          "viewCount": 25492
-        },
-        "lastFetchedAt": {
-          "__type__": "timestamp",
-          "seconds": 1783157418,
-          "nanoseconds": 351000000
+          "viewCount": 25493
         }
       }
     },
@@ -4819,8 +4957,8 @@
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783157418,
-          "nanoseconds": 293000000
+          "seconds": 1783229418,
+          "nanoseconds": 332000000
         }
       }
     },
@@ -4872,15 +5010,20 @@
         "videoType": "archived",
         "liveBroadcastContent": "none",
         "thumbnailUrl": "https://i.ytimg.com/vi/7BKyWRPLG1w/maxresdefault.jpg",
-        "lastFetchedAt": {
-          "__type__": "timestamp",
-          "seconds": 1783164618,
-          "nanoseconds": 397000000
+        "status": {
+          "privacyStatus": "public",
+          "uploadStatus": "processed",
+          "embeddable": true
         },
         "statistics": {
           "commentCount": 15,
           "likeCount": 302,
-          "viewCount": 7636
+          "viewCount": 7653
+        },
+        "lastFetchedAt": {
+          "__type__": "timestamp",
+          "seconds": 1783236622,
+          "nanoseconds": 72000000
         }
       }
     },
@@ -4948,12 +5091,12 @@
           "commentCount": 4,
           "favoriteCount": 0,
           "viewCount": 4843,
-          "likeCount": 202
+          "likeCount": 201
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783161018,
-          "nanoseconds": 459000000
+          "seconds": 1783222218,
+          "nanoseconds": 2000000
         }
       }
     },
@@ -5000,12 +5143,12 @@
           "favoriteCount": 0,
           "commentCount": 4,
           "likeCount": 49,
-          "viewCount": 2002
+          "viewCount": 2003
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783150218,
-          "nanoseconds": 295000000
+          "seconds": 1783204218,
+          "nanoseconds": 617000000
         }
       }
     },
@@ -5150,8 +5293,8 @@
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783157418,
-          "nanoseconds": 297000000
+          "seconds": 1783218619,
+          "nanoseconds": 325000000
         }
       }
     },
@@ -5205,15 +5348,20 @@
           "すみっこキングダム／Minecraft",
           "🎮ゲーム💗"
         ],
+        "status": {
+          "privacyStatus": "public",
+          "uploadStatus": "processed",
+          "embeddable": true
+        },
         "statistics": {
           "commentCount": 13,
-          "likeCount": 211,
-          "viewCount": 5241
+          "likeCount": 212,
+          "viewCount": 5244
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783164618,
-          "nanoseconds": 400000000
+          "seconds": 1783236622,
+          "nanoseconds": 74000000
         }
       }
     },
@@ -5262,14 +5410,14 @@
         "updatedAt": "2025-08-22T04:05:14.092Z",
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783157418,
-          "nanoseconds": 291000000
+          "seconds": 1783229418,
+          "nanoseconds": 329000000
         },
         "statistics": {
           "favoriteCount": 0,
           "likeCount": 518,
           "commentCount": 36,
-          "viewCount": 15630
+          "viewCount": 15636
         }
       }
     },
@@ -5336,8 +5484,75 @@
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783161018,
-          "nanoseconds": 461000000
+          "seconds": 1783204218,
+          "nanoseconds": 587000000
+        }
+      }
+    },
+    {
+      "id": "8B-m-zmP9p8",
+      "data": {
+        "description": "君野りるるちゃん🩷　@riruchin \n\n｡*⑅୨୧┈┈┈┈┈┈┈┈┈┈┈┈୨୧⑅*｡\n\n涼花みなせオリジナル音声作品\n「望月明奈は恋を知る。～やさぐれJKと猫とあなたの青春記録～」販売中です…！！\n\n🐰詳細🌸▷ https://x.com/suzuka_minase/status/2020038625023705293\n\n｡*⑅୨୧┈┈┈┈┈┈┈┈┈┈┈┈୨୧⑅*｡\n\n毎週金曜日は、23:00から限定放送でお会いしましょう💗\n「もっとぐっと近い距離で、お耳に幸せをお届け♪」をコンセプトに、距離の近い密着感のあるコンテンツをご提供🤍\nASMR・耳○め放送や、チャンネルオリジナルキャラクターとあまあまな時間を過ごせるシチュエーション放送がメインコンテンツ🌟\nニコニコチャンネル　▶　https://ch.nicovideo.jp/suzuka-minase\nOPENREC　▶　https://www.openrec.tv/user/Suzuka_minase\nニコニコチャンネル・OPENRECの同時配信です🌸同じコンテンツをお届けしてるので、お好きな方の配信サイトでお楽しみください🌟\n\n｡*⑅୨୧┈┈┈┈┈┈┈┈┈┈┈┈୨୧⑅*｡\n\nCi-enにてファンクラブ運営中です🌸\nオリジナルのえちち……💗なボイスや、ディスコサーバーでの不定期音声配信、季節のおハガキのお届けなど……いろんな特典をお届けしてます✨\n詳細は下記をご覧くださいっ🌟\nhttps://x.com/suzuka_minase/status/1509547916209262599\n\n｡*⑅୨୧┈┈┈┈┈┈┈┈┈┈┈┈୨୧⑅*｡\n\nみやぢさんとのOPENREC公式番組「みやみなはっぴーちゃんねる」開設しました🌟！\n2人のシチュエーションASMRやラジオ番組、毎月第4日曜日に生放送中です(՞ ܸ. .ܸ ՞)\n\nhttps://www.openrec.tv/user/miyaminahappych\n\nここでしか聞けない両耳かきや両耳○め、番組終了後のお電話企画などなど、特典盛りだくさんです🌸\n\n｡*⑅୨୧┈┈┈┈┈┈┈┈┈┈┈┈୨୧⑅*｡\n\n＊お誕生日が近づいてきたリスナー様へ＊\n配信内の「ひとことお誕生日お祝い」コーナーにて、お名前・お誕生日の読み上げをご希望の際はこちらのフォームをご使用ください(▽`*)\nhttps://form.run/@szk-minase-1605250970\n読み漏れ防止のため、お誕生日が近づいてから（1～2週間前）お送り頂くようお願いいたします……！\n基本的にはお誕生日後の最初の定期配信にて読み上げをさせていただきます。\n※簡易的なものとなりますので、ボイスのリクエストはご遠慮ください※\n※いたずらでの送信はご遠慮ください※\n\n｡*⑅୨୧┈┈┈┈┈┈┈┈┈┈┈┈୨୧⑅*｡\n\n【Live2D】\nillust／clothes design　：　ギャラクシー伊藤様　https://x.com/Galaxy_ito\nmodeling　：　浅木式様　https://x.com/asagishiki00\n\n【Live2D(ASMR用①)】\nillust　：　華秀てんま様　https://x.com/tenma_ka\nmodeling　：　浅木式様　https://x.com/asagishiki00\n\n【Live2D(ASMR用②)】\nllust　：　佐藤べに仔様　https://x.com/beni_0214\nmodeling　：　浅木式様　https://x.com/asagishiki00\n\n【Live2D(ASMR用③)】\nillust／clothes design　：　ギャラクシー伊藤様　https://x.com/Galaxy_ito\nmodeling　：　月夜見ロキ様　https://x.com/Roki_Tsukuyomi\n\n素敵なモデルありがとうございます💗\n\n｡*⑅୨୧┈┈┈┈┈┈┈┈┈┈┈┈୨୧⑅*｡\n\n涼花みなせ\nX　　https://X.com/suzuka_minase\nHP　　　https://www.szkminase.com/\nPOTOFU　https://potofu.me/suzuka-minase",
+        "videoId": "8B-m-zmP9p8",
+        "title": "見える景色がそれぞれ違う不思議な世界にりるちんと挑む…！！【違う冬のぼくら／涼花みなせ視点】",
+        "tags": {
+          "userTags": [],
+          "contentTags": [],
+          "playlistTags": [
+            "🎮ゲーム💗",
+            "🐱コラボ配信💗"
+          ]
+        },
+        "userTags": [],
+        "id": "8B-m-zmP9p8",
+        "categoryId": "20",
+        "channelId": "UChiMMOhl6FpzjoRqvZ5rcaA",
+        "channelTitle": "涼花みなせ / Suzuka Minase",
+        "playlistTags": [
+          "🎮ゲーム💗",
+          "🐱コラボ配信💗"
+        ],
+        "duration": "PT4H53M12S",
+        "lastFetchedAt": {
+          "__type__": "timestamp",
+          "seconds": 1784219418,
+          "nanoseconds": 196000000
+        },
+        "publishedAt": {
+          "__type__": "timestamp",
+          "seconds": 1784218181,
+          "nanoseconds": 0
+        },
+        "liveStreamingDetails": {
+          "scheduledStartTime": {
+            "__type__": "timestamp",
+            "seconds": 1784199600,
+            "nanoseconds": 0
+          },
+          "actualStartTime": {
+            "__type__": "timestamp",
+            "seconds": 1784199631,
+            "nanoseconds": 0
+          },
+          "concurrentViewers": 100,
+          "actualEndTime": {
+            "__type__": "timestamp",
+            "seconds": 1784217237,
+            "nanoseconds": 0
+          }
+        },
+        "videoType": "archived",
+        "liveBroadcastContent": "none",
+        "thumbnailUrl": "https://i.ytimg.com/vi/8B-m-zmP9p8/maxresdefault.jpg",
+        "statistics": {
+          "likeCount": 141,
+          "viewCount": 2183,
+          "commentCount": 11
+        },
+        "status": {
+          "privacyStatus": "public",
+          "embeddable": true,
+          "uploadStatus": "processed"
         }
       }
     },
@@ -5406,8 +5621,8 @@
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783161018,
-          "nanoseconds": 456000000
+          "seconds": 1783222217,
+          "nanoseconds": 999000000
         }
       }
     },
@@ -5471,16 +5686,16 @@
         "id": "8J0alaI_r6Q",
         "thumbnailUrl": "https://i.ytimg.com/vi/8J0alaI_r6Q/maxresdefault.jpg",
         "updatedAt": "2025-08-22T04:05:14.171Z",
+        "lastFetchedAt": {
+          "__type__": "timestamp",
+          "seconds": 1783204218,
+          "nanoseconds": 587000000
+        },
         "statistics": {
           "commentCount": 1,
           "favoriteCount": 0,
           "likeCount": 205,
-          "viewCount": 5313
-        },
-        "lastFetchedAt": {
-          "__type__": "timestamp",
-          "seconds": 1783161018,
-          "nanoseconds": 495000000
+          "viewCount": 5314
         }
       }
     },
@@ -5627,8 +5842,8 @@
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783157418,
-          "nanoseconds": 351000000
+          "seconds": 1783218619,
+          "nanoseconds": 329000000
         }
       }
     },
@@ -5775,8 +5990,8 @@
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783157418,
-          "nanoseconds": 294000000
+          "seconds": 1783229418,
+          "nanoseconds": 332000000
         }
       }
     },
@@ -5904,13 +6119,18 @@
         "thumbnailUrl": "https://i.ytimg.com/vi/8hcFhjECMaM/maxresdefault.jpg",
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1761287416,
-          "nanoseconds": 276000000
+          "seconds": 1783213325,
+          "nanoseconds": 927000000
         },
         "statistics": {
           "likeCount": 166,
           "commentCount": 14,
-          "viewCount": 3412
+          "viewCount": 3514
+        },
+        "status": {
+          "privacyStatus": "public",
+          "uploadStatus": "processed",
+          "embeddable": true
         }
       }
     },
@@ -5976,16 +6196,16 @@
         "id": "8n9e9qSldMI",
         "thumbnailUrl": "https://i.ytimg.com/vi/8n9e9qSldMI/maxresdefault.jpg",
         "updatedAt": "2025-08-22T04:05:14.332Z",
-        "lastFetchedAt": {
-          "__type__": "timestamp",
-          "seconds": 1783157418,
-          "nanoseconds": 296000000
-        },
         "statistics": {
           "commentCount": 13,
           "favoriteCount": 0,
           "likeCount": 471,
-          "viewCount": 11611
+          "viewCount": 11610
+        },
+        "lastFetchedAt": {
+          "__type__": "timestamp",
+          "seconds": 1783233019,
+          "nanoseconds": 16000000
         }
       }
     },
@@ -6052,8 +6272,8 @@
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783157418,
-          "nanoseconds": 351000000
+          "seconds": 1783218619,
+          "nanoseconds": 329000000
         }
       }
     },
@@ -6125,8 +6345,8 @@
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783161018,
-          "nanoseconds": 455000000
+          "seconds": 1783222217,
+          "nanoseconds": 998000000
         }
       }
     },
@@ -6198,8 +6418,8 @@
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783161018,
-          "nanoseconds": 459000000
+          "seconds": 1783204218,
+          "nanoseconds": 585000000
         }
       }
     },
@@ -6263,16 +6483,16 @@
         "playlistTags": [
           "🎧ASMR💗"
         ],
+        "lastFetchedAt": {
+          "__type__": "timestamp",
+          "seconds": 1783222218,
+          "nanoseconds": 3000000
+        },
         "statistics": {
           "commentCount": 13,
           "favoriteCount": 0,
           "likeCount": 666,
-          "viewCount": 27337
-        },
-        "lastFetchedAt": {
-          "__type__": "timestamp",
-          "seconds": 1783161018,
-          "nanoseconds": 459000000
+          "viewCount": 27338
         }
       }
     },
@@ -6347,8 +6567,8 @@
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783153818,
-          "nanoseconds": 553000000
+          "seconds": 1783229418,
+          "nanoseconds": 325000000
         }
       }
     },
@@ -6404,10 +6624,15 @@
           "likeCount": 255,
           "viewCount": 5866
         },
+        "status": {
+          "privacyStatus": "public",
+          "uploadStatus": "processed",
+          "embeddable": true
+        },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783164618,
-          "nanoseconds": 425000000
+          "seconds": 1783225818,
+          "nanoseconds": 869000000
         }
       }
     },
@@ -6470,8 +6695,8 @@
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783157418,
-          "nanoseconds": 298000000
+          "seconds": 1783218619,
+          "nanoseconds": 325000000
         }
       }
     },
@@ -6543,8 +6768,8 @@
         },
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783161018,
-          "nanoseconds": 496000000
+          "seconds": 1783204218,
+          "nanoseconds": 616000000
         }
       }
     },
@@ -6622,6 +6847,73 @@
       }
     },
     {
+      "id": "9kMBmEvhwUk",
+      "data": {
+        "publishedAt": {
+          "__type__": "timestamp",
+          "seconds": 1783672375,
+          "nanoseconds": 0
+        },
+        "description": "｡*⑅୨୧┈┈┈┈┈┈┈┈┈┈┈┈୨୧⑅*｡\n\n涼花みなせオリジナル音声作品\n「望月明奈は恋を知る。～やさぐれJKと猫とあなたの青春記録～」販売中です…！！\n\n🐰詳細🌸▷ https://x.com/suzuka_minase/status/2020038625023705293\n\n｡*⑅୨୧┈┈┈┈┈┈┈┈┈┈┈┈୨୧⑅*｡\n\n毎週金曜日は、23:00から限定放送でお会いしましょう💗\n「もっとぐっと近い距離で、お耳に幸せをお届け♪」をコンセプトに、距離の近い密着感のあるコンテンツをご提供🤍\nASMR・耳○め放送や、チャンネルオリジナルキャラクターとあまあまな時間を過ごせるシチュエーション放送がメインコンテンツ🌟\nニコニコチャンネル　▶　https://ch.nicovideo.jp/suzuka-minase\nOPENREC　▶　https://www.openrec.tv/user/Suzuka_minase\nニコニコチャンネル・OPENRECの同時配信です🌸同じコンテンツをお届けしてるので、お好きな方の配信サイトでお楽しみください🌟\n\n｡*⑅୨୧┈┈┈┈┈┈┈┈┈┈┈┈୨୧⑅*｡\n\nCi-enにてファンクラブ運営中です🌸\nオリジナルのえちち……💗なボイスや、ディスコサーバーでの不定期音声配信、季節のおハガキのお届けなど……いろんな特典をお届けしてます✨\n詳細は下記をご覧くださいっ🌟\nhttps://x.com/suzuka_minase/status/1509547916209262599\n\n｡*⑅୨୧┈┈┈┈┈┈┈┈┈┈┈┈୨୧⑅*｡\n\nみやぢさんとのOPENREC公式番組「みやみなはっぴーちゃんねる」開設しました🌟！\n2人のシチュエーションASMRやラジオ番組、毎月第4日曜日に生放送中です(՞ ܸ. .ܸ ՞)\n\nhttps://www.openrec.tv/user/miyaminahappych\n\nここでしか聞けない両耳かきや両耳○め、番組終了後のお電話企画などなど、特典盛りだくさんです🌸\n\n｡*⑅୨୧┈┈┈┈┈┈┈┈┈┈┈┈୨୧⑅*｡\n\n＊お誕生日が近づいてきたリスナー様へ＊\n配信内の「ひとことお誕生日お祝い」コーナーにて、お名前・お誕生日の読み上げをご希望の際はこちらのフォームをご使用ください(▽`*)\nhttps://form.run/@szk-minase-1605250970\n読み漏れ防止のため、お誕生日が近づいてから（1～2週間前）お送り頂くようお願いいたします……！\n基本的にはお誕生日後の最初の定期配信にて読み上げをさせていただきます。\n※簡易的なものとなりますので、ボイスのリクエストはご遠慮ください※\n※いたずらでの送信はご遠慮ください※\n\n｡*⑅୨୧┈┈┈┈┈┈┈┈┈┈┈┈୨୧⑅*｡\n\n【Live2D】\nillust／clothes design　：　ギャラクシー伊藤様　https://x.com/Galaxy_ito\nmodeling　：　浅木式様　https://x.com/asagishiki00\n\n【Live2D(ASMR用①)】\nillust　：　華秀てんま様　https://x.com/tenma_ka\nmodeling　：　浅木式様　https://x.com/asagishiki00\n\n【Live2D(ASMR用②)】\nllust　：　佐藤べに仔様　https://x.com/beni_0214\nmodeling　：　浅木式様　https://x.com/asagishiki00\n\n【Live2D(ASMR用③)】\nillust／clothes design　：　ギャラクシー伊藤様　https://x.com/Galaxy_ito\nmodeling　：　月夜見ロキ様　https://x.com/Roki_Tsukuyomi\n\n素敵なモデルありがとうございます💗\n\n｡*⑅୨୧┈┈┈┈┈┈┈┈┈┈┈┈୨୧⑅*｡\n\n涼花みなせ\nX　　https://X.com/suzuka_minase\nHP　　　https://www.szkminase.com/\nPOTOFU　https://potofu.me/suzuka-minase",
+        "videoId": "9kMBmEvhwUk",
+        "title": "お耳さわさわしながらひそひそお喋り♡【ASMR／囁き】",
+        "tags": {
+          "userTags": [],
+          "contentTags": [],
+          "playlistTags": [
+            "⭐雑談💗",
+            "🎧ASMR💗"
+          ]
+        },
+        "userTags": [],
+        "id": "9kMBmEvhwUk",
+        "categoryId": "24",
+        "channelId": "UChiMMOhl6FpzjoRqvZ5rcaA",
+        "channelTitle": "涼花みなせ / Suzuka Minase",
+        "playlistTags": [
+          "⭐雑談💗",
+          "🎧ASMR💗"
+        ],
+        "thumbnailUrl": "https://i.ytimg.com/vi/9kMBmEvhwUk/maxresdefault_live.jpg",
+        "status": {
+          "privacyStatus": "public",
+          "uploadStatus": "uploaded",
+          "embeddable": true
+        },
+        "duration": "PT1H23M53S",
+        "lastFetchedAt": {
+          "__type__": "timestamp",
+          "seconds": 1783690218,
+          "nanoseconds": 322000000
+        },
+        "liveStreamingDetails": {
+          "scheduledStartTime": {
+            "__type__": "timestamp",
+            "seconds": 1783684800,
+            "nanoseconds": 0
+          },
+          "actualStartTime": {
+            "__type__": "timestamp",
+            "seconds": 1783684849,
+            "nanoseconds": 0
+          },
+          "concurrentViewers": 476,
+          "actualEndTime": {
+            "__type__": "timestamp",
+            "seconds": 1783689883,
+            "nanoseconds": 0
+          }
+        },
+        "videoType": "archived",
+        "liveBroadcastContent": "none",
+        "statistics": {
+          "likeCount": 272,
+          "viewCount": 2948,
+          "commentCount": 2
+        }
+      }
+    },
+    {
       "id": "9sX3eGSqUAc",
       "data": {
         "publishedAt": {
@@ -6683,14 +6975,14 @@
         "updatedAt": "2025-08-22T04:05:14.816Z",
         "lastFetchedAt": {
           "__type__": "timestamp",
-          "seconds": 1783161018,
-          "nanoseconds": 457000000
+          "seconds": 1783222218,
+          "nanoseconds": 0
         },
         "statistics": {
           "commentCount": 15,
           "favoriteCount": 0,
           "likeCount": 827,
-          "viewCount": 38905
+          "viewCount": 38908
         }
       }
     },
@@ -6759,195 +7051,6 @@
           "__type__": "timestamp",
           "seconds": 1782329417,
           "nanoseconds": 679000000
-        }
-      }
-    },
-    {
-      "id": "AF9vtVbWj4Q",
-      "data": {
-        "description": "ご視聴ありがとうございます🌸\n\n中井みのるちゃん🩷\n@minoruKU100 \n\n夢星もかちゃん🌸\n@mokachi_voice \n\n苺氷えなちゃん🩷\n@itigoriena \n\n｡*⑅୨୧┈┈┈┈┈┈┈┈┈┈┈┈୨୧⑅*｡\n\n毎週金曜日は、23:00から限定放送でお会いしましょう💗\n「もっとぐっと近い距離で、お耳に幸せをお届け♪」をコンセプトに、距離の近い密着感のあるコンテンツをご提供🤍\nASMR・耳○め放送や、チャンネルオリジナルキャラクターとあまあまな時間を過ごせるシチュエーション放送がメインコンテンツ🌟\nニコニコチャンネル　▶　https://ch.nicovideo.jp/suzuka-minase\nOPENREC　▶　https://www.openrec.tv/user/Suzuka_minase\nニコニコチャンネル・OPENRECの同時配信です🌸同じコンテンツをお届けしてるので、お好きな方の配信サイトでお楽しみください🌟\n\n｡*⑅୨୧┈┈┈┈┈┈┈┈┈┈┈┈୨୧⑅*｡\n\nCi-enにてファンクラブ運営中です🌸\nオリジナルのえちち……💗なボイスや、ディスコサーバーでの不定期音声配信、季節のおハガキのお届けなど……いろんな特典をお届けしてます✨\n詳細は下記をご覧くださいっ🌟\nhttps://twitter.com/suzuka_minase/status/1509547916209262599\n\n｡*⑅୨୧┈┈┈┈┈┈┈┈┈┈┈┈୨୧⑅*｡\n\nみやぢさんとのOPENREC公式番組「みやみなはっぴーちゃんねる」開設しました🌟！\n2人のシチュエーションASMRやラジオ番組、毎月第4日曜日に生放送中です(՞ ܸ. .ܸ ՞)\n\nhttps://www.openrec.tv/user/miyaminahappych\n\nここでしか聞けない両耳かきや両耳○め、番組終了後のお電話企画などなど、特典盛りだくさんです🌸\n\n｡*⑅୨୧┈┈┈┈┈┈┈┈┈┈┈┈୨୧⑅*｡\n\n＊お誕生日が近づいてきたリスナー様へ＊\n配信内の「ひとことお誕生日お祝い」コーナーにて、お名前・お誕生日の読み上げをご希望の際はこちらのフォームをご使用ください(▽`*)\nhttps://form.run/@szk-minase-1605250970\n読み漏れ防止のため、お誕生日が近づいてから（1～2週間前）お送り頂くようお願いいたします……！\n基本的にはお誕生日後の最初の定期配信にて読み上げをさせていただきます。\n※簡易的なものとなりますので、ボイスのリクエストはご遠慮ください※\n※いたずらでの送信はご遠慮ください※\n\n｡*⑅୨୧┈┈┈┈┈┈┈┈┈┈┈┈୨୧⑅*｡\n\n【Live2D】\nillust／clothes design　：　ギャラクシー伊藤様　https://twitter.com/Galaxy_ito\nmodeling　：　浅木式様　https://twitter.com/asagishiki00\n\n【Live2D(ASMR用①)】\nillust　：　華秀てんま様　https://x.com/tenma_ka\nmodeling　：　浅木式様　https://twitter.com/asagishiki00\n\n【Live2D(ASMR用②)】\nllust　：　佐藤べに仔様　https://x.com/beni_0214\nmodeling　：　浅木式様　https://twitter.com/asagishiki00\n\n素敵なモデル・素材ありがとうございます💗\n\n｡*⑅୨୧┈┈┈┈┈┈┈┈┈┈┈┈୨୧⑅*｡\n\n涼花みなせ\nX　　https://X.com/suzuka_minase\nHP　　　https://www.szkminase.com/\nPOTOFU　https://potofu.me/suzuka-minase",
-        "videoId": "AF9vtVbWj4Q",
-        "title": "偽物AIには負けない。みみえもの絆見せる！！【MIMESIS／中井みのる・苺氷えな・夢星もか・涼花みなせ】",
-        "tags": {
-          "userTags": [],
-          "contentTags": [],
-          "playlistTags": [
-            "🎮ゲーム💗",
-            "🐱コラボ配信💗"
-          ]
-        },
-        "userTags": [],
-        "id": "AF9vtVbWj4Q",
-        "categoryId": "20",
-        "channelId": "UChiMMOhl6FpzjoRqvZ5rcaA",
-        "channelTitle": "涼花みなせ / Suzuka Minase",
-        "playlistTags": [
-          "🎮ゲーム💗",
-          "🐱コラボ配信💗"
-        ],
-        "duration": "PT1H29M59S",
-        "publishedAt": {
-          "__type__": "timestamp",
-          "seconds": 1769093625,
-          "nanoseconds": 0
-        },
-        "liveStreamingDetails": {
-          "scheduledStartTime": {
-            "__type__": "timestamp",
-            "seconds": 1769086800,
-            "nanoseconds": 0
-          },
-          "actualStartTime": {
-            "__type__": "timestamp",
-            "seconds": 1769087037,
-            "nanoseconds": 0
-          },
-          "concurrentViewers": 149,
-          "actualEndTime": {
-            "__type__": "timestamp",
-            "seconds": 1769092448,
-            "nanoseconds": 0
-          }
-        },
-        "videoType": "archived",
-        "liveBroadcastContent": "none",
-        "thumbnailUrl": "https://i.ytimg.com/vi/AF9vtVbWj4Q/maxresdefault.jpg",
-        "statistics": {
-          "commentCount": 12,
-          "likeCount": 161,
-          "viewCount": 3503
-        },
-        "lastFetchedAt": {
-          "__type__": "timestamp",
-          "seconds": 1783164618,
-          "nanoseconds": 422000000
-        }
-      }
-    },
-    {
-      "id": "AFP90wVS2PA",
-      "data": {
-        "publishedAt": {
-          "__type__": "timestamp",
-          "seconds": 1631282642,
-          "nanoseconds": 0
-        },
-        "videoType": "archived",
-        "description": "#53\nご視聴ありがとうございます(´ω`*)💛雑談、ASMR、ゲームなどなど、まったり配信していきます✨\n\n【Live2Dmodel】\nillust／clothes design　：　姫野アラタ様　https://twitter.com/ARThimeno\nmodeling　：　浅木式様　https://twitter.com/asagishiki00\nありがとうございました…💗\n\n定期配信のあとは、23:00からニコニコチャンネル会員様限定放送でお会いしましょう💗\n＊すずみなちゃんねる＊　https://ch.nicovideo.jp/suzuka-minase\nお耳を癒せるようにがんばります🎶\n\n柊 羽音様　https://www.youtube.com/channel/UCir67pOSMAaswHt5dj47KDA\nにっこりさん様　https://www.youtube.com/channel/UCHZn6BZ9GcP0KqqKOy6rsiA\nからBGMをお借りしています✨\n素敵な音楽ありがとうございます💕\n\n＊お誕生日が近づいてきたリスナー様へ＊\n配信内の「ひとことお誕生日お祝い」コーナーにて、お名前・お誕生日の読み上げをご希望の際はこちらのフォームをご使用ください(▽`*)\nhttps://form.run/@szk-minase-1605250970\n読み漏れ防止のため、お誕生日が近づいてから（1～2週間前）お送り頂くようお願いいたします…！\n基本的にはお誕生日後の最初の定期配信にて読み上げをさせて頂きます。\n※簡易的なものとなりますので、ボイスのリクエストはご遠慮ください※\n※いたずらでの送信はご遠慮ください※\n\n涼花みなせ\nTwitter　　https://twitter.com/suzuka_minase\nHP　　　https://www.szkminase.com/\nPOTOFU　https://potofu.me/suzuka-minase",
-        "videoId": "AFP90wVS2PA",
-        "title": "新モデルお披露目💗withしーちゃん",
-        "liveBroadcastContent": "none",
-        "tags": {
-          "userTags": [],
-          "contentTags": [],
-          "playlistTags": [
-            "⭐雑談💗"
-          ]
-        },
-        "duration": "PT1H39M46S",
-        "liveStreamingDetails": {
-          "actualStartTime": {
-            "__type__": "timestamp",
-            "seconds": 1631275228,
-            "nanoseconds": 0
-          },
-          "scheduledStartTime": {
-            "__type__": "timestamp",
-            "seconds": 1631275200,
-            "nanoseconds": 0
-          },
-          "actualEndTime": {
-            "__type__": "timestamp",
-            "seconds": 1631281216,
-            "nanoseconds": 0
-          }
-        },
-        "userTags": [],
-        "id": "AFP90wVS2PA",
-        "categoryId": "24",
-        "channelId": "UChiMMOhl6FpzjoRqvZ5rcaA",
-        "channelTitle": "涼花みなせ / Suzuka Minase",
-        "playlistTags": [
-          "⭐雑談💗"
-        ],
-        "thumbnailUrl": "https://i.ytimg.com/vi/AFP90wVS2PA/maxresdefault.jpg",
-        "lastFetchedAt": {
-          "__type__": "timestamp",
-          "seconds": 1763440214,
-          "nanoseconds": 800000000
-        },
-        "statistics": {
-          "commentCount": 6,
-          "likeCount": 409,
-          "viewCount": 7921
-        }
-      }
-    },
-    {
-      "id": "ALTvRNMpe-4",
-      "data": {
-        "publishedAt": {
-          "__type__": "timestamp",
-          "seconds": 1746955197,
-          "nanoseconds": 0
-        },
-        "caption": false,
-        "description": "ご視聴ありがとうございます(◍´͈ ᵕ `͈ ◍)💗雑談、ASMR、ゲームなどなど、まったり配信していきます✨\n\n｡*⑅୨୧┈┈┈┈┈┈┈┈┈┈┈┈୨୧⑅*｡\n\nオケ音源はカラオケ歌っちゃ王様　‪‪@uta-cha-oh‬  　からお借りしています🌸\n※使用許諾を購入しております...！\n\n｡*⑅୨୧┈┈┈┈┈┈┈┈┈┈┈┈୨୧⑅*｡\n\n毎週金曜日は、23:00から限定放送でお会いしましょう💗\n「もっとぐっと近い距離で、お耳に幸せをお届け♪」をコンセプトに、距離の近い密着感のあるコンテンツをご提供🤍\nASMR・耳○め放送や、チャンネルオリジナルキャラクターとあまあまな時間を過ごせるシチュエーション放送がメインコンテンツ🌟\nニコニコチャンネル　▶　https://ch.nicovideo.jp/suzuka-minase\nOPENREC　▶　https://www.openrec.tv/user/Suzuka_minase\nニコニコチャンネル・OPENRECの同時配信です🌸同じコンテンツをお届けしてるので、お好きな方の配信サイトでお楽しみください🌟\n\n｡*⑅୨୧┈┈┈┈┈┈┈┈┈┈┈┈୨୧⑅*｡\n\nCi-enにてファンクラブ運営中です🌸\nオリジナルのえちち……💗なボイスや、ディスコサーバーでの不定期音声配信、季節のおハガキのお届けなど……いろんな特典をお届けしてます✨\n詳細は下記をご覧くださいっ🌟\nhttps://twitter.com/suzuka_minase/status/1509547916209262599\n\n｡*⑅୨୧┈┈┈┈┈┈┈┈┈┈┈┈୨୧⑅*｡\n\n＊お誕生日が近づいてきたリスナー様へ＊\n配信内の「ひとことお誕生日お祝い」コーナーにて、お名前・お誕生日の読み上げをご希望の際はこちらのフォームをご使用ください(▽`*)\nhttps://form.run/@szk-minase-1605250970\n読み漏れ防止のため、お誕生日が近づいてから（1～2週間前）お送り頂くようお願いいたします……！\n基本的にはお誕生日後の最初の定期配信にて読み上げをさせていただきます。\n※簡易的なものとなりますので、ボイスのリクエストはご遠慮ください※\n※いたずらでの送信はご遠慮ください※\n\n｡*⑅୨୧┈┈┈┈┈┈┈┈┈┈┈┈୨୧⑅*｡\n\n【Live2D】\nillust／clothes design　：　ギャラクシー伊藤様　https://twitter.com/Galaxy_ito\nmodeling　：　浅木式様　https://twitter.com/asagishiki00\n素敵なモデルありがとうございます💗\n\n｡*⑅୨୧┈┈┈┈┈┈┈┈┈┈┈┈୨୧⑅*｡\n\n涼花みなせ\nX　　https://X.com/suzuka_minase\nHP　　　https://www.szkminase.com/\nPOTOFU　https://potofu.me/suzuka-minase",
-        "videoId": "ALTvRNMpe-4",
-        "title": "うたう♡",
-        "liveBroadcastContent": "none",
-        "duration": "PT2H8M29S",
-        "audioButtonCount": 0,
-        "liveStreamingDetails": {
-          "actualStartTime": {
-            "__type__": "timestamp",
-            "seconds": 1746946777,
-            "nanoseconds": 0
-          },
-          "actualEndTime": {
-            "__type__": "timestamp",
-            "seconds": 1746954477,
-            "nanoseconds": 0
-          }
-        },
-        "definition": "hd",
-        "dimension": "2d",
-        "channelId": "UChiMMOhl6FpzjoRqvZ5rcaA",
-        "channelTitle": "涼花みなせ / Suzuka Minase",
-        "player": {
-          "embedHtml": "<iframe width=\"480\" height=\"270\" src=\"//www.youtube.com/embed/ALTvRNMpe-4\" frameborder=\"0\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share\" referrerpolicy=\"strict-origin-when-cross-origin\" allowfullscreen></iframe>"
-        },
-        "categoryId": "24",
-        "status": {
-          "privacyStatus": "public",
-          "uploadStatus": "processed",
-          "embeddable": true
-        },
-        "tags": {
-          "playlistTags": [
-            "🎤歌枠🩷"
-          ],
-          "userTags": [],
-          "contentTags": []
-        },
-        "playlistTags": [
-          "🎤歌枠🩷"
-        ],
-        "videoType": "archived",
-        "userTags": [],
-        "id": "ALTvRNMpe-4",
-        "thumbnailUrl": "https://i.ytimg.com/vi/ALTvRNMpe-4/maxresdefault.jpg",
-        "updatedAt": "2025-08-22T04:05:14.868Z",
-        "statistics": {
-          "commentCount": 15,
-          "favoriteCount": 0,
-          "likeCount": 275,
-          "viewCount": 5225
-        },
-        "lastFetchedAt": {
-          "__type__": "timestamp",
-          "seconds": 1783157418,
-          "nanoseconds": 293000000
         }
       }
     }
