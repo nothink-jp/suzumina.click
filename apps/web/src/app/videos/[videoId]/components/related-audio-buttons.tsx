@@ -62,7 +62,6 @@ export function RelatedAudioButtons({
 							className="shadow-sm hover:shadow-md transition-all duration-200"
 							initialIsFavorited={isFavorited}
 							initialIsLiked={likeDislikeStatus?.isLiked || false}
-							initialIsDisliked={likeDislikeStatus?.isDisliked || false}
 						/>
 					);
 				})}

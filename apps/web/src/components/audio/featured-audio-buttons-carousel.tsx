@@ -46,7 +46,6 @@ export function FeaturedAudioButtonsCarousel({ audioButtons }: FeaturedAudioButt
 						maxTitleLength={isMobile ? 30 : 50}
 						initialIsFavorited={isFavorited}
 						initialIsLiked={likeDislikeStatus?.isLiked || false}
-						initialIsDisliked={likeDislikeStatus?.isDisliked || false}
 					/>
 				);
 			})}

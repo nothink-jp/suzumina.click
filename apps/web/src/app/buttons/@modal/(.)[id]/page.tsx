@@ -59,12 +59,7 @@ export default async function InterceptedAudioButtonPage({
 					</p>
 					<div className="flex flex-wrap justify-start gap-2.5">
 						{related.map((button) => (
-							<AudioButtonWithPlayCount
-								key={button.id}
-								audioButton={button}
-								showFavorite={true}
-								maxTitleLength={30}
-							/>
+							<AudioButtonWithPlayCount key={button.id} audioButton={button} maxTitleLength={30} />
 						))}
 					</div>
 				</div>

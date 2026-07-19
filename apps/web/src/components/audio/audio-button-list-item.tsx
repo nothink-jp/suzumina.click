@@ -6,7 +6,6 @@ interface AudioButtonListItemProps {
 	searchQuery?: string;
 	isFavorited: boolean;
 	isLiked: boolean;
-	isDisliked: boolean;
 }
 
 /**
@@ -18,7 +17,6 @@ export function AudioButtonListItem({
 	searchQuery,
 	isFavorited,
 	isLiked,
-	isDisliked,
 }: AudioButtonListItemProps) {
 	return (
 		<AudioButtonWithPlayCount
@@ -28,7 +26,6 @@ export function AudioButtonListItem({
 			highlightClassName="bg-primary/20 text-foreground px-0.5 rounded"
 			initialIsFavorited={isFavorited}
 			initialIsLiked={isLiked}
-			initialIsDisliked={isDisliked}
 		/>
 	);
 }
