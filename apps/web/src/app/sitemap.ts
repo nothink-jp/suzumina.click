@@ -1,3 +1,4 @@
+import type { DocumentData, Firestore, Query, WhereFilterOp } from "@google-cloud/firestore";
 import type { MetadataRoute } from "next";
 import { unstable_cache } from "next/cache";
 import { connection } from "next/server";
@@ -14,72 +15,97 @@ import { warn as logWarn } from "@/lib/logger";
 // TTL を 1h→24h に延長して全件 read 頻度を 24分の1 に抑える。
 const SITEMAP_REVALIDATE_SECONDS = 86400;
 
+// works/videos/audioButtons は string ISO、creators/circles は Firestore Timestamp と
+// 型が混在している（CLAUDE.md §1）。Timestamp は toDate() を経由しないと Invalid Date になるため、
+// videos/actions.ts の convertTimestamp と同じパターンで両対応する。
+function toDateValue(value: unknown): Date | string | undefined {
+	if (value && typeof value === "object" && "toDate" in value) {
+		return (value as { toDate(): Date }).toDate();
+	}
+	return value as Date | string | undefined;
+}
+
+function lastModifiedOf(data: { updatedAt?: unknown; createdAt?: unknown }): Date {
+	return new Date(toDateValue(data.updatedAt) || toDateValue(data.createdAt) || Date.now());
+}
+
+type CollectionPageConfig = {
+	collection: string;
+	/** ログメッセージ用の表示名（例: audioButtons → "audio buttons"）。省略時は collection をそのまま使う。 */
+	label?: string;
+	urlPrefix: string;
+	changeFrequency: NonNullable<MetadataRoute.Sitemap[number]["changeFrequency"]>;
+	priority: number;
+	/** isPublic 等での事前フィルタが必要なコレクションのみ指定（例: audioButtons） */
+	where?: [field: string, op: WhereFilterOp, value: unknown];
+	/** レコード単位の可視性判定（例: videos の status.privacyStatus） */
+	isVisible?: (data: DocumentData) => boolean;
+};
+
+// コレクション全件を sitemap エントリへ変換する共通ロジック。
+// コレクションごとの差分（コレクション名・URLプレフィックス・優先度・可視性判定）のみを
+// 呼び出し側で指定する。取得失敗はログを残しつつ空配列にフォールバックし、他コレクションへ波及させない。
+async function getCollectionPages(
+	firestore: Firestore,
+	baseUrl: string,
+	config: CollectionPageConfig,
+): Promise<MetadataRoute.Sitemap> {
+	try {
+		let query: Query = firestore.collection(config.collection);
+		if (config.where) {
+			query = query.where(...config.where);
+		}
+		const snapshot = await query.limit(50000).get();
+		return snapshot.docs
+			.filter((doc) => !config.isVisible || config.isVisible(doc.data()))
+			.map((doc) => ({
+				url: `${baseUrl}${config.urlPrefix}/${doc.id}`,
+				lastModified: lastModifiedOf(doc.data()),
+				changeFrequency: config.changeFrequency,
+				priority: config.priority,
+			}));
+	} catch (error) {
+		logWarn(`Failed to fetch ${config.label ?? config.collection} for sitemap:`, { error });
+		return [];
+	}
+}
+
+// コレクションごとの設定一覧。
+// - videos: isPublic フィールドが無く、可視性は status.privacyStatus で判定する。
+//   一覧ページ (apps/web/src/app/videos/actions.ts) と同じく、status 未設定も公開扱いする。
+// - works/creators/circles: 公開/非公開の概念が無く、全件が公開対象。
+// - audioButtons: 公開ボタン（isPublic=true）のみ対象。
+const COLLECTION_PAGE_CONFIGS: CollectionPageConfig[] = [
+	{
+		collection: "videos",
+		urlPrefix: "/videos",
+		changeFrequency: "weekly",
+		priority: 0.7,
+		isVisible: (data) => {
+			const privacyStatus = data.status?.privacyStatus;
+			return !data.status || privacyStatus === "public";
+		},
+	},
+	{ collection: "works", urlPrefix: "/works", changeFrequency: "monthly", priority: 0.6 },
+	{
+		collection: "audioButtons",
+		label: "audio buttons",
+		urlPrefix: "/buttons",
+		changeFrequency: "monthly",
+		priority: 0.5,
+		where: ["isPublic", "==", true],
+	},
+	{ collection: "creators", urlPrefix: "/creators", changeFrequency: "weekly", priority: 0.5 },
+	{ collection: "circles", urlPrefix: "/circles", changeFrequency: "weekly", priority: 0.5 },
+];
+
 const getDynamicSitemapPages = unstable_cache(
 	async (baseUrl: string): Promise<MetadataRoute.Sitemap> => {
 		const firestore = getFirestore();
-		const dynamicPages: MetadataRoute.Sitemap = [];
-
-		// 動画ページを追加
-		// videos コレクションには isPublic フィールドが無く、可視性は status.privacyStatus で判定する。
-		// 一覧ページ (apps/web/src/app/videos/actions.ts) と同じく、status 未設定も公開扱いする。
-		try {
-			const videosSnapshot = await firestore.collection("videos").limit(50000).get();
-
-			for (const doc of videosSnapshot.docs) {
-				const video = doc.data();
-				const privacyStatus = video.status?.privacyStatus;
-				if (video.status && privacyStatus !== "public") continue;
-				dynamicPages.push({
-					url: `${baseUrl}/videos/${doc.id}`,
-					lastModified: new Date(video.updatedAt || video.createdAt || Date.now()),
-					changeFrequency: "weekly",
-					priority: 0.7,
-				});
-			}
-		} catch (error) {
-			logWarn("Failed to fetch videos for sitemap:", { error });
-		}
-
-		// 作品ページを追加
-		// works コレクションには公開/非公開の概念が無く、全件が公開対象。
-		try {
-			const worksSnapshot = await firestore.collection("works").limit(50000).get();
-
-			for (const doc of worksSnapshot.docs) {
-				const work = doc.data();
-				dynamicPages.push({
-					url: `${baseUrl}/works/${doc.id}`,
-					lastModified: new Date(work.updatedAt || work.createdAt || Date.now()),
-					changeFrequency: "monthly",
-					priority: 0.6,
-				});
-			}
-		} catch (error) {
-			logWarn("Failed to fetch works for sitemap:", { error });
-		}
-
-		// 音声ボタンページを追加
-		try {
-			const audioButtonsSnapshot = await firestore
-				.collection("audioButtons")
-				.where("isPublic", "==", true)
-				.limit(50000)
-				.get();
-
-			for (const doc of audioButtonsSnapshot.docs) {
-				const audioButton = doc.data();
-				dynamicPages.push({
-					url: `${baseUrl}/buttons/${doc.id}`,
-					lastModified: new Date(audioButton.updatedAt || audioButton.createdAt || Date.now()),
-					changeFrequency: "monthly",
-					priority: 0.5,
-				});
-			}
-		} catch (error) {
-			logWarn("Failed to fetch audio buttons for sitemap:", { error });
-		}
-
-		return dynamicPages;
+		const pagesByCollection = await Promise.all(
+			COLLECTION_PAGE_CONFIGS.map((config) => getCollectionPages(firestore, baseUrl, config)),
+		);
+		return pagesByCollection.flat();
 	},
 	["sitemap-dynamic-pages"],
 	{ revalidate: SITEMAP_REVALIDATE_SECONDS, tags: ["sitemap"] },

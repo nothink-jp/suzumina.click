@@ -55,16 +55,27 @@ function buildSnapshot(docs: SnapshotDoc[]) {
 	return { docs };
 }
 
+// creators/circles は Firestore Timestamp（toDate() を持つオブジェクト）で updatedAt/createdAt を
+// 保持する（works/videos/audioButtons の string ISO とは型が異なる。CLAUDE.md §1）。
+// 実データ形状を再現するための最小フェイク。
+function fakeTimestamp(iso: string) {
+	return { toDate: () => new Date(iso) };
+}
+
+const DEFAULT_EMPTY_COLLECTIONS = ["creators", "circles"];
+
 function buildCollectionResolvers(
 	resolvers: Record<string, () => Promise<{ docs: SnapshotDoc[] }>>,
 ) {
 	return {
 		collection: (name: string) => {
-			const resolver = resolvers[name];
+			const resolver =
+				resolvers[name] ??
+				(DEFAULT_EMPTY_COLLECTIONS.includes(name) ? async () => buildSnapshot([]) : undefined);
 			if (!resolver) {
 				throw new Error(`Unexpected collection: ${name}`);
 			}
-			// sitemap.ts は videos/works を `.collection().limit().get()`、
+			// sitemap.ts は videos/works/creators/circles を `.collection().limit().get()`、
 			// audioButtons を `.collection().where().limit().get()` で呼び分ける。
 			// 両方のチェーンを同じ resolver に解決する。
 			const limitChain = { get: () => resolver() };
@@ -134,6 +145,20 @@ describe("sitemap", () => {
 						data: () => ({ updatedAt: "2024-04-01T00:00:00Z" }),
 					},
 				]),
+			creators: async () =>
+				buildSnapshot([
+					{
+						id: "creator-1",
+						data: () => ({ updatedAt: fakeTimestamp("2024-05-01T00:00:00Z") }),
+					},
+				]),
+			circles: async () =>
+				buildSnapshot([
+					{
+						id: "circle-1",
+						data: () => ({ updatedAt: fakeTimestamp("2024-06-01T00:00:00Z") }),
+					},
+				]),
 		});
 
 		(getFirestore as any).mockReturnValue(firestoreMock);
@@ -145,7 +170,22 @@ describe("sitemap", () => {
 		expect(urls).toContain("https://suzumina.click/videos/video-2");
 		expect(urls).toContain("https://suzumina.click/works/RJ123456");
 		expect(urls).toContain("https://suzumina.click/buttons/audio-1");
-		expect(result.length).toBe(STATIC_PATHS.length + 4);
+		expect(urls).toContain("https://suzumina.click/creators/creator-1");
+		expect(urls).toContain("https://suzumina.click/circles/circle-1");
+		expect(result.length).toBe(STATIC_PATHS.length + 6);
+
+		// creators/circles は Firestore Timestamp（toDate() 経由）を lastModified に変換する。
+		// toDate() を無視して new Date(Timestamp) すると Invalid Date になり、Next.js の
+		// toISOString() 呼び出し時に RangeError で sitemap 全体が壊れるため回帰検知する。
+		const byUrl = new Map(result.map((entry) => [entry.url, entry]));
+		const creatorEntry = byUrl.get("https://suzumina.click/creators/creator-1");
+		const circleEntry = byUrl.get("https://suzumina.click/circles/circle-1");
+		expect(creatorEntry?.lastModified).toBeInstanceOf(Date);
+		expect(Number.isNaN((creatorEntry?.lastModified as Date)?.getTime())).toBe(false);
+		expect(creatorEntry?.lastModified).toEqual(new Date("2024-05-01T00:00:00Z"));
+		expect(circleEntry?.lastModified).toBeInstanceOf(Date);
+		expect(Number.isNaN((circleEntry?.lastModified as Date)?.getTime())).toBe(false);
+		expect(circleEntry?.lastModified).toEqual(new Date("2024-06-01T00:00:00Z"));
 	});
 
 	it("Firestore 障害時の fallback: getFirestore が throw した場合は静的ページのみを返す", async () => {
