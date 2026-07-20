@@ -1,6 +1,8 @@
 import type { CloudEvent } from "@google-cloud/functions-framework";
 import type { youtube_v3 } from "googleapis";
 import firestore, { Timestamp } from "../infrastructure/database/firestore";
+import { getJSTDate } from "../services/price-history";
+import { RECENT_WINDOW_DAYS } from "../services/youtube/video-tiering";
 import {
 	extractVideoIds,
 	fetchChannelPlaylists,
@@ -14,7 +16,11 @@ import {
 import {
 	getAllVideoIds,
 	getKnownVideoIdsSet,
+	getOldTierDueVideoIds,
+	getPlaylistMappingCache,
+	getRecentTierVideoIds,
 	getStaleLiveVideoIds,
+	savePlaylistMappingCache,
 	saveVideosToFirestore,
 } from "../services/youtube/youtube-firestore";
 import { SUZUKA_MINASE_CHANNEL_ID } from "../shared/common";
@@ -66,6 +72,23 @@ interface FetchMetadata {
 function getDiscoveryMode(): "search" | "shadow" | "playlist" {
 	const raw = process.env.YOUTUBE_DISCOVERY_MODE;
 	return raw === "shadow" || raw === "playlist" ? raw : "search";
+}
+
+/**
+ * SPR-261/262: playlist→videoマッピングのFirestoreキャッシュ利用フラグ。
+ * dlsiteの`isTierFilteringEnabled`と同型（緊急時はfalseにして再デプロイするだけで
+ * 旧挙動＝毎run全playlist再取得に戻せる。Firestoreスキーマ変更を伴わないためロールバックの障害はない）。
+ */
+function isPlaylistCacheEnabled(): boolean {
+	return process.env.YOUTUBE_PLAYLIST_CACHE_ENABLED !== "false";
+}
+
+/**
+ * SPR-261/262: 動画統計（videos.list）のティア差分再取得フラグ。
+ * falseにすると新着discovery・stale live救済のみ（旧挙動）に戻る。
+ */
+function isStatsTierRefreshEnabled(): boolean {
+	return process.env.YOUTUBE_STATS_TIER_REFRESH_ENABLED !== "false";
 }
 
 /**
@@ -497,6 +520,89 @@ async function buildPlaylistVideoMapping(
 }
 
 /**
+ * playlist→videoマッピングを解決する（キャッシュ有効時は日次1回だけ再構築する）
+ *
+ * SPR-261/262: `buildPlaylistVideoMapping`（全playlist+playlistItemsの再走査）は
+ * 定常runの大半のクォータ消費要因だったため、Firestoreに日次キャッシュして
+ * 同日中の再run（毎時30分）ではAPI呼び出しを行わない。キャッシュ読み書き自体の
+ * 失敗は本処理を壊さず、フォールバックとして毎回再構築する
+ * （shadow比較・stale live救済と同じ「本処理を壊さない」方針を踏襲）。
+ */
+async function resolvePlaylistVideoMapping(
+	youtube: youtube_v3.Youtube,
+	channelId: string,
+): Promise<Map<string, string[]>> {
+	if (!isPlaylistCacheEnabled()) {
+		return buildPlaylistVideoMapping(youtube, channelId);
+	}
+
+	const todayJST = getJSTDate();
+
+	try {
+		const cache = await getPlaylistMappingCache();
+		if (cache && cache.updatedAtJST === todayJST) {
+			logger.debug("playlist→videoマッピングのキャッシュを再利用します", { todayJST });
+			return cache.mapping;
+		}
+	} catch (error) {
+		logger.warn("playlist→videoマッピングキャッシュの読み取りに失敗しました（再構築します）", {
+			error: error instanceof Error ? error.message : String(error),
+		});
+	}
+
+	const mapping = await buildPlaylistVideoMapping(youtube, channelId);
+
+	try {
+		await savePlaylistMappingCache(mapping, todayJST);
+	} catch (error) {
+		logger.warn(
+			"playlist→videoマッピングキャッシュの保存に失敗しました（今回の結果には影響しません）",
+			{
+				error: error instanceof Error ? error.message : String(error),
+			},
+		);
+	}
+
+	return mapping;
+}
+
+/**
+ * SPR-261/262: 動画統計ティア差分（recent-tier・old-tier）の対象動画IDを取得する
+ *
+ * 新着discovery・stale live救済に加え、動画統計（再生数等）の恒久的な陳腐化を防ぐため、
+ * recent-tier（毎run）・old-tier（日次ローテーション）の動画も対象に合流させる。
+ * クエリ自体の失敗はこの回のティア差分をスキップするに留め、run全体は失敗させない
+ * （stale live救済と同様の方針）。
+ */
+async function fetchStatsTierVideoIds(): Promise<{
+	recentTierVideoIds: string[];
+	oldTierDueVideoIds: string[];
+}> {
+	if (!isStatsTierRefreshEnabled()) {
+		return { recentTierVideoIds: [], oldTierDueVideoIds: [] };
+	}
+
+	try {
+		const today = new Date();
+		const todayJST = getJSTDate();
+		const [recentTierVideoIds, oldTierDueVideoIds] = await Promise.all([
+			getRecentTierVideoIds(RECENT_WINDOW_DAYS, today),
+			getOldTierDueVideoIds(RECENT_WINDOW_DAYS, today, todayJST),
+		]);
+		logger.info("動画統計ティア差分の対象を取得しました", {
+			recent: recentTierVideoIds.length,
+			oldDue: oldTierDueVideoIds.length,
+		});
+		return { recentTierVideoIds, oldTierDueVideoIds };
+	} catch (error) {
+		logger.warn("動画統計ティア差分の取得に失敗しました（今回はスキップします）", {
+			error: error instanceof Error ? error.message : String(error),
+		});
+		return { recentTierVideoIds: [], oldTierDueVideoIds: [] };
+	}
+}
+
+/**
  * 動画にプレイリストタグをマッピング
  *
  * @param videos - YouTube動画の配列
@@ -614,7 +720,16 @@ async function runNormalFetchAndSave(
 		});
 	}
 
-	const videoIds = Array.from(new Set([...discoveredVideoIds, ...staleLiveVideoIds]));
+	const { recentTierVideoIds, oldTierDueVideoIds } = await fetchStatsTierVideoIds();
+
+	const videoIds = Array.from(
+		new Set([
+			...discoveredVideoIds,
+			...staleLiveVideoIds,
+			...recentTierVideoIds,
+			...oldTierDueVideoIds,
+		]),
+	);
 	logger.info(`動画詳細取得対象の合計: ${videoIds.length}件`);
 
 	if (videoIds.length === 0) {
@@ -625,7 +740,7 @@ async function runNormalFetchAndSave(
 
 	// 4. プレイリスト情報の取得
 	logger.info("プレイリスト情報を取得中...");
-	const playlistVideoMap = await buildPlaylistVideoMapping(youtube, SUZUKA_MINASE_CHANNEL_ID);
+	const playlistVideoMap = await resolvePlaylistVideoMapping(youtube, SUZUKA_MINASE_CHANNEL_ID);
 
 	// 5. 動画の詳細情報取得
 	const videoDetails = await fetchVideoDetails(youtube, videoIds);

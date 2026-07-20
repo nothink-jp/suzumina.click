@@ -8,10 +8,14 @@ import { SUZUKA_MINASE_CHANNEL_ID } from "../../../shared/common";
 
 const mockBatchSet = vi.fn();
 const mockBatchCommit = vi.fn().mockResolvedValue(undefined);
-const mockDoc = vi.fn((id: string) => ({ id }));
+const mockDocGet = vi.fn();
+const mockDocSet = vi.fn().mockResolvedValue(undefined);
+const mockDoc = vi.fn((id: string) => ({ id, get: mockDocGet, set: mockDocSet }));
 const mockGetAll = vi.fn();
 const mockSelectGet = vi.fn();
 const mockWhereOrderByGet = vi.fn();
+const mockWhereSelectLimitGet = vi.fn();
+const mockWhereSelectGet = vi.fn();
 const mockOrderBy = vi.fn((..._args: unknown[]) => ({
 	select: vi.fn(() => ({
 		limit: vi.fn(() => ({ get: mockWhereOrderByGet })),
@@ -19,7 +23,32 @@ const mockOrderBy = vi.fn((..._args: unknown[]) => ({
 }));
 const mockWhere = vi.fn((..._args: unknown[]) => ({
 	orderBy: (...args: unknown[]) => mockOrderBy(...args),
+	select: (..._selectArgs: unknown[]) => ({
+		limit: vi.fn(() => ({ get: mockWhereSelectLimitGet })),
+		get: mockWhereSelectGet,
+	}),
 }));
+// テスト用Timestamp実装: `instanceof Timestamp`（youtube-firestore.tsの実装）を
+// テストからも通せるよう、実クラスとして定義しfromDate/now/toDateを実装する。
+// vi.mockファクトリ内から参照するためvi.hoisted()で定義する必要がある。
+const { MockTimestampClass, mockTimestamp } = vi.hoisted(() => {
+	class MockTimestampClass {
+		seconds: number;
+		constructor(seconds: number) {
+			this.seconds = seconds;
+		}
+		toDate(): Date {
+			return new Date(this.seconds * 1000);
+		}
+		static now(): MockTimestampClass {
+			return new MockTimestampClass(0);
+		}
+		static fromDate(date: Date): MockTimestampClass {
+			return new MockTimestampClass(Math.floor(date.getTime() / 1000));
+		}
+	}
+	return { MockTimestampClass, mockTimestamp: MockTimestampClass };
+});
 vi.mock("../../../infrastructure/database/firestore", () => ({
 	default: {
 		collection: vi.fn(() => ({
@@ -30,6 +59,7 @@ vi.mock("../../../infrastructure/database/firestore", () => ({
 		batch: vi.fn(() => ({ set: mockBatchSet, commit: mockBatchCommit })),
 		getAll: (...refs: unknown[]) => mockGetAll(...refs),
 	},
+	Timestamp: mockTimestamp,
 }));
 
 vi.mock("../../../shared/logger", () => ({
@@ -51,7 +81,11 @@ vi.mock("../../mappers/video-mapper", () => ({
 import {
 	getAllVideoIds,
 	getKnownVideoIdsSet,
+	getOldTierDueVideoIds,
+	getPlaylistMappingCache,
+	getRecentTierVideoIds,
 	getStaleLiveVideoIds,
+	savePlaylistMappingCache,
 	saveVideosToFirestore,
 } from "../youtube-firestore";
 
@@ -198,5 +232,107 @@ describe("getStaleLiveVideoIds", () => {
 
 		expect(result.truncated).toBe(true);
 		expect(result.videoIds).toHaveLength(50);
+	});
+});
+
+describe("getPlaylistMappingCache / savePlaylistMappingCache（SPR-261/262）", () => {
+	it("キャッシュが存在しない場合はundefinedを返す", async () => {
+		mockDocGet.mockResolvedValue({ exists: false });
+
+		const result = await getPlaylistMappingCache();
+
+		expect(result).toBeUndefined();
+	});
+
+	it("キャッシュが存在する場合はMapとupdatedAtJSTを返す", async () => {
+		mockDocGet.mockResolvedValue({
+			exists: true,
+			data: () => ({
+				mapping: { v1: ["配信アーカイブ"], v2: ["歌ってみた", "雑談"] },
+				updatedAtJST: "2026-07-20",
+			}),
+		});
+
+		const result = await getPlaylistMappingCache();
+
+		expect(result?.updatedAtJST).toBe("2026-07-20");
+		expect(result?.mapping).toEqual(
+			new Map([
+				["v1", ["配信アーカイブ"]],
+				["v2", ["歌ってみた", "雑談"]],
+			]),
+		);
+	});
+
+	it("保存時はMapをRecordに変換してdoc.setに渡す", async () => {
+		const mapping = new Map([["v1", ["配信アーカイブ"]]]);
+
+		await savePlaylistMappingCache(mapping, "2026-07-20");
+
+		expect(mockDocSet).toHaveBeenCalledWith(
+			expect.objectContaining({
+				mapping: { v1: ["配信アーカイブ"] },
+				updatedAtJST: "2026-07-20",
+			}),
+		);
+	});
+});
+
+describe("getRecentTierVideoIds（SPR-261/262）", () => {
+	it("publishedAtの範囲クエリでIDのみを返す", async () => {
+		mockWhereSelectLimitGet.mockResolvedValue({
+			docs: [{ id: "recent1" }, { id: "recent2" }],
+		});
+
+		const today = new Date("2026-07-20T00:00:00.000Z");
+		const result = await getRecentTierVideoIds(30, today);
+
+		expect(result).toEqual(["recent1", "recent2"]);
+		expect(mockWhere).toHaveBeenCalledWith("publishedAt", ">=", expect.any(MockTimestampClass));
+	});
+});
+
+describe("getOldTierDueVideoIds（SPR-261/262）", () => {
+	const today = new Date("2026-07-20T00:00:00.000Z");
+
+	it("当日JSTで既に再取得済みの動画は除外する", async () => {
+		mockWhereSelectGet.mockResolvedValue({
+			docs: [
+				{
+					id: "already-done",
+					get: () => MockTimestampClass.fromDate(new Date("2026-07-20T01:00:00.000Z")),
+				},
+				{
+					id: "due",
+					get: () => MockTimestampClass.fromDate(new Date("2026-07-10T01:00:00.000Z")),
+				},
+			],
+		});
+
+		const result = await getOldTierDueVideoIds(30, today, "2026-07-20");
+
+		expect(result).toEqual(["due"]);
+	});
+
+	it("lastFetchedAt昇順（最も長く放置された順）に並べ、limitで切る", async () => {
+		mockWhereSelectGet.mockResolvedValue({
+			docs: [
+				{ id: "newer", get: () => MockTimestampClass.fromDate(new Date("2026-07-15T00:00:00Z")) },
+				{ id: "oldest", get: () => MockTimestampClass.fromDate(new Date("2026-06-01T00:00:00Z")) },
+				{ id: "middle", get: () => MockTimestampClass.fromDate(new Date("2026-07-01T00:00:00Z")) },
+			],
+		});
+
+		const result = await getOldTierDueVideoIds(30, today, "2026-07-20", 2);
+
+		expect(result).toEqual(["oldest", "middle"]);
+	});
+
+	it("該当が無い場合は空配列を返す", async () => {
+		mockWhereSelectGet.mockResolvedValue({ docs: [] });
+
+		const result = await getOldTierDueVideoIds(30, today, "2026-07-20");
+
+		expect(result).toEqual([]);
 	});
 });
