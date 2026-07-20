@@ -527,10 +527,17 @@ async function buildPlaylistVideoMapping(
  * 同日中の再run（毎時30分）ではAPI呼び出しを行わない。キャッシュ読み書き自体の
  * 失敗は本処理を壊さず、フォールバックとして毎回再構築する
  * （shadow比較・stale live救済と同じ「本処理を壊さない」方針を踏襲）。
+ *
+ * レビュー指摘対応: 日次キャッシュのままだと、キャッシュ構築後に新規発見された動画の
+ * `playlistTags`が翌日の再構築まで空欄のまま残ってしまう。`discoveredVideoIds`
+ * （このrunで新着として発見された動画）のうち1件でもキャッシュ未反映のものがあれば、
+ * 当日中でも再構築する。新着discoveryが起きたrunでしか再構築は走らないため、
+ * 定常run（新着0件）のクォータ削減効果は維持される。
  */
 async function resolvePlaylistVideoMapping(
 	youtube: youtube_v3.Youtube,
 	channelId: string,
+	discoveredVideoIds: string[],
 ): Promise<Map<string, string[]>> {
 	if (!isPlaylistCacheEnabled()) {
 		return buildPlaylistVideoMapping(youtube, channelId);
@@ -541,8 +548,15 @@ async function resolvePlaylistVideoMapping(
 	try {
 		const cache = await getPlaylistMappingCache();
 		if (cache && cache.updatedAtJST === todayJST) {
-			logger.debug("playlist→videoマッピングのキャッシュを再利用します", { todayJST });
-			return cache.mapping;
+			const hasUncoveredNewVideo = discoveredVideoIds.some((id) => !cache.mapping.has(id));
+			if (!hasUncoveredNewVideo) {
+				logger.debug("playlist→videoマッピングのキャッシュを再利用します", { todayJST });
+				return cache.mapping;
+			}
+			logger.info(
+				"新着動画がキャッシュに未反映のため、当日中でもplaylist→videoマッピングを再構築します",
+				{ todayJST, discoveredVideoIds },
+			);
 		}
 	} catch (error) {
 		logger.warn("playlist→videoマッピングキャッシュの読み取りに失敗しました（再構築します）", {
@@ -740,7 +754,11 @@ async function runNormalFetchAndSave(
 
 	// 4. プレイリスト情報の取得
 	logger.info("プレイリスト情報を取得中...");
-	const playlistVideoMap = await resolvePlaylistVideoMapping(youtube, SUZUKA_MINASE_CHANNEL_ID);
+	const playlistVideoMap = await resolvePlaylistVideoMapping(
+		youtube,
+		SUZUKA_MINASE_CHANNEL_ID,
+		discoveredVideoIds,
+	);
 
 	// 5. 動画の詳細情報取得
 	const videoDetails = await fetchVideoDetails(youtube, videoIds);

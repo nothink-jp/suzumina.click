@@ -1,36 +1,32 @@
 /**
- * 動画統計ティア分類ユーティリティ（SPR-261/262）のテスト
+ * 動画統計ティア境界日時ユーティリティ（SPR-261/262）のテスト
  */
 
 import { describe, expect, it } from "vitest";
-import { classifyVideoStatsTier, RECENT_WINDOW_DAYS } from "../video-tiering";
+import { getStatsTierCutoffDate, RECENT_WINDOW_DAYS } from "../video-tiering";
 
 const TODAY = new Date("2026-07-20T00:00:00.000Z");
 
-describe("classifyVideoStatsTier", () => {
-	it("publishedAtISOが未定義の場合はrecentになる（安全側）", () => {
-		expect(classifyVideoStatsTier(undefined, TODAY)).toBe("recent");
+describe("getStatsTierCutoffDate", () => {
+	it("today からwindowDays日前の日時を返す", () => {
+		const cutoff = getStatsTierCutoffDate(30, TODAY);
+		expect(cutoff.toISOString()).toBe("2026-06-20T00:00:00.000Z");
 	});
 
-	it("publishedAtISOが不正な値の場合はrecentになる（安全側）", () => {
-		expect(classifyVideoStatsTier("not-a-date", TODAY)).toBe("recent");
+	it("windowDays=0の場合はtodayと同じ日時を返す", () => {
+		const cutoff = getStatsTierCutoffDate(0, TODAY);
+		expect(cutoff.toISOString()).toBe(TODAY.toISOString());
 	});
 
-	it("直近windowDays日以内に公開された動画はrecentになる", () => {
-		expect(classifyVideoStatsTier("2026-07-01T00:00:00.000Z", TODAY)).toBe("recent"); // 19日前
+	it("RECENT_WINDOW_DAYSを使った場合と明示指定した場合で一致する", () => {
+		expect(getStatsTierCutoffDate(RECENT_WINDOW_DAYS, TODAY).getTime()).toBe(
+			getStatsTierCutoffDate(30, TODAY).getTime(),
+		);
 	});
 
-	it("ちょうど閾値の場合はrecentになる（境界値）", () => {
-		const boundary = new Date(TODAY.getTime() - RECENT_WINDOW_DAYS * 24 * 60 * 60 * 1000);
-		expect(classifyVideoStatsTier(boundary.toISOString(), TODAY)).toBe("recent");
-	});
-
-	it("windowDaysを超えて前に公開された動画はoldになる", () => {
-		expect(classifyVideoStatsTier("2020-01-01T00:00:00.000Z", TODAY)).toBe("old");
-	});
-
-	it("windowDaysを明示的に指定できる", () => {
-		expect(classifyVideoStatsTier("2026-07-10T00:00:00.000Z", TODAY, 5)).toBe("old"); // 10日前
-		expect(classifyVideoStatsTier("2026-07-18T00:00:00.000Z", TODAY, 5)).toBe("recent"); // 2日前
+	it("todayを書き換えない（純粋関数であること）", () => {
+		const today = new Date(TODAY);
+		getStatsTierCutoffDate(30, today);
+		expect(today.toISOString()).toBe(TODAY.toISOString());
 	});
 });

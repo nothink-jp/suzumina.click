@@ -12,6 +12,7 @@ import { chunkArray } from "../../shared/array-utils";
 import { SUZUKA_MINASE_CHANNEL_ID } from "../../shared/common";
 import * as logger from "../../shared/logger";
 import { VideoMapper } from "../mappers/video-mapper";
+import { getStatsTierCutoffDate } from "./video-tiering";
 
 // Firestore関連の定数
 const VIDEOS_COLLECTION = "videos";
@@ -381,8 +382,7 @@ export async function getRecentTierVideoIds(
 	today: Date,
 	limit: number = MAX_RECENT_TIER_VIDEO_IDS,
 ): Promise<string[]> {
-	const cutoff = new Date(today);
-	cutoff.setDate(cutoff.getDate() - windowDays);
+	const cutoff = getStatsTierCutoffDate(windowDays, today);
 
 	const snapshot = await firestore
 		.collection(VIDEOS_COLLECTION)
@@ -408,8 +408,7 @@ export async function getOldTierDueVideoIds(
 	todayJST: string,
 	limit: number = MAX_OLD_TIER_DUE_VIDEO_IDS,
 ): Promise<string[]> {
-	const cutoff = new Date(today);
-	cutoff.setDate(cutoff.getDate() - windowDays);
+	const cutoff = getStatsTierCutoffDate(windowDays, today);
 
 	const snapshot = await firestore
 		.collection(VIDEOS_COLLECTION)
