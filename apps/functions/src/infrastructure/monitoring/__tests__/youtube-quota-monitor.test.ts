@@ -95,9 +95,9 @@ describe("YouTubeQuotaMonitor", () => {
 
 			const stats = quotaMonitor.getUsageStats();
 
-			expect(stats.dailyUsage).toBe(140); // 100 + 8*5
-			expect(stats.estimatedRemaining).toBe(9860); // 10000 - 140
-			expect(Math.round((stats.dailyUsage / 10000) * 100 * 10) / 10).toBe(1.4); // 140/10000 * 100
+			expect(stats.dailyUsage).toBe(105); // 100 + 1*5
+			expect(stats.estimatedRemaining).toBe(9895); // 10000 - 105
+			expect(Math.round((stats.dailyUsage / 10000) * 100 * 10) / 10).toBe(1.1); // 105/10000 * 100
 			expect(stats.operationBreakdown.search).toBe(1);
 			expect(stats.operationBreakdown.videosFullDetails).toBe(5);
 		});
@@ -216,7 +216,7 @@ describe("YouTubeQuotaMonitor", () => {
 describe("QUOTA_COSTS", () => {
 	it("すべての操作にコストが定義されている", () => {
 		expect(QUOTA_COSTS.search).toBe(100);
-		expect(QUOTA_COSTS.videosFullDetails).toBe(8);
+		expect(QUOTA_COSTS.videosFullDetails).toBe(1);
 
 		// すべてのコストが正の数
 		for (const [, cost] of Object.entries(QUOTA_COSTS)) {
@@ -269,7 +269,8 @@ describe("ヘルパー関数", () => {
 
 		it("バッチサイズを考慮してチェックする", () => {
 			const canExecuteSmall = canExecuteOperation("videosFullDetails", 1);
-			const canExecuteLarge = canExecuteOperation("videosFullDetails", 1000);
+			// 実コスト(1ユニット/コール)ではHOURLY_QUOTA_LIMIT(3000)を超える数量で確認する
+			const canExecuteLarge = canExecuteOperation("videosFullDetails", 5000);
 
 			expect(typeof canExecuteSmall).toBe("boolean");
 			expect(typeof canExecuteLarge).toBe("boolean");

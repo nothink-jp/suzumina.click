@@ -27,7 +27,10 @@ export const QUOTA_COSTS = {
 	videosWithPlayer: 1,
 
 	// 複合操作（複数partを含む）
-	videosFullDetails: 8, // snippet, statistics, contentDetails等の合計
+	// 実際のYouTube Data API v3の課金は「1コール=1ユニット」で、
+	// part数やバッチ内の動画件数（最大50件）では変動しない
+	// https://developers.google.com/youtube/v3/determine_quota_cost
+	videosFullDetails: 1, // videos.list（snippet, statistics, contentDetails等を含む）1コールあたり
 
 	// プレイリスト関連（3層タグシステム用）
 	playlists: 1, // playlists.list API
@@ -328,9 +331,11 @@ export class YouTubeQuotaMonitor {
 	} {
 		const remaining = this.DAILY_QUOTA_LIMIT - this.dailyUsage;
 
-		// 最も効率的なプラン
-		const searchCost = Math.ceil(targetVideoCount / 50) * QUOTA_COSTS.search;
-		const detailsCost = targetVideoCount * QUOTA_COSTS.videosFullDetails;
+		// 最も効率的なプラン（videos.list/search.listは共に「1コール=1ユニット」、
+		// バッチは最大50件/コールなので動画数でなくバッチ数でコストが決まる）
+		const requiredBatches = Math.ceil(targetVideoCount / 50);
+		const searchCost = requiredBatches * QUOTA_COSTS.search;
+		const detailsCost = requiredBatches * QUOTA_COSTS.videosFullDetails;
 		const totalCost = searchCost + detailsCost;
 
 		const plan = `検索: ${searchCost}クォータ, 詳細取得: ${detailsCost}クォータ`;
@@ -340,14 +345,15 @@ export class YouTubeQuotaMonitor {
 
 		if (!feasible) {
 			// 代替プラン
-			const basicDetailsCost = targetVideoCount * QUOTA_COSTS.videosWithSnippet;
+			const basicDetailsCost = requiredBatches * QUOTA_COSTS.videosWithSnippet;
 			const alternativeCost = searchCost + basicDetailsCost;
 
 			if (alternativeCost <= remaining) {
 				alternatives.push("基本情報のみ取得（snippet部分のみ）");
 			}
 
-			const affordableVideos = Math.floor(remaining / 9); // 検索+基本詳細
+			const costPerBatch = QUOTA_COSTS.search + QUOTA_COSTS.videosFullDetails;
+			const affordableVideos = Math.floor(remaining / costPerBatch) * 50; // 検索+詳細取得
 			if (affordableVideos > 0) {
 				alternatives.push(`対象を${affordableVideos}動画に削減`);
 			}
