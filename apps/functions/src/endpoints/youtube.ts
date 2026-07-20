@@ -675,6 +675,65 @@ async function runWeeklyFullSweep(
 }
 
 /**
+ * 配信中/配信予定の再チェック専用フロー（15分毎スケジューラ向け）
+ *
+ * 目的は配信中→配信済みの遷移をhourly runより速く反映すること（一度配信済みになった
+ * 動画は基本的に変化しないため、対象は`getStaleLiveVideoIds`が返すliveBroadcastContent
+ * in ["live","upcoming"]の動画のみ）。新着動画の発見・統計ティア更新は行わない。
+ *
+ * 通常runの`FetchMetadata`（nextPageToken等のページネーション状態・isInProgressロック）は
+ * 一切参照・更新しない。理由は2つ:
+ *   1. このフローはページネーション状態を持たず、共有ロックを取ると15分毎の頻度で
+ *      hourly runとの間欠的なブロッキングが発生しうる
+ *   2. 対象は通常0〜数件で処理は数秒以内に完了するため、hourly runとの単純な重複実行
+ *      （同一動画への冪等なmerge書き込み）は実害がない
+ */
+async function runStaleLiveRecheck(youtube: youtube_v3.Youtube): Promise<FetchResult> {
+	try {
+		const { videoIds: staleLiveVideoIds, truncated } = await getStaleLiveVideoIds();
+
+		if (staleLiveVideoIds.length === 0) {
+			logger.debug("配信中/配信予定の再チェック対象はありません");
+			return { videoCount: 0 };
+		}
+
+		logger.info(`配信中/配信予定の再チェック対象: ${staleLiveVideoIds.length}件`, {
+			videoIds: staleLiveVideoIds,
+		});
+		if (truncated) {
+			logger.warn(
+				"stale live/upcoming動画が上限件数に達しました。配信状態の固着が広範囲化している可能性があります",
+				{ count: staleLiveVideoIds.length },
+			);
+		}
+
+		// discoveredVideoIdsは空配列で渡す（新着ではなく既知動画の再チェックのため、
+		// キャッシュのカバレッジ判定に影響させない＝当日キャッシュがあればそのまま再利用する）。
+		// 当日キャッシュが未構築のまま本フローが最初に走った場合（例: hourly runより先に
+		// このジョブが発火する深夜配信時間帯）はbuildPlaylistVideoMappingのフルスキャンが
+		// 発生しうるが、これは既存のキャッシュ機構が持つ「1日1回はどちらかのジョブが
+		// 再構築する」という前提どおりの挙動であり、本フロー追加による新規コストではない。
+		const playlistVideoMap = await resolvePlaylistVideoMapping(
+			youtube,
+			SUZUKA_MINASE_CHANNEL_ID,
+			[],
+		);
+
+		const videoDetails = await fetchVideoDetails(youtube, staleLiveVideoIds);
+		const videosWithPlaylistTags = mapPlaylistTagsToVideos(videoDetails, playlistVideoMap);
+		const savedCount = await saveVideosToFirestore(videosWithPlaylistTags);
+
+		return { videoCount: savedCount };
+	} catch (error: unknown) {
+		logger.error("配信中/配信予定の再チェックでエラーが発生しました:", error);
+		return {
+			videoCount: 0,
+			error: error instanceof Error ? error.message : "不明なエラーが発生しました",
+		};
+	}
+}
+
+/**
  * 通常の動画ID取得〜詳細取得〜Firestore保存フロー（旧`fetchYouTubeVideosLogic`本体・SPR-230で分離）
  */
 async function runNormalFetchAndSave(
@@ -790,12 +849,49 @@ async function runNormalFetchAndSave(
 }
 
 /**
+ * fetchYouTubeVideosLogicの実行モード
+ * - normal: 通常run（新着発見＋stale live救済＋統計ティア更新）
+ * - weekly_full_sweep: SPR-230 discovery取りこぼし検知のみ
+ * - stale_live_recheck: 配信中/配信予定の再チェックのみ（15分毎スケジューラ向け）
+ */
+type FetchMode = "normal" | "weekly_full_sweep" | "stale_live_recheck";
+
+/**
+ * fetchYouTubeVideosLogicの予期しない例外を処理する（ログ出力＋共有ロックの解除）
+ *
+ * stale_live_recheckは共有メタデータ（isInProgressロック）を持たないため触らない
+ * （他モードの実行中ロックを誤って解除しないため）
+ */
+async function handleFetchYouTubeVideosError(
+	mode: FetchMode,
+	error: unknown,
+): Promise<FetchResult> {
+	logger.error("YouTube動画情報取得中にエラーが発生しました:", error);
+
+	if (mode !== "stale_live_recheck") {
+		try {
+			await updateMetadata({
+				isInProgress: false,
+				lastError: error instanceof Error ? error.message : String(error),
+			});
+		} catch (updateError) {
+			logger.error("エラー状態の記録に失敗しました:", updateError);
+		}
+	}
+
+	return {
+		videoCount: 0,
+		error: error instanceof Error ? error.message : "不明なエラーが発生しました",
+	};
+}
+
+/**
  * YouTube動画情報取得の共通処理
  *
- * @param isWeeklyFullSweep SPR-230: 週次フルスイープ実行時true（discovery取りこぼし検知のみ行う）
+ * @param mode 実行モード（既定は通常run）
  * @returns Promise<FetchResult> - 処理結果
  */
-async function fetchYouTubeVideosLogic(isWeeklyFullSweep = false): Promise<FetchResult> {
+async function fetchYouTubeVideosLogic(mode: FetchMode = "normal"): Promise<FetchResult> {
 	try {
 		// 1. YouTube APIクライアントの初期化
 		const [youtube, initError] = initializeYouTubeClient();
@@ -809,6 +905,12 @@ async function fetchYouTubeVideosLogic(isWeeklyFullSweep = false): Promise<Fetch
 			};
 		}
 
+		// stale_live_recheckは通常runの二重実行ロック・ページネーション状態を共有しない
+		// （runStaleLiveRecheckのJSDoc参照）
+		if (mode === "stale_live_recheck") {
+			return await runStaleLiveRecheck(youtube);
+		}
+
 		// 2. 実行前準備（メタデータ確認）
 		const [metadata, prepError] = await prepareExecution();
 		if (prepError) {
@@ -818,29 +920,13 @@ async function fetchYouTubeVideosLogic(isWeeklyFullSweep = false): Promise<Fetch
 			return { videoCount: 0, error: "メタデータの準備に失敗しました" };
 		}
 
-		if (isWeeklyFullSweep) {
+		if (mode === "weekly_full_sweep") {
 			return await runWeeklyFullSweep(youtube, metadata);
 		}
 
 		return await runNormalFetchAndSave(youtube, metadata);
 	} catch (error: unknown) {
-		// エラー発生時はログ出力して処理終了
-		logger.error("YouTube動画情報取得中にエラーが発生しました:", error);
-
-		// 可能な場合はメタデータ更新
-		try {
-			await updateMetadata({
-				isInProgress: false,
-				lastError: error instanceof Error ? error.message : String(error),
-			});
-		} catch (updateError) {
-			logger.error("エラー状態の記録に失敗しました:", updateError);
-		}
-
-		return {
-			videoCount: 0,
-			error: error instanceof Error ? error.message : "不明なエラーが発生しました",
-		};
+		return await handleFetchYouTubeVideosError(mode, error);
 	}
 }
 
@@ -864,15 +950,20 @@ export const fetchYouTubeVideos = async (
 			return;
 		}
 
-		// SPR-230: ペイロードのmodeを確認し、週次フルスイープかどうかを判定する
-		const mode = decodePubsubMode(event.data);
-		const isWeeklyFullSweep = mode === "weekly_full_sweep";
-		if (isWeeklyFullSweep) {
+		// SPR-230/SPR-263: ペイロードのmodeを確認し、実行モードを判定する
+		const decodedMode = decodePubsubMode(event.data);
+		const fetchMode: FetchMode =
+			decodedMode === "weekly_full_sweep" || decodedMode === "stale_live_recheck"
+				? decodedMode
+				: "normal";
+		if (fetchMode === "weekly_full_sweep") {
 			logger.info("週次フルスイープトリガーを検出しました");
+		} else if (fetchMode === "stale_live_recheck") {
+			logger.info("配信中/配信予定の再チェックトリガーを検出しました");
 		}
 
 		// 共通のロジックを実行
-		const result = await fetchYouTubeVideosLogic(isWeeklyFullSweep);
+		const result = await fetchYouTubeVideosLogic(fetchMode);
 
 		if (result.error) {
 			logger.warn(`YouTube動画取得処理でエラーが発生しました: ${result.error}`);

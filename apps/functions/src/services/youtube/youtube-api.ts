@@ -4,6 +4,7 @@ import { getYouTubeConfig } from "../../infrastructure/management/config-manager
 import {
 	canExecuteOperation,
 	getYouTubeQuotaMonitor,
+	QUOTA_COSTS,
 	recordQuotaUsage,
 } from "../../infrastructure/monitoring/youtube-quota-monitor";
 import { SUZUKA_MINASE_CHANNEL_ID } from "../../shared/common";
@@ -108,9 +109,9 @@ export async function fetchVideoDetails(
 	logger.debug("動画の詳細情報を取得中...");
 	const videoDetails: youtube_v3.Schema$Video[] = [];
 
-	// 必要なクォータ量を事前計算
+	// 必要なクォータ量を事前計算（videos.listは1コール=1ユニット、バッチ数で決まる）
 	const requiredBatches = Math.ceil(videoIds.length / MAX_VIDEOS_PER_BATCH);
-	const totalQuotaCost = requiredBatches * 8; // videosFullDetails cost
+	const totalQuotaCost = requiredBatches * QUOTA_COSTS.videosFullDetails;
 
 	// クォータチェック
 	if (!canExecuteOperation("videosFullDetails", requiredBatches)) {
@@ -151,9 +152,9 @@ export async function fetchVideoDetails(
 			});
 			const videoResponse: youtube_v3.Schema$VideoListResponse = response.data;
 
-			// 成功時にクォータ使用量を記録
-			recordQuotaUsage("videosFullDetails", batchIds.length);
-			getYouTubeQuotaMonitor().logQuotaUsage("videosFullDetails", 8 * batchIds.length, {
+			// 成功時にクォータ使用量を記録（1コール=1ユニット。バッチ内の動画件数では変動しない）
+			recordQuotaUsage("videosFullDetails");
+			getYouTubeQuotaMonitor().logQuotaUsage("videosFullDetails", QUOTA_COSTS.videosFullDetails, {
 				batchNumber: Math.floor(i / MAX_VIDEOS_PER_BATCH) + 1,
 				batchSize: batchIds.length,
 				resultCount: videoResponse.items?.length || 0,

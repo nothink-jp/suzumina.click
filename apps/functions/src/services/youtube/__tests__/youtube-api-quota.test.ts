@@ -10,6 +10,14 @@ vi.mock("../../../infrastructure/monitoring/youtube-quota-monitor", () => ({
 	canExecuteOperation: (...a: unknown[]) => canExecuteOperation(...a),
 	recordQuotaUsage: (...a: unknown[]) => recordQuotaUsage(...a),
 	getYouTubeQuotaMonitor: () => ({ logQuotaUsage, suggestOptimalOperations }),
+	QUOTA_COSTS: {
+		search: 100,
+		videosFullDetails: 1,
+		videosWithSnippet: 1,
+		playlists: 1,
+		playlistItems: 1,
+		channels: 1,
+	},
 }));
 
 vi.mock("../../../shared/logger", () => ({
