@@ -708,7 +708,11 @@ async function runStaleLiveRecheck(youtube: youtube_v3.Youtube): Promise<FetchRe
 		}
 
 		// discoveredVideoIdsは空配列で渡す（新着ではなく既知動画の再チェックのため、
-		// キャッシュのカバレッジ判定に影響させない＝当日キャッシュがあればそのまま再利用する）
+		// キャッシュのカバレッジ判定に影響させない＝当日キャッシュがあればそのまま再利用する）。
+		// 当日キャッシュが未構築のまま本フローが最初に走った場合（例: hourly runより先に
+		// このジョブが発火する深夜配信時間帯）はbuildPlaylistVideoMappingのフルスキャンが
+		// 発生しうるが、これは既存のキャッシュ機構が持つ「1日1回はどちらかのジョブが
+		// 再構築する」という前提どおりの挙動であり、本フロー追加による新規コストではない。
 		const playlistVideoMap = await resolvePlaylistVideoMapping(
 			youtube,
 			SUZUKA_MINASE_CHANNEL_ID,
