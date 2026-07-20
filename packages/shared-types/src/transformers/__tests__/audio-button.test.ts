@@ -128,14 +128,13 @@ describe("fromFirestore", () => {
 		{ startTime: 0, endTime: 59, expected: "59秒" },
 		{ startTime: 0, endTime: 60, expected: "1:00" },
 		{ startTime: 0, endTime: 75, expected: "1:15" },
-	])("fromFirestore の durationText は $expected（start=$startTime end=$endTime）", ({
-		startTime,
-		endTime,
-		expected,
-	}) => {
-		const r = fromFirestore({ buttonText: "a", videoId: "v", startTime, endTime });
-		expect(r?._computed?.durationText).toBe(expected);
-	});
+	])(
+		"fromFirestore の durationText は $expected（start=$startTime end=$endTime）",
+		({ startTime, endTime, expected }) => {
+			const r = fromFirestore({ buttonText: "a", videoId: "v", startTime, endTime });
+			expect(r?._computed?.durationText).toBe(expected);
+		},
+	);
 
 	it("duration から durationText を算出する（formatDuration 正本）", () => {
 		const fromFs = fromFirestore({ buttonText: "a", videoId: "v", startTime: 0, endTime: 5 });
