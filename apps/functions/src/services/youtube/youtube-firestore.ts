@@ -7,15 +7,19 @@
 
 import { videoToFirestore } from "@suzumina.click/shared-types";
 import type { youtube_v3 } from "googleapis";
-import firestore from "../../infrastructure/database/firestore";
+import firestore, { Timestamp } from "../../infrastructure/database/firestore";
 import { chunkArray } from "../../shared/array-utils";
 import { SUZUKA_MINASE_CHANNEL_ID } from "../../shared/common";
 import * as logger from "../../shared/logger";
 import { VideoMapper } from "../mappers/video-mapper";
+import { getStatsTierCutoffDate } from "./video-tiering";
 
 // Firestore関連の定数
 const VIDEOS_COLLECTION = "videos";
 const MAX_FIRESTORE_BATCH_SIZE = 500; // Firestoreのバッチ書き込み上限
+/** SPR-261/262: playlist→videoマッピングキャッシュ・動画統計ティアのメタデータ保存先 */
+const YOUTUBE_METADATA_COLLECTION = "youtubeMetadata";
+const PLAYLIST_MAPPING_CACHE_DOC_ID = "playlist_video_mapping_cache";
 
 /** videoIdバルク存在確認（getAll）を分割するチャンクサイズ */
 const KNOWN_VIDEO_IDS_CHUNK_SIZE = 300;
@@ -282,4 +286,146 @@ async function saveChannelVideos(
 	}
 
 	return { savedCount };
+}
+
+// ==============================================================================
+// SPR-261/262: playlist→videoマッピングのFirestoreキャッシュ
+// ==============================================================================
+
+interface PlaylistMappingCacheDoc {
+	mapping: Record<string, string[]>;
+	updatedAtJST: string;
+	updatedAt: Timestamp;
+}
+
+/**
+ * playlist→videoマッピングのキャッシュを読む
+ *
+ * SPR-261/262: `buildPlaylistVideoMapping`（playlists+playlistItemsの全走査）は
+ * 毎run再取得すると定常状態のクォータ消費の大半を占めるため、日次1回だけ再構築し
+ * Firestoreにキャッシュする。呼び出し側（youtube.ts）が`updatedAtJST`を見て
+ * 当日分として再利用可能かを判定する。
+ *
+ * @returns キャッシュが存在しない場合は`undefined`
+ */
+export async function getPlaylistMappingCache(): Promise<
+	{ mapping: Map<string, string[]>; updatedAtJST: string } | undefined
+> {
+	const doc = await firestore
+		.collection(YOUTUBE_METADATA_COLLECTION)
+		.doc(PLAYLIST_MAPPING_CACHE_DOC_ID)
+		.get();
+
+	if (!doc.exists) {
+		return undefined;
+	}
+
+	const data = doc.data() as PlaylistMappingCacheDoc;
+	return {
+		mapping: new Map(Object.entries(data.mapping ?? {})),
+		updatedAtJST: data.updatedAtJST,
+	};
+}
+
+/**
+ * playlist→videoマッピングのキャッシュを保存する（常に全件で上書き）
+ */
+export async function savePlaylistMappingCache(
+	mapping: Map<string, string[]>,
+	updatedAtJST: string,
+): Promise<void> {
+	const doc: PlaylistMappingCacheDoc = {
+		mapping: Object.fromEntries(mapping),
+		updatedAtJST,
+		updatedAt: Timestamp.now(),
+	};
+	await firestore
+		.collection(YOUTUBE_METADATA_COLLECTION)
+		.doc(PLAYLIST_MAPPING_CACHE_DOC_ID)
+		.set(doc);
+}
+
+// ==============================================================================
+// SPR-261/262: 動画統計（videos.list）取得のティア化
+// ==============================================================================
+
+/** recent-tierクエリの安全弁（暴走防止の上限件数） */
+export const MAX_RECENT_TIER_VIDEO_IDS = 200;
+/** old-tierの1日あたり再取得上限（ローテーションで解消していく前提の件数） */
+export const MAX_OLD_TIER_DUE_VIDEO_IDS = 50;
+
+/**
+ * DateをJST（Asia/Tokyo）の"YYYY-MM-DD"に変換する
+ *
+ * `getJSTDate()`（price-history-saver.ts）は「現在時刻」専用のため、Firestoreから読んだ
+ * 任意の`lastFetchedAt`をJST日付文字列化するためにここでローカル定義する。
+ */
+function toJSTDateString(date: Date): string {
+	const jstDateStr = date.toLocaleString("ja-JP", {
+		timeZone: "Asia/Tokyo",
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+	});
+	const [year, month, day] = jstDateStr.split("/");
+	return `${year}-${month?.padStart(2, "0")}-${day?.padStart(2, "0")}`;
+}
+
+/**
+ * recent-tier（直近windowDays日以内に公開された動画）の動画IDを全件返す
+ *
+ * recentは「毎run（毎時）再取得」が仕様のため、日付によるdueフィルタは行わない。
+ * `publishedAt`の単一フィールド範囲クエリのため複合indexは不要。
+ */
+export async function getRecentTierVideoIds(
+	windowDays: number,
+	today: Date,
+	limit: number = MAX_RECENT_TIER_VIDEO_IDS,
+): Promise<string[]> {
+	const cutoff = getStatsTierCutoffDate(windowDays, today);
+
+	const snapshot = await firestore
+		.collection(VIDEOS_COLLECTION)
+		.where("publishedAt", ">=", Timestamp.fromDate(cutoff))
+		.select()
+		.limit(limit)
+		.get();
+
+	return snapshot.docs.map((doc) => doc.id);
+}
+
+/**
+ * old-tier（windowDays日より前に公開された動画）のうち、当日JSTでまだ再取得していない
+ * ものを`lastFetchedAt`昇順（最も長く放置されている順）に`limit`件返す
+ *
+ * `publishedAt`の単一フィールド範囲クエリで候補を絞り込み、当日再取得済みかどうかの
+ * 判定と最終的な優先順ソートはin-memoryで行う（`lastFetchedAt`との複合indexを避けるため）。
+ * 対象規模（数百件程度）ではFirestore読み取りコストは軽微。
+ */
+export async function getOldTierDueVideoIds(
+	windowDays: number,
+	today: Date,
+	todayJST: string,
+	limit: number = MAX_OLD_TIER_DUE_VIDEO_IDS,
+): Promise<string[]> {
+	const cutoff = getStatsTierCutoffDate(windowDays, today);
+
+	const snapshot = await firestore
+		.collection(VIDEOS_COLLECTION)
+		.where("publishedAt", "<", Timestamp.fromDate(cutoff))
+		.select("lastFetchedAt")
+		.get();
+
+	const candidates = snapshot.docs
+		.map((doc) => {
+			const lastFetchedAt = doc.get("lastFetchedAt");
+			const lastFetchedAtDate =
+				lastFetchedAt instanceof Timestamp ? lastFetchedAt.toDate() : new Date(0);
+			return { id: doc.id, lastFetchedAtDate };
+		})
+		.filter((candidate) => toJSTDateString(candidate.lastFetchedAtDate) !== todayJST);
+
+	candidates.sort((a, b) => a.lastFetchedAtDate.getTime() - b.lastFetchedAtDate.getTime());
+
+	return candidates.slice(0, limit).map((candidate) => candidate.id);
 }
