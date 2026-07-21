@@ -675,6 +675,20 @@ async function runWeeklyFullSweep(
 }
 
 /**
+ * FetchMetadataドキュメントに既にキャッシュされているuploads playlist IDを読むだけの
+ * 純粋な読み取り（`getOrCreateMetadata`と異なり、ドキュメントが存在しない場合でも
+ * 新規作成しない）。`tryFastDiscovery`が「共有メタデータを一切更新しない」という
+ * 前提を保つために、ここでは書き込みを一切行わない。
+ */
+async function getCachedUploadsPlaylistId(): Promise<string | undefined> {
+	const doc = await firestore.collection(METADATA_COLLECTION).doc(METADATA_DOC_ID).get();
+	if (!doc.exists) {
+		return undefined;
+	}
+	return (doc.data() as FetchMetadata).uploadsPlaylistId;
+}
+
+/**
  * 新着動画の軽量発見（uploads playlistのincremental early-stop走査）を試みる。
  *
  * search.list（100 units/call）は15分毎には高すぎるため、discoveryモードが"playlist"の
@@ -691,8 +705,8 @@ async function tryFastDiscovery(youtube: youtube_v3.Youtube): Promise<{ videoIds
 	}
 
 	try {
-		const metadata = await getOrCreateMetadata();
-		if (!metadata.uploadsPlaylistId) {
+		const uploadsPlaylistId = await getCachedUploadsPlaylistId();
+		if (!uploadsPlaylistId) {
 			logger.debug(
 				"fast_recheck: uploads playlist IDが未キャッシュのため今回は新着発見をスキップします（hourly runでキャッシュされます）",
 			);
@@ -701,7 +715,7 @@ async function tryFastDiscovery(youtube: youtube_v3.Youtube): Promise<{ videoIds
 
 		const { videoIds, truncated } = await fetchVideoIdsViaPlaylistIncremental(
 			youtube,
-			metadata.uploadsPlaylistId,
+			uploadsPlaylistId,
 		);
 		if (videoIds.length > 0) {
 			logger.info(`fast_recheckで新着動画を発見しました: ${videoIds.length}件`, { videoIds });

@@ -62,8 +62,13 @@ resource "google_cloud_scheduler_job" "fetch_youtube_videos_weekly_full_sweep" {
 #   2. 配信中/配信予定のまま更新が止まっている動画の再チェック（getStaleLiveVideoIds、
 #      通常0〜数件、MAX_STALE_LIVE_VIDEO_IDS=50件で打ち切り）
 # 統計ティア更新は行わない（既存のhourly runがその役割を継続する）。
-# 対象0件の実行はAPI呼び出しなし（Firestoreクエリのみ）、対象ありでも通常は
+# 対象0件の実行はAPI呼び出しなし（Firestoreクエリのみ）。stale live対象のみのrunは通常
 # videos.list 1コール(=1ユニット)に収まるため、15分毎でも1日あたりの追加コストは小さい。
+# ただし新着発見が成功し、かつ当日のplaylist→videoマッピングキャッシュにその新着IDが
+# 未反映の場合は、同じrun内でキャッシュのフル再構築（プレイリスト数に応じ数十units）が
+# 発生しうる（discoveredVideoIdsを伴うresolvePlaylistVideoMapping呼び出し経由）。
+# canExecuteOperationによるクォータガードはあるため即座の破綻はしないが、
+# 「新着発見に成功した回」はこの見積りより高くなる点に留意する。
 resource "google_cloud_scheduler_job" "fetch_youtube_videos_stale_live_recheck" {
   project     = var.gcp_project_id
   region      = var.region
