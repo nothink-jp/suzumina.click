@@ -5,7 +5,9 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
+  js-yaml: '>=4.3.0'
   protobufjs: '>=8.6.6'
+  brace-expansion@^2: '>=2.1.2'
   brace-expansion@^5: '>=5.0.7'
   uuid: '>=11.1.1'
   ws: '>=8.21.0'
@@ -3067,9 +3069,6 @@ packages:
   bail@2.0.2:
     resolution: {integrity: sha512-0xO6mYd7JB2YesxDKplafRpsiOzPt9V02ddPCLbY1xYGPOX24NTyN50qnUxgCPcSoYMhKpAuBTjQoRZCAkUDRw==}
 
-  balanced-match@1.0.2:
-    resolution: {integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==}
-
   balanced-match@4.0.4:
     resolution: {integrity: sha512-BLrgEcRTwX2o6gGxGOCNyMvGSp35YofuYzw9h1IMTRmKqttAZZVU67bdb9Pr2vUHA8+j3i2tJfjO6C6+4myGTA==}
     engines: {node: 18 || 20 || >=22}
@@ -3165,9 +3164,6 @@ packages:
 
   boundary@2.0.0:
     resolution: {integrity: sha512-rJKn5ooC9u8q13IMCrW0RSp31pxBCHE3y9V/tp3TdWSLf8Em3p6Di4NBpfzbJge9YjjFEsD0RtFEjtvHL5VyEA==}
-
-  brace-expansion@2.1.0:
-    resolution: {integrity: sha512-TN1kCZAgdgweJhWWpgKYrQaMNHcDULHkWwQIspdtjV4Y5aurRdZpjAqn6yX3FPqTA9ngHCc4hJxMAMgGfve85w==}
 
   brace-expansion@5.0.7:
     resolution: {integrity: sha512-7oFy703dxfY3/NLxC1fh2SUCQ0H9rmAY+5EpDVfXjUTTs+HEwR2nYaqLv+GWcTsumwxPfiz6CzCNkwXwBUwqCA==}
@@ -3936,8 +3932,8 @@ packages:
   js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
 
-  js-yaml@4.2.0:
-    resolution: {integrity: sha512-ePWsvanv0DWuDRsW8dnt+R4jQ31SCRCQ7hhNcPXZPsoBZiemuZNYGf7adZdqX2D86j6rvKp3RpCxVTSb8WQlOw==}
+  js-yaml@5.2.1:
+    resolution: {integrity: sha512-zfLtNfQqxVqq3uaTqSkh4x4hZw3KHobGUA0fJUj4wawW8bsQLTVqpHdXSIzidh7o+4lEW36tANuAGdaFx6Zgnw==}
     hasBin: true
 
   jsesc@3.1.0:
@@ -7358,7 +7354,7 @@ snapshots:
       '@textlint/types': 15.7.1
       chalk: 4.1.2
       debug: 4.4.3
-      js-yaml: 4.2.0
+      js-yaml: 5.2.1
       lodash: 4.18.1
       pluralize: 2.0.0
       string-width: 4.2.3
@@ -7825,8 +7821,6 @@ snapshots:
 
   bail@2.0.2: {}
 
-  balanced-match@1.0.2: {}
-
   balanced-match@4.0.4: {}
 
   base64-js@1.5.1: {}
@@ -7891,10 +7885,6 @@ snapshots:
       - supports-color
 
   boundary@2.0.0: {}
-
-  brace-expansion@2.1.0:
-    dependencies:
-      balanced-match: 1.0.2
 
   brace-expansion@5.0.7:
     dependencies:
@@ -8664,7 +8654,7 @@ snapshots:
 
   js-tokens@4.0.0: {}
 
-  js-yaml@4.2.0:
+  js-yaml@5.2.1:
     dependencies:
       argparse: 2.0.1
 
@@ -9173,7 +9163,7 @@ snapshots:
 
   minimatch@9.0.9:
     dependencies:
-      brace-expansion: 2.1.0
+      brace-expansion: 5.0.7
 
   minimist@1.2.8: {}
 
@@ -9512,7 +9502,7 @@ snapshots:
   rc-config-loader@4.1.4:
     dependencies:
       debug: 4.4.3
-      js-yaml: 4.2.0
+      js-yaml: 5.2.1
       json5: 2.2.3
       require-from-string: 2.0.2
     transitivePeerDependencies:
