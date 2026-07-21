@@ -1,7 +1,7 @@
 # suzumina.click Web Application Dockerfile for Cloud Run
 # Optimized for Next.js with advanced caching and monorepo structure
 
-FROM node:24.17.0-alpine AS base
+FROM node:24.18.0-alpine AS base
 # ベースイメージ同梱の OS パッケージ(openssl libssl3/libcrypto3 等)に既知 CVE が出るため
 # Alpine の security backport を取り込んでから必要パッケージを追加する
 RUN apk upgrade --no-cache && apk add --no-cache libc6-compat tini
