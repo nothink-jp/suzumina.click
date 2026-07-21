@@ -11,9 +11,9 @@ overrides:
   js-yaml: ">=4.3.0"
   # protobufjs <= 8.5.0: schema 由来の名前が runtime プロパティを shadow（CVE-2026-54269）/
   # binary decode の unknown fields 保持によるメモリ増幅（CVE-2026-54270）。8.6.0 で修正。
+  # <= 8.6.4: Text Format の string map parsing が返り値の prototype を汚染しうる（GHSA-jfj6-75fj-8934）。8.6.5 で修正。
+  # <= 8.6.5: .proto option parsing の無限ループによる DoS（GHSA-j3f2-48v5-ccww）。8.6.6 で修正。
   # 直接の依存元（google-gax 等）は ^7.5.3 を要求し、override を外すと 7.6.4 に落ちるため維持。
-  # 8.6.0-8.6.5: .proto option 解析の無限ループ DoS（GHSA-j3f2-48v5-ccww）/
-  # Text Format map 解析での prototype 汚染（GHSA-jfj6-75fj-8934）。8.6.6 で修正。
   protobufjs: ">=8.6.6"
   # brace-expansion: 非展開 {} グループ連続による指数時間展開 DoS（GHSA-3jxr-9vmj-r5cp）。
   # 同一advisoryが系統ごとに別々にpatchされている。2.x系（minimatch@9経由）は2.1.2で、
@@ -30,6 +30,13 @@ overrides:
   # better-auth(@better-auth/kysely-adapter) は kysely 0.28 系の DEFAULT_MIGRATION_LOCK_TABLE を要求するが
   # 0.29.x で削除されており、0.29.2 が解決されると認証ルートが ESM import で 500 になる。0.28 系にピン（SPR-156）。
   kysely: "0.28.17"
+  # fast-uri < 3.1.4: IDN canonicalization 失敗によるホスト混同 / バックスラッシュを authority
+  # delimiter として誤解釈するホスト混同（GHSA-4c8g-83qw-93j6・GHSA-v2hh-gcrm-f6hx）。ajv(secretlint 経由)
+  # は ^3.0.1 を要求するため override なしでも解決範囲内だが、自然解決が 3.1.2 に留まるため明示的に引き上げ。
+  fast-uri: ">=3.1.4"
+  # sharp < 0.35.0: 継承する libvips の脆弱性群（CVE-2026-33327/33328/35590/35591）。next の依存範囲が
+  # ^0.34.5（0.35.0 未満に固定）のため override なしでは追従しない。
+  sharp: ">=0.35.0"
 
 allowBuilds:
   esbuild: true
