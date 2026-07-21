@@ -30,14 +30,12 @@ describe("isAuthGatedPath", () => {
 });
 
 describe("sanitizeRelativePath", () => {
-	it.each([
-		"/",
-		"/buttons",
-		"/buttons/RJ123456",
-		"/users/me",
-	])("同一オリジン相対パス %s はそのまま", (path) => {
-		expect(sanitizeRelativePath(path)).toBe(path);
-	});
+	it.each(["/", "/buttons", "/buttons/RJ123456", "/users/me"])(
+		"同一オリジン相対パス %s はそのまま",
+		(path) => {
+			expect(sanitizeRelativePath(path)).toBe(path);
+		},
+	);
 
 	it.each([
 		["https://evil.com", "/"],
