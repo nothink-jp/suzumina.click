@@ -50,7 +50,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: '24.17.0'
+          node-version: '24.18.0'
 
       # 非ブロッキング: drift があっても PR を落とさない。結果はこのステップのログで確認する。
       - name: Check index drift
