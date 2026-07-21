@@ -675,30 +675,99 @@ async function runWeeklyFullSweep(
 }
 
 /**
- * 配信中/配信予定の再チェック専用フロー（15分毎スケジューラ向け）
+ * FetchMetadataドキュメントに既にキャッシュされているuploads playlist IDを読むだけの
+ * 純粋な読み取り（`getOrCreateMetadata`と異なり、ドキュメントが存在しない場合でも
+ * 新規作成しない）。`tryFastDiscovery`が「共有メタデータを一切更新しない」という
+ * 前提を保つために、ここでは書き込みを一切行わない。
+ */
+async function getCachedUploadsPlaylistId(): Promise<string | undefined> {
+	const doc = await firestore.collection(METADATA_COLLECTION).doc(METADATA_DOC_ID).get();
+	if (!doc.exists) {
+		return undefined;
+	}
+	return (doc.data() as FetchMetadata).uploadsPlaylistId;
+}
+
+/**
+ * 新着動画の軽量発見（uploads playlistのincremental early-stop走査）を試みる。
  *
- * 目的は配信中→配信済みの遷移をhourly runより速く反映すること（一度配信済みになった
- * 動画は基本的に変化しないため、対象は`getStaleLiveVideoIds`が返すliveBroadcastContent
- * in ["live","upcoming"]の動画のみ）。新着動画の発見・統計ティア更新は行わない。
+ * search.list（100 units/call）は15分毎には高すぎるため、discoveryモードが"playlist"の
+ * ときのみ実行する（既定の本番モード。"search"/"shadow"時はコスト超過を避けるためスキップし、
+ * 新着発見はhourly runに委ねる）。
+ *
+ * uploads playlist IDはFetchMetadataにキャッシュ済みの値を読むだけで、未キャッシュの場合は
+ * 何も書き込まずスキップする（`runFastRecheck`が共有メタデータを一切更新しないという
+ * 前提を保つため。初回キャッシュはhourly run側の責務のまま）。
+ */
+async function tryFastDiscovery(youtube: youtube_v3.Youtube): Promise<{ videoIds: string[] }> {
+	if (getDiscoveryMode() !== "playlist") {
+		return { videoIds: [] };
+	}
+
+	try {
+		const uploadsPlaylistId = await getCachedUploadsPlaylistId();
+		if (!uploadsPlaylistId) {
+			logger.debug(
+				"fast_recheck: uploads playlist IDが未キャッシュのため今回は新着発見をスキップします（hourly runでキャッシュされます）",
+			);
+			return { videoIds: [] };
+		}
+
+		const { videoIds, truncated } = await fetchVideoIdsViaPlaylistIncremental(
+			youtube,
+			uploadsPlaylistId,
+		);
+		if (videoIds.length > 0) {
+			logger.info(`fast_recheckで新着動画を発見しました: ${videoIds.length}件`, { videoIds });
+		}
+		if (truncated) {
+			logger.warn(
+				"fast_recheckでのuploads playlist走査がページ上限に達しました（続きは次回以降のrunで発見されます）",
+			);
+		}
+		return { videoIds };
+	} catch (error) {
+		logger.warn("fast_recheckでの新着発見に失敗しました（今回は発見をスキップします）", {
+			error: error instanceof Error ? error.message : String(error),
+		});
+		return { videoIds: [] };
+	}
+}
+
+/**
+ * 配信中/配信予定の高速反映専用フロー（15分毎スケジューラ向け）
+ *
+ * 目的は2つ:
+ *   1. 配信中→配信済みの遷移をhourly runより速く反映する（一度配信済みになった動画は
+ *      基本的に変化しないため、対象は`getStaleLiveVideoIds`が返すliveBroadcastContent
+ *      in ["live","upcoming"]の動画のみ）
+ *   2. 新着動画（配信予定として新規作成された動画）の発見自体もhourly run（最大1時間律速）
+ *      より速く反映する（`tryFastDiscovery`、discoveryモードが"playlist"のときのみ）
+ *
+ * 統計ティア更新は行わない（hourly runの役割のまま）。
  *
  * 通常runの`FetchMetadata`（nextPageToken等のページネーション状態・isInProgressロック）は
- * 一切参照・更新しない。理由は2つ:
+ * 一切更新しない（uploads playlist IDの読み取りのみ行う）。理由は2つ:
  *   1. このフローはページネーション状態を持たず、共有ロックを取ると15分毎の頻度で
  *      hourly runとの間欠的なブロッキングが発生しうる
  *   2. 対象は通常0〜数件で処理は数秒以内に完了するため、hourly runとの単純な重複実行
  *      （同一動画への冪等なmerge書き込み）は実害がない
  */
-async function runStaleLiveRecheck(youtube: youtube_v3.Youtube): Promise<FetchResult> {
+async function runFastRecheck(youtube: youtube_v3.Youtube): Promise<FetchResult> {
 	try {
+		const { videoIds: discoveredVideoIds } = await tryFastDiscovery(youtube);
 		const { videoIds: staleLiveVideoIds, truncated } = await getStaleLiveVideoIds();
 
-		if (staleLiveVideoIds.length === 0) {
-			logger.debug("配信中/配信予定の再チェック対象はありません");
+		const videoIds = Array.from(new Set([...discoveredVideoIds, ...staleLiveVideoIds]));
+
+		if (videoIds.length === 0) {
+			logger.debug("fast_recheckの対象（新着・配信中/配信予定の再チェック）はありません");
 			return { videoCount: 0 };
 		}
 
-		logger.info(`配信中/配信予定の再チェック対象: ${staleLiveVideoIds.length}件`, {
-			videoIds: staleLiveVideoIds,
+		logger.info(`fast_recheck対象の合計: ${videoIds.length}件`, {
+			discoveredCount: discoveredVideoIds.length,
+			staleLiveCount: staleLiveVideoIds.length,
 		});
 		if (truncated) {
 			logger.warn(
@@ -707,8 +776,8 @@ async function runStaleLiveRecheck(youtube: youtube_v3.Youtube): Promise<FetchRe
 			);
 		}
 
-		// discoveredVideoIdsは空配列で渡す（新着ではなく既知動画の再チェックのため、
-		// キャッシュのカバレッジ判定に影響させない＝当日キャッシュがあればそのまま再利用する）。
+		// discoveredVideoIdsをそのまま渡す（新着分がキャッシュ未反映ならその場で
+		// マッピングを再構築させる。通常runのresolvePlaylistVideoMapping呼び出しと同じ扱い）。
 		// 当日キャッシュが未構築のまま本フローが最初に走った場合（例: hourly runより先に
 		// このジョブが発火する深夜配信時間帯）はbuildPlaylistVideoMappingのフルスキャンが
 		// 発生しうるが、これは既存のキャッシュ機構が持つ「1日1回はどちらかのジョブが
@@ -716,16 +785,16 @@ async function runStaleLiveRecheck(youtube: youtube_v3.Youtube): Promise<FetchRe
 		const playlistVideoMap = await resolvePlaylistVideoMapping(
 			youtube,
 			SUZUKA_MINASE_CHANNEL_ID,
-			[],
+			discoveredVideoIds,
 		);
 
-		const videoDetails = await fetchVideoDetails(youtube, staleLiveVideoIds);
+		const videoDetails = await fetchVideoDetails(youtube, videoIds);
 		const videosWithPlaylistTags = mapPlaylistTagsToVideos(videoDetails, playlistVideoMap);
 		const savedCount = await saveVideosToFirestore(videosWithPlaylistTags);
 
 		return { videoCount: savedCount };
 	} catch (error: unknown) {
-		logger.error("配信中/配信予定の再チェックでエラーが発生しました:", error);
+		logger.error("fast_recheckでエラーが発生しました:", error);
 		return {
 			videoCount: 0,
 			error: error instanceof Error ? error.message : "不明なエラーが発生しました",
@@ -852,14 +921,14 @@ async function runNormalFetchAndSave(
  * fetchYouTubeVideosLogicの実行モード
  * - normal: 通常run（新着発見＋stale live救済＋統計ティア更新）
  * - weekly_full_sweep: SPR-230 discovery取りこぼし検知のみ
- * - stale_live_recheck: 配信中/配信予定の再チェックのみ（15分毎スケジューラ向け）
+ * - fast_recheck: 配信中/配信予定の高速反映のみ（新着発見＋stale liveの再チェック、15分毎スケジューラ向け）
  */
-type FetchMode = "normal" | "weekly_full_sweep" | "stale_live_recheck";
+type FetchMode = "normal" | "weekly_full_sweep" | "fast_recheck";
 
 /**
  * fetchYouTubeVideosLogicの予期しない例外を処理する（ログ出力＋共有ロックの解除）
  *
- * stale_live_recheckは共有メタデータ（isInProgressロック）を持たないため触らない
+ * fast_recheckは共有メタデータ（isInProgressロック）を持たないため触らない
  * （他モードの実行中ロックを誤って解除しないため）
  */
 async function handleFetchYouTubeVideosError(
@@ -868,7 +937,7 @@ async function handleFetchYouTubeVideosError(
 ): Promise<FetchResult> {
 	logger.error("YouTube動画情報取得中にエラーが発生しました:", error);
 
-	if (mode !== "stale_live_recheck") {
+	if (mode !== "fast_recheck") {
 		try {
 			await updateMetadata({
 				isInProgress: false,
@@ -905,10 +974,10 @@ async function fetchYouTubeVideosLogic(mode: FetchMode = "normal"): Promise<Fetc
 			};
 		}
 
-		// stale_live_recheckは通常runの二重実行ロック・ページネーション状態を共有しない
-		// （runStaleLiveRecheckのJSDoc参照）
-		if (mode === "stale_live_recheck") {
-			return await runStaleLiveRecheck(youtube);
+		// fast_recheckは通常runの二重実行ロック・ページネーション状態を共有しない
+		// （runFastRecheckのJSDoc参照）
+		if (mode === "fast_recheck") {
+			return await runFastRecheck(youtube);
 		}
 
 		// 2. 実行前準備（メタデータ確認）
@@ -953,13 +1022,13 @@ export const fetchYouTubeVideos = async (
 		// SPR-230/SPR-263: ペイロードのmodeを確認し、実行モードを判定する
 		const decodedMode = decodePubsubMode(event.data);
 		const fetchMode: FetchMode =
-			decodedMode === "weekly_full_sweep" || decodedMode === "stale_live_recheck"
+			decodedMode === "weekly_full_sweep" || decodedMode === "fast_recheck"
 				? decodedMode
 				: "normal";
 		if (fetchMode === "weekly_full_sweep") {
 			logger.info("週次フルスイープトリガーを検出しました");
-		} else if (fetchMode === "stale_live_recheck") {
-			logger.info("配信中/配信予定の再チェックトリガーを検出しました");
+		} else if (fetchMode === "fast_recheck") {
+			logger.info("配信中/配信予定の高速反映（fast_recheck）トリガーを検出しました");
 		}
 
 		// 共通のロジックを実行
