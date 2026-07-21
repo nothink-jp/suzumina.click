@@ -9,7 +9,12 @@ overrides:
   # protobufjs <= 8.5.0: schema 由来の名前が runtime プロパティを shadow（CVE-2026-54269）/
   # binary decode の unknown fields 保持によるメモリ増幅（CVE-2026-54270）。8.6.0 で修正。
   # 直接の依存元（google-gax 等）は ^7.5.3 を要求し、override を外すと 7.6.4 に落ちるため維持。
-  protobufjs: ">=8.6.0"
+  # 8.6.0-8.6.5: .proto option 解析の無限ループ DoS（GHSA-j3f2-48v5-ccww）/
+  # Text Format map 解析での prototype 汚染（GHSA-jfj6-75fj-8934）。8.6.6 で修正。
+  protobufjs: ">=8.6.6"
+  # brace-expansion 5.x 系（minimatch@10 経由）の >=3.0.0 <5.0.7 に DoS（GHSA-3jxr-9vmj-r5cp、指数時間展開）。
+  # minimatch@9 系が使う brace-expansion@2.x は対象範囲外のため巻き込まないよう ^5 のみ対象にする。
+  "brace-expansion@^5": ">=5.0.7"
   # uuid: override を外すと transitive が 8.3.2（deprecated）に落ちる。11.x に統一して維持。
   uuid: ">=11.1.1"
   # ws < 8.21.0: 小さな fragment/data chunk によるメモリ枯渇 DoS（GHSA-96hv-2xvq-fx4p）。8.21.0 で修正。
