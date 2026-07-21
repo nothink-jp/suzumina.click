@@ -4,6 +4,7 @@ import {
 	ListPageLayout,
 } from "@suzumina.click/ui/components/custom";
 import { Suspense } from "react";
+import { warn } from "@/lib/logger";
 import type { AudioButtonQuery } from "@/types/audio-button";
 import { getAudioButtonsList } from "./actions";
 import AudioButtonsList from "./components/audio-buttons-list";
@@ -96,7 +97,7 @@ async function GroupedView({ view }: { view: "usage" | "video" }) {
 	const totalCount = result.success && result.data ? result.data.totalCount : buttons.length;
 	if (totalCount > buttons.length) {
 		// 上限到達＝グルーピング対象から静かに欠落する状態。無警告にしない（§1 silent fallback 禁止の精神）
-		console.warn(
+		warn(
 			`GroupedView: ボタン総数 ${totalCount} 件が取得上限 ${GROUP_FETCH_LIMIT} 件を超過。超過分はグループ表示から欠落しています`,
 		);
 	}
