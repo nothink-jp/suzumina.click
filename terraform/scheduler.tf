@@ -55,12 +55,14 @@ resource "google_cloud_scheduler_job" "fetch_youtube_videos_weekly_full_sweep" {
   ]
 }
 
-# 配信中/配信予定→配信済みの遷移をhourly runより速く反映するための専用スケジューラ。
-# 一度配信済みになった動画は基本的に変化しないため、対象はliveBroadcastContent in
-# ["live","upcoming"]のまま更新が止まっている動画のみ（getStaleLiveVideoIds、通常0〜数件、
-# MAX_STALE_LIVE_VIDEO_IDS=50件で打ち切り）。新着発見・統計ティア更新は行わない
-# （既存のhourly runがその役割を継続する）。
-# 対象0件の実行はAPI呼び出しなし（Firestoreクエリのみ）、対象ありでも最大50件は
+# 配信予定/配信中の検出・配信中→配信済みへの遷移をhourly runより速く反映するための専用
+# スケジューラ（mode=fast_recheck）。2つを行う:
+#   1. 新着動画の軽量発見（uploads playlistのincremental early-stop走査、discoveryモードが
+#      "playlist"のときのみ。search.list=100 units/callは15分毎には高すぎるため対象外）
+#   2. 配信中/配信予定のまま更新が止まっている動画の再チェック（getStaleLiveVideoIds、
+#      通常0〜数件、MAX_STALE_LIVE_VIDEO_IDS=50件で打ち切り）
+# 統計ティア更新は行わない（既存のhourly runがその役割を継続する）。
+# 対象0件の実行はAPI呼び出しなし（Firestoreクエリのみ）、対象ありでも通常は
 # videos.list 1コール(=1ユニット)に収まるため、15分毎でも1日あたりの追加コストは小さい。
 resource "google_cloud_scheduler_job" "fetch_youtube_videos_stale_live_recheck" {
   project     = var.gcp_project_id
@@ -68,13 +70,13 @@ resource "google_cloud_scheduler_job" "fetch_youtube_videos_stale_live_recheck" 
   name        = "fetch-youtube-videos-stale-live-recheck"
   schedule    = "*/15 * * * *" # 15分毎
   time_zone   = "Asia/Tokyo"
-  description = "配信中/配信予定のまま更新が止まっている動画を15分毎に再チェックします"
+  description = "配信予定の新着発見・配信中/配信予定の状態変化を15分毎に高速反映します"
 
   pubsub_target {
     topic_name = google_pubsub_topic.youtube_video_fetch_trigger.id
     data = base64encode(jsonencode({
-      mode        = "stale_live_recheck"
-      description = "配信中/配信予定→配信済みの遷移を高頻度に反映するための再チェック"
+      mode        = "fast_recheck"
+      description = "配信予定の新着発見・配信中/配信予定→配信済みの遷移を高頻度に反映する"
     }))
   }
 
