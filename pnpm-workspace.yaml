@@ -5,11 +5,21 @@ packages:
 overrides:
   # 以下は「override を外すと自然解決が floor を下回る＝今も実際に引き上げている」もののみ残す。
   # floor 以上に自然到達するようになった override（vite / path-to-regexp / @tootallnate/once /
-  # qs / esbuild / @grpc/grpc-js / js-yaml）は依存元が追従済みのため撤去した（解決値は不変）。
+  # qs / esbuild / @grpc/grpc-js）は依存元が追従済みのため撤去した（解決値は不変）。
+  # js-yaml: secretlint 系（@textlint/linter-formatter・rc-config-loader）が4.2.0を要求し続けており
+  # 自然解決が4.3.0未満に戻ったため override を復活（YAML merge-key連鎖によるCPU二次消費 GHSA-52cp-r559-cp3m）。
+  js-yaml: ">=4.3.0"
   # protobufjs <= 8.5.0: schema 由来の名前が runtime プロパティを shadow（CVE-2026-54269）/
   # binary decode の unknown fields 保持によるメモリ増幅（CVE-2026-54270）。8.6.0 で修正。
   # 直接の依存元（google-gax 等）は ^7.5.3 を要求し、override を外すと 7.6.4 に落ちるため維持。
-  protobufjs: ">=8.6.0"
+  # 8.6.0-8.6.5: .proto option 解析の無限ループ DoS（GHSA-j3f2-48v5-ccww）/
+  # Text Format map 解析での prototype 汚染（GHSA-jfj6-75fj-8934）。8.6.6 で修正。
+  protobufjs: ">=8.6.6"
+  # brace-expansion: 非展開 {} グループ連続による指数時間展開 DoS（GHSA-3jxr-9vmj-r5cp）。
+  # 同一advisoryが系統ごとに別々にpatchされている。2.x系（minimatch@9経由）は2.1.2で、
+  # 5.x系（minimatch@10経由）は5.0.7で修正。片方だけ上げるとpnpm auditで検知される（要両対応）。
+  "brace-expansion@^2": ">=2.1.2"
+  "brace-expansion@^5": ">=5.0.7"
   # uuid: override を外すと transitive が 8.3.2（deprecated）に落ちる。11.x に統一して維持。
   uuid: ">=11.1.1"
   # ws < 8.21.0: 小さな fragment/data chunk によるメモリ枯渇 DoS（GHSA-96hv-2xvq-fx4p）。8.21.0 で修正。
