@@ -91,6 +91,41 @@ test.describe("@data-smoke 詳細ページ直行（fixtures 由来）", () => {
 		).toBeVisible();
 	});
 
+	// next/image の最適化（/_next/image、内部で sharp を使用）が実際に成功していることを
+	// 検証する。ThumbnailImage は読み込み失敗時に「画像なし」プレースホルダーへフォールバックする
+	// ため、naturalWidth > 0 だけではフォールバック成功も合格してしまう。フォールバック表示が
+	// 出ていないことも併せて確認し、実画像のデコードが通ったことを保証する（sharp のバージョン
+	// 更新回帰の検出目的）。
+	test("/works/{id}: サムネイル画像（next/image）が実際にデコードされて表示される", async ({
+		page,
+	}) => {
+		const work = firstFixtureDoc("works");
+		await markAgeVerified(page);
+		await page.goto(`/works/${work.id}`);
+
+		const thumbnail = page.getByRole("img", { name: String(work.data.title) });
+		await expect(thumbnail).toBeVisible();
+		await expect(page.getByText("画像なし")).not.toBeVisible();
+
+		const naturalWidth = await thumbnail.evaluate((img) => (img as HTMLImageElement).naturalWidth);
+		expect(naturalWidth).toBeGreaterThan(0);
+	});
+
+	test("/videos/{id}: サムネイル画像（next/image）が実際にデコードされて表示される", async ({
+		page,
+	}) => {
+		const video = firstFixtureDoc("videos");
+		await markAgeVerified(page);
+		await page.goto(`/videos/${video.id}`);
+
+		const thumbnail = page.getByRole("img", { name: String(video.data.title) });
+		await expect(thumbnail).toBeVisible();
+		await expect(page.getByText("画像なし")).not.toBeVisible();
+
+		const naturalWidth = await thumbnail.evaluate((img) => (img as HTMLImageElement).naturalWidth);
+		expect(naturalWidth).toBeGreaterThan(0);
+	});
+
 	test("/buttons/{id}: fixture のボタンテキストが描画される", async ({ page }) => {
 		const button = firstFixtureDoc("audioButtons");
 		await markAgeVerified(page);
