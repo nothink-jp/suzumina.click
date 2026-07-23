@@ -129,32 +129,3 @@ export function ListPageStats({
 		</div>
 	);
 }
-
-interface ListPageEmptyStateProps {
-	icon?: ReactNode;
-	title: string;
-	description?: string;
-	action?: ReactNode;
-	className?: string;
-}
-
-/**
- * リストページ用の空状態表示
- * - アイコン、メッセージ、アクションボタンを統一
- */
-export function ListPageEmptyState({
-	icon,
-	title,
-	description,
-	action,
-	className,
-}: ListPageEmptyStateProps) {
-	return (
-		<div className={cn("text-center py-12", className)}>
-			{icon && <div className="mx-auto w-24 h-24 mb-4 text-muted-foreground">{icon}</div>}
-			<p className="text-muted-foreground text-lg">{title}</p>
-			{description && <p className="text-muted-foreground mt-2">{description}</p>}
-			{action && <div className="mt-4">{action}</div>}
-		</div>
-	);
-}

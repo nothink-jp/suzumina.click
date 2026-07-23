@@ -5,7 +5,6 @@ import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import {
 	ListPageContent,
-	ListPageEmptyState,
 	ListPageGrid,
 	ListPageHeader,
 	ListPageLayout,
@@ -234,65 +233,6 @@ export const WithPagination: Story = {
 	},
 };
 
-export const EmptyState: Story = {
-	render: () => (
-		<ListPageLayout>
-			<ListPageHeader title="空の状態" description="データが存在しない場合の表示例です。" />
-			<ListPageContent>
-				<ListPageEmptyState
-					icon={<FileText className="h-12 w-12 text-gray-400" />}
-					title="データがありません"
-					description="まだコンテンツが作成されていません。最初のアイテムを追加してみましょう。"
-					action={
-						<Button>
-							<Plus className="h-4 w-4 mr-2" />
-							新規作成
-						</Button>
-					}
-				/>
-			</ListPageContent>
-		</ListPageLayout>
-	),
-	parameters: {
-		docs: {
-			description: {
-				story: "空の状態を表示するパターン。ユーザーにアクションを促すUIを提供",
-			},
-		},
-	},
-};
-
-export const FilteredEmptyState: Story = {
-	render: () => (
-		<ListPageLayout>
-			<ListPageHeader
-				title="検索結果なし"
-				description="フィルター適用後に結果が見つからない場合の例です。"
-			/>
-			<ListPageContent>
-				<ListPageEmptyState
-					icon={<Search className="h-12 w-12 text-gray-400" />}
-					title="検索結果が見つかりません"
-					description="検索条件を変更するか、フィルターをリセットしてください。"
-					action={
-						<div className="flex gap-2">
-							<Button variant="outline">フィルターリセット</Button>
-							<Button>すべて表示</Button>
-						</div>
-					}
-				/>
-			</ListPageContent>
-		</ListPageLayout>
-	),
-	parameters: {
-		docs: {
-			description: {
-				story: "検索・フィルター適用後に結果がない場合の表示パターン",
-			},
-		},
-	},
-};
-
 export const AdminListExample: Story = {
 	render: () => (
 		<ListPageLayout>
@@ -384,18 +324,6 @@ export const ComponentsShowcase: Story = {
 						<h2 className="text-lg font-semibold mb-4">ListPageStats - 統計情報</h2>
 						<div className="bg-white p-4 rounded-lg border">
 							<ListPageStats currentPage={3} totalPages={12} totalCount={144} itemsPerPage={12} />
-						</div>
-					</div>
-
-					<div>
-						<h2 className="text-lg font-semibold mb-4">ListPageEmptyState - 空状態</h2>
-						<div className="bg-white p-8 rounded-lg border">
-							<ListPageEmptyState
-								icon={<div className="text-4xl">📋</div>}
-								title="コンポーネントデモ"
-								description="これは空状態コンポーネントのデモです。"
-								action={<Button size="sm">アクション実行</Button>}
-							/>
 						</div>
 					</div>
 				</div>

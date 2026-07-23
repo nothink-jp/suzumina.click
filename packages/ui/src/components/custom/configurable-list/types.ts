@@ -109,7 +109,14 @@ export interface ListDisplayProps<T> {
 	items: T[];
 	renderItem: (item: T, index: number) => React.ReactNode;
 	className?: string;
+	/** 検索結果ゼロ時の要約テキスト（コントロールバーの件数表示欄に使う簡潔な文字列） */
 	emptyMessage?: string;
+	/**
+	 * リスト本体が空のときに emptyMessage の代わりに描画するリッチな空状態
+	 * （例: `<EmptyState icon={...} title="..." action={...} />`）。
+	 * 未指定時は従来どおり emptyMessage をテキストのみで表示する。
+	 */
+	emptyState?: React.ReactNode;
 	loadingComponent?: React.ReactNode;
 
 	// リスト本体の見出し（スクリーンリーダー向け）。

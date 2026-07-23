@@ -2,7 +2,6 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import {
 	ListPageContent,
-	ListPageEmptyState,
 	ListPageGrid,
 	ListPageHeader,
 	ListPageLayout,
@@ -154,66 +153,6 @@ describe("ListPageStats", () => {
 	});
 });
 
-describe("ListPageEmptyState", () => {
-	it("基本的な空状態が表示される", () => {
-		render(<ListPageEmptyState title="データがありません" />);
-
-		expect(screen.getByText("データがありません")).toBeInTheDocument();
-	});
-
-	it("アイコンと説明が表示される", () => {
-		const icon = <div data-testid="empty-icon">📭</div>;
-
-		render(
-			<ListPageEmptyState
-				icon={icon}
-				title="データがありません"
-				description="検索条件を変更してください"
-			/>,
-		);
-
-		expect(screen.getByTestId("empty-icon")).toBeInTheDocument();
-		expect(screen.getByText("データがありません")).toBeInTheDocument();
-		expect(screen.getByText("検索条件を変更してください")).toBeInTheDocument();
-	});
-
-	it("アクションボタンが表示される", () => {
-		const action = <button type="button">新規作成</button>;
-
-		render(<ListPageEmptyState title="データがありません" action={action} />);
-
-		expect(screen.getByText("データがありません")).toBeInTheDocument();
-		expect(screen.getByRole("button", { name: "新規作成" })).toBeInTheDocument();
-	});
-
-	it("すべての要素が組み合わせて表示される", () => {
-		const icon = <div data-testid="empty-icon">📭</div>;
-		const action = <button type="button">データを追加</button>;
-
-		render(
-			<ListPageEmptyState
-				icon={icon}
-				title="まだデータがありません"
-				description="最初のデータを作成してみましょう"
-				action={action}
-			/>,
-		);
-
-		expect(screen.getByTestId("empty-icon")).toBeInTheDocument();
-		expect(screen.getByText("まだデータがありません")).toBeInTheDocument();
-		expect(screen.getByText("最初のデータを作成してみましょう")).toBeInTheDocument();
-		expect(screen.getByRole("button", { name: "データを追加" })).toBeInTheDocument();
-	});
-
-	it("カスタムクラスが適用される", () => {
-		const { container } = render(<ListPageEmptyState title="テスト" className="custom-empty" />);
-
-		expect(container.firstChild).toHaveClass("custom-empty");
-		expect(container.firstChild).toHaveClass("text-center");
-		expect(container.firstChild).toHaveClass("py-12");
-	});
-});
-
 describe("ListPageGrid エッジケース", () => {
 	it("カラム設定がない場合はデフォルト値が使用される", () => {
 		const { container } = render(
@@ -360,11 +299,6 @@ describe("統合テスト：複合レイアウト", () => {
 						<div>アイテム2</div>
 					</ListPageGrid>
 					<ListPageStats currentPage={2} totalPages={5} totalCount={100} itemsPerPage={20} />
-					<ListPageEmptyState
-						title="データなし"
-						description="テスト用の空状態"
-						action={<button type="button">作成</button>}
-					/>
 				</ListPageContent>
 			</ListPageLayout>,
 		);
@@ -376,7 +310,5 @@ describe("統合テスト：複合レイアウト", () => {
 		expect(screen.getByText("アイテム1")).toBeInTheDocument();
 		expect(screen.getByText("アイテム2")).toBeInTheDocument();
 		expect(screen.getByText("100件中 21〜40件を表示")).toBeInTheDocument();
-		expect(screen.getByText("データなし")).toBeInTheDocument();
-		expect(screen.getByRole("button", { name: "作成" })).toBeInTheDocument();
 	});
 });

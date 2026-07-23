@@ -269,5 +269,9 @@ vi.mock("lucide-react", () => {
 		// Icons for tag editing
 		Save: createMockIcon("Save"),
 		Hash: createMockIcon("Hash"),
+		// Icons for EmptyState 導入箇所（ADR-012）
+		Volume2: createMockIcon("Volume2"),
+		LineChart: createMockIcon("LineChart"),
+		Image: createMockIcon("Image"),
 	};
 });

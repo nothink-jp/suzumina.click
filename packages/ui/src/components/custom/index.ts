@@ -31,6 +31,8 @@ export {
 } from "./configurable-list/utils/filter-helpers";
 // 非モーダルで角にドッキングするパネルの殻（年齢確認ゲート/Cookieバー等）
 export { DockedPanel } from "./docked-panel";
+export type { EmptyStateProps } from "./empty-state";
+export { EmptyState } from "./empty-state";
 // Utility components
 export { HighlightText } from "./highlight-text";
 // Layout components

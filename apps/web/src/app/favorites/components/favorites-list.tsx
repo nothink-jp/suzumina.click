@@ -1,7 +1,10 @@
 "use client";
 
 import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
-import { ConfigurableList } from "@suzumina.click/ui/components/custom";
+import { ConfigurableList, EmptyState } from "@suzumina.click/ui/components/custom";
+import { Button } from "@suzumina.click/ui/components/ui/button";
+import { Heart } from "lucide-react";
+import Link from "next/link";
 import { useCallback, useMemo } from "react";
 import { AudioButtonListItem } from "@/components/audio/audio-button-list-item";
 import {
@@ -94,7 +97,16 @@ export default function FavoritesList({ initialData, userId }: FavoritesListProp
 			layout="flex"
 			sorts={BASIC_SORT_OPTIONS}
 			itemsPerPageOptions={DEFAULT_ITEMS_PER_PAGE_OPTIONS}
-			emptyMessage="お気に入りがまだありません。音声ボタンをお気に入りに追加すると、ここに表示されます"
+			emptyMessage="お気に入りがまだありません"
+			emptyState={
+				<EmptyState
+					icon={<Heart className="h-6 w-6" />}
+					title="お気に入りがまだありません"
+					description="音声ボタンをお気に入りに追加すると、ここに表示されます"
+					illustrated
+					action={<Button render={<Link href="/buttons">音声ボタン一覧を見る</Link>} />}
+				/>
+			}
 		/>
 	);
 }
