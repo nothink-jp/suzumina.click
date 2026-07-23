@@ -268,6 +268,17 @@ Empty State フェーズでスコープ外とした残り6箇所（`audio-button
   JSX 構築時点で React が例外を投げていた。モックに `EmptyState: () => null` を追加して解消。
   同種のフルモジュールモックを持つ `videos/__tests__/page.test.tsx` は `VideoList` 自体を
   別途モックしており実コードパスを通らないため無影響だった（要 grep 確認済み・他に該当なし）
+- **バグ修正（PR #845 AI レビュー起因）: コントロールバーが検索語ありのとき `emptyMessage` を
+  無視していた**。`configurable-list-controls.tsx` は `searchQuery` が truthy な 0 件時のみ
+  固定文言「検索結果がありません」を独立して出す分岐を持っており、`emptyState`（本体）と
+  `emptyMessage` を揃えても、検索語ありのケースではコントロールバー側だけこの固定文言に
+  差し替わり両者が食い違う（例: `/works?q=...` で本体「作品が見つかりませんでした」・
+  コントロールバー「検索結果がありません」）。この固定文言分岐自体を削除し、
+  0 件時は searchQuery の有無によらず常に `emptyMessage` を表示するよう単純化した
+  （`searchQuery` prop は本コンポーネントで他に用途が無いため合わせて削除）。
+  文言ソースを `emptyMessage`/`emptyState.title` の 1 つに揃えたことで、
+  Group A（本体・コントロールバーとも同一文言）だけでなく Group B
+  （`favorites-list.tsx` の「お気に入りがまだありません」）でも両者が一致するようになった
 
 ### combobox.tsx（在file・手書きプリミティブ）実装ノート
 
