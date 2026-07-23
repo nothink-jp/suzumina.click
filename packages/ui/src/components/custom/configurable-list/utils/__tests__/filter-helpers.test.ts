@@ -3,6 +3,7 @@ import type { FilterConfig } from "../../types";
 import {
 	generateOptions,
 	generateYearOptions,
+	getActiveFilterChips,
 	getDefaultFilterValues,
 	hasActiveFilters,
 	normalizeOptions,
@@ -108,6 +109,78 @@ describe("hasActiveFilters", () => {
 
 	it("未知キーは無視", () => {
 		expect(hasActiveFilters({ unknown: "x" }, configs)).toBe(false);
+	});
+});
+
+describe("getActiveFilterChips", () => {
+	const configs = {
+		category: cfg({
+			type: "select",
+			showAll: true,
+			options: [{ value: "voice", label: "ボイス" }],
+		}),
+		genres: cfg({
+			type: "tags",
+			options: [
+				{ value: "a", label: "A" },
+				{ value: "b", label: "B" },
+			],
+		}),
+		showR18: cfg({ type: "boolean", label: "R18作品表示" }),
+	};
+
+	it("非アクティブ（'all'・空配列・デフォルト）はチップを生成しない", () => {
+		expect(getActiveFilterChips({ category: "all", genres: [] }, configs)).toEqual([]);
+	});
+
+	it("select は1件のチップ・解除先はデフォルト値", () => {
+		const chips = getActiveFilterChips({ category: "voice" }, configs);
+		expect(chips).toEqual([{ key: "category", label: "ボイス", value: "voice", nextValue: "all" }]);
+	});
+
+	it("select で options に無い値はラベルとして値そのものを使う", () => {
+		const chips = getActiveFilterChips({ category: "unknown" }, configs);
+		expect(chips).toEqual([
+			{ key: "category", label: "unknown", value: "unknown", nextValue: "all" },
+		]);
+	});
+
+	it("tags は選択値ごとに1件・解除先は残りの配列", () => {
+		const chips = getActiveFilterChips({ genres: ["a", "b"] }, configs);
+		expect(chips).toEqual([
+			{ key: "genres", label: "A", value: "a", nextValue: ["b"] },
+			{ key: "genres", label: "B", value: "b", nextValue: ["a"] },
+		]);
+	});
+
+	it("tags で最後の1件を解除すると nextValue は undefined（空配列にしない）", () => {
+		const chips = getActiveFilterChips({ genres: ["a"] }, configs);
+		expect(chips).toEqual([{ key: "genres", label: "A", value: "a", nextValue: undefined }]);
+	});
+
+	it("option label 末尾の件数サフィックスはチップ表示時のみ剥がす（正本の options は変更しない）", () => {
+		const countConfigs = {
+			genres: cfg({
+				type: "tags",
+				options: [
+					{ value: "a", label: "ASMR (39作品)" },
+					{ value: "b", label: "タグ (12件)" },
+				],
+			}),
+		};
+		const chips = getActiveFilterChips({ genres: ["a", "b"] }, countConfigs);
+		expect(chips.map((c) => c.label)).toEqual(["ASMR", "タグ"]);
+		expect(countConfigs.genres.options).toEqual([
+			{ value: "a", label: "ASMR (39作品)" },
+			{ value: "b", label: "タグ (12件)" },
+		]);
+	});
+
+	it("boolean はラベルに config.label を使い、解除先はデフォルト値", () => {
+		const chips = getActiveFilterChips({ showR18: true }, configs);
+		expect(chips).toEqual([
+			{ key: "showR18", label: "R18作品表示", value: true, nextValue: false },
+		]);
 	});
 });
 

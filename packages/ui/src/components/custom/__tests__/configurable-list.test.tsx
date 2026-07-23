@@ -379,6 +379,46 @@ describe("ConfigurableList", () => {
 		});
 	});
 
+	it("フィルターチップから個別解除できる", async () => {
+		render(
+			<ConfigurableList
+				items={sampleItems}
+				renderItem={renderItem}
+				fetchFn={fakeServerFetch(sampleItems)}
+				filters={{
+					category: {
+						type: "select",
+						options: ["A", "B", "C"],
+						showAll: false,
+					},
+				}}
+				urlSync={false}
+			/>,
+		);
+
+		const categorySelect = screen.getByRole("combobox");
+		fireEvent.click(categorySelect);
+		await waitFor(() => {
+			expect(screen.getByText("A")).toBeInTheDocument();
+		});
+		fireEvent.click(screen.getByText("A"));
+
+		// フィルター適用後、絞り込みチップが表示される
+		const chipRemoveButton = await screen.findByRole("button", { name: "Aを解除" });
+
+		await waitFor(() => {
+			expect(screen.queryByTestId("item-2")).not.toBeInTheDocument();
+		});
+
+		// チップの×をクリックすると当該フィルターだけが解除される
+		fireEvent.click(chipRemoveButton);
+
+		await waitFor(() => {
+			expect(screen.getByTestId("item-2")).toBeInTheDocument();
+		});
+		expect(screen.queryByRole("button", { name: "Aを解除" })).not.toBeInTheDocument();
+	});
+
 	it("shows empty message when no items match", async () => {
 		render(
 			<ConfigurableList
