@@ -299,8 +299,9 @@ function TagsFilterOptionRow({
 /**
  * 選択中の option を常に先頭へピン留めしつつ、検索語で絞り込んだ未選択 option を続けて並べる。
  * 選択中の項目は検索語に一致しなくても表示し続ける（検索中でも解除できるようにするため）。
+ * React hook は呼ばない純粋関数（"use" プレフィックスは付けない）。
  */
-function useTagsFilterDisplayOptions(
+function getTagsFilterDisplayOptions(
 	options: Array<{ value: string; label: string }>,
 	selectedValues: string[],
 	search: string,
@@ -330,7 +331,7 @@ function TagsFilter({
 	const selectedValues = Array.isArray(value) ? value : [];
 	const hasOptions = options.length > 0;
 	const [search, setSearch] = useState("");
-	const displayOptions = useTagsFilterDisplayOptions(options, selectedValues, search);
+	const displayOptions = getTagsFilterDisplayOptions(options, selectedValues, search);
 
 	const toggleValue = (optionValue: string, checked: boolean) => {
 		const newValues = checked
@@ -340,7 +341,12 @@ function TagsFilter({
 	};
 
 	return (
-		<Popover>
+		<Popover
+			onOpenChange={(open) => {
+				// 閉じたら検索語をリセットする（次回開いたときに前回の検索結果が残って見えるのを防ぐ）
+				if (!open) setSearch("");
+			}}
+		>
 			<PopoverTrigger
 				render={
 					<Button variant="outline" size="sm" className="h-9 border-dashed" disabled={!hasOptions}>

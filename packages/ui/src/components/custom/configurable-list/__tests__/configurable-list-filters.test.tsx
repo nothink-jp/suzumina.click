@@ -71,6 +71,26 @@ describe("TagsFilter（FilterControl type=tags）", () => {
 		expect(popup.queryByText("タグ2")).not.toBeInTheDocument();
 	});
 
+	it("Popoverを閉じて再度開くと検索語がリセットされている", async () => {
+		const user = userEvent.setup();
+		render(<FilterControl keyName="genres" value={undefined} config={config} onChange={vi.fn()} />);
+
+		const trigger = screen.getByRole("button", { name: /ジャンル/ });
+		await user.click(trigger);
+		const search = await screen.findByPlaceholderText("検索...");
+		await user.type(search, "タグ1");
+		expect(search).toHaveValue("タグ1");
+
+		// Escapeで閉じる → 再度開く
+		await user.keyboard("{Escape}");
+		await waitFor(() => {
+			expect(screen.queryByPlaceholderText("検索...")).not.toBeInTheDocument();
+		});
+		await user.click(trigger);
+		const reopenedSearch = await screen.findByPlaceholderText("検索...");
+		expect(reopenedSearch).toHaveValue("");
+	});
+
 	it("チェックボックスの選択/解除で onChange が呼ばれる", async () => {
 		const user = userEvent.setup();
 		const onChange = vi.fn();
