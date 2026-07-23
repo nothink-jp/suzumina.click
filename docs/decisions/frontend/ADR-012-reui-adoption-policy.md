@@ -161,6 +161,20 @@
 - 再生成で lint 手当てが消える: `ChartStyle` の `dangerouslySetInnerHTML` への
   `biome-ignore lint/security/noDangerouslySetInnerHtml`（理由コメント付き）を再付与する
   （ADR-011「再生成後の正規化」の一環）
+- `chart.stories.tsx`（custom・在file）は再生成の対象外だが、`ChartConfig` の型シグネチャが
+  変わった場合は追従が必要
+
+**chart.stories.tsx（Storybook・在file・custom 配置）**:
+- 全 ui プリミティブに story を持たせる既存慣行（29/29）に合わせて追加。`Default` は静的参照、
+  `TooltipInteraction` は play 関数で (1) 系列の stroke 色が hex 直書きではなく
+  `hsl(var(--info))` / `hsl(var(--destructive))` の実測値と一致すること（トークン退行の回帰検知）、
+  (2) ホバーでツールチップが表示され `ChartConfig` のラベルが反映されることを検証する
+- `pnpm test:storybook`（Vitest + Playwright provider の実ブラウザ、`vitest.storybook.config.ts`）で実行。
+  **`pnpm verify` には含まれない**別ゲート（CI は Chromatic ワークフローが別途担当）
+- 実装上の注意: recharts のマウス追跡は座標（`clientX`/`clientY`）を実測 rect から計算するため、
+  `userEvent.hover`（要素中心への合成ディスパッチ）ではプロット領域内に座標が解決されず
+  ツールチップが発火しないことがある。`fireEvent.mouseOver`/`mouseMove` に
+  `.recharts-wrapper` の実測 `getBoundingClientRect()` から算出した明示座標を渡すこと
 
 ## 参考
 
