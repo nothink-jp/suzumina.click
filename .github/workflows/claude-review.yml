@@ -51,6 +51,11 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # claude-code-action は既定で bot 起因の workflow を拒否する（"Workflow initiated by
+          # non-human actor" エラー）。Dependabot PR でも review を回すため明示許可する。
+          # prompt は固定テンプレートで PR 本文/差分内容を埋め込まないため、bot 経由のプロンプト
+          # インジェクションのリスクは無い（"*" ではなく dependabot[bot] のみに限定して許可）。
+          allowed_bots: "dependabot[bot]"
           # 進捗トラッキングコメントを作成し、コメント投稿用ツールを有効化する（タグモード）。
           track_progress: true
           prompt: |
