@@ -55,19 +55,28 @@ export default function GlobalError({
 									再試行する
 								</Button>
 
-								<Button variant="outline" className="w-full group" asChild>
-									<a href="/" className="flex items-center gap-2">
-										<Home className="h-4 w-4 group-hover:scale-110 transition-transform" />
-										ホームに戻る
-									</a>
-								</Button>
+								<Button
+									variant="outline"
+									className="w-full group"
+									render={
+										<a href="/" className="flex items-center gap-2">
+											<Home className="h-4 w-4 group-hover:scale-110 transition-transform" />
+											ホームに戻る
+										</a>
+									}
+								/>
 
-								<Button variant="ghost" size="sm" className="w-full" asChild>
-									<a href="/contact" className="flex items-center gap-2 text-xs">
-										<Send className="h-3 w-3" />
-										エラーを報告する
-									</a>
-								</Button>
+								<Button
+									variant="ghost"
+									size="sm"
+									className="w-full"
+									render={
+										<a href="/contact" className="flex items-center gap-2 text-xs">
+											<Send className="h-3 w-3" />
+											エラーを報告する
+										</a>
+									}
+								/>
 							</div>
 
 							{/* エラー詳細（開発環境のみ） */}

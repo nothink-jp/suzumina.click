@@ -53,11 +53,11 @@ type Story = StoryObj<typeof DropdownMenu>;
 export const Default: Story = {
 	render: () => (
 		<DropdownMenu>
-			<DropdownMenuTrigger asChild>
-				<Button variant="outline">メニューを開く</Button>
-			</DropdownMenuTrigger>
+			<DropdownMenuTrigger render={<Button variant="outline">メニューを開く</Button>} />
 			<DropdownMenuContent className="w-56">
-				<DropdownMenuLabel>アカウント</DropdownMenuLabel>
+				<DropdownMenuGroup>
+					<DropdownMenuLabel>アカウント</DropdownMenuLabel>
+				</DropdownMenuGroup>
 				<DropdownMenuSeparator />
 				<DropdownMenuItem>
 					<User className="mr-2 h-4 w-4" />
@@ -80,11 +80,11 @@ export const Default: Story = {
 export const WithShortcuts: Story = {
 	render: () => (
 		<DropdownMenu>
-			<DropdownMenuTrigger asChild>
-				<Button variant="outline">ショートカット付きメニュー</Button>
-			</DropdownMenuTrigger>
+			<DropdownMenuTrigger render={<Button variant="outline">ショートカット付きメニュー</Button>} />
 			<DropdownMenuContent className="w-56">
-				<DropdownMenuLabel>アクション</DropdownMenuLabel>
+				<DropdownMenuGroup>
+					<DropdownMenuLabel>アクション</DropdownMenuLabel>
+				</DropdownMenuGroup>
 				<DropdownMenuSeparator />
 				<DropdownMenuItem>
 					<Plus className="mr-2 h-4 w-4" />
@@ -115,11 +115,11 @@ export const WithShortcuts: Story = {
 export const WithCheckboxes: Story = {
 	render: () => (
 		<DropdownMenu>
-			<DropdownMenuTrigger asChild>
-				<Button variant="outline">表示設定</Button>
-			</DropdownMenuTrigger>
+			<DropdownMenuTrigger render={<Button variant="outline">表示設定</Button>} />
 			<DropdownMenuContent className="w-56">
-				<DropdownMenuLabel>表示オプション</DropdownMenuLabel>
+				<DropdownMenuGroup>
+					<DropdownMenuLabel>表示オプション</DropdownMenuLabel>
+				</DropdownMenuGroup>
 				<DropdownMenuSeparator />
 				<DropdownMenuCheckboxItem checked>サイドバーを表示</DropdownMenuCheckboxItem>
 				<DropdownMenuCheckboxItem checked={false}>ツールバーを表示</DropdownMenuCheckboxItem>
@@ -134,11 +134,11 @@ export const WithCheckboxes: Story = {
 export const WithRadioGroup: Story = {
 	render: () => (
 		<DropdownMenu>
-			<DropdownMenuTrigger asChild>
-				<Button variant="outline">テーマ設定</Button>
-			</DropdownMenuTrigger>
+			<DropdownMenuTrigger render={<Button variant="outline">テーマ設定</Button>} />
 			<DropdownMenuContent className="w-56">
-				<DropdownMenuLabel>テーマ</DropdownMenuLabel>
+				<DropdownMenuGroup>
+					<DropdownMenuLabel>テーマ</DropdownMenuLabel>
+				</DropdownMenuGroup>
 				<DropdownMenuSeparator />
 				<DropdownMenuRadioGroup value="light">
 					<DropdownMenuRadioItem value="light">ライトテーマ</DropdownMenuRadioItem>
@@ -153,11 +153,11 @@ export const WithRadioGroup: Story = {
 export const WithSubmenus: Story = {
 	render: () => (
 		<DropdownMenu>
-			<DropdownMenuTrigger asChild>
-				<Button variant="outline">サブメニュー付き</Button>
-			</DropdownMenuTrigger>
+			<DropdownMenuTrigger render={<Button variant="outline">サブメニュー付き</Button>} />
 			<DropdownMenuContent className="w-56">
-				<DropdownMenuLabel>マイアカウント</DropdownMenuLabel>
+				<DropdownMenuGroup>
+					<DropdownMenuLabel>マイアカウント</DropdownMenuLabel>
+				</DropdownMenuGroup>
 				<DropdownMenuSeparator />
 				<DropdownMenuGroup>
 					<DropdownMenuItem>
@@ -223,20 +223,24 @@ export const WithSubmenus: Story = {
 export const UserMenu: Story = {
 	render: () => (
 		<DropdownMenu>
-			<DropdownMenuTrigger asChild>
-				<Button variant="ghost" className="relative h-8 w-8 rounded-full">
-					<div className="h-8 w-8 rounded-full bg-suzuka-500 flex items-center justify-center text-white text-sm font-medium">
-						U
-					</div>
-				</Button>
-			</DropdownMenuTrigger>
-			<DropdownMenuContent className="w-56" align="end" forceMount>
-				<DropdownMenuLabel className="font-normal">
-					<div className="flex flex-col space-y-1">
-						<p className="text-sm font-medium leading-none">ユーザー名</p>
-						<p className="text-xs leading-none text-muted-foreground">user@example.com</p>
-					</div>
-				</DropdownMenuLabel>
+			<DropdownMenuTrigger
+				render={
+					<Button variant="ghost" className="relative h-8 w-8 rounded-full">
+						<div className="h-8 w-8 rounded-full bg-suzuka-500 flex items-center justify-center text-white text-sm font-medium">
+							U
+						</div>
+					</Button>
+				}
+			/>
+			<DropdownMenuContent className="w-56" align="end">
+				<DropdownMenuGroup>
+					<DropdownMenuLabel className="font-normal">
+						<div className="flex flex-col space-y-1">
+							<p className="text-sm font-medium leading-none">ユーザー名</p>
+							<p className="text-xs leading-none text-muted-foreground">user@example.com</p>
+						</div>
+					</DropdownMenuLabel>
+				</DropdownMenuGroup>
 				<DropdownMenuSeparator />
 				<DropdownMenuGroup>
 					<DropdownMenuItem>
@@ -271,11 +275,13 @@ export const ContextMenu: Story = {
 		<div className="flex flex-col items-center space-y-4">
 			<p className="text-sm text-muted-foreground">音声ボタンのコンテキストメニュー例</p>
 			<DropdownMenu>
-				<DropdownMenuTrigger asChild>
-					<Button variant="outline" size="icon" aria-label="操作メニュー">
-						<MoreHorizontal className="h-4 w-4" />
-					</Button>
-				</DropdownMenuTrigger>
+				<DropdownMenuTrigger
+					render={
+						<Button variant="outline" size="icon" aria-label="操作メニュー">
+							<MoreHorizontal className="h-4 w-4" />
+						</Button>
+					}
+				/>
 				<DropdownMenuContent align="end">
 					<DropdownMenuItem>
 						<span>再生</span>
@@ -302,17 +308,21 @@ export const ContextMenu: Story = {
 export const StatusMenu: Story = {
 	render: () => (
 		<DropdownMenu>
-			<DropdownMenuTrigger asChild>
-				<Button variant="outline">
-					<div className="flex items-center space-x-2">
-						<div className="w-2 h-2 bg-green-500 rounded-full" />
-						<span>オンライン</span>
-						<ChevronRight className="h-4 w-4 rotate-90" />
-					</div>
-				</Button>
-			</DropdownMenuTrigger>
+			<DropdownMenuTrigger
+				render={
+					<Button variant="outline">
+						<div className="flex items-center space-x-2">
+							<div className="w-2 h-2 bg-green-500 rounded-full" />
+							<span>オンライン</span>
+							<ChevronRight className="h-4 w-4 rotate-90" />
+						</div>
+					</Button>
+				}
+			/>
 			<DropdownMenuContent className="w-56">
-				<DropdownMenuLabel>ステータス</DropdownMenuLabel>
+				<DropdownMenuGroup>
+					<DropdownMenuLabel>ステータス</DropdownMenuLabel>
+				</DropdownMenuGroup>
 				<DropdownMenuSeparator />
 				<DropdownMenuRadioGroup value="online">
 					<DropdownMenuRadioItem value="online">

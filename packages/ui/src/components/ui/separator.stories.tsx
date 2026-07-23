@@ -18,10 +18,6 @@ const meta: Meta<typeof Separator> = {
 			options: ["horizontal", "vertical"],
 			description: "セパレーターの方向",
 		},
-		decorative: {
-			control: "boolean",
-			description: "装飾的な要素として扱うかどうか",
-		},
 	},
 };
 

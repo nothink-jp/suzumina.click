@@ -5,6 +5,7 @@ import { Button } from "@suzumina.click/ui/components/ui/button";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
+	DropdownMenuGroup,
 	DropdownMenuItem,
 	DropdownMenuLabel,
 	DropdownMenuSeparator,
@@ -48,60 +49,72 @@ export default function UserMenu({ user }: UserMenuProps) {
 
 	return (
 		<DropdownMenu>
-			<DropdownMenuTrigger asChild>
-				<Button
-					variant="ghost"
-					className="flex items-center gap-2 h-auto p-2"
-					aria-label="ユーザーメニューを開く"
-				>
-					<UserAvatar
-						discordId={user.discordId}
-						avatar={user.avatar}
-						displayName={user.displayName}
-						size={32}
-						className="w-8 h-8"
-					/>
-					<div className="hidden sm:block text-left">
-						<p className="text-sm font-medium text-foreground">{user.displayName}</p>
-					</div>
-				</Button>
-			</DropdownMenuTrigger>
-			<DropdownMenuContent className="w-56" align="end" forceMount>
-				<DropdownMenuLabel className="font-normal">
-					<div className="flex flex-col space-y-1">
-						<p className="text-sm font-medium leading-none">{user.displayName}</p>
-					</div>
-				</DropdownMenuLabel>
-				<DropdownMenuSeparator />
-				<DropdownMenuItem asChild>
-					<Link href="/users/me" className="flex items-center gap-2 cursor-pointer">
-						<User className="h-4 w-4" />
-						<span>マイページ</span>
-					</Link>
-				</DropdownMenuItem>
-				<DropdownMenuItem asChild>
-					<Link href="/favorites" className="flex items-center gap-2 cursor-pointer">
-						<Heart className="h-4 w-4" />
-						<span>お気に入り</span>
-					</Link>
-				</DropdownMenuItem>
-				{/* 配信終了後も下書きの仕上げに戻れるよう常設する（動画カード側の導線は live/upcoming 時のみ） */}
-				<DropdownMenuItem asChild>
-					<Link href="/live" className="flex items-center gap-2 cursor-pointer">
-						<Bookmark className="h-4 w-4" />
-						<span>配信中マーキング</span>
-					</Link>
-				</DropdownMenuItem>
-				<DropdownMenuItem asChild>
-					<Link href="/settings" className="flex items-center gap-2 cursor-pointer">
-						<Settings className="h-4 w-4" />
-						<span>設定</span>
-					</Link>
-				</DropdownMenuItem>
+			<DropdownMenuTrigger
+				render={
+					<Button
+						variant="ghost"
+						className="flex items-center gap-2 h-auto p-2"
+						aria-label="ユーザーメニューを開く"
+					>
+						<UserAvatar
+							discordId={user.discordId}
+							avatar={user.avatar}
+							displayName={user.displayName}
+							size={32}
+							className="w-8 h-8"
+						/>
+						<div className="hidden sm:block text-left">
+							<p className="text-sm font-medium text-foreground">{user.displayName}</p>
+						</div>
+					</Button>
+				}
+			/>
+			<DropdownMenuContent className="w-56" align="end">
+				<DropdownMenuGroup>
+					<DropdownMenuLabel className="font-normal">
+						<div className="flex flex-col space-y-1">
+							<p className="text-sm font-medium leading-none">{user.displayName}</p>
+						</div>
+					</DropdownMenuLabel>
+				</DropdownMenuGroup>
 				<DropdownMenuSeparator />
 				<DropdownMenuItem
-					// asChild を使わず DropdownMenuItem 自体を押下対象にする（選択でメニューは閉じる）。
-					onSelect={() => void handleSignOut()}
+					render={
+						<Link href="/users/me" className="flex items-center gap-2 cursor-pointer">
+							<User className="h-4 w-4" />
+							<span>マイページ</span>
+						</Link>
+					}
+				/>
+				<DropdownMenuItem
+					render={
+						<Link href="/favorites" className="flex items-center gap-2 cursor-pointer">
+							<Heart className="h-4 w-4" />
+							<span>お気に入り</span>
+						</Link>
+					}
+				/>
+				{/* 配信終了後も下書きの仕上げに戻れるよう常設する（動画カード側の導線は live/upcoming 時のみ） */}
+				<DropdownMenuItem
+					render={
+						<Link href="/live" className="flex items-center gap-2 cursor-pointer">
+							<Bookmark className="h-4 w-4" />
+							<span>配信中マーキング</span>
+						</Link>
+					}
+				/>
+				<DropdownMenuItem
+					render={
+						<Link href="/settings" className="flex items-center gap-2 cursor-pointer">
+							<Settings className="h-4 w-4" />
+							<span>設定</span>
+						</Link>
+					}
+				/>
+				<DropdownMenuSeparator />
+				<DropdownMenuItem
+					// render を使わず DropdownMenuItem 自体を押下対象にする（クリックでメニューは閉じる）。
+					onClick={() => void handleSignOut()}
 					className="flex items-center gap-2 cursor-pointer"
 				>
 					<LogOut className="h-4 w-4" />

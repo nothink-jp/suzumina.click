@@ -32,9 +32,7 @@ export const Default: Story = {
 		const usernameId = React.useId();
 		return (
 			<Dialog>
-				<DialogTrigger asChild>
-					<Button variant="outline">Open Dialog</Button>
-				</DialogTrigger>
+				<DialogTrigger render={<Button variant="outline">Open Dialog</Button>} />
 				<DialogContent className="sm:max-w-[425px]">
 					<DialogHeader>
 						<DialogTitle>Edit profile</DialogTitle>
@@ -68,9 +66,7 @@ export const Default: Story = {
 export const Simple: Story = {
 	render: () => (
 		<Dialog>
-			<DialogTrigger asChild>
-				<Button>Simple Dialog</Button>
-			</DialogTrigger>
+			<DialogTrigger render={<Button>Simple Dialog</Button>} />
 			<DialogContent>
 				<DialogHeader>
 					<DialogTitle>Simple Dialog</DialogTitle>
@@ -84,9 +80,7 @@ export const Simple: Story = {
 export const Opens: Story = {
 	render: () => (
 		<Dialog>
-			<DialogTrigger asChild>
-				<Button>Open Dialog</Button>
-			</DialogTrigger>
+			<DialogTrigger render={<Button>Open Dialog</Button>} />
 			<DialogContent>
 				<DialogHeader>
 					<DialogTitle>Dialog Opened</DialogTitle>

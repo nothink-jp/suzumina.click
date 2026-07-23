@@ -66,9 +66,10 @@ export function CategoryDisplay({
 			</h4>
 			<div className={cn("flex flex-wrap", sizeClasses.layerContainer)}>
 				{tagHref ? (
-					<Badge asChild className={badgeClassName}>
-						<Link href={tagHref(categoryName, "category")}>{content}</Link>
-					</Badge>
+					<Badge
+						className={badgeClassName}
+						render={<Link href={tagHref(categoryName, "category")}>{content}</Link>}
+					/>
 				) : (
 					<Badge className={badgeClassName} onClick={onTagClick ? handleClick : undefined}>
 						{content}

@@ -10,7 +10,6 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@suzumina.click/ui/components/ui/alert-dialog";
-import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Loader2, Trash2 } from "lucide-react";
 
 interface DeleteConfirmDialogProps {
@@ -42,25 +41,23 @@ export function DeleteConfirmDialog({
 				</AlertDialogHeader>
 				<AlertDialogFooter>
 					<AlertDialogCancel disabled={isDeleting}>キャンセル</AlertDialogCancel>
-					<AlertDialogAction asChild>
-						<Button
-							variant="destructive"
-							onClick={onConfirm}
-							disabled={isDeleting}
-							className="gap-2"
-						>
-							{isDeleting ? (
-								<>
-									<Loader2 className="h-4 w-4 animate-spin" />
-									削除中...
-								</>
-							) : (
-								<>
-									<Trash2 className="h-4 w-4" />
-									削除する
-								</>
-							)}
-						</Button>
+					<AlertDialogAction
+						variant="destructive"
+						onClick={onConfirm}
+						disabled={isDeleting}
+						className="gap-2"
+					>
+						{isDeleting ? (
+							<>
+								<Loader2 className="h-4 w-4 animate-spin" />
+								削除中...
+							</>
+						) : (
+							<>
+								<Trash2 className="h-4 w-4" />
+								削除する
+							</>
+						)}
 					</AlertDialogAction>
 				</AlertDialogFooter>
 			</AlertDialogContent>

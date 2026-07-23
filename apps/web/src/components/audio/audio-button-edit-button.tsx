@@ -26,11 +26,16 @@ export function AudioButtonEditButton({ audioButtonId, createdBy }: AudioButtonE
 	}
 
 	return (
-		<Button variant="outline" size="sm" asChild className="flex items-center gap-1">
-			<Link href={`/buttons/${audioButtonId}/edit`}>
-				<Pencil className="h-4 w-4" />
-				編集
-			</Link>
-		</Button>
+		<Button
+			variant="outline"
+			size="sm"
+			className="flex items-center gap-1"
+			render={
+				<Link href={`/buttons/${audioButtonId}/edit`}>
+					<Pencil className="h-4 w-4" />
+					編集
+				</Link>
+			}
+		/>
 	);
 }

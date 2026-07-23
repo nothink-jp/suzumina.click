@@ -30,7 +30,7 @@ describe("HomeSearch", () => {
 		const user = userEvent.setup();
 		render(<HomeSearch />);
 
-		await user.click(screen.getByRole("radio", { name: "動画" }));
+		await user.click(screen.getByRole("button", { name: "動画" }));
 		await user.type(screen.getByRole("textbox"), "歌枠");
 		await user.click(screen.getByRole("button", { name: "検索" }));
 
@@ -41,7 +41,7 @@ describe("HomeSearch", () => {
 		const user = userEvent.setup();
 		render(<HomeSearch />);
 
-		await user.click(screen.getByRole("radio", { name: "作品" }));
+		await user.click(screen.getByRole("button", { name: "作品" }));
 		await user.type(screen.getByRole("textbox"), "ASMR");
 		await user.click(screen.getByRole("button", { name: "検索" }));
 

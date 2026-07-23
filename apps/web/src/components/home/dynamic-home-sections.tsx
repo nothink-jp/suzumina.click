@@ -52,11 +52,14 @@ function AudioButtonsSectionHeader() {
 				</h2>
 				<p className="text-sm sm:text-base text-muted-foreground">最新の音声ボタンをチェック！</p>
 			</div>
-			<Button asChild variant="outline">
-				<Link href="/buttons" className="font-medium">
-					すべて見る
-				</Link>
-			</Button>
+			<Button
+				variant="outline"
+				render={
+					<Link href="/buttons" className="font-medium">
+						すべて見る
+					</Link>
+				}
+			/>
 		</div>
 	);
 }
@@ -125,16 +128,23 @@ export function CommunitySection() {
 						 * 落ちていた（SPR-150）。動画一覧では各カードに video_id 付きの作成導線
 						 * （VideoCardActions）があるため、そこへ誘導する。
 						 */}
-						<Button asChild size="lg">
-							<Link href="/videos" className="font-medium">
-								音声ボタンを作る
-							</Link>
-						</Button>
-						<Button asChild size="lg" variant="outline">
-							<Link href="/about" className="font-medium">
-								サイトについて
-							</Link>
-						</Button>
+						<Button
+							size="lg"
+							render={
+								<Link href="/videos" className="font-medium">
+									音声ボタンを作る
+								</Link>
+							}
+						/>
+						<Button
+							size="lg"
+							variant="outline"
+							render={
+								<Link href="/about" className="font-medium">
+									サイトについて
+								</Link>
+							}
+						/>
 					</div>
 				</div>
 			</div>

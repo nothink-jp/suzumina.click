@@ -100,9 +100,11 @@ export function TagLayer({
 
 					if (tagHref) {
 						return (
-							<Badge key={`${tag}-${index}`} asChild className={itemClassName}>
-								<Link href={tagHref(tag, layer)}>{renderContent(tag)}</Link>
-							</Badge>
+							<Badge
+								key={`${tag}-${index}`}
+								className={itemClassName}
+								render={<Link href={tagHref(tag, layer)}>{renderContent(tag)}</Link>}
+							/>
 						);
 					}
 

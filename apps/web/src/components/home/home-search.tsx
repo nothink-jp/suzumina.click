@@ -42,12 +42,12 @@ const HomeSearch = memo(function HomeSearch() {
 	return (
 		<div className="max-w-md mx-auto space-y-3 md:mx-0">
 			<ToggleGroup
-				type="single"
-				value={target}
+				value={[target]}
 				// 単一選択を強制（同じ項目の再クリックで空にしない）
 				onValueChange={(value) => {
-					if (value) {
-						setTarget(value as SearchTarget);
+					const next = value[0];
+					if (next) {
+						setTarget(next as SearchTarget);
 					}
 				}}
 				aria-label="検索対象"

@@ -14,16 +14,18 @@ interface MobileMenuProps {
 export default function MobileMenu({ user }: MobileMenuProps) {
 	return (
 		<Sheet>
-			<SheetTrigger asChild>
-				<Button
-					variant="outline"
-					size="icon"
-					className="md:hidden min-h-[44px] min-w-[44px]"
-					aria-label="メニューを開く"
-				>
-					<Menu className="h-5 w-5" aria-hidden="true" />
-				</Button>
-			</SheetTrigger>
+			<SheetTrigger
+				render={
+					<Button
+						variant="outline"
+						size="icon"
+						className="md:hidden min-h-[44px] min-w-[44px]"
+						aria-label="メニューを開く"
+					>
+						<Menu className="h-5 w-5" aria-hidden="true" />
+					</Button>
+				}
+			/>
 			<SheetContent
 				side="right"
 				className="w-[280px] sm:w-[320px] md:w-[400px]"

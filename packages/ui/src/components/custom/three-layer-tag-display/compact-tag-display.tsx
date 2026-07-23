@@ -72,9 +72,10 @@ export function CompactTagDisplay({
 				return (
 					<li key={`${tag.type}-${tag.text}-${index}`}>
 						{tagHref ? (
-							<Badge asChild className={badgeClassName}>
-								<Link href={tagHref(tag.text, tag.type)}>{renderContent(tag.text)}</Link>
-							</Badge>
+							<Badge
+								className={badgeClassName}
+								render={<Link href={tagHref(tag.text, tag.type)}>{renderContent(tag.text)}</Link>}
+							/>
 						) : (
 							<Badge
 								className={badgeClassName}

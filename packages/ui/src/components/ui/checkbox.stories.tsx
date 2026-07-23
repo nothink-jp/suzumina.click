@@ -18,8 +18,10 @@ const meta = {
 			control: { type: "boolean" },
 		},
 		checked: {
-			control: { type: "select" },
-			options: [true, false, "indeterminate"],
+			control: { type: "boolean" },
+		},
+		indeterminate: {
+			control: { type: "boolean" },
 		},
 	},
 } satisfies Meta<typeof Checkbox>;
@@ -39,7 +41,7 @@ export const Checked: Story = {
 
 export const Indeterminate: Story = {
 	args: {
-		checked: "indeterminate",
+		indeterminate: true,
 	},
 };
 
@@ -82,6 +84,6 @@ export const ToggleInteraction: Story = {
 		const checkbox = canvas.getByRole("checkbox");
 		await expect(checkbox).not.toBeChecked();
 		await userEvent.click(checkbox);
-		await expect(args.onCheckedChange).toHaveBeenCalledWith(true);
+		await expect(args.onCheckedChange).toHaveBeenCalledWith(true, expect.anything());
 	},
 };

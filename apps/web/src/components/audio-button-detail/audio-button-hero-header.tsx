@@ -86,14 +86,16 @@ export function AudioButtonHeroHeader({
 							<MoreHorizontal className="h-[18px] w-[18px]" />
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end" className="min-w-[190px]">
-							<DropdownMenuItem asChild>
-								<Link href={`/buttons/${audioButtonId}/edit`}>
-									<Pencil className="h-3.5 w-3.5" />
-									編集ページを開く
-								</Link>
-							</DropdownMenuItem>
+							<DropdownMenuItem
+								render={
+									<Link href={`/buttons/${audioButtonId}/edit`}>
+										<Pencil className="h-3.5 w-3.5" />
+										編集ページを開く
+									</Link>
+								}
+							/>
 							<DropdownMenuSeparator />
-							<DropdownMenuItem variant="destructive" onSelect={() => setConfirmOpen(true)}>
+							<DropdownMenuItem variant="destructive" onClick={() => setConfirmOpen(true)}>
 								<Trash2 className="h-3.5 w-3.5" />
 								削除…
 							</DropdownMenuItem>

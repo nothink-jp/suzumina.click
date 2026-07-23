@@ -126,7 +126,7 @@ export const AuthenticatedWithLikes: Story = {
 };
 
 // お気に入りピルは詳細 popover(ActionPillRow)内にあるため、まず「詳細を表示」を開いてから取得する。
-// radix popover は portal 描画なので within(canvasElement) では拾えず、screen(document.body) で探す。
+// popover は portal 描画なので within(canvasElement) では拾えず、screen(document.body) で探す。
 export const FavoriteToggleInteraction: Story = {
 	args: {
 		audioButton: mockAudioButton,

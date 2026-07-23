@@ -152,9 +152,11 @@ export default function AboutPage() {
 							<p className="text-xs text-muted-foreground mb-4">
 								（返信をお約束するものではありません）
 							</p>
-							<Button variant="outline" size="sm" asChild>
-								<Link href="/contact">お問い合わせページ</Link>
-							</Button>
+							<Button
+								variant="outline"
+								size="sm"
+								render={<Link href="/contact">お問い合わせページ</Link>}
+							/>
 						</CardContent>
 					</Card>
 

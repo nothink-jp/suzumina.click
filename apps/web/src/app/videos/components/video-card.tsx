@@ -104,13 +104,13 @@ function VideoCard({ video, variant = "grid", priority = false, searchQuery }: V
 					{actualButtonCount > 0 && (
 						<div className="absolute top-2 left-2">
 							<Badge
-								asChild
 								variant="secondary"
 								className="bg-white/90 text-foreground cursor-pointer hover:bg-white"
 								aria-label={`${actualButtonCount}個の音声ボタン一覧を見る`}
-							>
-								<Link href={`/buttons?videoId=${video.id}`}>{actualButtonCount} ボタン</Link>
-							</Badge>
+								render={
+									<Link href={`/buttons?videoId=${video.id}`}>{actualButtonCount} ボタン</Link>
+								}
+							/>
 						</div>
 					)}
 					{video.status?.embeddable === false && (

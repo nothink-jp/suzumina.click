@@ -34,24 +34,32 @@ export default function UserNotFound() {
 
 						{/* アクションボタン */}
 						<div className="flex flex-col sm:flex-row gap-3 justify-center">
-							<Button asChild>
-								<Link href="/" className="flex items-center gap-2">
-									<Home className="w-4 h-4" />
-									ホームに戻る
-								</Link>
-							</Button>
-							<Button variant="outline" asChild>
-								<Link href="/users/me" className="flex items-center gap-2">
-									<User className="w-4 h-4" />
-									マイプロフィール
-								</Link>
-							</Button>
-							<Button variant="outline" asChild>
-								<Link href="/buttons" className="flex items-center gap-2">
-									<Search className="w-4 h-4" />
-									音声ボタンを探す
-								</Link>
-							</Button>
+							<Button
+								render={
+									<Link href="/" className="flex items-center gap-2">
+										<Home className="w-4 h-4" />
+										ホームに戻る
+									</Link>
+								}
+							/>
+							<Button
+								variant="outline"
+								render={
+									<Link href="/users/me" className="flex items-center gap-2">
+										<User className="w-4 h-4" />
+										マイプロフィール
+									</Link>
+								}
+							/>
+							<Button
+								variant="outline"
+								render={
+									<Link href="/buttons" className="flex items-center gap-2">
+										<Search className="w-4 h-4" />
+										音声ボタンを探す
+									</Link>
+								}
+							/>
 						</div>
 
 						{/* ヘルプ */}

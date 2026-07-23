@@ -45,11 +45,14 @@ export function WorksSection({
 								涼花みなせさんの最新作品をチェック！
 							</p>
 						</div>
-						<Button asChild variant="outline">
-							<Link href="/works" className="font-medium">
-								すべて見る
-							</Link>
-						</Button>
+						<Button
+							variant="outline"
+							render={
+								<Link href="/works" className="font-medium">
+									すべて見る
+								</Link>
+							}
+						/>
 					</div>
 					<LoadingSkeleton variant="carousel" height={350} />
 				</div>
@@ -91,11 +94,14 @@ export function WorksSection({
 								: "年齢制限のない作品をお楽しみください"}
 						</p>
 					</div>
-					<Button asChild variant="outline">
-						<Link href="/works" className="font-medium">
-							すべて見る
-						</Link>
-					</Button>
+					<Button
+						variant="outline"
+						render={
+							<Link href="/works" className="font-medium">
+								すべて見る
+							</Link>
+						}
+					/>
 				</div>
 				<LazyFeaturedWorksCarousel works={worksToShow} />
 			</div>

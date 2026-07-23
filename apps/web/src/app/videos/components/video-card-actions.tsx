@@ -60,13 +60,13 @@ export default function VideoCardActions({ video, variant }: VideoCardActionsPro
 			size="sm"
 			variant="outline"
 			className="flex-1 border text-muted-foreground hover:bg-accent min-h-[44px] text-sm"
-			asChild
-		>
-			<Link href={`/videos/${video.id}`} aria-describedby={`video-title-${video.id}`}>
-				<Eye className="h-4 w-4 mr-1" aria-hidden="true" />
-				詳細を見る
-			</Link>
-		</Button>
+			render={
+				<Link href={`/videos/${video.id}`} aria-describedby={`video-title-${video.id}`}>
+					<Eye className="h-4 w-4 mr-1" aria-hidden="true" />
+					詳細を見る
+				</Link>
+			}
+		/>
 	);
 
 	if (variant === "sidebar") {
@@ -75,13 +75,13 @@ export default function VideoCardActions({ video, variant }: VideoCardActionsPro
 				variant="outline"
 				size="sm"
 				className="w-full border text-muted-foreground hover:bg-accent min-h-[44px]"
-				asChild
-			>
-				<Link href={`/videos/${video.id}`} aria-describedby={`video-title-${video.id}`}>
-					<ExternalLink className="h-4 w-4 mr-2" aria-hidden="true" />
-					動画を見る
-				</Link>
-			</Button>
+				render={
+					<Link href={`/videos/${video.id}`} aria-describedby={`video-title-${video.id}`}>
+						<ExternalLink className="h-4 w-4 mr-2" aria-hidden="true" />
+						動画を見る
+					</Link>
+				}
+			/>
 		);
 	}
 
@@ -90,16 +90,21 @@ export default function VideoCardActions({ video, variant }: VideoCardActionsPro
 	let createAction: ReactNode;
 	if (gate.canCreate) {
 		createAction = (
-			<Button size="sm" variant="default" className="flex-1 min-h-[44px] text-sm" asChild>
-				<Link
-					href={`/buttons/create?video_id=${video.id}`}
-					aria-label={`${video.title}の音声ボタンを作成`}
-					className="flex items-center whitespace-nowrap"
-				>
-					<Plus className="h-4 w-4 mr-1" aria-hidden="true" />
-					ボタン作成
-				</Link>
-			</Button>
+			<Button
+				size="sm"
+				variant="default"
+				className="flex-1 min-h-[44px] text-sm"
+				render={
+					<Link
+						href={`/buttons/create?video_id=${video.id}`}
+						aria-label={`${video.title}の音声ボタンを作成`}
+						className="flex items-center whitespace-nowrap"
+					>
+						<Plus className="h-4 w-4 mr-1" aria-hidden="true" />
+						ボタン作成
+					</Link>
+				}
+			/>
 		);
 	} else if ("liveMarking" in gate) {
 		// バッジと同色ペアで時制を明示する: live = destructive 赤（「配信中」バッジと同色・赤は live 専用）、
@@ -114,25 +119,25 @@ export default function VideoCardActions({ video, variant }: VideoCardActionsPro
 						? "flex-1 min-h-[44px] text-sm"
 						: "flex-1 min-h-[44px] text-sm bg-info text-info-foreground hover:bg-info/90"
 				}
-				asChild
-			>
-				<Link
-					href={`/live?v=${video.videoId}`}
-					aria-label={
-						isLiveNow
-							? `${video.title}の配信中マーキングを開く`
-							: `${video.title}の配信待機（マーキング）を開く`
-					}
-					className="flex items-center whitespace-nowrap"
-				>
-					{isLiveNow ? (
-						<Bookmark className="h-4 w-4 mr-1" aria-hidden="true" />
-					) : (
-						<Clock className="h-4 w-4 mr-1" aria-hidden="true" />
-					)}
-					{isLiveNow ? "配信中マーク" : "配信待機"}
-				</Link>
-			</Button>
+				render={
+					<Link
+						href={`/live?v=${video.videoId}`}
+						aria-label={
+							isLiveNow
+								? `${video.title}の配信中マーキングを開く`
+								: `${video.title}の配信待機（マーキング）を開く`
+						}
+						className="flex items-center whitespace-nowrap"
+					>
+						{isLiveNow ? (
+							<Bookmark className="h-4 w-4 mr-1" aria-hidden="true" />
+						) : (
+							<Clock className="h-4 w-4 mr-1" aria-hidden="true" />
+						)}
+						{isLiveNow ? "配信中マーク" : "配信待機"}
+					</Link>
+				}
+			/>
 		);
 	} else {
 		// 作成不可（理由あり）: aria-disabled で理由を提示。

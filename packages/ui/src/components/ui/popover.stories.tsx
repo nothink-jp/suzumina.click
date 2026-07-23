@@ -23,9 +23,7 @@ type Story = StoryObj<typeof meta>;
 export const Basic: Story = {
 	render: () => (
 		<Popover>
-			<PopoverTrigger asChild>
-				<Button variant="outline">ポップオーバーを開く</Button>
-			</PopoverTrigger>
+			<PopoverTrigger render={<Button variant="outline">ポップオーバーを開く</Button>} />
 			<PopoverContent>
 				<div className="space-y-2">
 					<h4 className="font-medium leading-none">ポップオーバー</h4>
@@ -41,12 +39,14 @@ export const Basic: Story = {
 export const WithForm: Story = {
 	render: () => (
 		<Popover>
-			<PopoverTrigger asChild>
-				<Button variant="outline">
-					<UserIcon className="mr-2 h-4 w-4" />
-					プロフィール編集
-				</Button>
-			</PopoverTrigger>
+			<PopoverTrigger
+				render={
+					<Button variant="outline">
+						<UserIcon className="mr-2 h-4 w-4" />
+						プロフィール編集
+					</Button>
+				}
+			/>
 			<PopoverContent className="w-80">
 				<div className="space-y-4">
 					<div className="space-y-2">
@@ -84,54 +84,42 @@ export const Positioning: Story = {
 	render: () => (
 		<div className="grid grid-cols-3 gap-4 p-8">
 			<Popover>
-				<PopoverTrigger asChild>
-					<Button variant="outline">上部</Button>
-				</PopoverTrigger>
+				<PopoverTrigger render={<Button variant="outline">上部</Button>} />
 				<PopoverContent side="top" className="w-56">
 					<p className="text-sm">ボタンの上部に表示されるポップオーバーです。</p>
 				</PopoverContent>
 			</Popover>
 
 			<Popover>
-				<PopoverTrigger asChild>
-					<Button variant="outline">右側</Button>
-				</PopoverTrigger>
+				<PopoverTrigger render={<Button variant="outline">右側</Button>} />
 				<PopoverContent side="right" className="w-56">
 					<p className="text-sm">ボタンの右側に表示されるポップオーバーです。</p>
 				</PopoverContent>
 			</Popover>
 
 			<Popover>
-				<PopoverTrigger asChild>
-					<Button variant="outline">下部（デフォルト）</Button>
-				</PopoverTrigger>
+				<PopoverTrigger render={<Button variant="outline">下部(デフォルト)</Button>} />
 				<PopoverContent side="bottom" className="w-56">
 					<p className="text-sm">ボタンの下部に表示されるポップオーバーです。</p>
 				</PopoverContent>
 			</Popover>
 
 			<Popover>
-				<PopoverTrigger asChild>
-					<Button variant="outline">左側</Button>
-				</PopoverTrigger>
+				<PopoverTrigger render={<Button variant="outline">左側</Button>} />
 				<PopoverContent side="left" className="w-56">
 					<p className="text-sm">ボタンの左側に表示されるポップオーバーです。</p>
 				</PopoverContent>
 			</Popover>
 
 			<Popover>
-				<PopoverTrigger asChild>
-					<Button variant="outline">開始位置揃え</Button>
-				</PopoverTrigger>
+				<PopoverTrigger render={<Button variant="outline">開始位置揃え</Button>} />
 				<PopoverContent align="start" className="w-56">
 					<p className="text-sm">開始位置に揃えて表示されます。</p>
 				</PopoverContent>
 			</Popover>
 
 			<Popover>
-				<PopoverTrigger asChild>
-					<Button variant="outline">終了位置揃え</Button>
-				</PopoverTrigger>
+				<PopoverTrigger render={<Button variant="outline">終了位置揃え</Button>} />
 				<PopoverContent align="end" className="w-56">
 					<p className="text-sm">終了位置に揃えて表示されます。</p>
 				</PopoverContent>
@@ -145,11 +133,13 @@ export const InfoPopover: Story = {
 		<div className="flex items-center gap-2">
 			<span>ユーザー名</span>
 			<Popover>
-				<PopoverTrigger asChild>
-					<Button variant="ghost" size="sm" className="h-4 w-4 p-0" aria-label="詳細情報">
-						<InfoIcon className="h-3 w-3" />
-					</Button>
-				</PopoverTrigger>
+				<PopoverTrigger
+					render={
+						<Button variant="ghost" size="sm" className="h-4 w-4 p-0" aria-label="詳細情報">
+							<InfoIcon className="h-3 w-3" />
+						</Button>
+					}
+				/>
 				<PopoverContent className="w-64">
 					<div className="space-y-2">
 						<h4 className="font-medium text-sm">ユーザー名について</h4>
@@ -166,12 +156,14 @@ export const InfoPopover: Story = {
 export const MenuPopover: Story = {
 	render: () => (
 		<Popover>
-			<PopoverTrigger asChild>
-				<Button variant="outline">
-					<SettingsIcon className="mr-2 h-4 w-4" />
-					設定メニュー
-				</Button>
-			</PopoverTrigger>
+			<PopoverTrigger
+				render={
+					<Button variant="outline">
+						<SettingsIcon className="mr-2 h-4 w-4" />
+						設定メニュー
+					</Button>
+				}
+			/>
 			<PopoverContent className="w-56">
 				<div className="space-y-1">
 					<Button variant="ghost" className="w-full justify-start">
@@ -200,27 +192,21 @@ export const CustomWidth: Story = {
 	render: () => (
 		<div className="flex gap-4">
 			<Popover>
-				<PopoverTrigger asChild>
-					<Button variant="outline">小さい</Button>
-				</PopoverTrigger>
+				<PopoverTrigger render={<Button variant="outline">小さい</Button>} />
 				<PopoverContent className="w-48">
 					<p className="text-sm">これは小さいポップオーバーです。</p>
 				</PopoverContent>
 			</Popover>
 
 			<Popover>
-				<PopoverTrigger asChild>
-					<Button variant="outline">デフォルト</Button>
-				</PopoverTrigger>
+				<PopoverTrigger render={<Button variant="outline">デフォルト</Button>} />
 				<PopoverContent>
-					<p className="text-sm">これはデフォルトサイズ（w-72）のポップオーバーです。</p>
+					<p className="text-sm">これはデフォルトサイズ(w-72)のポップオーバーです。</p>
 				</PopoverContent>
 			</Popover>
 
 			<Popover>
-				<PopoverTrigger asChild>
-					<Button variant="outline">大きい</Button>
-				</PopoverTrigger>
+				<PopoverTrigger render={<Button variant="outline">大きい</Button>} />
 				<PopoverContent className="w-96">
 					<p className="text-sm">
 						これは大きいポップオーバーです。より多くのコンテンツを含むことができます。
@@ -234,9 +220,7 @@ export const CustomWidth: Story = {
 export const WithoutPadding: Story = {
 	render: () => (
 		<Popover>
-			<PopoverTrigger asChild>
-				<Button variant="outline">パディングなし</Button>
-			</PopoverTrigger>
+			<PopoverTrigger render={<Button variant="outline">パディングなし</Button>} />
 			<PopoverContent className="w-56 p-0">
 				<div className="space-y-0">
 					<div className="p-3 border-b">
@@ -261,9 +245,7 @@ export const WithoutPadding: Story = {
 export const OpenInteraction: Story = {
 	render: () => (
 		<Popover>
-			<PopoverTrigger asChild>
-				<Button variant="outline">ポップオーバーを開く</Button>
-			</PopoverTrigger>
+			<PopoverTrigger render={<Button variant="outline">ポップオーバーを開く</Button>} />
 			<PopoverContent aria-label="ポップオーバー">
 				<p className="text-sm">ポップオーバーの内容</p>
 			</PopoverContent>
@@ -295,9 +277,7 @@ export const ControlledExample: Story = {
 					</span>
 				</div>
 				<Popover open={open} onOpenChange={setOpen}>
-					<PopoverTrigger asChild>
-						<Button variant="outline">制御されたポップオーバー</Button>
-					</PopoverTrigger>
+					<PopoverTrigger render={<Button variant="outline">制御されたポップオーバー</Button>} />
 					<PopoverContent>
 						<div className="space-y-2">
 							<h4 className="font-medium">制御されたポップオーバー</h4>

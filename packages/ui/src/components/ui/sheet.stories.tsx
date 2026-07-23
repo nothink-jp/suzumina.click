@@ -33,9 +33,7 @@ type Story = StoryObj<typeof Sheet>;
 export const Default: Story = {
 	render: () => (
 		<Sheet>
-			<SheetTrigger asChild>
-				<Button variant="outline">シートを開く</Button>
-			</SheetTrigger>
+			<SheetTrigger render={<Button variant="outline">シートを開く</Button>} />
 			<SheetContent>
 				<SheetHeader>
 					<SheetTitle>シートのタイトル</SheetTitle>
@@ -49,11 +47,13 @@ export const Default: Story = {
 					</p>
 				</div>
 				<SheetFooter>
-					<SheetClose asChild>
-						<Button type="button" variant="secondary">
-							閉じる
-						</Button>
-					</SheetClose>
+					<SheetClose
+						render={
+							<Button type="button" variant="secondary">
+								閉じる
+							</Button>
+						}
+					/>
 				</SheetFooter>
 			</SheetContent>
 		</Sheet>
@@ -63,9 +63,7 @@ export const Default: Story = {
 export const LeftSide: Story = {
 	render: () => (
 		<Sheet>
-			<SheetTrigger asChild>
-				<Button variant="outline">左からシートを開く</Button>
-			</SheetTrigger>
+			<SheetTrigger render={<Button variant="outline">左からシートを開く</Button>} />
 			<SheetContent side="left">
 				<SheetHeader>
 					<SheetTitle>左側シート</SheetTitle>
@@ -82,9 +80,7 @@ export const LeftSide: Story = {
 export const TopSide: Story = {
 	render: () => (
 		<Sheet>
-			<SheetTrigger asChild>
-				<Button variant="outline">上からシートを開く</Button>
-			</SheetTrigger>
+			<SheetTrigger render={<Button variant="outline">上からシートを開く</Button>} />
 			<SheetContent side="top">
 				<SheetHeader>
 					<SheetTitle>上部シート</SheetTitle>
@@ -101,9 +97,7 @@ export const TopSide: Story = {
 export const BottomSide: Story = {
 	render: () => (
 		<Sheet>
-			<SheetTrigger asChild>
-				<Button variant="outline">下からシートを開く</Button>
-			</SheetTrigger>
+			<SheetTrigger render={<Button variant="outline">下からシートを開く</Button>} />
 			<SheetContent side="bottom">
 				<SheetHeader>
 					<SheetTitle>下部シート</SheetTitle>
@@ -120,11 +114,13 @@ export const BottomSide: Story = {
 export const MobileMenu: Story = {
 	render: () => (
 		<Sheet>
-			<SheetTrigger asChild>
-				<Button variant="outline" size="icon" aria-label="メニューを開く">
-					<Menu className="h-4 w-4" />
-				</Button>
-			</SheetTrigger>
+			<SheetTrigger
+				render={
+					<Button variant="outline" size="icon" aria-label="メニューを開く">
+						<Menu className="h-4 w-4" />
+					</Button>
+				}
+			/>
 			<SheetContent side="left">
 				<SheetHeader>
 					<SheetTitle>suzumina.click</SheetTitle>
@@ -132,45 +128,69 @@ export const MobileMenu: Story = {
 				</SheetHeader>
 				<div className="py-4 space-y-4">
 					<div className="space-y-2">
-						<Button variant="ghost" className="w-full justify-start" asChild>
-							<a href="#">
-								<Home className="mr-2 h-4 w-4" />
-								ホーム
-							</a>
-						</Button>
-						<Button variant="ghost" className="w-full justify-start" asChild>
-							<a href="#">
-								<Users className="mr-2 h-4 w-4" />
-								音声ボタン
-							</a>
-						</Button>
-						<Button variant="ghost" className="w-full justify-start" asChild>
-							<a href="#">
-								<Settings className="mr-2 h-4 w-4" />
-								動画一覧
-							</a>
-						</Button>
-						<Button variant="ghost" className="w-full justify-start" asChild>
-							<a href="#">
-								<Settings className="mr-2 h-4 w-4" />
-								作品一覧
-							</a>
-						</Button>
+						<Button
+							variant="ghost"
+							className="w-full justify-start"
+							render={
+								<a href="#">
+									<Home className="mr-2 h-4 w-4" />
+									ホーム
+								</a>
+							}
+						/>
+						<Button
+							variant="ghost"
+							className="w-full justify-start"
+							render={
+								<a href="#">
+									<Users className="mr-2 h-4 w-4" />
+									音声ボタン
+								</a>
+							}
+						/>
+						<Button
+							variant="ghost"
+							className="w-full justify-start"
+							render={
+								<a href="#">
+									<Settings className="mr-2 h-4 w-4" />
+									動画一覧
+								</a>
+							}
+						/>
+						<Button
+							variant="ghost"
+							className="w-full justify-start"
+							render={
+								<a href="#">
+									<Settings className="mr-2 h-4 w-4" />
+									作品一覧
+								</a>
+							}
+						/>
 					</div>
 					<Separator />
 					<div className="space-y-2">
-						<Button variant="ghost" className="w-full justify-start" asChild>
-							<a href="#">
-								<Settings className="mr-2 h-4 w-4" />
-								設定
-							</a>
-						</Button>
-						<Button variant="ghost" className="w-full justify-start" asChild>
-							<a href="#">
-								<LogOut className="mr-2 h-4 w-4" />
-								ログアウト
-							</a>
-						</Button>
+						<Button
+							variant="ghost"
+							className="w-full justify-start"
+							render={
+								<a href="#">
+									<Settings className="mr-2 h-4 w-4" />
+									設定
+								</a>
+							}
+						/>
+						<Button
+							variant="ghost"
+							className="w-full justify-start"
+							render={
+								<a href="#">
+									<LogOut className="mr-2 h-4 w-4" />
+									ログアウト
+								</a>
+							}
+						/>
 					</div>
 				</div>
 			</SheetContent>
@@ -181,9 +201,7 @@ export const MobileMenu: Story = {
 export const FormSheet: Story = {
 	render: () => (
 		<Sheet>
-			<SheetTrigger asChild>
-				<Button>フォームシートを開く</Button>
-			</SheetTrigger>
+			<SheetTrigger render={<Button>フォームシートを開く</Button>} />
 			<SheetContent>
 				<SheetHeader>
 					<SheetTitle>音声ボタンを作成</SheetTitle>
@@ -231,11 +249,13 @@ export const FormSheet: Story = {
 					</div>
 				</div>
 				<SheetFooter>
-					<SheetClose asChild>
-						<Button type="button" variant="outline">
-							キャンセル
-						</Button>
-					</SheetClose>
+					<SheetClose
+						render={
+							<Button type="button" variant="outline">
+								キャンセル
+							</Button>
+						}
+					/>
 					<Button type="button">作成</Button>
 				</SheetFooter>
 			</SheetContent>
@@ -246,9 +266,7 @@ export const FormSheet: Story = {
 export const OpenInteraction: Story = {
 	render: () => (
 		<Sheet>
-			<SheetTrigger asChild>
-				<Button variant="outline">シートを開く</Button>
-			</SheetTrigger>
+			<SheetTrigger render={<Button variant="outline">シートを開く</Button>} />
 			<SheetContent>
 				<SheetHeader>
 					<SheetTitle>シートのタイトル</SheetTitle>
@@ -268,9 +286,7 @@ export const OpenInteraction: Story = {
 export const WithoutHeaderFooter: Story = {
 	render: () => (
 		<Sheet>
-			<SheetTrigger asChild>
-				<Button variant="outline">シンプルシート</Button>
-			</SheetTrigger>
+			<SheetTrigger render={<Button variant="outline">シンプルシート</Button>} />
 			<SheetContent>
 				<div className="p-4">
 					<h2 className="text-lg font-semibold mb-4">シンプルなシート</h2>

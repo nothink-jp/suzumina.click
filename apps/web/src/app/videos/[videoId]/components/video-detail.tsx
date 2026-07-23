@@ -207,17 +207,17 @@ export default function VideoDetail({
 									size="lg"
 									variant="secondary"
 									className="bg-white/90 hover:bg-white text-black shadow-lg transition-all duration-300 group-hover/play:scale-110"
-									asChild
-								>
-									<a
-										href={youtubeUrl}
-										target="_blank"
-										rel="noopener noreferrer"
-										aria-label={`${video.title}をYouTubeで再生`}
-									>
-										<PlayCircle className="h-8 w-8" />
-									</a>
-								</Button>
+									render={
+										<a
+											href={youtubeUrl}
+											target="_blank"
+											rel="noopener noreferrer"
+											aria-label={`${video.title}をYouTubeで再生`}
+										>
+											<PlayCircle className="h-8 w-8" />
+										</a>
+									}
+								/>
 							</div>
 
 							{/* ホバー時のオーバーレイ */}
@@ -296,30 +296,34 @@ export default function VideoDetail({
 									size="lg"
 									className="bg-primary hover:bg-primary/90 text-primary-foreground"
 									disabled={!canCreateButton}
-									asChild={canCreateButton}
 									title={canCreateButton ? undefined : canCreateButtonData.reason || undefined}
+									render={
+										canCreateButton ? (
+											<Link
+												href={`/buttons/create?video_id=${video.videoId}`}
+												className="flex items-center whitespace-nowrap"
+											>
+												<Plus className="h-4 w-4 mr-2" />
+												ボタンを作成
+											</Link>
+										) : undefined
+									}
 								>
-									{canCreateButton ? (
-										<Link
-											href={`/buttons/create?video_id=${video.videoId}`}
-											className="flex items-center whitespace-nowrap"
-										>
-											<Plus className="h-4 w-4 mr-2" />
-											ボタンを作成
-										</Link>
-									) : (
-										<span className="flex items-center whitespace-nowrap">
-											<Plus className="h-4 w-4 mr-2" />
-											ボタンを作成
-										</span>
-									)}
+									<span className="flex items-center whitespace-nowrap">
+										<Plus className="h-4 w-4 mr-2" />
+										ボタンを作成
+									</span>
 								</Button>
-								<Button size="lg" variant="outline" asChild>
-									<a href={youtubeUrl} target="_blank" rel="noopener noreferrer">
-										<PlayCircle className="h-4 w-4 mr-2" />
-										YouTubeで見る
-									</a>
-								</Button>
+								<Button
+									size="lg"
+									variant="outline"
+									render={
+										<a href={youtubeUrl} target="_blank" rel="noopener noreferrer">
+											<PlayCircle className="h-4 w-4 mr-2" />
+											YouTubeで見る
+										</a>
+									}
+								/>
 							</div>
 
 							{/* タブナビゲーション */}
@@ -805,10 +809,8 @@ export default function VideoDetail({
 									size="sm"
 									variant="outline"
 									className="text-primary border-border hover:bg-accent"
-									asChild
-								>
-									<Link href={`/buttons/create?video_id=${video.videoId}`}>新規作成</Link>
-								</Button>
+									render={<Link href={`/buttons/create?video_id=${video.videoId}`}>新規作成</Link>}
+								/>
 							)}
 						</div>
 

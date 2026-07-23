@@ -252,26 +252,26 @@ export default function WorkCard({ work, variant = "default", priority = false }
 							size="sm"
 							variant="outline"
 							className="flex-1 border text-muted-foreground hover:bg-accent min-h-[44px] text-sm"
-							asChild
-						>
-							<Link href={`/works/${work.id}`} aria-describedby={`work-title-${work.id}`}>
-								詳細{isCompact ? "を見る" : ""}
-							</Link>
-						</Button>
+							render={
+								<Link href={`/works/${work.id}`} aria-describedby={`work-title-${work.id}`}>
+									詳細{isCompact ? "を見る" : ""}
+								</Link>
+							}
+						/>
 						<Button
 							size="sm"
 							className="bg-destructive hover:bg-destructive/90 text-white min-h-[44px] min-w-[44px] px-3"
-							asChild
-						>
-							<a
-								href={work.workUrl}
-								target="_blank"
-								rel="noopener noreferrer"
-								aria-label={`${work.title}をDLsiteで購入`}
-							>
-								<ExternalLink className="h-4 w-4" aria-hidden="true" />
-							</a>
-						</Button>
+							render={
+								<a
+									href={work.workUrl}
+									target="_blank"
+									rel="noopener noreferrer"
+									aria-label={`${work.title}をDLsiteで購入`}
+								>
+									<ExternalLink className="h-4 w-4" aria-hidden="true" />
+								</a>
+							}
+						/>
 					</fieldset>
 				</div>
 			</div>

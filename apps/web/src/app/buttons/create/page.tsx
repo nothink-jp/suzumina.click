@@ -36,12 +36,16 @@ export default async function CreateAudioButtonPage({ searchParams }: CreateAudi
 		return (
 			<div className="container mx-auto px-4 py-8 max-w-4xl">
 				<div className="mb-6">
-					<Button variant="ghost" size="sm" asChild>
-						<Link href="/buttons" className="flex items-center gap-2">
-							<ArrowLeft className="h-4 w-4" />
-							音声ボタン一覧に戻る
-						</Link>
-					</Button>
+					<Button
+						variant="ghost"
+						size="sm"
+						render={
+							<Link href="/buttons" className="flex items-center gap-2">
+								<ArrowLeft className="h-4 w-4" />
+								音声ボタン一覧に戻る
+							</Link>
+						}
+					/>
 				</div>
 
 				<div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
@@ -51,12 +55,8 @@ export default async function CreateAudioButtonPage({ searchParams }: CreateAudi
 						音声ボタンを作成するには、元となるYouTube動画を指定する必要があります。
 					</p>
 					<div className="flex gap-3">
-						<Button asChild>
-							<Link href="/videos">動画一覧から選ぶ</Link>
-						</Button>
-						<Button variant="outline" asChild>
-							<Link href="/buttons">音声ボタン一覧</Link>
-						</Button>
+						<Button render={<Link href="/videos">動画一覧から選ぶ</Link>} />
+						<Button variant="outline" render={<Link href="/buttons">音声ボタン一覧</Link>} />
 					</div>
 				</div>
 			</div>
@@ -78,12 +78,16 @@ export default async function CreateAudioButtonPage({ searchParams }: CreateAudi
 		return (
 			<div className="container mx-auto px-4 py-8 max-w-4xl">
 				<div className="mb-6">
-					<Button variant="ghost" size="sm" asChild>
-						<Link href="/videos" className="flex items-center gap-2">
-							<ArrowLeft className="h-4 w-4" />
-							動画一覧に戻る
-						</Link>
-					</Button>
+					<Button
+						variant="ghost"
+						size="sm"
+						render={
+							<Link href="/videos" className="flex items-center gap-2">
+								<ArrowLeft className="h-4 w-4" />
+								動画一覧に戻る
+							</Link>
+						}
+					/>
 				</div>
 
 				<div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
@@ -92,18 +96,19 @@ export default async function CreateAudioButtonPage({ searchParams }: CreateAudi
 					<p className="text-muted-foreground max-w-md">{errorMessage}</p>
 					<p className="text-sm text-muted-foreground">動画タイトル: {videoResult.title}</p>
 					<div className="flex gap-3">
-						<Button asChild>
-							<Link href="/videos">配信アーカイブを選ぶ</Link>
-						</Button>
-						<Button variant="outline" asChild>
-							<a
-								href={`https://youtube.com/watch?v=${videoId}`}
-								target="_blank"
-								rel="noopener noreferrer"
-							>
-								YouTubeで見る
-							</a>
-						</Button>
+						<Button render={<Link href="/videos">配信アーカイブを選ぶ</Link>} />
+						<Button
+							variant="outline"
+							render={
+								<a
+									href={`https://youtube.com/watch?v=${videoId}`}
+									target="_blank"
+									rel="noopener noreferrer"
+								>
+									YouTubeで見る
+								</a>
+							}
+						/>
 					</div>
 				</div>
 			</div>
@@ -115,12 +120,16 @@ export default async function CreateAudioButtonPage({ searchParams }: CreateAudi
 		return (
 			<div className="container mx-auto px-4 py-8 max-w-4xl">
 				<div className="mb-6">
-					<Button variant="ghost" size="sm" asChild>
-						<Link href="/videos" className="flex items-center gap-2">
-							<ArrowLeft className="h-4 w-4" />
-							動画一覧に戻る
-						</Link>
-					</Button>
+					<Button
+						variant="ghost"
+						size="sm"
+						render={
+							<Link href="/videos" className="flex items-center gap-2">
+								<ArrowLeft className="h-4 w-4" />
+								動画一覧に戻る
+							</Link>
+						}
+					/>
 				</div>
 
 				<div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
@@ -133,18 +142,19 @@ export default async function CreateAudioButtonPage({ searchParams }: CreateAudi
 					</p>
 					<p className="text-sm text-muted-foreground">動画タイトル: {videoResult.title}</p>
 					<div className="flex gap-3">
-						<Button asChild>
-							<Link href="/videos">他の動画を選ぶ</Link>
-						</Button>
-						<Button variant="outline" asChild>
-							<a
-								href={`https://youtube.com/watch?v=${videoId}`}
-								target="_blank"
-								rel="noopener noreferrer"
-							>
-								YouTubeで見る
-							</a>
-						</Button>
+						<Button render={<Link href="/videos">他の動画を選ぶ</Link>} />
+						<Button
+							variant="outline"
+							render={
+								<a
+									href={`https://youtube.com/watch?v=${videoId}`}
+									target="_blank"
+									rel="noopener noreferrer"
+								>
+									YouTubeで見る
+								</a>
+							}
+						/>
 					</div>
 				</div>
 			</div>

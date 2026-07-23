@@ -55,18 +55,24 @@ export default function ButtonsError({
 						</Button>
 
 						<div className="flex flex-col sm:flex-row gap-2 justify-center">
-							<Button variant="outline" asChild>
-								<Link href="/" className="flex items-center gap-2">
-									<Home className="h-4 w-4" />
-									ホームへ
-								</Link>
-							</Button>
-							<Button variant="outline" asChild>
-								<Link href="/buttons" className="flex items-center gap-2">
-									<Music className="h-4 w-4" />
-									音声ボタントップ
-								</Link>
-							</Button>
+							<Button
+								variant="outline"
+								render={
+									<Link href="/" className="flex items-center gap-2">
+										<Home className="h-4 w-4" />
+										ホームへ
+									</Link>
+								}
+							/>
+							<Button
+								variant="outline"
+								render={
+									<Link href="/buttons" className="flex items-center gap-2">
+										<Music className="h-4 w-4" />
+										音声ボタントップ
+									</Link>
+								}
+							/>
 						</div>
 					</div>
 
@@ -74,12 +80,8 @@ export default function ButtonsError({
 					<div className="pt-4 border-t">
 						<p className="text-sm text-muted-foreground mb-2">他のコンテンツもご覧ください：</p>
 						<div className="flex flex-wrap gap-2 justify-center">
-							<Button variant="link" size="sm" asChild>
-								<Link href="/videos">動画一覧</Link>
-							</Button>
-							<Button variant="link" size="sm" asChild>
-								<Link href="/works">作品一覧</Link>
-							</Button>
+							<Button variant="link" size="sm" render={<Link href="/videos">動画一覧</Link>} />
+							<Button variant="link" size="sm" render={<Link href="/works">作品一覧</Link>} />
 						</div>
 					</div>
 
