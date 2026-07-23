@@ -107,6 +107,11 @@ export function TagInput({
 	const [error, setError] = useState<string | null>(null);
 	const [suggestions, setSuggestions] = useState<TagSuggestion[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
+	// ポップアップの開閉を明示制御する。Base UI は openOnInputClick（既定 true）でフォーカス/
+	// クリック時に即座に開こうとするが、minSearchLength 未満・未検索の状態で開くと
+	// 候補ゼロのまま「候補がありません」が一瞬見えてしまう。検索条件を満たす/ロード中のときだけ
+	// 開くことを許可するゲートを onOpenChange に設ける。
+	const [popupOpen, setPopupOpen] = useState(false);
 
 	const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 	// Enter キー押下時、候補がハイライトされているかを Combobox の onItemHighlighted から追跡する。
@@ -118,6 +123,10 @@ export function TagInput({
 	// Android Samsung キーボードの既知issueをコード内に注記している）。
 	// compositionstart〜compositionend の区間を自前 state で持つのが最も確実。
 	const isComposingRef = useRef(false);
+	// popupOpen ゲートの判定に使う。React state（isLoading 等）はバッチ更新のため
+	// onOpenChange 側で古いクロージャ値を読む可能性があるが、ref は同期的に読み書きできるため
+	// 同一 tick 内での ordering に依存せず正しく判定できる。
+	const shouldAllowOpenRef = useRef(false);
 	const errorId = useId();
 
 	/**
@@ -148,6 +157,10 @@ export function TagInput({
 			setInputValue("");
 			setError(null);
 			setSuggestions([]);
+			setIsLoading(false);
+			setPopupOpen(false);
+			// handleInputValueChange を経由しない直接クリアのため、ここでも明示的に閉じる
+			shouldAllowOpenRef.current = false;
 		},
 		[inputValue, tags, maxTags, maxTagLength, onTagsChange],
 	);
@@ -220,21 +233,36 @@ export function TagInput({
 			setError(null);
 		}
 
-		if (enableAutocompletion && value.trim().length >= minSearchLength) {
+		const meetsSearchLength = enableAutocompletion && value.trim().length >= minSearchLength;
+		shouldAllowOpenRef.current = meetsSearchLength;
+
+		if (meetsSearchLength) {
+			// debounce の待機中も検索中として扱い、"候補がありません" の空白フラッシュを防ぐ
+			setIsLoading(true);
 			debouncedFetchSuggestions(value.trim());
 		} else {
 			setSuggestions([]);
+			setIsLoading(false);
+			setPopupOpen(false);
 		}
 	};
 
 	/**
-	 * Enter キー押下時の処理。
-	 * 候補がハイライトされている場合は Base UI 側の選択確定（onValueChange）に任せ、
-	 * ハイライトが無い場合のみフリーテキストをタグとして追加する。
-	 * IME 変換確定の Enter（keyCode 229）はここでも重ねてガードする
-	 * （Base UI 内部の 229 チェックと二重になるが、フリーテキスト追加は独自ロジックのため必要）。
+	 * キー押下時の処理。
+	 * - Tab: 候補がハイライトされていれば確定する（フィールドを離れる前の確定用途）。
+	 *   Base UI の Combobox は Tab での自動確定を持たないため、旧実装同様ここで明示処理する。
+	 *   確定してもフォーカスは field に留める（続けて次のタグを入力できるようにする）。
+	 * - Enter: 候補がハイライトされている場合は Base UI 側の選択確定（onValueChange）に任せ、
+	 *   ハイライトが無い場合のみフリーテキストをタグとして追加する。
+	 *   IME 変換確定の Enter（keyCode 229）はここでも重ねてガードする
+	 *   （Base UI 内部の 229 チェックと二重になるが、フリーテキスト追加は独自ロジックのため必要）。
 	 */
 	const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+		if (e.key === "Tab" && highlightedRef.current) {
+			e.preventDefault();
+			addTag(highlightedRef.current.text);
+			return;
+		}
 		if (e.key !== "Enter" || highlightedRef.current) return;
 		if (
 			isComposingRef.current ||
@@ -291,8 +319,16 @@ export function TagInput({
 				// enableAutocompletion=false の間はポップアップ用 DOM を描画しないため、
 				// Base UI 側の open 状態も明示的に false へ固定する。さもないと入力時に
 				// aria-expanded="true" だけが立ち、対応する aria-controls/listbox が
-				// 存在しない a11y 違反（aria-required-attr）になる
-				open={enableAutocompletion ? undefined : false}
+				// 存在しない a11y 違反（aria-required-attr）になる。
+				// enableAutocompletion=true の間も popupOpen で明示制御し、
+				// openOnInputClick（Base UI既定 true）によるフォーカス/クリック直後の
+				// 「候補ゼロのまま開いて“候補がありません”が一瞬見える」フラッシュを防ぐ
+				// （検索条件を満たす/ロード中のときだけ開くことを許可する）。
+				open={enableAutocompletion ? popupOpen : false}
+				onOpenChange={(next: boolean) => {
+					if (next && !shouldAllowOpenRef.current) return;
+					setPopupOpen(next);
+				}}
 				filter={null}
 				itemToStringLabel={(s: TagSuggestion) => s.text}
 				onItemHighlighted={(item: TagSuggestion | undefined) => {

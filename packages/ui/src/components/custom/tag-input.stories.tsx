@@ -254,6 +254,139 @@ export const AutocompletionSelectInteraction: Story = {
 	},
 };
 
+export const TabCommitsHighlightedSuggestion: Story = {
+	render: (args) => <TagInputWrapper {...args} />,
+	args: {
+		placeholder: "タグを入力してください... (例: 挨、応、日など)",
+		maxTags: 10,
+		maxTagLength: 30,
+		disabled: false,
+		enableAutocompletion: true,
+		onSuggestionsFetch: mockFetchSuggestions,
+		debounceMs: 10,
+		minSearchLength: 2,
+		maxSuggestions: 8,
+	},
+	parameters: {
+		docs: {
+			description: {
+				story:
+					"候補をハイライトした状態で Tab を押すと確定される（AIレビュー指摘: Base UI は Tab での自動確定を持たないため tag-input 側で明示処理する必要がある）。",
+			},
+		},
+	},
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const body = within(document.body);
+		const input = canvas.getByRole("combobox");
+
+		await userEvent.click(input);
+		await userEvent.type(input, "音楽");
+		await waitFor(() => expect(body.getByText("音楽")).toBeInTheDocument(), { timeout: 3000 });
+
+		await userEvent.keyboard("{ArrowDown}");
+		await userEvent.tab();
+
+		await expect(canvas.getByText("音楽")).toBeInTheDocument();
+		await expect(input).toHaveValue("");
+	},
+};
+
+export const NoEmptyFlashBeforeSearchLength: Story = {
+	render: (args) => <TagInputWrapper {...args} />,
+	args: {
+		placeholder: "タグを入力してください... (例: 挨、応、日など)",
+		maxTags: 10,
+		maxTagLength: 30,
+		disabled: false,
+		enableAutocompletion: true,
+		onSuggestionsFetch: mockFetchSuggestions,
+		debounceMs: 10,
+		minSearchLength: 2,
+		maxSuggestions: 8,
+	},
+	parameters: {
+		docs: {
+			description: {
+				story:
+					"minSearchLength 未満の入力・フォーカス直後はポップアップを開かない（AIレビュー指摘: openOnInputClick の既定挙動で候補ゼロのまま「候補がありません」が一瞬見えていた）。",
+			},
+		},
+	},
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const input = canvas.getByRole("combobox");
+
+		// フォーカス/クリックのみ（未入力）ではポップアップが開かないこと
+		await userEvent.click(input);
+		await new Promise((resolve) => setTimeout(resolve, 200));
+		expect(document.querySelector('[data-slot="combobox-content"][data-open]')).toBeNull();
+
+		// minSearchLength 未満の入力でも開かないこと
+		await userEvent.type(input, "音");
+		await new Promise((resolve) => setTimeout(resolve, 200));
+		expect(document.querySelector('[data-slot="combobox-content"][data-open]')).toBeNull();
+
+		// minSearchLength に達すると開くこと
+		await userEvent.type(input, "楽");
+		await waitFor(() =>
+			expect(document.querySelector('[data-slot="combobox-content"][data-open]')).not.toBeNull(),
+		);
+
+		// ポップアップを開いたまま終了すると Base UI が背景を aria-hidden にし、
+		// story 内の「タグを追加」ボタンが focusable のまま隠れて a11y 違反になるため閉じておく
+		await userEvent.keyboard("{Escape}");
+		await waitFor(() =>
+			expect(document.querySelector('[data-slot="combobox-content"][data-open]')).toBeNull(),
+		);
+	},
+};
+
+export const HighlightResetsAcrossQueryChange: Story = {
+	render: (args) => <TagInputWrapper {...args} />,
+	args: {
+		placeholder: "タグを入力してください... (例: 挨、応、日など)",
+		maxTags: 10,
+		maxTagLength: 30,
+		disabled: false,
+		enableAutocompletion: true,
+		onSuggestionsFetch: mockFetchSuggestions,
+		debounceMs: 10,
+		minSearchLength: 1,
+		maxSuggestions: 8,
+	},
+	parameters: {
+		docs: {
+			description: {
+				story:
+					"AIレビュー指摘（nit）の検証: 候補ハイライト中にクエリを変えて候補セットが総入れ替えになっても、古いハイライト参照が残らずフリーテキストとして正しく追加されることを確認する（Base UI 側が onItemHighlighted(undefined) で確実にリセットするため対策不要と判断した根拠）。",
+			},
+		},
+	},
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const body = within(document.body);
+		const input = canvas.getByRole("combobox") as HTMLInputElement;
+
+		// 「応援」をハイライトする
+		await userEvent.click(input);
+		await userEvent.type(input, "応");
+		await waitFor(() => expect(body.getByText("応援")).toBeInTheDocument());
+		await userEvent.keyboard("{ArrowDown}");
+
+		// クエリを変えて候補セットを totally 入れ替える（「応援」は候補から消える）
+		await userEvent.clear(input);
+		await userEvent.type(input, "睡眠");
+		await waitFor(() => expect(body.getByText("睡眠")).toBeInTheDocument());
+		await waitFor(() => expect(body.queryByText("応援")).not.toBeInTheDocument());
+
+		// Enter で「応援」ではなくフリーテキスト「睡眠」が追加されること
+		await userEvent.keyboard("{Enter}");
+		await expect(canvas.getByText("睡眠")).toBeInTheDocument();
+		await expect(canvas.queryByText("応援")).not.toBeInTheDocument();
+	},
+};
+
 export const AutocompletionWithInitialTags: Story = {
 	render: (args) => {
 		const [tags, setTags] = useState<string[]>(["挨拶", "応援"]);
