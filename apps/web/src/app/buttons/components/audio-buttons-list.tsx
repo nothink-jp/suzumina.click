@@ -1,7 +1,8 @@
 "use client";
 
 import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
-import { ConfigurableList } from "@suzumina.click/ui/components/custom";
+import { ConfigurableList, EmptyState } from "@suzumina.click/ui/components/custom";
+import { SearchX } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { AudioButtonListItem } from "@/components/audio/audio-button-list-item";
 import { ListWrapper } from "@/components/list/list-wrapper";
@@ -145,6 +146,12 @@ export default function AudioButtonsList({ searchParams, initialData }: AudioBut
 				}}
 				itemsPerPageOptions={DEFAULT_ITEMS_PER_PAGE_OPTIONS}
 				emptyMessage="音声ボタンが見つかりませんでした"
+				emptyState={
+					<EmptyState
+						icon={<SearchX className="h-6 w-6" />}
+						title="音声ボタンが見つかりませんでした"
+					/>
+				}
 			/>
 		</ListWrapper>
 	);

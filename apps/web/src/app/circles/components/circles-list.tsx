@@ -1,7 +1,12 @@
 "use client";
 
 import type { CirclePlainObject } from "@suzumina.click/shared-types";
-import { ConfigurableList, type StandardListParams } from "@suzumina.click/ui/components/custom";
+import {
+	ConfigurableList,
+	EmptyState,
+	type StandardListParams,
+} from "@suzumina.click/ui/components/custom";
+import { SearchX } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useMemo } from "react";
 import { ListWrapper } from "@/components/list/list-wrapper";
@@ -93,6 +98,12 @@ export default function CirclesList({ initialData }: CirclesListProps) {
 				defaultSort="name"
 				itemsPerPageOptions={[12, 24, 48]}
 				emptyMessage="サークルが見つかりませんでした"
+				emptyState={
+					<EmptyState
+						icon={<SearchX className="h-6 w-6" />}
+						title="サークルが見つかりませんでした"
+					/>
+				}
 				searchPlaceholder="サークル名で検索"
 			/>
 		</ListWrapper>

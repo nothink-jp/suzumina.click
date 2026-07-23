@@ -273,5 +273,6 @@ vi.mock("lucide-react", () => {
 		Volume2: createMockIcon("Volume2"),
 		LineChart: createMockIcon("LineChart"),
 		Image: createMockIcon("Image"),
+		SearchX: createMockIcon("SearchX"),
 	};
 });

@@ -10,7 +10,6 @@ interface ConfigurableListControlsProps {
 	isRefreshing: boolean;
 	paginationStartIndex: number;
 	paginationEndIndex: number;
-	searchQuery?: string;
 	emptyMessage: string;
 	sortOptions: Option[];
 	currentSort: string;
@@ -26,7 +25,6 @@ export function ConfigurableListControls({
 	isRefreshing,
 	paginationStartIndex,
 	paginationEndIndex,
-	searchQuery,
 	emptyMessage,
 	sortOptions,
 	currentSort,
@@ -49,8 +47,6 @@ export function ConfigurableListControls({
 						{Math.min(paginationEndIndex, actualTotal)}件を表示
 						{isRefreshing && <span className="text-xs">（更新中...）</span>}
 					</>
-				) : searchQuery ? (
-					"検索結果がありません"
 				) : (
 					emptyMessage
 				)}

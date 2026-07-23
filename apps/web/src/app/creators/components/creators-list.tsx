@@ -5,8 +5,13 @@ import {
 	type CreatorPageInfo,
 	type CreatorType,
 } from "@suzumina.click/shared-types";
-import { ConfigurableList, type StandardListParams } from "@suzumina.click/ui/components/custom";
+import {
+	ConfigurableList,
+	EmptyState,
+	type StandardListParams,
+} from "@suzumina.click/ui/components/custom";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
+import { SearchX } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useMemo } from "react";
 import { ListWrapper } from "@/components/list/list-wrapper";
@@ -125,6 +130,12 @@ export default function CreatorsList({ initialData }: CreatorsListProps) {
 				}}
 				itemsPerPageOptions={[12, 24, 48]}
 				emptyMessage="クリエイターが見つかりませんでした"
+				emptyState={
+					<EmptyState
+						icon={<SearchX className="h-6 w-6" />}
+						title="クリエイターが見つかりませんでした"
+					/>
+				}
 				searchPlaceholder="クリエイター名で検索"
 			/>
 		</ListWrapper>

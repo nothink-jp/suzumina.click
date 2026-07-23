@@ -1,7 +1,8 @@
 "use client";
 
 import type { VideoPlainObject } from "@suzumina.click/shared-types";
-import { ConfigurableList } from "@suzumina.click/ui/components/custom";
+import { ConfigurableList, EmptyState } from "@suzumina.click/ui/components/custom";
+import { SearchX } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { ListWrapper } from "@/components/list/list-wrapper";
 import {
@@ -107,6 +108,7 @@ export default function VideoList({ initialData }: VideoListProps) {
 				}}
 				itemsPerPageOptions={DEFAULT_ITEMS_PER_PAGE_OPTIONS}
 				emptyMessage="動画がありません"
+				emptyState={<EmptyState icon={<SearchX className="h-6 w-6" />} title="動画がありません" />}
 			/>
 		</ListWrapper>
 	);

@@ -264,7 +264,6 @@ export function ConfigurableList<T>({
 				isRefreshing={isRefreshing}
 				paginationStartIndex={pagination.startIndex}
 				paginationEndIndex={pagination.endIndex}
-				searchQuery={fetchParams.search || ""}
 				emptyMessage={emptyMessage}
 				sortOptions={sortOptions}
 				currentSort={fetchParams.sort || ""}
