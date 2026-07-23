@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
-import { expect, userEvent, within } from "storybook/test";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 import { TagInput, type TagSuggestion } from "./tag-input";
 
 // オートコンプリート用のモック関数
@@ -221,6 +221,36 @@ export const WithAutocompletion: Story = {
 				story: "オートコンプリート機能が有効なタグ入力。2文字以上で候補が表示されます。",
 			},
 		},
+	},
+};
+
+export const AutocompletionSelectInteraction: Story = {
+	render: (args) => <TagInputWrapper {...args} />,
+	args: {
+		placeholder: "タグを入力してください... (例: 挨、応、日など)",
+		maxTags: 10,
+		maxTagLength: 30,
+		disabled: false,
+		enableAutocompletion: true,
+		onSuggestionsFetch: mockFetchSuggestions,
+		debounceMs: 10,
+		minSearchLength: 2,
+		maxSuggestions: 8,
+	},
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		// ポップアップ（ComboboxContent）は Portal で document.body 直下に描画されるため、
+		// canvasElement スコープではなく document.body を対象にクエリする
+		const body = within(document.body);
+		const input = canvas.getByRole("combobox");
+
+		await userEvent.click(input);
+		await userEvent.type(input, "音楽");
+		await waitFor(() => expect(body.getByText("音楽")).toBeInTheDocument(), { timeout: 3000 });
+
+		await userEvent.click(body.getByText("音楽"));
+		await expect(canvas.getByText("音楽")).toBeInTheDocument();
+		await expect(input).toHaveValue("");
 	},
 };
 

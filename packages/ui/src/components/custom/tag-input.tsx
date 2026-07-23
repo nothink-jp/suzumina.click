@@ -7,7 +7,16 @@
 
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
-import { Input } from "@suzumina.click/ui/components/ui/input";
+import {
+	Combobox,
+	ComboboxContent,
+	ComboboxEmpty,
+	ComboboxInput,
+	ComboboxInputGroup,
+	ComboboxItem,
+	ComboboxList,
+	ComboboxStatus,
+} from "@suzumina.click/ui/components/ui/combobox";
 import { cn } from "@suzumina.click/ui/lib/utils";
 import { Hash, Plus, X } from "lucide-react";
 import type * as React from "react";
@@ -57,6 +66,29 @@ export interface TagInputProps {
 	maxSuggestions?: number;
 }
 
+/**
+ * 候補のアイコンを取得する
+ */
+function getSuggestionIcon(suggestion: TagSuggestion) {
+	if (suggestion.icon) {
+		return suggestion.icon;
+	}
+	switch (suggestion.type) {
+		case "popular":
+			return "🔥";
+		case "recent":
+			return "🕰️";
+		case "custom":
+			return "✨";
+		default:
+			return "🏷️";
+	}
+}
+
+// Combobox の value を常に空へ制御するための安定参照（毎レンダー新規配列だと
+// 不要な内部同期が走るため、モジュールスコープの定数を使い回す）。
+const EMPTY_SELECTION: TagSuggestion[] = [];
+
 export function TagInput({
 	tags,
 	onTagsChange,
@@ -73,55 +105,52 @@ export function TagInput({
 }: TagInputProps) {
 	const [inputValue, setInputValue] = useState("");
 	const [error, setError] = useState<string | null>(null);
-	const [isComposing, setIsComposing] = useState(false);
 	const [suggestions, setSuggestions] = useState<TagSuggestion[]>([]);
-	const [showSuggestions, setShowSuggestions] = useState(false);
-	const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
 	const [isLoading, setIsLoading] = useState(false);
 
-	const inputRef = useRef<HTMLInputElement>(null);
-	const suggestionsRef = useRef<HTMLDivElement>(null);
 	const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+	// Enter キー押下時、候補がハイライトされているかを Combobox の onItemHighlighted から追跡する。
+	// ハイライトが有る場合は Base UI 側の選択確定に委ね、無い場合のみ自前でフリーテキストを追加する
+	// （packages/ui/src/components/ui/combobox.tsx の Async/Creatable パターンに準拠。ADR-012）。
+	const highlightedRef = useRef<TagSuggestion | null>(null);
+	// IME 変換区間の明示追跡。nativeEvent.isComposing / keyCode===229 は環境によって
+	// confirm-Enter の時点で既に false/未設定になることがある（Base UI 自身も同じ理由で
+	// Android Samsung キーボードの既知issueをコード内に注記している）。
+	// compositionstart〜compositionend の区間を自前 state で持つのが最も確実。
+	const isComposingRef = useRef(false);
 	const errorId = useId();
 
 	/**
-	 * タグを追加する
+	 * タグを追加する（フリーテキスト・候補選択の両方から呼ばれる正本）
 	 */
-	const addTag = (tagText?: string) => {
-		const trimmedValue = (tagText || inputValue).trim();
+	const addTag = useCallback(
+		(tagText?: string) => {
+			const trimmedValue = (tagText ?? inputValue).trim();
 
-		// 入力値チェック
-		if (!trimmedValue) {
-			setError("タグを入力してください");
-			return;
-		}
+			if (!trimmedValue) {
+				setError("タグを入力してください");
+				return;
+			}
+			if (trimmedValue.length > maxTagLength) {
+				setError(`タグは${maxTagLength}文字以内で入力してください`);
+				return;
+			}
+			if (tags.length >= maxTags) {
+				setError(`タグは最大${maxTags}個まで追加できます`);
+				return;
+			}
+			if (tags.includes(trimmedValue)) {
+				setError("このタグは既に追加されています");
+				return;
+			}
 
-		// 文字数チェック
-		if (trimmedValue.length > maxTagLength) {
-			setError(`タグは${maxTagLength}文字以内で入力してください`);
-			return;
-		}
-
-		// 最大タグ数チェック
-		if (tags.length >= maxTags) {
-			setError(`タグは最大${maxTags}個まで追加できます`);
-			return;
-		}
-
-		// 重複チェック
-		if (tags.includes(trimmedValue)) {
-			setError("このタグは既に追加されています");
-			return;
-		}
-
-		// タグ追加
-		onTagsChange([...tags, trimmedValue]);
-		setInputValue("");
-		setError(null);
-		setShowSuggestions(false);
-		setSelectedSuggestionIndex(-1);
-		setSuggestions([]);
-	};
+			onTagsChange([...tags, trimmedValue]);
+			setInputValue("");
+			setError(null);
+			setSuggestions([]);
+		},
+		[inputValue, tags, maxTags, maxTagLength, onTagsChange],
+	);
 
 	/**
 	 * タグを削除する
@@ -132,38 +161,25 @@ export function TagInput({
 	};
 
 	/**
-	 * 候補を選択する
-	 */
-	const selectSuggestion = (suggestion: TagSuggestion) => {
-		addTag(suggestion.text);
-	};
-
-	/**
 	 * デバウンス処理で候補を取得する
 	 */
 	const fetchSuggestions = useCallback(
 		async (query: string) => {
 			if (!enableAutocompletion || !onSuggestionsFetch || query.length < minSearchLength) {
 				setSuggestions([]);
-				setShowSuggestions(false);
 				return;
 			}
 
 			setIsLoading(true);
 			try {
 				const fetchedSuggestions = await onSuggestionsFetch(query);
-				// 重複除外：既に追加されたタグを除外
 				const filteredSuggestions = fetchedSuggestions
 					.filter((suggestion) => !tags.includes(suggestion.text))
 					.slice(0, maxSuggestions);
-
 				setSuggestions(filteredSuggestions);
-				setShowSuggestions(filteredSuggestions.length > 0);
-				setSelectedSuggestionIndex(-1);
 			} catch (error) {
 				console.warn("Failed to fetch tag suggestions:", error);
 				setSuggestions([]);
-				setShowSuggestions(false);
 			} finally {
 				setIsLoading(false);
 			}
@@ -171,9 +187,6 @@ export function TagInput({
 		[enableAutocompletion, onSuggestionsFetch, minSearchLength, tags, maxSuggestions],
 	);
 
-	/**
-	 * デバウンス付き候補取得
-	 */
 	const debouncedFetchSuggestions = useCallback(
 		(query: string) => {
 			if (debounceTimeoutRef.current) {
@@ -186,9 +199,6 @@ export function TagInput({
 		[fetchSuggestions, debounceMs],
 	);
 
-	/**
-	 * コンポーネントのクリーンアップ
-	 */
 	useEffect(() => {
 		return () => {
 			if (debounceTimeoutRef.current) {
@@ -198,158 +208,42 @@ export function TagInput({
 	}, []);
 
 	/**
-	 * クリック外で候補を非表示にする
+	 * 入力値変更時の処理（IME 変換中の中間値も含めて呼ばれる）。
+	 * reason "item-press" は Base UI が候補選択後に入力欄へラベルを自動補完しようとする
+	 * 内部イベントで、addTag 側の明示的なクリア（setInputValue("")）と競合し値が残ってしまう。
+	 * ここで無視することでフリーテキストのタグ追加と同じ「選択後は空にする」挙動へ統一する。
 	 */
-	useEffect(() => {
-		const handleClickOutside = (event: MouseEvent) => {
-			if (
-				suggestionsRef.current &&
-				!suggestionsRef.current.contains(event.target as Node) &&
-				inputRef.current &&
-				!inputRef.current.contains(event.target as Node)
-			) {
-				setShowSuggestions(false);
-				setSelectedSuggestionIndex(-1);
-			}
-		};
-
-		document.addEventListener("mousedown", handleClickOutside);
-		return () => {
-			document.removeEventListener("mousedown", handleClickOutside);
-		};
-	}, []);
-
-	/**
-	 * 候補ナビゲーションの処理
-	 */
-	const handleSuggestionNavigation = (e: React.KeyboardEvent): boolean => {
-		if (!showSuggestions || suggestions.length === 0) return false;
-
-		switch (e.key) {
-			case "ArrowDown":
-				e.preventDefault();
-				setSelectedSuggestionIndex((prev) => (prev < suggestions.length - 1 ? prev + 1 : 0));
-				return true;
-			case "ArrowUp":
-				e.preventDefault();
-				setSelectedSuggestionIndex((prev) => (prev > 0 ? prev - 1 : suggestions.length - 1));
-				return true;
-			case "Enter":
-			case "Tab":
-				if (selectedSuggestionIndex >= 0 && suggestions[selectedSuggestionIndex]) {
-					e.preventDefault();
-					selectSuggestion(suggestions[selectedSuggestionIndex]);
-					return true;
-				}
-				break;
-			case "Escape":
-				e.preventDefault();
-				setShowSuggestions(false);
-				setSelectedSuggestionIndex(-1);
-				return true;
-		}
-		return false;
-	};
-
-	/**
-	 * Enter キー押下時の処理
-	 * 日本語入力（IME）変換中は無視
-	 */
-	const handleKeyDown = (e: React.KeyboardEvent) => {
-		if (isComposing) return;
-
-		// 候補ナビゲーションの処理
-		if (handleSuggestionNavigation(e)) return;
-
-		// Enterキーでタグ追加
-		if (e.key === "Enter") {
-			e.preventDefault();
-			addTag();
-		}
-	};
-
-	/**
-	 * IME変換開始時の処理
-	 */
-	const handleCompositionStart = () => {
-		setIsComposing(true);
-	};
-
-	/**
-	 * IME変換終了時の処理
-	 */
-	const handleCompositionEnd = () => {
-		setIsComposing(false);
-	};
-
-	/**
-	 * 候補のアイコンを取得する
-	 */
-	const getSuggestionIcon = (suggestion: TagSuggestion) => {
-		if (suggestion.icon) {
-			return suggestion.icon;
-		}
-		switch (suggestion.type) {
-			case "popular":
-				return "🔥";
-			case "recent":
-				return "🕰️";
-			case "custom":
-				return "✨";
-			default:
-				return "🏷️";
-		}
-	};
-
-	/**
-	 * 候補アイテムのレンダリング
-	 */
-	const renderSuggestion = (suggestion: TagSuggestion, index: number) => {
-		const isSelected = index === selectedSuggestionIndex;
-		return (
-			<button
-				key={suggestion.id}
-				type="button"
-				className={cn(
-					"flex items-center gap-2 px-3 py-2 cursor-pointer transition-colors w-full text-left",
-					"hover:bg-muted/50",
-					isSelected && "bg-muted/80",
-				)}
-				onClick={() => selectSuggestion(suggestion)}
-				onMouseEnter={() => setSelectedSuggestionIndex(index)}
-			>
-				<span className="text-sm">{getSuggestionIcon(suggestion)}</span>
-				<div className="flex-1 min-w-0">
-					<div className="text-sm font-medium truncate">{suggestion.text}</div>
-					{suggestion.description && (
-						<div className="text-xs text-muted-foreground truncate">{suggestion.description}</div>
-					)}
-				</div>
-				{suggestion.count && (
-					<div className="text-xs text-muted-foreground">{suggestion.count}</div>
-				)}
-			</button>
-		);
-	};
-
-	/**
-	 * 入力値変更時の処理
-	 */
-	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const value = e.target.value;
+	const handleInputValueChange = (value: string, eventDetails?: { reason?: string }) => {
+		if (eventDetails?.reason === "item-press") return;
 		setInputValue(value);
 		if (error) {
 			setError(null);
 		}
 
-		// オートコンプリート機能が有効な場合、デバウンス処理で候補を取得
 		if (enableAutocompletion && value.trim().length >= minSearchLength) {
 			debouncedFetchSuggestions(value.trim());
 		} else {
-			setShowSuggestions(false);
 			setSuggestions([]);
-			setSelectedSuggestionIndex(-1);
 		}
+	};
+
+	/**
+	 * Enter キー押下時の処理。
+	 * 候補がハイライトされている場合は Base UI 側の選択確定（onValueChange）に任せ、
+	 * ハイライトが無い場合のみフリーテキストをタグとして追加する。
+	 * IME 変換確定の Enter（keyCode 229）はここでも重ねてガードする
+	 * （Base UI 内部の 229 チェックと二重になるが、フリーテキスト追加は独自ロジックのため必要）。
+	 */
+	const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+		if (e.key !== "Enter" || highlightedRef.current) return;
+		if (
+			isComposingRef.current ||
+			e.nativeEvent.isComposing ||
+			(e.nativeEvent as unknown as { keyCode?: number }).keyCode === 229
+		) {
+			return;
+		}
+		addTag();
 	};
 
 	return (
@@ -358,7 +252,7 @@ export function TagInput({
 			{tags.length > 0 && (
 				<div className="flex flex-wrap gap-2">
 					{tags.map((tag, index) => (
-						<Badge key={index} variant="secondary" className="flex items-center gap-1">
+						<Badge key={tag} variant="secondary" className="flex items-center gap-1">
 							<span className="truncate max-w-32">{tag}</span>
 							{!disabled && (
 								<Button
@@ -378,29 +272,48 @@ export function TagInput({
 			)}
 
 			{/* 入力エリア */}
-			<div className="relative">
-				<div className="flex gap-2">
-					<Input
-						ref={inputRef}
-						type="text"
-						value={inputValue}
-						onChange={handleInputChange}
+			<Combobox
+				items={suggestions}
+				// single（既定）モードは Base UI 内部で `shouldFillInput` が常に true になり
+				// （AriaCombobox.mjs: `single && !inputInsidePopup` 節、fillInputOnItemPress の
+				// prop 指定を無視して強制発火する）、選択後に入力欄へ選択ラベルを書き戻してしまう。
+				// これは inputValue を "" にリセットする本コンポーネントの「選択→即クリア」設計と
+				// 相容れない。multiple モードではこの強制書き戻しが発生しないため、chips 表示
+				// （Combobox.Value/Chips）は使わず選択シグナルの取得だけに multiple を用いる。
+				multiple
+				value={EMPTY_SELECTION}
+				onValueChange={(items: TagSuggestion[]) => {
+					const newest = items.at(-1);
+					if (newest) addTag(newest.text);
+				}}
+				inputValue={inputValue}
+				onInputValueChange={handleInputValueChange}
+				// enableAutocompletion=false の間はポップアップ用 DOM を描画しないため、
+				// Base UI 側の open 状態も明示的に false へ固定する。さもないと入力時に
+				// aria-expanded="true" だけが立ち、対応する aria-controls/listbox が
+				// 存在しない a11y 違反（aria-required-attr）になる
+				open={enableAutocompletion ? undefined : false}
+				filter={null}
+				itemToStringLabel={(s: TagSuggestion) => s.text}
+				onItemHighlighted={(item: TagSuggestion | undefined) => {
+					highlightedRef.current = item ?? null;
+				}}
+			>
+				<ComboboxInputGroup>
+					<ComboboxInput
 						onKeyDown={handleKeyDown}
-						onCompositionStart={handleCompositionStart}
-						onCompositionEnd={handleCompositionEnd}
+						onCompositionStart={() => {
+							isComposingRef.current = true;
+						}}
+						onCompositionEnd={() => {
+							isComposingRef.current = false;
+						}}
 						placeholder={placeholder}
 						disabled={disabled || tags.length >= maxTags}
-						className={cn(
-							"flex-1",
-							error && "border-destructive focus-visible:ring-destructive/20",
-						)}
+						className={cn(error && "border-destructive focus-visible:ring-destructive/20")}
 						maxLength={maxTagLength}
 						aria-invalid={!!error}
 						aria-describedby={error ? errorId : undefined}
-						aria-expanded={showSuggestions}
-						aria-autocomplete="list"
-						aria-haspopup="listbox"
-						role="combobox"
 					/>
 					<Button
 						type="button"
@@ -412,30 +325,33 @@ export function TagInput({
 					>
 						<Plus className="h-4 w-4" />
 					</Button>
-				</div>
+				</ComboboxInputGroup>
 
-				{/* オートコンプリート候補 */}
-				{enableAutocompletion && showSuggestions && suggestions.length > 0 && (
-					<div
-						ref={suggestionsRef}
-						className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-md shadow-md max-h-48 overflow-y-auto"
-						role="listbox"
-						aria-label="タグ候補"
-					>
-						{suggestions.map((suggestion, index) => renderSuggestion(suggestion, index))}
-					</div>
+				{enableAutocompletion && (
+					<ComboboxContent>
+						<ComboboxStatus>{isLoading ? "候補を検索中..." : null}</ComboboxStatus>
+						{!isLoading && <ComboboxEmpty>候補がありません</ComboboxEmpty>}
+						<ComboboxList aria-label="タグ候補">
+							{(suggestion: TagSuggestion) => (
+								<ComboboxItem key={suggestion.id} value={suggestion}>
+									<span className="text-sm">{getSuggestionIcon(suggestion)}</span>
+									<div className="min-w-0 flex-1">
+										<div className="truncate font-medium text-sm">{suggestion.text}</div>
+										{suggestion.description && (
+											<div className="truncate text-muted-foreground text-xs">
+												{suggestion.description}
+											</div>
+										)}
+									</div>
+									{suggestion.count && (
+										<div className="text-muted-foreground text-xs">{suggestion.count}</div>
+									)}
+								</ComboboxItem>
+							)}
+						</ComboboxList>
+					</ComboboxContent>
 				)}
-
-				{/* ローディング表示 */}
-				{enableAutocompletion && isLoading && (
-					<div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-md shadow-md p-3">
-						<div className="flex items-center gap-2 text-sm text-muted-foreground">
-							<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
-							候補を検索中...
-						</div>
-					</div>
-				)}
-			</div>
+			</Combobox>
 
 			{/* エラーメッセージ */}
 			{error && (
