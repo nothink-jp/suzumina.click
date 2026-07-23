@@ -219,9 +219,10 @@ ADR-005 の「他が成功したから／無料で使えるから」を理由に
    `illustrated` を除去。`user-profile-content.tsx` のみ `titleAs="h3"` を追加
 - **調査結果（UX監査）に基づく分類と対応**:
   - **Group A**（`ConfigurableList` の `emptyMessage` 経由・検索結果ゼロ、6ファイルでほぼ同一文言）:
-    今回はスコープ外（`ConfigurableList` の `emptyMessage` は文字列限定で、そのままでは
-    アイコン・CTA を持てない。Group B のため `emptyState?: React.ReactNode` prop を追加したので、
-    残る6箇所への展開は低リスクな追加作業として次回以降に持ち越し）
+    当初はスコープ外としていたが（`ConfigurableList` の `emptyMessage` は文字列限定で、
+    そのままではアイコン・CTA を持てないため）、Group B で追加した
+    `emptyState?: React.ReactNode` prop を使い後日実装した（詳細は後述の
+    「Group A の実装」参照）
   - **Group B**（「まだ何もない」＋CTAが妥当）: `favorites-list.tsx`（`ConfigurableList` に新設した
     `emptyState` prop 経由）・`user-profile-content.tsx`・`related-audio-buttons.tsx` を `illustrated`
     で統一。3箇所とも実装がバラバラだったのを統一した
@@ -244,6 +245,29 @@ ADR-005 の「他が成功したから／無料で使えるから」を理由に
 - **jsdom テストでの lucide-react モック**: `apps/web/vitest.setup.ts` はアイコンをホワイトリスト方式で
   モックしている。新規アイコン（`Volume2`/`LineChart`/`Image`）を追加していないと
   `No "X" export is defined on the "lucide-react" mock` で落ちる。EmptyState 導入時は要確認
+
+### Group A（`ConfigurableList` 検索結果ゼロ）の実装（2026-07-24）
+
+Empty State フェーズでスコープ外とした残り6箇所（`audio-buttons-list.tsx` / `creators-list.tsx` /
+`circles-list.tsx` / `video-list.tsx` / `works-list.tsx` / `works-list-for-owner.tsx`）に
+`emptyState` prop を追加した。Group B と異なり CTA が不要（検索条件を変える以外にユーザーが
+取れる行動が無い）ため、6箇所とも `<EmptyState icon={<SearchX />} title={...} />` のみの
+最小構成で統一した。
+
+- **アイコンは `SearchX`（lucide-react）に統一**: 「検索してヒットしなかった」ことを表す
+  Group A 共通の意味に対して、Group B の `Heart`/`Volume2` のような対象別アイコンは不要。
+  6箇所で1種類のアイコンに揃えることで「検索結果ゼロ」という状態自体が視覚的に一貫する
+- **`title` は既存の `emptyMessage` と同一文言に揃える**: `emptyMessage` はコントロールバーの
+  要約表示、`emptyState` はリスト本体の表示で、両者は独立した prop のため文言を別々に書くと
+  矛盾した表現が同時に見える状態になり得る（実際に `video-list.tsx` で最初
+  `emptyState` 側だけ「動画が見つかりませんでした」と書いてしまい、既存の
+  `emptyMessage="動画がありません"` と表現が食い違っていたため、既存文言に合わせて修正した）
+- **バグ修正: `works-list.test.tsx` の `vi.mock` が `EmptyState` を export していなかった**。
+  `@suzumina.click/ui/components/custom` をフルモジュールモックして `ConfigurableList` だけ
+  差し替えている既存テストで、`EmptyState` の実 import が `undefined` になり `WorksList` の
+  JSX 構築時点で React が例外を投げていた。モックに `EmptyState: () => null` を追加して解消。
+  同種のフルモジュールモックを持つ `videos/__tests__/page.test.tsx` は `VideoList` 自体を
+  別途モックしており実コードパスを通らないため無影響だった（要 grep 確認済み・他に該当なし）
 
 ### combobox.tsx（在file・手書きプリミティブ）実装ノート
 

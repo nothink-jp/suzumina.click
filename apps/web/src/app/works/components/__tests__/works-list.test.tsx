@@ -9,6 +9,7 @@ vi.mock("@suzumina.click/ui/components/custom", () => ({
 	ConfigurableList: ({ items }: { items: unknown[] }) => (
 		<div data-testid="configurable-list">{items.length}</div>
 	),
+	EmptyState: () => null,
 }));
 
 vi.mock("@/components/list/list-wrapper", () => ({

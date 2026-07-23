@@ -1,7 +1,12 @@
 "use client";
 
 import type { WorkListResultPlain, WorkPlainObject } from "@suzumina.click/shared-types";
-import { ConfigurableList, type StandardListParams } from "@suzumina.click/ui/components/custom";
+import {
+	ConfigurableList,
+	EmptyState,
+	type StandardListParams,
+} from "@suzumina.click/ui/components/custom";
+import { SearchX } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ListWrapper } from "@/components/list/list-wrapper";
 import { WorkListItem } from "@/components/work/work-list-item";
@@ -167,6 +172,9 @@ export default function WorksList({ initialData, initialParams }: WorksListProps
 				}}
 				itemsPerPageOptions={DEFAULT_ITEMS_PER_PAGE_OPTIONS}
 				emptyMessage="作品が見つかりませんでした"
+				emptyState={
+					<EmptyState icon={<SearchX className="h-6 w-6" />} title="作品が見つかりませんでした" />
+				}
 			/>
 		</ListWrapper>
 	);
