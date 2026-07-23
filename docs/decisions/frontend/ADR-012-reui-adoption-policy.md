@@ -146,14 +146,100 @@
   **shadcn 公式レジストリから導入**した。ReUI レジストリの実利用は、公式に無い
   Autocomplete / Filters 等の導入時に改めて無料範囲を確認して判断する
 
+### Autocomplete → Combobox への計画変更（2026-07-23・実装時の判明事項）
+
+着手前に ReUI `@reui/autocomplete` の無料範囲確認と IME 検証を行ったところ、次が判明した:
+
+- **プリミティブ自体は無料**（`error` なし・200・license 不要。Chart の `@reui/chart` とは対照的）
+- **しかし形が合わない**: `tag-input.tsx` の実際の用途は「複数チップ＋フリーテキスト追加＋候補提示」で、
+  ReUI/Base UI の `Autocomplete` は単一選択（chips 非対応）。適合するのは
+  **Base UI の `Combobox`**（`multiple`・`Chips`・"Creatable" free-text パターンを標準搭載）
+- ReUI の Combobox ラッパー（`@reui/combobox`）は **license key 必須（401）**。無料ブロック
+  `c-combobox-1` の registryDependencies も有償の `combobox` を指す
+- 一方 `@base-ui/react/combobox` 本体は**無料**（`@base-ui/react` は既存の直接依存）。
+  `Autocomplete.Input` は実は `Combobox` の `ComboboxInput.mjs` を re-export しているだけで、
+  IME composition 安全性の実装は完全に共通
+
+**決定**: Chart と同型の判断（代替案D＝公式/upstream に有るものはそちらから）で、
+**ReUI を経由せず `@base-ui/react/combobox` を直接ラップした `combobox.tsx` を packages/ui に新設**した。
+ADR-012 の初期スコープ「Autocomplete」は実質的に「Combobox」へ置き換わる
+（single-select の探索用途には combobox.tsx がそのまま使えるため、Autocomplete 自体の追加導入は不要）。
+
 ### 導入一覧（provenance 正本・実装時に更新）
 
 | コンポーネント | 供給元 | 着地先 | 置換対象 | 再生成コマンド | 状態 |
 |---|---|---|---|---|---|
 | Chart | shadcn 公式 | `packages/ui/src/components/ui/chart.tsx` | price-history-chart の色管理 | `pnpm dlx shadcn@latest add chart --overwrite` | **導入済み**（2026-07-23） |
-| Autocomplete | ReUI（無料範囲を要確認） | `packages/ui/src/components/ui/autocomplete.tsx` | `custom/tag-input.tsx` | 実装時に確定 | 未着手 |
+| Combobox | `@base-ui/react` 直接（ReUI 非経由） | `packages/ui/src/components/ui/combobox.tsx` | `custom/tag-input.tsx` | 手書き（shadcn/ReUI 生成物ではないため再生成コマンド無し。ADR-011 対象外） | **導入済み**（2026-07-23） |
 | Icon Stack / Empty State | ReUI（無料範囲を要確認） | `packages/ui/src/components/ui/`（実装時に確定） | インライン空表示の散在 | 実装時に確定 | 未着手 |
 | Filters | ReUI（無料範囲を要確認） | `packages/ui/src/components/ui/filters.tsx` | ConfigurableList フィルタ UI（works/videos 試行） | 実装時に確定 | 未着手 |
+
+### combobox.tsx（在file・手書きプリミティブ）実装ノート
+
+- スコープは select.tsx と同等の「単一選択の探索 UI」用途に絞った（Root/Value/InputGroup/Input/
+  Content(Portal+Positioner+Popup)/List/Item/Empty/Status）。`Chips`/`Chip`/`ChipRemove`/`Group`/
+  `GroupLabel`/`Clear`/`Trigger`/`Icon`/`Arrow`/`Backdrop` は現状アプリに用途が無いため未実装
+  （YAGNI。必要になった時点で `@base-ui/react/combobox` から追加 export する）
+- **`open` の明示制御が必須**: `items` が空でも入力するとポップアップが開こうとし、対応する
+  DOM（Portal/Popup）を描画していないと `aria-expanded="true"` だけが残り
+  `aria-required-attr`（axe）違反になる。`enableAutocompletion=false` 相当の場面では
+  `open={false}` を明示すること
+- **single モードは選択後に入力欄へラベルを強制書き戻す**（Base UI 内部 `AriaCombobox.mjs`
+  の `shouldFillInput = ... || (single && !inputInsidePopup)` が prop で無効化不可）。
+  「選択したら入力欄をクリアして次の入力に戻る」トークナイザ的 UX には合わないため、
+  tag-input.tsx では **`multiple` を指定しつつ `Chips` は描画せず、`value` を空配列に固定
+  ‌して選択シグナルの取得だけに使う**（multiple モードはこの強制書き戻しの対象外になる）
+- **`onInputValueChange` の `reason: "item-press"` ガードが必要**: 候補選択時に Base UI が
+  「選択ラベルを入力欄に反映」しようとして `onInputValueChange` を呼ぶことがあり、
+  こちらの明示クリアと競合する。`eventDetails.reason === "item-press"` を無視することで解消
+- **listbox 自体にも `aria-label` が必要**（axe `aria-input-field-name`）。`ComboboxList` に
+  `aria-label` を渡すこと（tag-input.tsx は `"タグ候補"` を設定）
+- **ポップアップは Portal で `document.body` 直下に描画される**。story/テストで候補を
+  `canvasElement` スコープでクエリすると見つからない。`within(document.body)` を使うこと
+- 検証: `pnpm test:storybook` で IME composition（compositionstart/compositionend +
+  keyCode 229 の確定 Enter）と選択→クリアの一連フローを実ブラウザで確認済み。ただし
+  **ヘッドレス自動テストと実ブラウザの手動確認で結果が食い違う場面が実際にあった**
+  （single モードの強制書き戻しが自動テストでは検知されず手動確認で発覚）。
+  Combobox 系の挙動変更は自動テストの green だけで判断せず、Storybook 実描画での
+  目視確認を必ず併用すること
+
+### tag-input.tsx 書き換えの要点
+
+- 外部 API（`TagInputProps`/`TagSuggestion`）・chips 表示（Badge+Button）・バリデーション
+  （必須/文字数/最大数/重複）は無変更。consumer（video-tag-editor.tsx / audio-button-tag-editor.tsx）
+  はゼロ変更で動作
+- 撤去できた自前実装: click-outside の `document.addEventListener('mousedown', ...)`、
+  候補ハイライトの手動 index 管理、Portal 非対応の `absolute` ドロップダウン
+- IME composition の判定は combobox.tsx の教訓どおり `isComposingRef`（compositionstart/end）
+  ＋ `nativeEvent.isComposing`/`keyCode===229` の二重ガードを維持（片方だけでは
+  jsdom テスト環境で `isComposing` が伝播しないケースがあった）
+
+### AI レビュー（PR #843）指摘の検証結果と対応（2026-07-23）
+
+3件の指摘を Base UI ソース読解＋実ブラウザでの再現テストで裏取りした。
+
+- **[major・確認済み・修正] Tab キーでの候補確定が失われていた**: Base UI の Combobox は
+  Tab 押下時に highlighted item を自動コミットしない（`ComboboxInput.mjs`/`AriaCombobox.mjs`
+  に Tab 関連ロジックなし。`grep` で該当ゼロを確認）。旧実装は `Enter`/`Tab` を同一視して
+  確定していたため退行していた。`handleKeyDown` に Tab 専用分岐を追加し、
+  `highlightedRef.current` があれば `addTag()` で確定（`preventDefault` してフィールドに留める）。
+  回帰テスト: `tag-input.stories.tsx` の `TabCommitsHighlightedSuggestion`
+- **[minor・確認済み・修正] フォーカス直後・検索文字数未満で候補ゼロのポップアップが開いていた**:
+  `openOnInputClick`（Base UI 既定 true）によりクリック直後に `items=[]` のままポップアップが開き
+  「候補がありません」が一瞬見える不具合を実ブラウザで再現（`popupVisible: true, hasEmptyText: true`）。
+  `open` を `popupOpen` state で完全制御し、`onOpenChange` で
+  `inputValue.trim().length >= minSearchLength || ロード中` の場合のみ開放を許可するゲートを追加。
+  ゲート判定は React state（`isLoading`）ではなく同期的な `shouldAllowOpenRef`（ref）で行う
+  ——`onOpenChange` が同一 tick 内で `onInputValueChange` より先に評価されると state の
+  バッチ更新が反映されておらず誤判定しうるため。回帰テスト:
+  `tag-input.stories.tsx` の `NoEmptyFlashBeforeSearchLength`
+- **[nit・再現せず・対応不要]** 候補ハイライト中にクエリが変わり候補セットが総入れ替えになっても、
+  古いハイライト参照が Enter に誤反映されるか: 実ブラウザで再現を試みたが、Base UI の
+  `AriaCombobox.mjs`（`syncSelectedIndex`/highlight 同期の effect、`flatFilteredItems` を
+  依存に持つ）が `items` 変更時に確実に `onItemHighlighted(undefined, ...)` を発火し
+  `highlightedRef` を正しく `null` にリセットすることを確認した（フリーテキスト側にだけ
+  追加された）。回帰テスト（再発防止・仕様確認用）:
+  `tag-input.stories.tsx` の `HighlightResetsAcrossQueryChange`
 
 **chart.tsx の再生成時の注意**:
 - registryDependencies に `card` が含まれるため上書き確認が出る → **No で card を除外**する
