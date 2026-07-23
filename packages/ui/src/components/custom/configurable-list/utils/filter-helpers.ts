@@ -163,27 +163,14 @@ export interface ActiveFilterChip {
 	nextValue: unknown;
 }
 
-// option label 末尾の件数サフィックス（例: "ASMR (39作品)" / "タグ名 (12件)"）はドロップダウンの
-// 選択肢としては妥当だが、解除チップに使うと冗長なため表示直前でのみ剥がす（正本のoptionsは変更しない）。
-// 先頭に \s* のような可変長の量指定子を置くと、一致に失敗するたび複数の開始位置×バックトラックの
-// 組み合わせで多項式時間になる（ReDoS）ため、末尾を固定文字 "(" からアンカーし、
-// 前の空白除去は正規表現ではなく trimEnd() で行う（CodeQL "Polynomial regular expression" 対策）
-function stripCountSuffix(label: string): string {
-	const match = label.match(/\(\d+[^()]*\)$/);
-	if (!match) return label;
-	return label.slice(0, match.index).trimEnd();
-}
-
-function getChipsForListValue(
-	key: string,
-	config: FilterConfig,
-	selectedValues: unknown[],
-): ActiveFilterChip[] {
-	const options = generateOptions(config);
+// tags/multiselect のチップは option label ではなく選択値そのものを表示する。
+// 全 consumer で value はタグ文字列そのもの（URL パラメータにもそのまま載る）であり、
+// label は件数注記付き（例: "ASMR (39作品)"）でチップには冗長。label から件数を
+// 正規表現で剥がす方式は CodeQL の polynomial regex（ReDoS）指摘を受けたため撤廃した
+function getChipsForListValue(key: string, selectedValues: unknown[]): ActiveFilterChip[] {
 	return selectedValues.map((v) => {
-		const label = stripCountSuffix(options.find((opt) => opt.value === v)?.label ?? String(v));
 		const rest = selectedValues.filter((sv) => sv !== v);
-		return { key, label, value: v, nextValue: rest.length > 0 ? rest : undefined };
+		return { key, label: String(v), value: v, nextValue: rest.length > 0 ? rest : undefined };
 	});
 }
 
@@ -199,15 +186,14 @@ export function getActiveFilterChips(
 		if (!isFilterActive(value, config, defaultValues[key])) continue;
 
 		if (config.type === "tags" || config.type === "multiselect") {
-			chips.push(...getChipsForListValue(key, config, Array.isArray(value) ? value : []));
+			chips.push(...getChipsForListValue(key, Array.isArray(value) ? value : []));
 			continue;
 		}
 
 		if (config.type === "select") {
+			// select の value はコード（例: "SOU"）のため、表示は options の label を引く
 			const options = generateOptions(config);
-			const label = stripCountSuffix(
-				options.find((opt) => opt.value === value)?.label ?? String(value),
-			);
+			const label = options.find((opt) => opt.value === value)?.label ?? String(value);
 			chips.push({ key, label, value, nextValue: defaultValues[key] });
 			continue;
 		}

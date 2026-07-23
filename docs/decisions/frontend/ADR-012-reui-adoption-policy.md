@@ -318,11 +318,22 @@ Chart/Combobox とは逆に**プリミティブ自体が無料**（`https://reui
 **実装中に見つかった不具合と対応**:
 - **`chips[0]` への直接アクセスで TS strict エラー**（テストコード）:
   配列アクセスの unsafe な添字参照を `toEqual` の配列比較に置き換えて解消
-- **tags 型チップのラベルが冗長**: `works`/`buttons`/`videos` の tags フィルタは
-  option label に件数を含む（例:「ASMR (39作品)」「タグ名 (12件)」。ドロップダウンの
-  選択肢としては妥当）。これをそのまま解除チップに流用すると「ASMR (39作品) ×」のように
-  野暮ったくなるため、`stripCountSuffix`（正規表現で末尾の `(数字...)` を除去）をチップ表示
-  直前のみに適用し、正本の options ラベルは変更しない設計にした
+- **tags 型チップのラベルが冗長 → 最終解は「value を直接表示」（ラベルのパース撤廃）**:
+  `works`/`buttons`/`videos` の tags フィルタは option label に件数を含む
+  （例:「ASMR (39作品)」「タグ名 (12件)」。ドロップダウンの選択肢としては妥当）。
+  これをそのまま解除チップに流用すると「ASMR (39作品) ×」のように野暮ったくなる。
+  当初は `stripCountSuffix`（正規表現で label 末尾の `(数字...)` を除去）で対応したが、
+  CodeQL の "Polynomial regular expression"（ReDoS・high）指摘を**2回**受けた
+  （1回目: 先頭 `\s*` による探索位置×バックトラックの多項式化 → 2回目: 修正版の
+  `\d+`/`[^()]*` が共に数字にマッチできる隣接量指定子の曖昧性）。そもそも
+  「表示用に加工された文字列を後段でヒューリスティックに逆パースする」方式自体が
+  脆く、かつ不要だった — tags/multiselect の value は全 consumer で**タグ文字列そのもの**
+  （URL パラメータにもそのまま載る）であり、チップは `String(value)` を表示すれば
+  パース無しで済む。正規表現を全廃してこの方式に置き換えた（select は value がコード
+  （例: "SOU"）のため従来どおり options の label を引くが、select の label に件数を
+  付ける consumer は存在しないため剥がし処理は不要）。
+  教訓: チップのような「選択済み値の再表示」は、表示用 label から逆算するのではなく
+  値そのもの（正本）から直接導出する
 
 **実ブラウザ検証で踏んだ罠（Playwright ブラウザのプロファイルキャッシュ）**:
 Firestore Emulator + `pnpm dev:local` で `/works?category=SOU&genres=ASMR` を確認したところ、

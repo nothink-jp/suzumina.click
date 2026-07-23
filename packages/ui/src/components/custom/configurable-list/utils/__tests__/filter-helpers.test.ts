@@ -145,35 +145,31 @@ describe("getActiveFilterChips", () => {
 		]);
 	});
 
-	it("tags は選択値ごとに1件・解除先は残りの配列", () => {
+	it("tags は選択値ごとに1件・チップは値そのものを表示・解除先は残りの配列", () => {
 		const chips = getActiveFilterChips({ genres: ["a", "b"] }, configs);
 		expect(chips).toEqual([
-			{ key: "genres", label: "A", value: "a", nextValue: ["b"] },
-			{ key: "genres", label: "B", value: "b", nextValue: ["a"] },
+			{ key: "genres", label: "a", value: "a", nextValue: ["b"] },
+			{ key: "genres", label: "b", value: "b", nextValue: ["a"] },
 		]);
 	});
 
 	it("tags で最後の1件を解除すると nextValue は undefined（空配列にしない）", () => {
 		const chips = getActiveFilterChips({ genres: ["a"] }, configs);
-		expect(chips).toEqual([{ key: "genres", label: "A", value: "a", nextValue: undefined }]);
+		expect(chips).toEqual([{ key: "genres", label: "a", value: "a", nextValue: undefined }]);
 	});
 
-	it("option label 末尾の件数サフィックスはチップ表示時のみ剥がす（正本の options は変更しない）", () => {
+	it("tags のチップは件数注記付き option label ではなく選択値を表示する（ラベルのパースはしない）", () => {
 		const countConfigs = {
 			genres: cfg({
 				type: "tags",
 				options: [
-					{ value: "a", label: "ASMR (39作品)" },
-					{ value: "b", label: "タグ (12件)" },
+					{ value: "ASMR", label: "ASMR (39作品)" },
+					{ value: "タグ", label: "タグ (12件)" },
 				],
 			}),
 		};
-		const chips = getActiveFilterChips({ genres: ["a", "b"] }, countConfigs);
+		const chips = getActiveFilterChips({ genres: ["ASMR", "タグ"] }, countConfigs);
 		expect(chips.map((c) => c.label)).toEqual(["ASMR", "タグ"]);
-		expect(countConfigs.genres.options).toEqual([
-			{ value: "a", label: "ASMR (39作品)" },
-			{ value: "b", label: "タグ (12件)" },
-		]);
 	});
 
 	it("boolean はラベルに config.label を使い、解除先はデフォルト値", () => {
