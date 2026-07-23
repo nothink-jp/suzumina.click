@@ -21,9 +21,11 @@ export type {
 // Hooks are not exported from index to avoid Server Component issues
 // Import them directly from the component that uses them if needed
 export { calculatePagination } from "./configurable-list/utils/data-adapter";
+export type { ActiveFilterChip } from "./configurable-list/utils/filter-helpers";
 export {
 	generateOptions,
 	generateYearOptions,
+	getActiveFilterChips,
 	getDefaultFilterValues,
 	hasActiveFilters,
 	normalizeOptions,

@@ -5,7 +5,9 @@
 import { Search, X } from "lucide-react";
 import { Button } from "../../ui/button";
 import { Input } from "../../ui/input";
+import { ConfigurableListActiveFilterChips } from "./configurable-list-active-filter-chips";
 import type { FilterConfig } from "./types";
+import type { ActiveFilterChip } from "./utils/filter-helpers";
 
 interface ConfigurableListHeaderProps {
 	searchable: boolean;
@@ -20,6 +22,8 @@ interface ConfigurableListHeaderProps {
 	renderFilter: (key: string, config: FilterConfig) => React.ReactNode;
 	activeFilters: boolean;
 	onResetFilters: () => void;
+	activeFilterChips: ActiveFilterChip[];
+	onRemoveFilterChip: (key: string, nextValue: unknown) => void;
 }
 
 export function ConfigurableListHeader({
@@ -35,6 +39,8 @@ export function ConfigurableListHeader({
 	renderFilter,
 	activeFilters,
 	onResetFilters,
+	activeFilterChips,
+	onRemoveFilterChip,
 }: ConfigurableListHeaderProps) {
 	return (
 		<div className="mb-6">
@@ -73,6 +79,13 @@ export function ConfigurableListHeader({
 					</div>
 				)}
 			</div>
+
+			{hasFilters && (
+				<ConfigurableListActiveFilterChips
+					chips={activeFilterChips}
+					onRemove={onRemoveFilterChip}
+				/>
+			)}
 		</div>
 	);
 }

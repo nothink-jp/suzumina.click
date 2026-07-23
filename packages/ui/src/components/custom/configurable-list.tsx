@@ -29,6 +29,7 @@ import type {
 } from "./configurable-list/types";
 import { calculatePagination } from "./configurable-list/utils/data-adapter";
 import {
+	getActiveFilterChips,
 	getDefaultFilterValues,
 	hasActiveFilters,
 	normalizeOptions,
@@ -197,6 +198,12 @@ export function ConfigurableList<T>({
 		[fetchParams.filters, handleFilterChange],
 	);
 
+	// アクティブフィルターの個別解除チップ（select/booleanは1件、tags/multiselectは選択値ごと）
+	const activeFilterChips = useMemo(
+		() => getActiveFilterChips(fetchParams.filters, filters),
+		[fetchParams.filters, filters],
+	);
+
 	// ローディング表示（データがない場合のみスケルトンを表示）
 	const shouldShowLoading = loading && currentItems.length === 0 && !actualData.total;
 	if (shouldShowLoading) {
@@ -256,6 +263,10 @@ export function ConfigurableList<T>({
 				renderFilter={renderFilter}
 				activeFilters={activeFilters}
 				onResetFilters={handleResetFilters}
+				activeFilterChips={activeFilterChips}
+				// key/value のシグネチャが一致するため、専用ハンドラを作らず handleFilterChange を
+				// そのまま個別解除ハンドラとして再利用している（nextValue は解除後の値そのもの）
+				onRemoveFilterChip={handleFilterChange}
 			/>
 
 			{/* 情報表示とコントロール：件数、ソート、ページサイズ */}
