@@ -11,7 +11,7 @@ const meta = {
 		docs: {
 			description: {
 				component:
-					"空状態（データなし・検索結果なし）の共通表示。ADR-012 に基づき ReUI 由来の IconStack（packages/ui/src/components/ui/icon-stack.tsx）を装飾に使い、散在していたインライン空表示を統一する。",
+					"空状態（データなし・検索結果なし）の共通表示。散在していたインライン空表示（アイコン・見出し・説明・アクションの組み合わせ）を一元化する（ADR-012）。装飾イラスト（ReUI IconStack）は AI レビューで指摘された『illustrated=true なのに icon 未指定だと無音で何も描画されない』という型で防げない罠と、prop 増加によるコストが見た目の向上に見合わないと判断し、導入後に撤去した。",
 			},
 		},
 	},
@@ -35,14 +35,23 @@ export const WithDescription: Story = {
 	},
 };
 
-/** 一覧ページの検索結果ゼロ・「まだ何もない」系の主役となる空表示（illustrated） */
-export const Illustrated: Story = {
+/** 一覧ページの検索結果ゼロ・「まだ何もない」系の主役となる空表示 */
+export const WithFavoriteAction: Story = {
 	args: {
 		icon: <Heart className="h-6 w-6" />,
 		title: "お気に入りがまだありません",
 		description: "音声ボタンをお気に入りに追加すると、ここに表示されます",
-		illustrated: true,
 		action: <Button size="sm">音声ボタン一覧を見る</Button>,
+	},
+};
+
+/** ページ内で唯一の見出しになる文脈では titleAs="h3" を指定する（既定は "p"） */
+export const AsHeading: Story = {
+	args: {
+		icon: <Heart className="h-6 w-6" />,
+		title: "音声ボタンがありません",
+		titleAs: "h3",
+		description: "まだ音声ボタンを作成していません。",
 	},
 };
 

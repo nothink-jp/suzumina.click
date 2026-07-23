@@ -112,12 +112,12 @@ function AudioButtonsList({
 					<EmptyState
 						icon={<Volume2 className="h-6 w-6" />}
 						title="音声ボタンがありません"
+						titleAs="h3"
 						description={
 							isOwnProfile
 								? "まだ音声ボタンを作成していません。動画ページから音声ボタンを作成してみましょう。"
 								: `${user.displayName}さんはまだ公開している音声ボタンがありません。`
 						}
-						illustrated
 						action={
 							isOwnProfile ? <Button render={<Link href="/videos">動画を見る</Link>} /> : undefined
 						}

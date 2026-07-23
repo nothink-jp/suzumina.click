@@ -36,7 +36,6 @@ export function RelatedAudioButtons({
 			<EmptyState
 				icon={<Volume2 className="h-6 w-6" />}
 				title="この動画の音声ボタンはまだありません"
-				illustrated
 				action={
 					canCreateButton ? (
 						<Button

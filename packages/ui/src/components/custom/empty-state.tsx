@@ -1,4 +1,3 @@
-import { IconStack } from "@suzumina.click/ui/components/ui/icon-stack";
 import { cn } from "@suzumina.click/ui/lib/utils";
 import type { ReactNode } from "react";
 
@@ -7,17 +6,16 @@ export interface EmptyStateProps {
 	icon?: ReactNode;
 	/** 見出し */
 	title: string;
+	/**
+	 * title のタグ。既定は "p"。呼び出し側の文脈で見出し階層上の意味を持たせたい場合
+	 * （例: このブロックがページ内で唯一の h3 相当になる場合）は "h3" を指定する。
+	 * 見た目（文字サイズ・太さ）は他の EmptyState と統一するため変えない。
+	 */
+	titleAs?: "p" | "h3";
 	/** 補足説明 */
 	description?: string;
 	/** アクション（ボタン・リンク等） */
 	action?: ReactNode;
-	/**
-	 * true で icon を IconStack（積み重なったカードの装飾イラスト）に乗せる。
-	 * 一覧ページの検索結果ゼロや「まだ何もない」系のような、ページの主役となる
-	 * 空表示向け。false（既定）はアイコン単体の軽量表示で、詳細ページ内セクションの
-	 * ような補助的な空表示向け。
-	 */
-	illustrated?: boolean;
 	/** "sm" は詳細ページ内セクションのようなコンパクトな文脈向け（既定は "default"） */
 	size?: "sm" | "default";
 	className?: string;
@@ -30,28 +28,28 @@ export interface EmptyStateProps {
 export function EmptyState({
 	icon,
 	title,
+	titleAs = "p",
 	description,
 	action,
-	illustrated = false,
 	size = "default",
 	className,
 }: EmptyStateProps) {
+	const Title = titleAs;
 	return (
 		<div className={cn("text-center", size === "sm" ? "py-6" : "py-12", className)}>
-			{icon &&
-				(illustrated ? (
-					<IconStack className="mx-auto mb-4">{icon}</IconStack>
-				) : (
-					<div
-						className={cn(
-							"mx-auto mb-4 text-muted-foreground",
-							size === "sm" ? "h-8 w-8" : "h-12 w-12",
-						)}
-					>
-						{icon}
-					</div>
-				))}
-			<p className={cn("text-muted-foreground", size === "sm" ? "text-sm" : "text-lg")}>{title}</p>
+			{icon && (
+				<div
+					className={cn(
+						"mx-auto mb-4 text-muted-foreground",
+						size === "sm" ? "h-8 w-8" : "h-12 w-12",
+					)}
+				>
+					{icon}
+				</div>
+			)}
+			<Title className={cn("text-muted-foreground", size === "sm" ? "text-sm" : "text-lg")}>
+				{title}
+			</Title>
 			{description && (
 				<p className={cn("mt-2 text-muted-foreground", size === "sm" && "text-xs")}>
 					{description}

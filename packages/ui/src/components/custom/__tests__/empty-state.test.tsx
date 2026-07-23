@@ -33,21 +33,19 @@ describe("EmptyState", () => {
 		expect(screen.getByRole("button", { name: "新規作成" })).toBeInTheDocument();
 	});
 
-	it("illustrated=true では IconStack にアイコンが乗る", () => {
-		const icon = <div data-testid="empty-icon">📭</div>;
-		const { container } = render(
-			<EmptyState icon={icon} title="お気に入りがありません" illustrated />,
-		);
+	it('titleAs 既定（"p"）では title が <p> タグで描画される', () => {
+		render(<EmptyState title="データがありません" />);
 
-		expect(screen.getByTestId("empty-icon")).toBeInTheDocument();
-		expect(container.querySelector('[data-slot="icon-stack"]')).toBeInTheDocument();
+		const title = screen.getByText("データがありません");
+		expect(title.tagName).toBe("P");
 	});
 
-	it("illustrated=false（既定）では IconStack を使わない", () => {
-		const icon = <div data-testid="empty-icon">📭</div>;
-		const { container } = render(<EmptyState icon={icon} title="データがありません" />);
+	it('titleAs="h3" では title が見出しとして描画される（AIレビュー指摘: 見出し階層の後退防止）', () => {
+		render(<EmptyState title="音声ボタンがありません" titleAs="h3" />);
 
-		expect(container.querySelector('[data-slot="icon-stack"]')).not.toBeInTheDocument();
+		expect(
+			screen.getByRole("heading", { level: 3, name: "音声ボタンがありません" }),
+		).toBeInTheDocument();
 	});
 
 	it('size="sm" でコンパクトな余白・文字サイズになる', () => {
@@ -65,9 +63,9 @@ describe("EmptyState", () => {
 		expect(container.firstChild).toHaveClass("py-12");
 	});
 
-	it("icon が無ければ何もレンダリングしない", () => {
+	it("icon が無ければアイコン用の要素を描画しない", () => {
 		const { container } = render(<EmptyState title="テスト" />);
 
-		expect(container.querySelector('[data-slot="icon-stack"]')).not.toBeInTheDocument();
+		expect(container.querySelectorAll("div").length).toBe(1);
 	});
 });

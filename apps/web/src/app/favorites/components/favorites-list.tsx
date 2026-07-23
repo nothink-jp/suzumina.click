@@ -103,7 +103,6 @@ export default function FavoritesList({ initialData, userId }: FavoritesListProp
 					icon={<Heart className="h-6 w-6" />}
 					title="お気に入りがまだありません"
 					description="音声ボタンをお気に入りに追加すると、ここに表示されます"
-					illustrated
 					action={<Button render={<Link href="/buttons">音声ボタン一覧を見る</Link>} />}
 				/>
 			}
