@@ -34,6 +34,44 @@ import {
 	normalizeOptions,
 } from "./configurable-list/utils/filter-helpers";
 
+/**
+ * リスト本体（アイテム一覧 or 空表示）の描画。
+ * ConfigurableList 本体の cognitive complexity を増やさないよう分岐をここへ切り出す。
+ */
+function ConfigurableListBody<T>({
+	currentItems,
+	renderItem,
+	layout,
+	gridColumns,
+	startIndex,
+	shouldShowEmptyState,
+	emptyState,
+	emptyMessage,
+}: {
+	currentItems: T[];
+	renderItem: (item: T, index: number) => React.ReactNode;
+	layout: "list" | "grid" | "flex";
+	gridColumns: { default?: number; sm?: number; md?: number; lg?: number; xl?: number };
+	startIndex: number;
+	shouldShowEmptyState: boolean;
+	emptyState?: React.ReactNode;
+	emptyMessage: string;
+}) {
+	if (currentItems.length > 0) {
+		return (
+			<ConfigurableListItems
+				items={currentItems}
+				renderItem={renderItem}
+				layout={layout}
+				gridColumns={gridColumns}
+				startIndex={startIndex}
+			/>
+		);
+	}
+	if (!shouldShowEmptyState) return null;
+	return emptyState ?? <div className="text-center py-8 text-muted-foreground">{emptyMessage}</div>;
+}
+
 export function ConfigurableList<T>({
 	items: initialItems,
 	renderItem,
@@ -52,6 +90,7 @@ export function ConfigurableList<T>({
 	fetchFn,
 	onError,
 	emptyMessage = "データがありません",
+	emptyState,
 	loadingComponent,
 	layout = "list",
 	gridColumns = {
@@ -198,6 +237,8 @@ export function ConfigurableList<T>({
 	);
 	const hasFilters = Object.keys(filters).length > 0;
 	const activeFilters = hasActiveFilters(fetchParams.filters, filters);
+	// データがない場合は、ローディング中でない且つ初期データも存在しない場合のみ空表示を出す
+	const shouldShowEmptyState = !loading && actualData.total === 0 && currentItems.length === 0;
 
 	return (
 		<div className={className}>
@@ -237,22 +278,16 @@ export function ConfigurableList<T>({
 			{/* リスト本体 */}
 			{/* ページ h1 と各カード見出し(h3)の間を埋める中間見出し（sr-only）。見出しレベル skip を防ぐ */}
 			{listHeading && <h2 className="sr-only">{listHeading}</h2>}
-			{currentItems.length > 0 ? (
-				<ConfigurableListItems
-					items={currentItems}
-					renderItem={renderItem}
-					layout={layout}
-					gridColumns={gridColumns}
-					startIndex={pagination.startIndex}
-				/>
-			) : (
-				// データがない場合は、ローディング中でない且つ初期データも存在しない場合のみ空メッセージを表示
-				!loading &&
-				actualData.total === 0 &&
-				currentItems.length === 0 && (
-					<div className="text-center py-8 text-muted-foreground">{emptyMessage}</div>
-				)
-			)}
+			<ConfigurableListBody
+				currentItems={currentItems}
+				renderItem={renderItem}
+				layout={layout}
+				gridColumns={gridColumns}
+				startIndex={pagination.startIndex}
+				shouldShowEmptyState={shouldShowEmptyState}
+				emptyState={emptyState}
+				emptyMessage={emptyMessage}
+			/>
 
 			{/* ページネーションと件数表示 */}
 			<ConfigurableListFooter

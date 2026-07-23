@@ -2,8 +2,9 @@
 
 import type { AudioButton, VideoPlainObject } from "@suzumina.click/shared-types";
 import { canCreateAudioButton } from "@suzumina.click/shared-types";
+import { EmptyState } from "@suzumina.click/ui/components/custom";
 import { Button } from "@suzumina.click/ui/components/ui/button";
-import { ArrowRight, Plus } from "lucide-react";
+import { ArrowRight, Plus, Volume2 } from "lucide-react";
 import Link from "next/link";
 import { useMemo } from "react";
 import { AudioButtonWithPlayCount } from "@/components/audio/audio-button-with-play-count";
@@ -32,21 +33,24 @@ export function RelatedAudioButtons({
 
 	if (audioButtons.length === 0) {
 		return (
-			<div className="text-center py-8 text-muted-foreground">
-				<p className="mb-4">この動画の音声ボタンはまだありません</p>
-				{canCreateButton && (
-					<Button
-						size="sm"
-						variant="outline"
-						render={
-							<Link href={`/buttons/create?video_id=${videoId}`}>
-								<Plus className="h-4 w-4 mr-2" />
-								最初の音声ボタンを作る
-							</Link>
-						}
-					/>
-				)}
-			</div>
+			<EmptyState
+				icon={<Volume2 className="h-6 w-6" />}
+				title="この動画の音声ボタンはまだありません"
+				action={
+					canCreateButton ? (
+						<Button
+							size="sm"
+							variant="outline"
+							render={
+								<Link href={`/buttons/create?video_id=${videoId}`}>
+									<Plus className="h-4 w-4 mr-2" />
+									最初の音声ボタンを作る
+								</Link>
+							}
+						/>
+					) : undefined
+				}
+			/>
 		);
 	}
 

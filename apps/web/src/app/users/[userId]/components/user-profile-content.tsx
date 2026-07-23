@@ -1,6 +1,7 @@
 "use client";
 
 import type { AudioButtonPlainObject, FrontendUserData } from "@suzumina.click/shared-types";
+import { EmptyState } from "@suzumina.click/ui/components/custom";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/ui/card";
@@ -107,15 +108,20 @@ function AudioButtonsList({
 	if (audioButtons.length === 0) {
 		return (
 			<Card>
-				<CardContent className="p-12 text-center">
-					<Volume2 className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-					<h3 className="text-lg font-semibold mb-2">音声ボタンがありません</h3>
-					<p className="text-muted-foreground mb-4">
-						{isOwnProfile
-							? "まだ音声ボタンを作成していません。動画ページから音声ボタンを作成してみましょう。"
-							: `${user.displayName}さんはまだ公開している音声ボタンがありません。`}
-					</p>
-					{isOwnProfile && <Button render={<Link href="/videos">動画を見る</Link>} />}
+				<CardContent className="p-12">
+					<EmptyState
+						icon={<Volume2 className="h-6 w-6" />}
+						title="音声ボタンがありません"
+						titleAs="h3"
+						description={
+							isOwnProfile
+								? "まだ音声ボタンを作成していません。動画ページから音声ボタンを作成してみましょう。"
+								: `${user.displayName}さんはまだ公開している音声ボタンがありません。`
+						}
+						action={
+							isOwnProfile ? <Button render={<Link href="/videos">動画を見る</Link>} /> : undefined
+						}
+					/>
 				</CardContent>
 			</Card>
 		);

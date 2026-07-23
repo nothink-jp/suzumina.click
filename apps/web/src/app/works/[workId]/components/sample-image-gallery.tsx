@@ -1,6 +1,7 @@
 "use client";
 
 import type { SampleImage } from "@suzumina.click/shared-types";
+import { EmptyState } from "@suzumina.click/ui/components/custom";
 import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/ui/card";
 import {
 	Dialog,
@@ -168,10 +169,11 @@ export default function SampleImageGallery({ sampleImages, workTitle }: SampleIm
 					</CardTitle>
 				</CardHeader>
 				<CardContent>
-					<div className="text-center py-8 text-muted-foreground">
-						<ImageIcon className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-						<p>サンプル画像はありません</p>
-					</div>
+					<EmptyState
+						icon={<ImageIcon className="h-6 w-6" />}
+						title="サンプル画像はありません"
+						size="sm"
+					/>
 				</CardContent>
 			</Card>
 		);

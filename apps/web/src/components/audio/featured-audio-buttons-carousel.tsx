@@ -1,8 +1,9 @@
 "use client";
 
 import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
+import { EmptyState } from "@suzumina.click/ui/components/custom";
+import { Volume2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { UI_MESSAGES } from "@/constants/ui-messages";
 import { useAudioButtonStatuses } from "@/hooks/use-audio-button-statuses";
 import { AudioButtonWithPlayCount } from "./audio-button-with-play-count";
 
@@ -25,11 +26,7 @@ export function FeaturedAudioButtonsCarousel({ audioButtons }: FeaturedAudioButt
 	}, []);
 
 	if (audioButtons.length === 0) {
-		return (
-			<div className="text-center py-12 sm:py-16 text-muted-foreground">
-				<div className="text-lg sm:text-xl">{UI_MESSAGES.LOADING.GENERAL}</div>
-			</div>
-		);
+		return <EmptyState icon={<Volume2 className="h-6 w-6" />} title="音声ボタンがありません" />;
 	}
 
 	return (

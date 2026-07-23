@@ -2,9 +2,11 @@
 
 import type { AggregatedCharacteristics, CharacteristicAxis } from "@suzumina.click/shared-types";
 import { CHARACTERISTIC_AXES } from "@suzumina.click/shared-types";
+import { EmptyState } from "@suzumina.click/ui/components/custom";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/ui/card";
 import { Progress } from "@suzumina.click/ui/components/ui/progress";
+import { BarChart3 } from "lucide-react";
 
 interface CharacteristicEvaluationProps {
 	/** 集計された特性評価データ */
@@ -161,12 +163,12 @@ export default function CharacteristicEvaluation({
 							<CardTitle>総合評価統計</CardTitle>
 						</CardHeader>
 						<CardContent>
-							<div className="text-center text-muted-foreground py-4">
-								<p>まだ評価データがありません</p>
-								<p className="text-sm mt-1">
-									ユーザーが評価を投稿すると、ここに統計情報が表示されます
-								</p>
-							</div>
+							<EmptyState
+								icon={<BarChart3 className="h-6 w-6" />}
+								title="まだ評価データがありません"
+								description="ユーザーが評価を投稿すると、ここに統計情報が表示されます"
+								size="sm"
+							/>
 						</CardContent>
 					</Card>
 				)}

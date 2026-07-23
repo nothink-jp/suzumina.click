@@ -1,6 +1,8 @@
 "use client";
 
 import type { PriceHistoryDocument } from "@suzumina.click/shared-types";
+import { EmptyState } from "@suzumina.click/ui/components/custom";
+import { LineChart } from "lucide-react";
 import { useId, useState } from "react";
 import useSWR from "swr";
 import { getRecentPriceHistory } from "@/actions/price-history";
@@ -79,13 +81,13 @@ export function PriceHistory({ workId, className = "" }: PriceHistoryProps) {
 
 	if (!priceHistory || priceHistory.length === 0) {
 		return (
-			<div className={`text-center ${className}`}>
-				<div className="rounded-lg bg-muted p-6">
-					<div className="text-foreground font-medium mb-2">価格履歴データがありません</div>
-					<div className="text-muted-foreground text-sm">
-						この作品の価格履歴がまだ収集されていないか、データが存在しません
-					</div>
-				</div>
+			<div className={`rounded-lg bg-muted p-6 ${className}`}>
+				<EmptyState
+					icon={<LineChart className="h-6 w-6" />}
+					title="価格履歴データがありません"
+					description="この作品の価格履歴がまだ収集されていないか、データが存在しません"
+					size="sm"
+				/>
 			</div>
 		);
 	}
