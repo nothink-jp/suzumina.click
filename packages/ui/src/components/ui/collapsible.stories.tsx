@@ -361,7 +361,8 @@ export const AnimationExample: Story = {
 							</Button>
 						}
 					/>
-					<CollapsibleContent className="overflow-hidden data-[closed]:animate-collapsible-up data-[open]:animate-collapsible-down">
+					{/* Base UI は --collapsible-panel-height を提供する（tw-animate-css の collapsible keyframes は radix 変数前提のため不使用） */}
+					<CollapsibleContent className="overflow-hidden h-(--collapsible-panel-height) transition-[height] duration-200 data-[starting-style]:h-0 data-[ending-style]:h-0">
 						<div className="mt-2 p-4 border rounded-lg bg-gradient-to-br from-blue-50 to-purple-50">
 							<h4 className="font-medium mb-2">アニメーション</h4>
 							<p className="text-sm text-muted-foreground">

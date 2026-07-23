@@ -113,7 +113,7 @@ export default function UserMenu({ user }: UserMenuProps) {
 				/>
 				<DropdownMenuSeparator />
 				<DropdownMenuItem
-					// asChild を使わず DropdownMenuItem 自体を押下対象にする（選択でメニューは閉じる）。
+					// render を使わず DropdownMenuItem 自体を押下対象にする（クリックでメニューは閉じる）。
 					onClick={() => void handleSignOut()}
 					className="flex items-center gap-2 cursor-pointer"
 				>
