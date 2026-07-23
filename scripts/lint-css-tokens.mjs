@@ -39,8 +39,6 @@ const ALLOWLIST = new Set([
 	"radius-lg",
 	// animation: --animate-* は globals.css 内の @keyframes/utility と対で定義した体系。
 	// tw-animate-css 連携の予約で、個別 var() 参照は出ないことがある。
-	"animate-accordion-down",
-	"animate-accordion-up",
 	"animate-focus-pulse",
 	"animate-shimmer",
 ]);
