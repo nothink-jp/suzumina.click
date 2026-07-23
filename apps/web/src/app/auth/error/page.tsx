@@ -96,27 +96,36 @@ async function ErrorContent({ searchParams }: AuthErrorPageProps) {
 
 					<div className="space-y-3">
 						{errorInfo.showRetry && (
-							<Button asChild className="w-full group">
-								<Link href="/auth/signin" className="flex items-center gap-2">
-									<RotateCw className="h-4 w-4 group-hover:rotate-180 transition-transform duration-500" />
-									再度ログインを試す
-								</Link>
-							</Button>
+							<Button
+								className="w-full group"
+								render={
+									<Link href="/auth/signin" className="flex items-center gap-2">
+										<RotateCw className="h-4 w-4 group-hover:rotate-180 transition-transform duration-500" />
+										再度ログインを試す
+									</Link>
+								}
+							/>
 						)}
 
-						<Button variant="outline" asChild className="w-full group">
-							<Link href="/" className="flex items-center gap-2">
-								<Home className="h-4 w-4 group-hover:scale-110 transition-transform" />
-								ホームに戻る
-							</Link>
-						</Button>
+						<Button
+							variant="outline"
+							className="w-full group"
+							render={
+								<Link href="/" className="flex items-center gap-2">
+									<Home className="h-4 w-4 group-hover:scale-110 transition-transform" />
+									ホームに戻る
+								</Link>
+							}
+						/>
 					</div>
 
 					<div className="space-y-2 pt-4 border-t">
 						<p className="text-sm text-muted-foreground">解決しない場合は</p>
-						<Button variant="link" size="sm" asChild>
-							<Link href="/contact">お問い合わせページ</Link>
-						</Button>
+						<Button
+							variant="link"
+							size="sm"
+							render={<Link href="/contact">お問い合わせページ</Link>}
+						/>
 					</div>
 
 					<div className="pt-4 border-t">

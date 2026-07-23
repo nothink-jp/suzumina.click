@@ -1,17 +1,20 @@
 "use client";
 
+import { Progress as ProgressPrimitive } from "@base-ui/react/progress";
 import { cn } from "@suzumina.click/ui/lib/utils";
-import { Progress as ProgressPrimitive } from "radix-ui";
 import type * as React from "react";
 
 function Progress({
 	className,
 	value,
 	...props
-}: React.ComponentProps<typeof ProgressPrimitive.Root>) {
+}: Omit<React.ComponentProps<typeof ProgressPrimitive.Root>, "value"> & {
+	value?: number | null;
+}) {
 	return (
 		<ProgressPrimitive.Root
 			data-slot="progress"
+			value={value ?? 0}
 			className={cn("relative h-2 w-full overflow-hidden rounded-full bg-primary/20", className)}
 			{...props}
 		>

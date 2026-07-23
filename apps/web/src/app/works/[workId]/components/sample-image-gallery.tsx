@@ -189,31 +189,33 @@ export default function SampleImageGallery({ sampleImages, workTitle }: SampleIm
 				<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
 					{sampleImages.map((image, index) => (
 						<Dialog key={image.thumb}>
-							<DialogTrigger asChild>
-								<button
-									type="button"
-									className="relative aspect-square bg-muted rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-info"
-									onClick={() => setSelectedImageIndex(index)}
-									onKeyDown={(e) => {
-										if (e.key === "Enter" || e.key === " ") {
-											e.preventDefault();
-											setSelectedImageIndex(index);
-										}
-									}}
-									aria-label={`${workTitle} サンプル画像 ${index + 1}を拡大表示`}
-								>
-									<SampleThumbnail
-										src={image.thumb}
-										alt={`${workTitle} サンプル画像 ${index + 1}`}
-										className="w-full h-full"
-									/>
-									{image.width && image.height && (
-										<div className="absolute bottom-1 right-1 bg-black bg-opacity-60 text-white text-xs px-1 py-0.5 rounded pointer-events-none">
-											{image.width}×{image.height}
-										</div>
-									)}
-								</button>
-							</DialogTrigger>
+							<DialogTrigger
+								render={
+									<button
+										type="button"
+										className="relative aspect-square bg-muted rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-info"
+										onClick={() => setSelectedImageIndex(index)}
+										onKeyDown={(e) => {
+											if (e.key === "Enter" || e.key === " ") {
+												e.preventDefault();
+												setSelectedImageIndex(index);
+											}
+										}}
+										aria-label={`${workTitle} サンプル画像 ${index + 1}を拡大表示`}
+									>
+										<SampleThumbnail
+											src={image.thumb}
+											alt={`${workTitle} サンプル画像 ${index + 1}`}
+											className="w-full h-full"
+										/>
+										{image.width && image.height && (
+											<div className="absolute bottom-1 right-1 bg-black bg-opacity-60 text-white text-xs px-1 py-0.5 rounded pointer-events-none">
+												{image.width}×{image.height}
+											</div>
+										)}
+									</button>
+								}
+							/>
 							<DialogContent
 								className="max-w-none w-auto h-auto p-0 bg-transparent border-none shadow-none"
 								style={{

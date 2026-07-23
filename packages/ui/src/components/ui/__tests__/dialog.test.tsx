@@ -130,12 +130,12 @@ describe("Dialog - Custom Props", () => {
 			const content = screen.getByTestId("content");
 
 			// Check animation classes
-			expect(content).toHaveClass("data-[state=open]:animate-in");
-			expect(content).toHaveClass("data-[state=closed]:animate-out");
-			expect(content).toHaveClass("data-[state=closed]:fade-out-0");
-			expect(content).toHaveClass("data-[state=open]:fade-in-0");
-			expect(content).toHaveClass("data-[state=closed]:zoom-out-95");
-			expect(content).toHaveClass("data-[state=open]:zoom-in-95");
+			expect(content).toHaveClass("data-[open]:animate-in");
+			expect(content).toHaveClass("data-[closed]:animate-out");
+			expect(content).toHaveClass("data-[closed]:fade-out-0");
+			expect(content).toHaveClass("data-[open]:fade-in-0");
+			expect(content).toHaveClass("data-[closed]:zoom-out-95");
+			expect(content).toHaveClass("data-[open]:zoom-in-95");
 		});
 	});
 

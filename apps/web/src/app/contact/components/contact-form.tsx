@@ -139,6 +139,7 @@ export function ContactForm() {
 					お問い合わせ種別 <span className="text-destructive">*</span>
 				</Label>
 				<Select
+					items={categoryOptions}
 					onValueChange={(value) =>
 						setValue("category", value as z.infer<typeof contactFormSchema>["category"])
 					}

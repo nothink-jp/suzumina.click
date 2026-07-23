@@ -285,13 +285,13 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 								</Button>
 								<Button
 									className="flex-1 bg-destructive hover:bg-destructive/90 text-white"
-									asChild
-								>
-									<a href={work.workUrl} target="_blank" rel="noopener noreferrer">
-										<ShoppingCart className="h-4 w-4 mr-2" />
-										DLsiteで購入
-									</a>
-								</Button>
+									render={
+										<a href={work.workUrl} target="_blank" rel="noopener noreferrer">
+											<ShoppingCart className="h-4 w-4 mr-2" />
+											DLsiteで購入
+										</a>
+									}
+								/>
 							</div>
 						</div>
 					</div>
@@ -563,10 +563,8 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 								<Button
 									variant="outline"
 									className="w-full border text-foreground hover:bg-accent"
-									asChild
-								>
-									<Link href={`/circles/${work.circleId}`}>他の作品を見る</Link>
-								</Button>
+									render={<Link href={`/circles/${work.circleId}`}>他の作品を見る</Link>}
+								/>
 							) : (
 								<Button
 									variant="outline"

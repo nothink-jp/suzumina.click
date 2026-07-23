@@ -77,12 +77,16 @@ function UserHeader({ user, isOwnProfile }: { user: FrontendUserData; isOwnProfi
 			</div>
 			<div className="flex gap-2">
 				{isOwnProfile && (
-					<Button variant="outline" size="sm" asChild>
-						<Link href="/settings">
-							<Settings className="w-4 h-4 mr-2" />
-							設定
-						</Link>
-					</Button>
+					<Button
+						variant="outline"
+						size="sm"
+						render={
+							<Link href="/settings">
+								<Settings className="w-4 h-4 mr-2" />
+								設定
+							</Link>
+						}
+					/>
 				)}
 			</div>
 		</div>
@@ -111,11 +115,7 @@ function AudioButtonsList({
 							? "まだ音声ボタンを作成していません。動画ページから音声ボタンを作成してみましょう。"
 							: `${user.displayName}さんはまだ公開している音声ボタンがありません。`}
 					</p>
-					{isOwnProfile && (
-						<Button asChild>
-							<Link href="/videos">動画を見る</Link>
-						</Button>
-					)}
+					{isOwnProfile && <Button render={<Link href="/videos">動画を見る</Link>} />}
 				</CardContent>
 			</Card>
 		);
@@ -261,9 +261,7 @@ export function UserProfileContent({
 							<p className="text-muted-foreground mb-4">
 								お気に入りに登録した音声ボタンを管理できます。
 							</p>
-							<Button asChild>
-								<Link href="/favorites">お気に入り一覧を見る</Link>
-							</Button>
+							<Button render={<Link href="/favorites">お気に入り一覧を見る</Link>} />
 						</CardContent>
 					</Card>
 				)}

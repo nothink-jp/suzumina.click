@@ -36,44 +36,66 @@ export default function NotFound() {
 					<div className="space-y-3">
 						<h2 className="text-sm font-semibold text-muted-foreground">人気のページへ</h2>
 
-						<Button asChild className="w-full group">
-							<Link href="/" className="flex items-center gap-2">
-								<Home className="h-4 w-4 group-hover:scale-110 transition-transform" />
-								ホームに戻る
-							</Link>
-						</Button>
+						<Button
+							className="w-full group"
+							render={
+								<Link href="/" className="flex items-center gap-2">
+									<Home className="h-4 w-4 group-hover:scale-110 transition-transform" />
+									ホームに戻る
+								</Link>
+							}
+						/>
 
 						<div className="grid grid-cols-3 gap-2">
-							<Button variant="outline" size="sm" asChild className="group">
-								<Link href="/buttons" className="flex flex-col items-center gap-1 py-3">
-									<Music className="h-4 w-4 group-hover:scale-110 transition-transform" />
-									<span className="text-xs">音声ボタン</span>
-								</Link>
-							</Button>
-							<Button variant="outline" size="sm" asChild className="group">
-								<Link href="/videos" className="flex flex-col items-center gap-1 py-3">
-									<Play className="h-4 w-4 group-hover:scale-110 transition-transform" />
-									<span className="text-xs">動画一覧</span>
-								</Link>
-							</Button>
-							<Button variant="outline" size="sm" asChild className="group">
-								<Link href="/works" className="flex flex-col items-center gap-1 py-3">
-									<BookOpen className="h-4 w-4 group-hover:scale-110 transition-transform" />
-									<span className="text-xs">作品一覧</span>
-								</Link>
-							</Button>
+							<Button
+								variant="outline"
+								size="sm"
+								className="group"
+								render={
+									<Link href="/buttons" className="flex flex-col items-center gap-1 py-3">
+										<Music className="h-4 w-4 group-hover:scale-110 transition-transform" />
+										<span className="text-xs">音声ボタン</span>
+									</Link>
+								}
+							/>
+							<Button
+								variant="outline"
+								size="sm"
+								className="group"
+								render={
+									<Link href="/videos" className="flex flex-col items-center gap-1 py-3">
+										<Play className="h-4 w-4 group-hover:scale-110 transition-transform" />
+										<span className="text-xs">動画一覧</span>
+									</Link>
+								}
+							/>
+							<Button
+								variant="outline"
+								size="sm"
+								className="group"
+								render={
+									<Link href="/works" className="flex flex-col items-center gap-1 py-3">
+										<BookOpen className="h-4 w-4 group-hover:scale-110 transition-transform" />
+										<span className="text-xs">作品一覧</span>
+									</Link>
+								}
+							/>
 						</div>
 					</div>
 
 					{/* 追加のヘルプ */}
 					<div className="space-y-2 pt-4 border-t">
 						<p className="text-sm text-muted-foreground">お探しのものが見つからない場合は</p>
-						<Button variant="link" size="sm" asChild>
-							<Link href="/contact">
-								<Search className="h-3 w-3 mr-1" />
-								お問い合わせページ
-							</Link>
-						</Button>
+						<Button
+							variant="link"
+							size="sm"
+							render={
+								<Link href="/contact">
+									<Search className="h-3 w-3 mr-1" />
+									お問い合わせページ
+								</Link>
+							}
+						/>
 					</div>
 
 					{/* 追加情報 */}

@@ -254,17 +254,20 @@ export function LiveCaptureView({ video, initialDrafts }: LiveCaptureViewProps) 
 											</span>
 										) : (
 											firstDraft && (
-												<Button asChild size="sm">
-													{/* /buttons ツリーへの遷移はフルロード（intercepting route 回避・SPR-252）。
-													    先頭の下書きから開けば同一動画のキューは create 側が読み込み、
-													    連続仕上げ（SPR-266 第2段）につながる */}
-													<a
-														href={`/buttons/create?video_id=${group.videoId}&start_time=${firstDraft.suggestedStartTime}&draft_id=${firstDraft.id}`}
-													>
-														<ExternalLink className="h-3.5 w-3.5 mr-1" />
-														まとめて仕上げる
-													</a>
-												</Button>
+												<Button
+													size="sm"
+													render={
+														// /buttons ツリーへの遷移はフルロード（intercepting route 回避・SPR-252）。
+														// 先頭の下書きから開けば同一動画のキューは create 側が読み込み、
+														// 連続仕上げ（SPR-266 第2段）につながる
+														<a
+															href={`/buttons/create?video_id=${group.videoId}&start_time=${firstDraft.suggestedStartTime}&draft_id=${firstDraft.id}`}
+														>
+															<ExternalLink className="h-3.5 w-3.5 mr-1" />
+															まとめて仕上げる
+														</a>
+													}
+												/>
 											)
 										)}
 									</div>
@@ -285,15 +288,19 @@ export function LiveCaptureView({ video, initialDrafts }: LiveCaptureViewProps) 
 													</p>
 												</div>
 												{!isCurrentLiveVideo && (
-													<Button asChild size="sm" variant="outline">
-														{/* この1件だけを仕上げたいときの個別導線（フルロード・SPR-252） */}
-														<a
-															href={`/buttons/create?video_id=${draft.videoId}&start_time=${draft.suggestedStartTime}&draft_id=${draft.id}`}
-														>
-															<ExternalLink className="h-3.5 w-3.5 mr-1" />
-															仕上げる
-														</a>
-													</Button>
+													<Button
+														size="sm"
+														variant="outline"
+														render={
+															// この1件だけを仕上げたいときの個別導線（フルロード・SPR-252）
+															<a
+																href={`/buttons/create?video_id=${draft.videoId}&start_time=${draft.suggestedStartTime}&draft_id=${draft.id}`}
+															>
+																<ExternalLink className="h-3.5 w-3.5 mr-1" />
+																仕上げる
+															</a>
+														}
+													/>
 												)}
 												<Button
 													size="sm"

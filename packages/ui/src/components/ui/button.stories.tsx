@@ -19,9 +19,6 @@ const meta = {
 			control: { type: "select" },
 			options: ["default", "sm", "lg", "icon"],
 		},
-		asChild: {
-			control: { type: "boolean" },
-		},
 		disabled: {
 			control: { type: "boolean" },
 		},

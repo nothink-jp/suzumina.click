@@ -26,11 +26,14 @@ export function VideosSection({ videos = [], loading = true, error = null }: Vid
 								涼花みなせさんの最新動画をチェック！
 							</p>
 						</div>
-						<Button asChild variant="outline">
-							<Link href="/videos" className="font-medium">
-								すべて見る
-							</Link>
-						</Button>
+						<Button
+							variant="outline"
+							render={
+								<Link href="/videos" className="font-medium">
+									すべて見る
+								</Link>
+							}
+						/>
 					</div>
 					<LoadingSkeleton variant="carousel" height={300} />
 				</div>
@@ -63,11 +66,14 @@ export function VideosSection({ videos = [], loading = true, error = null }: Vid
 							涼花みなせさんの最新動画をチェック！
 						</p>
 					</div>
-					<Button asChild variant="outline">
-						<Link href="/videos" className="font-medium">
-							すべて見る
-						</Link>
-					</Button>
+					<Button
+						variant="outline"
+						render={
+							<Link href="/videos" className="font-medium">
+								すべて見る
+							</Link>
+						}
+					/>
 				</div>
 				<LazyFeaturedVideosCarousel videos={videos} />
 			</div>

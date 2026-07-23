@@ -156,15 +156,17 @@ export function AudioButton({
 					</button>
 
 					{/* 詳細表示ボタン - Popover専用エリア */}
-					<PopoverTrigger asChild>
-						<button
-							type="button"
-							className="relative z-10 flex min-h-[44px] min-w-[44px] flex-none items-center justify-center border-l border-minase-200 text-minase-600 transition-colors hover:bg-minase-100 hover:text-minase-700"
-							aria-label="詳細を表示"
-						>
-							<MoreHorizontal className="h-4 w-4" />
-						</button>
-					</PopoverTrigger>
+					<PopoverTrigger
+						render={
+							<button
+								type="button"
+								className="relative z-10 flex min-h-[44px] min-w-[44px] flex-none items-center justify-center border-l border-minase-200 text-minase-600 transition-colors hover:bg-minase-100 hover:text-minase-700"
+								aria-label="詳細を表示"
+							>
+								<MoreHorizontal className="h-4 w-4" />
+							</button>
+						}
+					/>
 				</div>
 
 				<PopoverContent

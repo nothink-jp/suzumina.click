@@ -57,8 +57,8 @@ export const TogglesOn: Story = {
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
 		const toggle = canvas.getByRole("button", { name: "太字" });
-		await expect(toggle).toHaveAttribute("data-state", "off");
+		await expect(toggle).not.toHaveAttribute("data-pressed");
 		await userEvent.click(toggle);
-		await expect(toggle).toHaveAttribute("data-state", "on");
+		await expect(toggle).toHaveAttribute("data-pressed");
 	},
 };

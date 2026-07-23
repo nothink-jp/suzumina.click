@@ -29,9 +29,7 @@ type Story = StoryObj<typeof meta>;
 export const Basic: Story = {
 	render: () => (
 		<AlertDialog>
-			<AlertDialogTrigger asChild>
-				<Button variant="outline">アラートを表示</Button>
-			</AlertDialogTrigger>
+			<AlertDialogTrigger render={<Button variant="outline">アラートを表示</Button>} />
 			<AlertDialogContent>
 				<AlertDialogHeader>
 					<AlertDialogTitle>確認</AlertDialogTitle>
@@ -51,9 +49,7 @@ export const Basic: Story = {
 export const OpenInteraction: Story = {
 	render: () => (
 		<AlertDialog>
-			<AlertDialogTrigger asChild>
-				<Button variant="outline">アラートを表示</Button>
-			</AlertDialogTrigger>
+			<AlertDialogTrigger render={<Button variant="outline">アラートを表示</Button>} />
 			<AlertDialogContent>
 				<AlertDialogHeader>
 					<AlertDialogTitle>確認</AlertDialogTitle>
@@ -78,12 +74,14 @@ export const OpenInteraction: Story = {
 export const DeleteConfirmation: Story = {
 	render: () => (
 		<AlertDialog>
-			<AlertDialogTrigger asChild>
-				<Button variant="destructive">
-					<TrashIcon className="mr-2 h-4 w-4" />
-					削除
-				</Button>
-			</AlertDialogTrigger>
+			<AlertDialogTrigger
+				render={
+					<Button variant="destructive">
+						<TrashIcon className="mr-2 h-4 w-4" />
+						削除
+					</Button>
+				}
+			/>
 			<AlertDialogContent>
 				<AlertDialogHeader>
 					<AlertDialogTitle className="flex items-center gap-2">
@@ -107,9 +105,7 @@ export const DeleteConfirmation: Story = {
 export const LogoutConfirmation: Story = {
 	render: () => (
 		<AlertDialog>
-			<AlertDialogTrigger asChild>
-				<Button variant="ghost">ログアウト</Button>
-			</AlertDialogTrigger>
+			<AlertDialogTrigger render={<Button variant="ghost">ログアウト</Button>} />
 			<AlertDialogContent>
 				<AlertDialogHeader>
 					<AlertDialogTitle>ログアウト</AlertDialogTitle>
@@ -129,9 +125,7 @@ export const LogoutConfirmation: Story = {
 export const SaveChanges: Story = {
 	render: () => (
 		<AlertDialog>
-			<AlertDialogTrigger asChild>
-				<Button variant="outline">ページを離れる</Button>
-			</AlertDialogTrigger>
+			<AlertDialogTrigger render={<Button variant="outline">ページを離れる</Button>} />
 			<AlertDialogContent>
 				<AlertDialogHeader>
 					<AlertDialogTitle className="flex items-center gap-2">
@@ -155,9 +149,7 @@ export const SaveChanges: Story = {
 export const PublishContent: Story = {
 	render: () => (
 		<AlertDialog>
-			<AlertDialogTrigger asChild>
-				<Button>記事を公開</Button>
-			</AlertDialogTrigger>
+			<AlertDialogTrigger render={<Button>記事を公開</Button>} />
 			<AlertDialogContent>
 				<AlertDialogHeader>
 					<AlertDialogTitle className="flex items-center gap-2">
@@ -183,9 +175,7 @@ export const PublishContent: Story = {
 export const AccountDeletion: Story = {
 	render: () => (
 		<AlertDialog>
-			<AlertDialogTrigger asChild>
-				<Button variant="destructive">アカウント削除</Button>
-			</AlertDialogTrigger>
+			<AlertDialogTrigger render={<Button variant="destructive">アカウント削除</Button>} />
 			<AlertDialogContent className="max-w-md">
 				<AlertDialogHeader>
 					<AlertDialogTitle className="flex items-center gap-2 text-destructive">
@@ -216,9 +206,7 @@ export const AccountDeletion: Story = {
 export const DataExport: Story = {
 	render: () => (
 		<AlertDialog>
-			<AlertDialogTrigger asChild>
-				<Button variant="outline">データをエクスポート</Button>
-			</AlertDialogTrigger>
+			<AlertDialogTrigger render={<Button variant="outline">データをエクスポート</Button>} />
 			<AlertDialogContent>
 				<AlertDialogHeader>
 					<AlertDialogTitle>データのエクスポート</AlertDialogTitle>
@@ -239,9 +227,7 @@ export const DataExport: Story = {
 export const ResetSettings: Story = {
 	render: () => (
 		<AlertDialog>
-			<AlertDialogTrigger asChild>
-				<Button variant="outline">設定をリセット</Button>
-			</AlertDialogTrigger>
+			<AlertDialogTrigger render={<Button variant="outline">設定をリセット</Button>} />
 			<AlertDialogContent>
 				<AlertDialogHeader>
 					<AlertDialogTitle>設定のリセット</AlertDialogTitle>
@@ -264,9 +250,7 @@ export const ResetSettings: Story = {
 export const CustomStyling: Story = {
 	render: () => (
 		<AlertDialog>
-			<AlertDialogTrigger asChild>
-				<Button variant="outline">カスタムスタイル</Button>
-			</AlertDialogTrigger>
+			<AlertDialogTrigger render={<Button variant="outline">カスタムスタイル</Button>} />
 			<AlertDialogContent className="border-blue-200 bg-gradient-to-br from-blue-50 to-purple-50">
 				<AlertDialogHeader>
 					<AlertDialogTitle className="text-blue-900">プレミアム機能</AlertDialogTitle>
@@ -291,9 +275,7 @@ export const CustomStyling: Story = {
 export const MultipleActions: Story = {
 	render: () => (
 		<AlertDialog>
-			<AlertDialogTrigger asChild>
-				<Button variant="outline">ファイル処理</Button>
-			</AlertDialogTrigger>
+			<AlertDialogTrigger render={<Button variant="outline">ファイル処理</Button>} />
 			<AlertDialogContent>
 				<AlertDialogHeader>
 					<AlertDialogTitle>ファイルの処理方法</AlertDialogTitle>

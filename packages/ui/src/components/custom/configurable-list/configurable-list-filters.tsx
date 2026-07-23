@@ -30,7 +30,7 @@ function SelectFilter({
 }) {
 	const options = generateOptions(config);
 	return (
-		<Select value={value?.toString() || ""} onValueChange={onChange}>
+		<Select items={options} value={value?.toString() || ""} onValueChange={onChange}>
 			<SelectTrigger className="w-[180px]" aria-label={config.label || "絞り込み"}>
 				<SelectValue placeholder={config.placeholder || `${config.label}を選択`} />
 			</SelectTrigger>
@@ -256,39 +256,41 @@ function TagsFilter({
 
 	return (
 		<Popover>
-			<PopoverTrigger asChild>
-				<Button variant="outline" size="sm" className="h-9 border-dashed" disabled={!hasOptions}>
-					{config.label || keyName}
-					{selectedValues.length > 0 && (
-						<>
-							<div className="mx-1 h-4 w-[1px] bg-border" />
-							<Badge variant="secondary" className="rounded-sm px-1 font-normal lg:hidden">
-								{selectedValues.length}
-							</Badge>
-							<div className="hidden space-x-1 lg:flex">
-								{selectedValues.length > 2 ? (
-									<Badge variant="secondary" className="rounded-sm px-1 font-normal">
-										{selectedValues.length}件選択中
-									</Badge>
-								) : (
-									options
-										.filter((option) => selectedValues.includes(option.value))
-										.map((option) => (
-											<Badge
-												key={option.value}
-												variant="secondary"
-												className="rounded-sm px-1 font-normal"
-											>
-												{option.label}
-											</Badge>
-										))
-								)}
-							</div>
-						</>
-					)}
-					<ChevronDown className="ml-2 h-4 w-4" />
-				</Button>
-			</PopoverTrigger>
+			<PopoverTrigger
+				render={
+					<Button variant="outline" size="sm" className="h-9 border-dashed" disabled={!hasOptions}>
+						{config.label || keyName}
+						{selectedValues.length > 0 && (
+							<>
+								<div className="mx-1 h-4 w-[1px] bg-border" />
+								<Badge variant="secondary" className="rounded-sm px-1 font-normal lg:hidden">
+									{selectedValues.length}
+								</Badge>
+								<div className="hidden space-x-1 lg:flex">
+									{selectedValues.length > 2 ? (
+										<Badge variant="secondary" className="rounded-sm px-1 font-normal">
+											{selectedValues.length}件選択中
+										</Badge>
+									) : (
+										options
+											.filter((option) => selectedValues.includes(option.value))
+											.map((option) => (
+												<Badge
+													key={option.value}
+													variant="secondary"
+													className="rounded-sm px-1 font-normal"
+												>
+													{option.label}
+												</Badge>
+											))
+									)}
+								</div>
+							</>
+						)}
+						<ChevronDown className="ml-2 h-4 w-4" />
+					</Button>
+				}
+			/>
 			<PopoverContent className="w-[300px] p-0" align="start">
 				<div className="p-4">
 					<div className="mb-2 text-sm font-medium">{config.label || keyName}</div>

@@ -23,7 +23,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Single: Story = {
 	render: () => (
-		<ToggleGroup type="single" defaultValue="buttons" aria-label="検索対象">
+		<ToggleGroup defaultValue={["buttons"]} aria-label="検索対象">
 			<ToggleGroupItem value="buttons">音声ボタン</ToggleGroupItem>
 			<ToggleGroupItem value="videos">動画</ToggleGroupItem>
 			<ToggleGroupItem value="works">作品</ToggleGroupItem>
@@ -34,8 +34,7 @@ export const Single: Story = {
 export const FullWidth: Story = {
 	render: () => (
 		<ToggleGroup
-			type="single"
-			defaultValue="buttons"
+			defaultValue={["buttons"]}
 			aria-label="検索対象"
 			className="grid w-full grid-cols-3"
 		>
@@ -54,7 +53,7 @@ export const FullWidth: Story = {
 
 export const SwitchSelection: Story = {
 	render: () => (
-		<ToggleGroup type="single" defaultValue="buttons" aria-label="検索対象">
+		<ToggleGroup defaultValue={["buttons"]} aria-label="検索対象">
 			<ToggleGroupItem value="buttons">音声ボタン</ToggleGroupItem>
 			<ToggleGroupItem value="videos">動画</ToggleGroupItem>
 			<ToggleGroupItem value="works">作品</ToggleGroupItem>
@@ -62,12 +61,12 @@ export const SwitchSelection: Story = {
 	),
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
-		const buttons = canvas.getByRole("radio", { name: "音声ボタン" });
-		await expect(buttons).toHaveAttribute("data-state", "on");
+		const buttons = canvas.getByRole("button", { name: "音声ボタン" });
+		await expect(buttons).toHaveAttribute("data-pressed");
 
-		const videos = canvas.getByRole("radio", { name: "動画" });
+		const videos = canvas.getByRole("button", { name: "動画" });
 		await userEvent.click(videos);
-		await expect(videos).toHaveAttribute("data-state", "on");
-		await expect(buttons).toHaveAttribute("data-state", "off");
+		await expect(videos).toHaveAttribute("data-pressed");
+		await expect(buttons).not.toHaveAttribute("data-pressed");
 	},
 };

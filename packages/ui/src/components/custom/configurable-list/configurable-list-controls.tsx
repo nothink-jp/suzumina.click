@@ -60,7 +60,15 @@ export function ConfigurableListControls({
 			<div className="flex items-center gap-3">
 				{/* ソート選択 */}
 				{sortOptions.length > 0 && (
-					<Select value={currentSort} onValueChange={onSortChange}>
+					<Select
+						items={sortOptions}
+						value={currentSort}
+						onValueChange={(value) => {
+							if (value !== null) {
+								onSortChange(value);
+							}
+						}}
+					>
 						<SelectTrigger className="h-8 w-[140px]" aria-label="並び順">
 							<SelectValue placeholder="並び順" />
 						</SelectTrigger>
@@ -78,7 +86,18 @@ export function ConfigurableListControls({
 				{itemsPerPageOptions &&
 					itemsPerPageOptions.length > 0 &&
 					(actualTotal > 0 || (initialTotal && initialTotal > 0)) && (
-						<Select value={currentItemsPerPage.toString()} onValueChange={onItemsPerPageChange}>
+						<Select
+							items={itemsPerPageOptions.map((option) => ({
+								value: option.toString(),
+								label: `${option}件/ページ`,
+							}))}
+							value={currentItemsPerPage.toString()}
+							onValueChange={(value) => {
+								if (value !== null) {
+									onItemsPerPageChange(value);
+								}
+							}}
+						>
 							<SelectTrigger className="h-8 w-[140px]" aria-label="表示件数">
 								<SelectValue />
 							</SelectTrigger>

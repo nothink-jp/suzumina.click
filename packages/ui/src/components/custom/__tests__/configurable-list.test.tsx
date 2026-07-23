@@ -556,12 +556,13 @@ describe("ConfigurableList", () => {
 		expect(screen.getByTestId("item-2")).toBeInTheDocument();
 
 		// ページサイズ変更を開始
+		const user = userEvent.setup();
 		const pageSizeSelect = screen.getByText("2件/ページ");
-		fireEvent.click(pageSizeSelect);
+		await user.click(pageSizeSelect);
 
 		// セレクトボックスが開くのを待つ
 		const option4 = await screen.findByText("4件/ページ");
-		fireEvent.click(option4);
+		await user.click(option4);
 
 		// データ取得中でも既存データが表示され続けることを確認
 		expect(screen.getByTestId("item-1")).toBeInTheDocument();

@@ -51,18 +51,24 @@ export default function VideosError({
 						</Button>
 
 						<div className="flex flex-col sm:flex-row gap-2 justify-center">
-							<Button variant="outline" asChild>
-								<Link href="/" className="flex items-center gap-2">
-									<Home className="h-4 w-4" />
-									ホームへ
-								</Link>
-							</Button>
-							<Button variant="outline" asChild>
-								<Link href="/videos" className="flex items-center gap-2">
-									<Play className="h-4 w-4" />
-									動画一覧トップ
-								</Link>
-							</Button>
+							<Button
+								variant="outline"
+								render={
+									<Link href="/" className="flex items-center gap-2">
+										<Home className="h-4 w-4" />
+										ホームへ
+									</Link>
+								}
+							/>
+							<Button
+								variant="outline"
+								render={
+									<Link href="/videos" className="flex items-center gap-2">
+										<Play className="h-4 w-4" />
+										動画一覧トップ
+									</Link>
+								}
+							/>
 						</div>
 					</div>
 
@@ -70,12 +76,8 @@ export default function VideosError({
 					<div className="pt-4 border-t">
 						<p className="text-sm text-muted-foreground mb-2">他のコンテンツもご覧ください：</p>
 						<div className="flex flex-wrap gap-2 justify-center">
-							<Button variant="link" size="sm" asChild>
-								<Link href="/buttons">音声ボタン</Link>
-							</Button>
-							<Button variant="link" size="sm" asChild>
-								<Link href="/works">作品一覧</Link>
-							</Button>
+							<Button variant="link" size="sm" render={<Link href="/buttons">音声ボタン</Link>} />
+							<Button variant="link" size="sm" render={<Link href="/works">作品一覧</Link>} />
 						</div>
 					</div>
 				</CardContent>

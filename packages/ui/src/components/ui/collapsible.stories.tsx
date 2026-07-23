@@ -23,14 +23,16 @@ export const Basic: Story = {
 		return (
 			<div className="w-[350px]">
 				<Collapsible open={isOpen} onOpenChange={setIsOpen}>
-					<CollapsibleTrigger asChild>
-						<Button variant="outline" className="w-full justify-between">
-							詳細を表示
-							<ChevronDownIcon
-								className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
-							/>
-						</Button>
-					</CollapsibleTrigger>
+					<CollapsibleTrigger
+						render={
+							<Button variant="outline" className="w-full justify-between">
+								詳細を表示
+								<ChevronDownIcon
+									className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
+								/>
+							</Button>
+						}
+					/>
 					<CollapsibleContent className="mt-2 p-4 border rounded-lg bg-muted/30">
 						<p className="text-sm">
 							これは折りたたみ可能なコンテンツです。ボタンをクリックすることで表示・非表示を切り替えることができます。
@@ -81,16 +83,18 @@ export const FAQ: Story = {
 						open={openItems.includes(item.id)}
 						onOpenChange={() => toggleItem(item.id)}
 					>
-						<CollapsibleTrigger asChild>
-							<Button variant="outline" className="w-full justify-between p-4 h-auto text-left">
-								<span className="font-medium">{item.question}</span>
-								<ChevronDownIcon
-									className={`h-4 w-4 transition-transform flex-shrink-0 ml-2 ${
-										openItems.includes(item.id) ? "rotate-180" : ""
-									}`}
-								/>
-							</Button>
-						</CollapsibleTrigger>
+						<CollapsibleTrigger
+							render={
+								<Button variant="outline" className="w-full justify-between p-4 h-auto text-left">
+									<span className="font-medium">{item.question}</span>
+									<ChevronDownIcon
+										className={`h-4 w-4 transition-transform flex-shrink-0 ml-2 ${
+											openItems.includes(item.id) ? "rotate-180" : ""
+										}`}
+									/>
+								</Button>
+							}
+						/>
 						<CollapsibleContent className="px-4 pb-4 pt-2">
 							<p className="text-sm text-muted-foreground">{item.answer}</p>
 						</CollapsibleContent>
@@ -319,14 +323,16 @@ export const ControlledExample: Story = {
 				</div>
 
 				<Collapsible open={isOpen} onOpenChange={setIsOpen}>
-					<CollapsibleTrigger asChild>
-						<Button variant="outline" className="w-full justify-between">
-							制御されたコラプシブル
-							<ChevronDownIcon
-								className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
-							/>
-						</Button>
-					</CollapsibleTrigger>
+					<CollapsibleTrigger
+						render={
+							<Button variant="outline" className="w-full justify-between">
+								制御されたコラプシブル
+								<ChevronDownIcon
+									className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
+								/>
+							</Button>
+						}
+					/>
 					<CollapsibleContent className="mt-2 p-4 border rounded-lg">
 						<p className="text-sm">このコラプシブルは外部のボタンからも制御できます。</p>
 					</CollapsibleContent>
@@ -343,17 +349,19 @@ export const AnimationExample: Story = {
 		return (
 			<div className="w-[350px]">
 				<Collapsible open={isOpen} onOpenChange={setIsOpen}>
-					<CollapsibleTrigger asChild>
-						<Button variant="outline" className="w-full justify-between">
-							アニメーション付き
-							<ChevronDownIcon
-								className={`h-4 w-4 transition-transform duration-200 ${
-									isOpen ? "rotate-180" : ""
-								}`}
-							/>
-						</Button>
-					</CollapsibleTrigger>
-					<CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
+					<CollapsibleTrigger
+						render={
+							<Button variant="outline" className="w-full justify-between">
+								アニメーション付き
+								<ChevronDownIcon
+									className={`h-4 w-4 transition-transform duration-200 ${
+										isOpen ? "rotate-180" : ""
+									}`}
+								/>
+							</Button>
+						}
+					/>
+					<CollapsibleContent className="overflow-hidden data-[closed]:animate-collapsible-up data-[open]:animate-collapsible-down">
 						<div className="mt-2 p-4 border rounded-lg bg-gradient-to-br from-blue-50 to-purple-50">
 							<h4 className="font-medium mb-2">アニメーション</h4>
 							<p className="text-sm text-muted-foreground">

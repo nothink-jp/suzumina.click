@@ -74,7 +74,7 @@ export const ToggleInteraction: Story = {
 		const canvas = within(canvasElement);
 		const sw = canvas.getByRole("switch");
 		await userEvent.click(sw);
-		await expect(args.onCheckedChange).toHaveBeenCalledWith(true);
+		await expect(args.onCheckedChange).toHaveBeenCalledWith(true, expect.anything());
 	},
 };
 

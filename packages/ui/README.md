@@ -12,9 +12,9 @@
 
 - **Tailwind CSS v4**（`@theme` + CSS 変数駆動。`tailwind.config` は廃止）
 - **React 19 / Next.js 16**
-- **radix-ui 統合パッケージ**（個別 `@radix-ui/react-*` ではなく単一 `radix-ui` から import。new-york style）
+- **@base-ui/react**（shadcn/ui が 2026年7月に既定へ切替。旧 radix-ui 統合パッケージから移行済み）
 - **Storybook 10**（react-vite / a11y / vitest アドオン。a11y 違反は CI fail）
-- **shadcn/ui**（new-york / baseColor=stone）。保守方針は [ADR-011](../../docs/decisions/frontend/ADR-011-shadcn-ui-maintenance-policy.md)
+- **shadcn/ui**（base-vega / baseColor=stone。base-vega は旧 new-york 相当）。保守方針は [ADR-011](../../docs/decisions/frontend/ADR-011-shadcn-ui-maintenance-policy.md)
 
 ## 📦 パッケージ構成
 
