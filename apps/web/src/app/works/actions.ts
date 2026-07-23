@@ -226,7 +226,7 @@ export async function getWorkById(workId: string): Promise<WorkPlainObject | nul
  */
 type PopularGenre = { genre: string; count: number };
 
-async function fetchPopularGenres(limit: number): Promise<PopularGenre[]> {
+async function fetchPopularGenres(limit?: number): Promise<PopularGenre[]> {
 	return withErrorHandling(
 		async () => {
 			const firestore = getFirestore();
@@ -249,10 +249,13 @@ async function fetchPopularGenres(limit: number): Promise<PopularGenre[]> {
 				}
 			});
 
-			return Array.from(genreCounts.entries())
-				.sort((a, b) => b[1] - a[1])
-				.slice(0, limit)
-				.map(([genre, count]) => ({ genre, count }));
+			const sorted = Array.from(genreCounts.entries()).sort((a, b) => b[1] - a[1]);
+			// limit 未指定はフィルタ選択肢を「全ジャンル選択可能」にするための全件返却（ADR-012 Filters拡張）。
+			// 呼び出し元（絞り込みUI）は全件、他用途で上位N件だけ要る場合のみ明示的に limit を渡す。
+			return (limit === undefined ? sorted : sorted.slice(0, limit)).map(([genre, count]) => ({
+				genre,
+				count,
+			}));
 		},
 		{
 			action: "getPopularGenres",
@@ -271,6 +274,6 @@ const getPopularGenresCached = unstable_cache(fetchPopularGenres, ["popular-genr
 	tags: ["works-list"],
 });
 
-export async function getPopularGenres(limit = 30): Promise<PopularGenre[]> {
+export async function getPopularGenres(limit?: number): Promise<PopularGenre[]> {
 	return getPopularGenresCached(limit);
 }

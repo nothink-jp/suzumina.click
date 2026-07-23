@@ -62,7 +62,7 @@ export default function WorksList({ initialData, initialParams }: WorksListProps
 	useEffect(() => {
 		const fetchGenres = async () => {
 			try {
-				const genres = await getPopularGenres(20); // 上位20ジャンルを取得
+				const genres = await getPopularGenres(); // 全ジャンルを取得（絞り込みポップオーバー側で検索可能）
 				const formattedGenres = genres.map((g) => ({
 					value: g.genre,
 					label: `${g.genre} (${g.count}作品)`,
