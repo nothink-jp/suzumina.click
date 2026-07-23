@@ -34,7 +34,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     # fork からの PR では OAuth Secret を渡さない（漏洩防止）。draft は対象外。
-    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.draft == false
+    # Dependabot（bot actor）は対象外: GitHub は pull_request イベントで bot 起因の workflow に
+    # Actions Secrets を一切渡さない仕様のため、CLAUDE_CODE_OAUTH_TOKEN が未設定のまま実行され
+    # 必ず失敗する（#840 で確認）。Dependabot PR は人間レビュー（セルフマージ・ポリシー）に委ねる。
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.draft == false && github.actor != 'dependabot[bot]'
     steps:
       - uses: actions/checkout@v7
         with:
@@ -51,11 +54,6 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          # claude-code-action は既定で bot 起因の workflow を拒否する（"Workflow initiated by
-          # non-human actor" エラー）。Dependabot PR でも review を回すため明示許可する。
-          # prompt は固定テンプレートで PR 本文/差分内容を埋め込まないため、bot 経由のプロンプト
-          # インジェクションのリスクは無い（"*" ではなく dependabot[bot] のみに限定して許可）。
-          allowed_bots: "dependabot[bot]"
           # 進捗トラッキングコメントを作成し、コメント投稿用ツールを有効化する（タグモード）。
           track_progress: true
           prompt: |
