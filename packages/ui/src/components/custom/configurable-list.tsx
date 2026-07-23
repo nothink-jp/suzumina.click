@@ -264,6 +264,8 @@ export function ConfigurableList<T>({
 				activeFilters={activeFilters}
 				onResetFilters={handleResetFilters}
 				activeFilterChips={activeFilterChips}
+				// key/value のシグネチャが一致するため、専用ハンドラを作らず handleFilterChange を
+				// そのまま個別解除ハンドラとして再利用している（nextValue は解除後の値そのもの）
 				onRemoveFilterChip={handleFilterChange}
 			/>
 

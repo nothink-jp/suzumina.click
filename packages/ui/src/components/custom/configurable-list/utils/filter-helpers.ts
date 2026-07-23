@@ -164,9 +164,14 @@ export interface ActiveFilterChip {
 }
 
 // option label 末尾の件数サフィックス（例: "ASMR (39作品)" / "タグ名 (12件)"）はドロップダウンの
-// 選択肢としては妥当だが、解除チップに使うと冗長なため表示直前でのみ剥がす（正本のoptionsは変更しない）
+// 選択肢としては妥当だが、解除チップに使うと冗長なため表示直前でのみ剥がす（正本のoptionsは変更しない）。
+// 先頭に \s* のような可変長の量指定子を置くと、一致に失敗するたび複数の開始位置×バックトラックの
+// 組み合わせで多項式時間になる（ReDoS）ため、末尾を固定文字 "(" からアンカーし、
+// 前の空白除去は正規表現ではなく trimEnd() で行う（CodeQL "Polynomial regular expression" 対策）
 function stripCountSuffix(label: string): string {
-	return label.replace(/\s*\(\d+[^\d()]*\)$/, "");
+	const match = label.match(/\(\d+[^()]*\)$/);
+	if (!match) return label;
+	return label.slice(0, match.index).trimEnd();
 }
 
 function getChipsForListValue(
