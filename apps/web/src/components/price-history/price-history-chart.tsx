@@ -1,32 +1,24 @@
 "use client";
 
 import type { PriceHistoryDocument } from "@suzumina.click/shared-types";
-import { useMemo } from "react";
 import {
-	CartesianGrid,
-	Line,
-	LineChart,
-	ReferenceLine,
-	ResponsiveContainer,
-	Tooltip,
-	XAxis,
-	YAxis,
-} from "recharts";
+	type ChartConfig,
+	ChartContainer,
+	ChartTooltip,
+	ChartTooltipContent,
+} from "@suzumina.click/ui/components/ui/chart";
+import { useMemo } from "react";
+import { CartesianGrid, Line, LineChart, ReferenceLine, XAxis, YAxis } from "recharts";
 
 /**
- * チャート配色。recharts は色を SVG の stroke/fill 「属性」として渡すため Tailwind クラスや
- * CSS var() が解決できない。そこで globals.css の状態色トークンに対応する hex をここへ集約する（点3）。
- * 値はライトモードのトークンと一致させており、トークンを変更したらここも更新する。
- * 注: 現状アプリにダークトグルは無い。ダークモードを実装する際は、この定数を getComputedStyle で
- * `--info` 等を実読み出しする方式（+ .dark クラス監視）に差し替える。
+ * 系列の色・ラベル定義。色の正本は globals.css の状態色トークン（--info / --destructive）で、
+ * ChartContainer が `--color-<系列キー>` としてチャートスコープに注入する（ADR-012）。
+ * トークンを参照するため、将来のダークモード切替にも自動追従する。
  */
-const CHART_COLORS = {
-	price: "#1264ce", // --info
-	discount: "#c52020", // --destructive
-	warning: "#9d5207", // --warning
-	axis: "#706a66", // --muted-foreground
-	grid: "#e7e5e4", // --border
-} as const;
+const chartConfig = {
+	regularPrice: { label: "定価", color: "hsl(var(--info))" },
+	discountPrice: { label: "セール価格", color: "hsl(var(--destructive))" },
+} satisfies ChartConfig;
 
 interface PriceHistoryChartProps {
 	priceHistory: PriceHistoryDocument[];
@@ -229,12 +221,11 @@ export function PriceHistoryChart({
 		return `${value.toLocaleString("ja-JP")} ${currency}`;
 	};
 
-	const formatTooltipPrice = (value: unknown, name?: string | number) => {
-		const displayName = String(name ?? "");
-		if (value === undefined || value === null) return ["-", displayName];
+	const formatTooltipValue = (value: unknown) => {
+		if (value === undefined || value === null) return "-";
 		const numValue = Number(value);
-		if (Number.isNaN(numValue)) return ["-", displayName];
-		return [formatPrice(numValue), displayName];
+		if (Number.isNaN(numValue)) return "-";
+		return formatPrice(numValue);
 	};
 
 	if (chartData.length === 0) {
@@ -246,119 +237,132 @@ export function PriceHistoryChart({
 	}
 
 	return (
-		<div className={`h-64 w-full ${className}`}>
-			<ResponsiveContainer width="100%" height="100%">
-				<LineChart
-					data={chartData}
-					margin={{
-						top: 20,
-						right: 30,
-						left: 20,
-						bottom: 5,
+		<ChartContainer config={chartConfig} className={`aspect-auto h-64 w-full ${className}`}>
+			<LineChart
+				data={chartData}
+				margin={{
+					top: 20,
+					right: 30,
+					left: 20,
+					bottom: 5,
+				}}
+			>
+				<CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+				<XAxis
+					dataKey="formattedDate"
+					tick={{ fontSize: 12 }}
+					stroke="hsl(var(--muted-foreground))"
+				/>
+				<YAxis
+					domain={[minPrice, maxPrice]}
+					tick={{ fontSize: 12 }}
+					stroke="hsl(var(--muted-foreground))"
+					tickFormatter={(value) => {
+						// 日本円の場合は整数のみ表示
+						if (currency === "JPY") {
+							const intValue = Math.round(value);
+							return `¥${intValue.toLocaleString("ja-JP")}`;
+						}
+						return formatPrice(value);
 					}}
-				>
-					<CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} />
-					<XAxis dataKey="formattedDate" tick={{ fontSize: 12 }} stroke={CHART_COLORS.axis} />
-					<YAxis
-						domain={[minPrice, maxPrice]}
-						tick={{ fontSize: 12 }}
-						stroke={CHART_COLORS.axis}
-						tickFormatter={(value) => {
-							// 日本円の場合は整数のみ表示
-							if (currency === "JPY") {
-								const intValue = Math.round(value);
-								return `¥${intValue.toLocaleString("ja-JP")}`;
-							}
-							return formatPrice(value);
-						}}
-						// 通貨に応じてtickを設定
-						ticks={(() => {
-							if (currency === "JPY") {
-								// 日本円の場合は100円単位
-								return Array.from(
-									{ length: Math.ceil(maxPrice / 100) + 1 },
-									(_, i) => i * 100,
-								).filter((tick) => tick <= maxPrice);
-							}
-							if (currency === "KRW") {
-								// ウォンの場合は1000単位
-								return Array.from(
-									{ length: Math.ceil(maxPrice / 1000) + 1 },
-									(_, i) => i * 1000,
-								).filter((tick) => tick <= maxPrice);
-							}
-							// その他の通貨は自動計算
-							return undefined;
-						})()}
-					/>
-					<Tooltip
-						contentStyle={{
-							backgroundColor: "white",
-							border: `1px solid ${CHART_COLORS.grid}`,
-							borderRadius: "8px",
-							boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-						}}
-						formatter={formatTooltipPrice}
-						labelFormatter={(label, payload) => {
-							if (payload?.[0]) {
-								const data = payload[0].payload as ChartDataPoint;
-								return `${data.date} (${label})`;
-							}
-							return label;
-						}}
-					/>
+					// 通貨に応じてtickを設定
+					ticks={(() => {
+						if (currency === "JPY") {
+							// 日本円の場合は100円単位
+							return Array.from(
+								{ length: Math.ceil(maxPrice / 100) + 1 },
+								(_, i) => i * 100,
+							).filter((tick) => tick <= maxPrice);
+						}
+						if (currency === "KRW") {
+							// ウォンの場合は1000単位
+							return Array.from(
+								{ length: Math.ceil(maxPrice / 1000) + 1 },
+								(_, i) => i * 1000,
+							).filter((tick) => tick <= maxPrice);
+						}
+						// その他の通貨は自動計算
+						return undefined;
+					})()}
+				/>
+				<ChartTooltip
+					content={
+						<ChartTooltipContent
+							formatter={(value, name, item) => (
+								<>
+									<div
+										className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
+										style={{ backgroundColor: item.color }}
+									/>
+									<div className="flex flex-1 items-center justify-between gap-2 leading-none">
+										<span className="text-muted-foreground">
+											{chartConfig[name as keyof typeof chartConfig]?.label ?? name}
+										</span>
+										<span className="font-medium font-mono text-foreground tabular-nums">
+											{formatTooltipValue(value)}
+										</span>
+									</div>
+								</>
+							)}
+							labelFormatter={(label, payload) => {
+								if (payload?.[0]) {
+									const data = payload[0].payload as ChartDataPoint;
+									return `${data.date} (${label})`;
+								}
+								return label;
+							}}
+						/>
+					}
+				/>
 
-					{/* 定価ライン */}
+				{/* 定価ライン */}
+				<Line
+					type="monotone"
+					dataKey="regularPrice"
+					stroke="var(--color-regularPrice)"
+					strokeWidth={2}
+					dot={{ r: 3, fill: "var(--color-regularPrice)" }}
+					activeDot={{ r: 5, fill: "var(--color-regularPrice)" }}
+					connectNulls={false}
+				/>
+
+				{/* セール価格ライン */}
+				{showDiscountPrices && (
 					<Line
 						type="monotone"
-						dataKey="regularPrice"
-						stroke={CHART_COLORS.price}
+						dataKey="discountPrice"
+						stroke="var(--color-discountPrice)"
 						strokeWidth={2}
-						dot={{ r: 3, fill: CHART_COLORS.price }}
-						activeDot={{ r: 5, fill: CHART_COLORS.price }}
-						name="定価"
+						strokeDasharray="5 5"
+						dot={{ r: 3, fill: "var(--color-discountPrice)" }}
+						activeDot={{ r: 5, fill: "var(--color-discountPrice)" }}
 						connectNulls={false}
 					/>
+				)}
 
-					{/* セール価格ライン */}
-					{showDiscountPrices && (
-						<Line
-							type="monotone"
-							dataKey="discountPrice"
-							stroke={CHART_COLORS.discount}
-							strokeWidth={2}
-							strokeDasharray="5 5"
-							dot={{ r: 3, fill: CHART_COLORS.discount }}
-							activeDot={{ r: 5, fill: CHART_COLORS.discount }}
-							name="セール価格"
-							connectNulls={false}
+				{/* キャンペーン開始日の参照線（オプション） */}
+				{priceHistory
+					.filter((h, index) => {
+						// キャンペーンが新しく開始された日をマーク
+						if (index === 0) return h.campaignId !== undefined;
+						const prevHistory = priceHistory[index - 1];
+						return (
+							h.campaignId !== undefined && prevHistory && prevHistory.campaignId === undefined
+						);
+					})
+					.map((h) => (
+						<ReferenceLine
+							key={h.date}
+							x={new Date(h.date).toLocaleDateString("ja-JP", {
+								month: "short",
+								day: "numeric",
+							})}
+							stroke="hsl(var(--warning))"
+							strokeDasharray="2 2"
+							opacity={0.6}
 						/>
-					)}
-
-					{/* キャンペーン開始日の参照線（オプション） */}
-					{priceHistory
-						.filter((h, index) => {
-							// キャンペーンが新しく開始された日をマーク
-							if (index === 0) return h.campaignId !== undefined;
-							const prevHistory = priceHistory[index - 1];
-							return (
-								h.campaignId !== undefined && prevHistory && prevHistory.campaignId === undefined
-							);
-						})
-						.map((h) => (
-							<ReferenceLine
-								key={h.date}
-								x={new Date(h.date).toLocaleDateString("ja-JP", {
-									month: "short",
-									day: "numeric",
-								})}
-								stroke={CHART_COLORS.warning}
-								strokeDasharray="2 2"
-								opacity={0.6}
-							/>
-						))}
-				</LineChart>
-			</ResponsiveContainer>
-		</div>
+					))}
+			</LineChart>
+		</ChartContainer>
 	);
 }
