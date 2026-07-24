@@ -36,6 +36,18 @@ export const DLsiteRawWork = z.object({
 	image_thum: z.any().optional(),
 	srcset: z.string().optional(),
 	image_samples: z.array(z.any()).optional(),
+
+	// === 販売状態（フラット・実測フィールド。SPR-264: `sales_status`ネストは実APIに存在しない） ===
+	is_discount_work: z.boolean().optional(),
+	is_timesale_work: z.boolean().optional(),
+	is_limit_sales: z.boolean().optional(),
+	is_rental_work: z.boolean().optional(),
+	is_reserve_work: z.boolean().optional(),
+	is_reservable: z.boolean().optional(),
+	is_dlsiteplay_work: z.boolean().optional(),
+	is_title_pointup: z.boolean().nullable().optional(),
+	free: z.boolean().optional(),
+	free_only: z.boolean().optional(),
 });
 
 // === 評価情報 ===
@@ -127,21 +139,6 @@ export const DLsiteRawRank = z.object({
 
 export const DLsiteRawRanks = z.array(DLsiteRawRank);
 
-// === 販売状態 ===
-export const DLsiteRawSalesStatus = z.object({
-	is_sale: z.boolean().optional(),
-	on_sale: z.number().optional(),
-	is_discount: z.boolean().optional(),
-	is_pointup: z.boolean().optional(),
-	is_free: z.boolean().optional(),
-	is_rental: z.boolean().optional(),
-	is_sold_out: z.boolean().optional(),
-	is_reserve_work: z.boolean().optional(),
-	is_reservable: z.boolean().optional(),
-	is_timesale: z.boolean().optional(),
-	dlsiteplay_work: z.boolean().optional(),
-});
-
 // === クリエイター情報（creaters API） ===
 export const DLsiteRawCreater = z.object({
 	id: z.string(),
@@ -175,8 +172,6 @@ export const DLsiteApiResponse = z.object({
 	language_editions: DLsiteRawLanguageEditions.optional(),
 	// ランキング
 	rank: DLsiteRawRanks.optional(),
-	// 販売状態
-	sales_status: DLsiteRawSalesStatus.optional(),
 	// その他
 	default_point_rate: z.number().optional(),
 	// クリエイター情報（creaters APIから）
