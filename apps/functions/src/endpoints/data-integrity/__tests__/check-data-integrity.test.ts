@@ -6,7 +6,7 @@ import type { CloudEvent } from "@google-cloud/functions-framework";
 import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
 
 // Firestoreモック
-vi.mock("../../infrastructure/database/firestore", () => {
+vi.mock("../../../infrastructure/database/firestore", () => {
 	const mockCollection = vi.fn();
 	const mockBatch = vi.fn();
 
@@ -24,15 +24,16 @@ vi.mock("../../infrastructure/database/firestore", () => {
 });
 
 // ロガーモック
-vi.mock("../../shared/logger", () => ({
+vi.mock("../../../shared/logger", () => ({
 	info: vi.fn(),
 	warn: vi.fn(),
 	error: vi.fn(),
 }));
 
-import firestore from "../../infrastructure/database/firestore";
+import firestore from "../../../infrastructure/database/firestore";
 // テスト対象をインポート（モックの後）
-import { checkDataIntegrity, runIntegrityCheck } from "../data-integrity-check";
+import { checkDataIntegrity } from "../check-data-integrity";
+import { runIntegrityCheck } from "../run-integrity-check";
 
 // モック関数をvitestから取得
 const mockCollection = vi.mocked(firestore.collection) as unknown as Mock<

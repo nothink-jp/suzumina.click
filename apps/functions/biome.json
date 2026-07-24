@@ -82,7 +82,7 @@
 			}
 		},
 		{
-			"includes": ["**/data-integrity-check.ts", "**/video-mapper.ts"],
+			"includes": ["**/integrity-checks.ts", "**/video-mapper.ts"],
 			"linter": {
 				"rules": {
 					"complexity": {

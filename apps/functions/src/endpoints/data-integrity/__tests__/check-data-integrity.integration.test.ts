@@ -17,7 +17,7 @@
 
 import type { Firestore } from "@google-cloud/firestore";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import type { runIntegrityCheck as RunIntegrityCheck } from "../data-integrity-check";
+import type { runIntegrityCheck as RunIntegrityCheck } from "../run-integrity-check";
 
 const EMULATOR_HOST = process.env.FIRESTORE_EMULATOR_HOST;
 const RUN = Boolean(process.env.RUN_INTEGRATION_TESTS) && Boolean(EMULATOR_HOST);
@@ -57,10 +57,10 @@ describe.skipIf(!RUN)("checkDataIntegrity (integration / Firestore Emulator)", (
 		process.env.ALLOW_TEST_FIRESTORE = "true";
 		process.env.GOOGLE_CLOUD_PROJECT = PROJECT_ID;
 
-		const firestoreModule = await import("../../infrastructure/database/firestore");
+		const firestoreModule = await import("../../../infrastructure/database/firestore");
 		getFirestore = firestoreModule.getFirestore;
 		resetFirestoreInstance = firestoreModule.resetFirestoreInstance;
-		const dicModule = await import("../data-integrity-check");
+		const dicModule = await import("../run-integrity-check");
 		runIntegrityCheck = dicModule.runIntegrityCheck;
 		batchLimit = dicModule.FIRESTORE_BATCH_LIMIT;
 	});

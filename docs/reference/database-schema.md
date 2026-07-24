@@ -21,7 +21,7 @@
 | `contacts` | お問い合わせ（通知の正は Resend メール = [email.ts](../../apps/web/src/lib/email.ts)。Firestore は送信記録のアーカイブで読み手なし） | 自動生成 ID | [contact.ts](../../packages/shared-types/src/entities/contact.ts) `FirestoreContactData` | Server Actions |
 | `ba_user` / `ba_session` / `ba_account` | better-auth の認証データ（認証の正本） | better-auth 採番 | 書き込み元 [firestore-adapter.ts](../../apps/web/src/lib/better-auth/firestore-adapter.ts)（better-auth 標準モデル・prefix `ba_`） | better-auth |
 | `youtubeMetadata` | YouTube 取得処理のメタデータ | `fetch_metadata` | 書き込み元 [fetch-metadata.ts](../../apps/functions/src/endpoints/youtube/fetch-metadata.ts)（`FetchMetadata`） | Cloud Functions |
-| `dlsiteMetadata` | DLsite 収集・整合性チェックのメタデータ | `unified_data_collection_metadata` / `dataIntegrityCheck` | 書き込み元 Cloud Function（[dlsite](../../apps/functions/src/endpoints/dlsite/collection-metadata.ts) / [integrity](../../apps/functions/src/endpoints/data-integrity-check.ts)） | Cloud Functions |
+| `dlsiteMetadata` | DLsite 収集・整合性チェックのメタデータ | `unified_data_collection_metadata` / `dataIntegrityCheck` | 書き込み元 Cloud Function（[dlsite](../../apps/functions/src/endpoints/dlsite/collection-metadata.ts) / [integrity](../../apps/functions/src/endpoints/data-integrity/run-integrity-check.ts)） | Cloud Functions |
 
 > **クリエイター ⇔ 作品の関連はルートコレクションではない**: 旧記載の `creatorWorkMappings` は存在せず、実体は `creators/{creatorId}/works` サブコレクション（下表）。
 > **認証の正本は `ba_*`**: `users` はアプリプロファイル（Discord ID キー）。`ba_user` はログイン時に better-auth が作成するため `users` と件数は一致しない。`_firestore_rules` はシステム生成の内部コレクションで台帳管理外。
@@ -35,7 +35,7 @@
 | `users/{userId}/likes` / `…/dislikes` | 音声ボタンの高評価 / 低評価 | 音声ボタン ID | 書き込み元 [reaction-toggle.ts](../../apps/web/src/actions/reaction-toggle.ts)（`audioButtonId` + `createdAt` 最小スキーマ） |
 | `users/{userId}/top10` | 10 選ランキング | `ranking` | [work-evaluation.ts](../../packages/shared-types/src/entities/work-evaluation.ts) `UserTop10List` |
 | `works/{workId}/priceHistory` | 価格履歴（全履歴・多通貨） | `YYYY-MM-DD` | [price-history.ts](../../packages/shared-types/src/utilities/price-history.ts) `PriceHistoryDocument` |
-| `dlsiteMetadata/dataIntegrityCheck/history` | 整合性チェック実行履歴（最大 10 件） | 実行日時 ISO | 書き込み元 [Cloud Function](../../apps/functions/src/endpoints/data-integrity-check.ts) |
+| `dlsiteMetadata/dataIntegrityCheck/history` | 整合性チェック実行履歴（最大 10 件） | 実行日時 ISO | 書き込み元 [Cloud Function](../../apps/functions/src/endpoints/data-integrity/run-integrity-check.ts) |
 
 > **削除済み**: `dlsite_timeseries_raw` / `dlsite_timeseries_daily`（統合アーキテクチャへ移行。価格履歴の後継は
 > `works/{workId}/priceHistory`）。`favorites` は最小スキーマ（`audioButtonId` + `addedAt`）で、表示時に `audioButtons` を都度 join する。
@@ -65,7 +65,7 @@ cron の正本は Terraform の Cloud Scheduler（[`scheduler.tf`](../../terrafo
 
 - `30 * * * *` → [`fetchYouTubeVideos`](../../apps/functions/src/endpoints/youtube/fetch-youtube-videos.ts) → `videos` / `youtubeMetadata`
 - `3 */2 * * *`（2 時間ごと）→ [`fetchDLsiteUnifiedData`](../../apps/functions/src/endpoints/dlsite/fetch-dlsite-unified-data.ts) → `works` / `circles` / `creators`（+ `creators/{id}/works`） / `works/{workId}/priceHistory` / `dlsiteMetadata`
-- `0 3 * * 0`（日曜 3:00 JST）→ [`checkDataIntegrity`](../../apps/functions/src/endpoints/data-integrity-check.ts) → `dlsiteMetadata/dataIntegrityCheck`（+ `history`）
+- `0 3 * * 0`（日曜 3:00 JST）→ [`checkDataIntegrity`](../../apps/functions/src/endpoints/data-integrity/check-data-integrity.ts) → `dlsiteMetadata/dataIntegrityCheck`（+ `history`）
   - Circle workIds / 孤立 Creator マッピング / Work-Circle 整合を**事後修復**。
     非正規化を増やすとこの cron の負債が増える（CLAUDE.md 軸1）。
 - 書き込みは Firestore の 500 件バッチ制限に従いチャンク分割する。

@@ -14,7 +14,7 @@
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"test:coverage": "vitest run --coverage",
-		"test:integration": "vitest run --coverage.enabled=false src/endpoints/__tests__/data-integrity-check.integration.test.ts",
+		"test:integration": "vitest run --coverage.enabled=false src/endpoints/data-integrity/__tests__/check-data-integrity.integration.test.ts",
 		"seed:dump": "dotenv -e .env -- tsx src/tools/firestore-local/dump.ts",
 		"seed:load": "tsx src/tools/firestore-local/seed.ts",
 		"check:region-equivalence": "dotenv -e .env -- tsx src/tools/core/region-equivalence-check.ts",
