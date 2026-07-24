@@ -299,7 +299,7 @@ async function fetchVideoIdsViaPlaylistFull(
  * playlist走査で見つからない」＝missing判定に必ず引っかかってしまい偽陽性になるため、
  * その回はmissing判定をスキップする（レビュー指摘対応）。
  */
-async function logDiscoveryShadowComparison(
+async function logDiscoveryComparison(
 	youtube: youtube_v3.Youtube,
 	uploadsPlaylistId: string,
 ): Promise<void> {
@@ -556,7 +556,7 @@ async function runWeeklyFullSweep(
 			"週次フルスイープを開始します（discovery取りこぼし検知のみ、動画詳細取得は行いません）",
 		);
 		const uploadsPlaylistId = await resolveUploadsPlaylistId(youtube, metadata);
-		await logDiscoveryShadowComparison(youtube, uploadsPlaylistId);
+		await logDiscoveryComparison(youtube, uploadsPlaylistId);
 		await updateMetadata({ isInProgress: false, lastError: undefined });
 		logger.info("週次フルスイープが完了しました");
 		return { videoCount: 0 };
