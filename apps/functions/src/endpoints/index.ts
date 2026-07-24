@@ -14,7 +14,7 @@ import type { MessagePublishedData } from "../shared/pubsub-utils";
 // 各モジュールから関数をインポート（統合アーキテクチャ）
 import { checkDataIntegrity } from "./data-integrity-check";
 import { fetchDLsiteUnifiedData } from "./dlsite/fetch-dlsite-unified-data";
-import { fetchYouTubeVideos } from "./youtube";
+import { fetchYouTubeVideos } from "./youtube/fetch-youtube-videos";
 
 /**
  * アプリケーション初期化関数

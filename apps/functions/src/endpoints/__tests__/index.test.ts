@@ -8,7 +8,7 @@ vi.mock("../../../shared/logger", () => ({
 	debug: vi.fn(),
 }));
 
-vi.mock("../youtube", () => ({
+vi.mock("../youtube/fetch-youtube-videos", () => ({
 	fetchYouTubeVideos: vi.fn(),
 }));
 

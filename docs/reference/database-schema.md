@@ -20,7 +20,7 @@
 | `creators` | DLsite クリエイター（`workCount`/`types` は非正規化統計） | クリエイター ID（Individual Info API の `creater.id`） | [creator.ts](../../packages/shared-types/src/types/firestore/creator.ts) `CreatorDocument` | Cloud Functions |
 | `contacts` | お問い合わせ（通知の正は Resend メール = [email.ts](../../apps/web/src/lib/email.ts)。Firestore は送信記録のアーカイブで読み手なし） | 自動生成 ID | [contact.ts](../../packages/shared-types/src/entities/contact.ts) `FirestoreContactData` | Server Actions |
 | `ba_user` / `ba_session` / `ba_account` | better-auth の認証データ（認証の正本） | better-auth 採番 | 書き込み元 [firestore-adapter.ts](../../apps/web/src/lib/better-auth/firestore-adapter.ts)（better-auth 標準モデル・prefix `ba_`） | better-auth |
-| `youtubeMetadata` | YouTube 取得処理のメタデータ | `fetch_metadata` | 書き込み元 [youtube.ts](../../apps/functions/src/endpoints/youtube.ts)（内部型 `FetchMetadata`・非 export） | Cloud Functions |
+| `youtubeMetadata` | YouTube 取得処理のメタデータ | `fetch_metadata` | 書き込み元 [fetch-metadata.ts](../../apps/functions/src/endpoints/youtube/fetch-metadata.ts)（`FetchMetadata`） | Cloud Functions |
 | `dlsiteMetadata` | DLsite 収集・整合性チェックのメタデータ | `unified_data_collection_metadata` / `dataIntegrityCheck` | 書き込み元 Cloud Function（[dlsite](../../apps/functions/src/endpoints/dlsite/collection-metadata.ts) / [integrity](../../apps/functions/src/endpoints/data-integrity-check.ts)） | Cloud Functions |
 
 > **クリエイター ⇔ 作品の関連はルートコレクションではない**: 旧記載の `creatorWorkMappings` は存在せず、実体は `creators/{creatorId}/works` サブコレクション（下表）。
@@ -63,7 +63,7 @@ cron の正本は Terraform の Cloud Scheduler（[`scheduler.tf`](../../terrafo
 [`function_dlsite_individual_info_api.tf`](../../terraform/function_dlsite_individual_info_api.tf) /
 [`function_data_integrity_check.tf`](../../terraform/function_data_integrity_check.tf)）。
 
-- `30 * * * *` → [`fetchYouTubeVideos`](../../apps/functions/src/endpoints/youtube.ts) → `videos` / `youtubeMetadata`
+- `30 * * * *` → [`fetchYouTubeVideos`](../../apps/functions/src/endpoints/youtube/fetch-youtube-videos.ts) → `videos` / `youtubeMetadata`
 - `3 */2 * * *`（2 時間ごと）→ [`fetchDLsiteUnifiedData`](../../apps/functions/src/endpoints/dlsite/fetch-dlsite-unified-data.ts) → `works` / `circles` / `creators`（+ `creators/{id}/works`） / `works/{workId}/priceHistory` / `dlsiteMetadata`
 - `0 3 * * 0`（日曜 3:00 JST）→ [`checkDataIntegrity`](../../apps/functions/src/endpoints/data-integrity-check.ts) → `dlsiteMetadata/dataIntegrityCheck`（+ `history`）
   - Circle workIds / 孤立 Creator マッピング / Work-Circle 整合を**事後修復**。
@@ -91,7 +91,7 @@ cron の正本は Terraform の Cloud Scheduler（[`scheduler.tf`](../../terrafo
 
 - ドメインの正本マップ: [domain-model.md](domain-model.md)（各概念の PlainObject / Firestore・Zod の在処）
 - 共有型: [packages/shared-types/src/](../../packages/shared-types/src/) — `entities/` `plain-objects/` `types/` / 変換 `transformers/` / 検証 `utilities/`
-- Cloud Functions 内部のメタ型: [apps/functions/src/](../../apps/functions/src/)（例 `endpoints/youtube.ts` の `FetchMetadata`）
+- Cloud Functions 内部のメタ型: [apps/functions/src/](../../apps/functions/src/)（例 `endpoints/youtube/fetch-metadata.ts` の `FetchMetadata`）
 
 ---
 
