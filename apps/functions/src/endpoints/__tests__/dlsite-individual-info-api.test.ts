@@ -18,7 +18,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("../../infrastructure/database/firestore", () => {
 	const updateMock = vi.fn().mockResolvedValue(undefined);
 	const getMock = vi.fn().mockResolvedValue({ exists: false });
-	const docRef = { update: updateMock, get: getMock, set: vi.fn() };
+	const docRef = { update: updateMock, get: getMock, create: vi.fn() };
 	const collection = vi.fn(() => ({ doc: vi.fn(() => docRef) }));
 
 	return {
