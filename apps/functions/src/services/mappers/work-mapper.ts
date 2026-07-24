@@ -407,6 +407,13 @@ function formatDateDisplay(dateStr: string): string | undefined {
  * `isSale`（セール中判定）は work-tiering.ts の volatile ティア判定が参照する値のため、
  * 実フィールド `is_discount_work`（実測150件中78件がtrue）から正しくマッピングする。
  * `isSoldOut` は実APIに信頼できる直接対応フィールドが無いため undefined のまま。
+ *
+ * `isSale`/`isDiscount` は同一フィールド `is_discount_work` から求めており実質同義（意図的）。
+ * `isTimesale`（タイムセール）・`isReserveWork`（予約）起因の価格変動は `isSale` に含めない。
+ * 実測150件では `is_timesale_work`/`is_limit_sales` が全件 false で、volatile ティア判定
+ * （work-tiering.ts の `salesStatus?.isSale === true`）への実害は無い。DLsite の実APIには
+ * 「一般的なセール中」を示す独立フィールドが無く、現状 `is_discount_work` が最も広く
+ * カバーする信号のため、これを唯一のソースとして採用している。
  */
 function toSalesStatus(raw: DLsiteApiResponse): SalesStatus {
 	return {
