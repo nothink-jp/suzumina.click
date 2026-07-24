@@ -260,7 +260,7 @@ export async function collectAllWorkIds(
 
 /**
  * Cloud Functions用の効率的作品ID収集
- * dlsite-individual-info-api.ts の getAllWorkIds() に対応
+ * endpoints/dlsite の新規サイクル準備（prepareNewBatchProcessing）から呼ばれる
  */
 export async function collectWorkIdsForProduction(): Promise<string[]> {
 	const result = await collectAllWorkIds({

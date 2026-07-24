@@ -5,7 +5,7 @@
  * 作品ID（due-set）を絞り込む。ティア判定は既に取得済みの existingWorksMap のみを見て行い、
  * 追加の Firestore 読み取りは発生しない。stable ティアのみ、当日分 priceHistory が
  * 存在するかどうかで実際の取得要否（due）を決める（この Firestore 読み取り自体は
- * 呼び出し側であらかじめバルク確認した結果を Set として受け取る。cf. dlsite-individual-info-api.ts）。
+ * 呼び出し側であらかじめバルク確認した結果を Set として受け取る。cf. endpoints/dlsite/run-unified-data-collection.ts）。
  */
 
 import type { WorkDocument } from "@suzumina.click/shared-types";
@@ -83,7 +83,7 @@ export function classifyWorkTiers(
 /**
  * stable候補（= new/volatile以外）の作品IDを抽出する
  *
- * 呼び出し側（dlsite-individual-info-api.ts）はこの結果に対してのみ
+ * 呼び出し側（endpoints/dlsite/run-unified-data-collection.ts）はこの結果に対してのみ
  * `priceHistory/{today}` の存在確認をバルクで行う（stable候補以外は対象外にすることで
  * 無駄な読み取りを避ける）。
  *

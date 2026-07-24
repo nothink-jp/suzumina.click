@@ -2,7 +2,7 @@
  * youtube.ts のテスト（SPR-230: discoveryモード切替・early-stop・週次フルスイープ 中心）
  *
  * サービス層（youtube-api.ts / youtube-firestore.ts）はモックし、
- * dlsite-individual-info-api.test.tsと同様のパターンでエンドポイントの分岐を検証する。
+ * dlsite/fetch-dlsite-unified-data.test.tsと同様のパターンでエンドポイントの分岐を検証する。
  */
 
 import type { youtube_v3 } from "googleapis";

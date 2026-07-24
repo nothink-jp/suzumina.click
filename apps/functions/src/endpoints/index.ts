@@ -13,7 +13,7 @@ import * as logger from "../shared/logger";
 import type { MessagePublishedData } from "../shared/pubsub-utils";
 // 各モジュールから関数をインポート（統合アーキテクチャ）
 import { checkDataIntegrity } from "./data-integrity-check";
-import { fetchDLsiteUnifiedData } from "./dlsite-individual-info-api";
+import { fetchDLsiteUnifiedData } from "./dlsite/fetch-dlsite-unified-data";
 import { fetchYouTubeVideos } from "./youtube";
 
 /**
