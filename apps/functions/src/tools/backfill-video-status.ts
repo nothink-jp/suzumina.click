@@ -38,7 +38,7 @@ async function findVideosMissingStatus(): Promise<string[]> {
 }
 
 /**
- * buildPlaylistVideoMapping（youtube.ts、非 export）と同じロジックの再計算。
+ * buildPlaylistVideoMapping（endpoints/youtube/playlist-mapping.ts、非 export）と同じロジックの再計算。
  * 対象動画に限定せずチャンネル全体を走査する（既存の毎時クロールと同一コスト）。
  */
 async function buildPlaylistVideoMapping(
