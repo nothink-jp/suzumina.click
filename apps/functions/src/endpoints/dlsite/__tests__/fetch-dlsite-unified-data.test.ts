@@ -1,5 +1,5 @@
 /**
- * dlsite-individual-info-api.ts のテスト（SPR-229: computeDueWorkIds / resolveCycleInfo /
+ * DLsite 統合データ収集エンドポイントのテスト（SPR-229: computeDueWorkIds / resolveCycleInfo /
  * fetchDLsiteUnifiedData 中心）
  *
  * レビュー指摘（この専用エンドポイントに直接のテストが無い）への対応。
@@ -15,7 +15,7 @@ import type {
 } from "@suzumina.click/shared-types";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("../../infrastructure/database/firestore", () => {
+vi.mock("../../../infrastructure/database/firestore", () => {
 	const updateMock = vi.fn().mockResolvedValue(undefined);
 	const getMock = vi.fn().mockResolvedValue({ exists: false });
 	const docRef = { update: updateMock, get: getMock, create: vi.fn() };
@@ -29,62 +29,61 @@ vi.mock("../../infrastructure/database/firestore", () => {
 	};
 });
 
-vi.mock("../../services/price-history", () => ({
+vi.mock("../../../services/price-history", () => ({
 	bulkCheckPriceHistoryExistsToday: vi.fn().mockResolvedValue(new Set()),
 	getJSTDate: vi.fn(() => "2026-07-05"),
 	savePriceHistory: vi.fn(),
 }));
 
-vi.mock("../../services/dlsite/work-id-collector", () => ({
+vi.mock("../../../services/dlsite/work-id-collector", () => ({
 	collectWorkIdsForProduction: vi.fn(),
 }));
 
-vi.mock("../../services/dlsite/dlsite-firestore", () => ({
+vi.mock("../../../services/dlsite/dlsite-firestore", () => ({
 	getExistingWorksMap: vi.fn().mockResolvedValue(new Map()),
 }));
 
-vi.mock("../../services/dlsite/individual-info-api-client", () => ({
+vi.mock("../../../services/dlsite/individual-info-api-client", () => ({
 	batchFetchIndividualInfo: vi.fn(),
 }));
 
-vi.mock("../../services/dlsite/unified-data-processor", () => ({
+vi.mock("../../../services/dlsite/unified-data-processor", () => ({
 	processBatchUnifiedDLsiteData: vi.fn(),
 }));
 
-vi.mock("../../services/dlsite/creator-firestore", () => ({
+vi.mock("../../../services/dlsite/creator-firestore", () => ({
 	recomputeCreatorStats: vi.fn(),
 }));
 
-vi.mock("../../services/dlsite/creator-recompute-queue", () => ({
+vi.mock("../../../services/dlsite/creator-recompute-queue", () => ({
 	resetCreatorRecomputeQueue: vi.fn(),
 	takeQueuedCreators: vi.fn(() => []),
 }));
 
-vi.mock("../../services/dlsite/dlsite-read-metrics", () => ({
+vi.mock("../../../services/dlsite/dlsite-read-metrics", () => ({
 	resetDlsiteReadMetrics: vi.fn(),
 	getDlsiteReadMetrics: vi.fn(() => ({})),
 }));
 
-vi.mock("../../shared/logger", () => ({
+vi.mock("../../../shared/logger", () => ({
 	debug: vi.fn(),
 	info: vi.fn(),
 	warn: vi.fn(),
 	error: vi.fn(),
 }));
 
-const { computeDueWorkIds, resolveCycleInfo, fetchDLsiteUnifiedData } = await import(
-	"../dlsite-individual-info-api"
-);
-const { bulkCheckPriceHistoryExistsToday } = await import("../../services/price-history");
-const { collectWorkIdsForProduction } = await import("../../services/dlsite/work-id-collector");
-const { getExistingWorksMap } = await import("../../services/dlsite/dlsite-firestore");
+const { fetchDLsiteUnifiedData } = await import("../fetch-dlsite-unified-data");
+const { computeDueWorkIds, resolveCycleInfo } = await import("../run-unified-data-collection");
+const { bulkCheckPriceHistoryExistsToday } = await import("../../../services/price-history");
+const { collectWorkIdsForProduction } = await import("../../../services/dlsite/work-id-collector");
+const { getExistingWorksMap } = await import("../../../services/dlsite/dlsite-firestore");
 const { batchFetchIndividualInfo } = await import(
-	"../../services/dlsite/individual-info-api-client"
+	"../../../services/dlsite/individual-info-api-client"
 );
 const { processBatchUnifiedDLsiteData } = await import(
-	"../../services/dlsite/unified-data-processor"
+	"../../../services/dlsite/unified-data-processor"
 );
-const firestoreMock = vi.mocked(await import("../../infrastructure/database/firestore"));
+const firestoreMock = vi.mocked(await import("../../../infrastructure/database/firestore"));
 const updateMock = (firestoreMock as unknown as { __updateMock: ReturnType<typeof vi.fn> })
 	.__updateMock;
 const getMetadataMock = (firestoreMock as unknown as { __getMock: ReturnType<typeof vi.fn> })

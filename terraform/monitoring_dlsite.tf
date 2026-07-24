@@ -168,7 +168,7 @@ resource "google_monitoring_alert_policy" "dlsite_no_data_fetched" {
 }
 
 # DLsite関数のプラットフォーム障害アラート（OOM・タイムアウト・クラッシュ）
-# エントリポイント（dlsite-individual-info-api.ts の fetchDLsiteUnifiedData）は catch-all で
+# エントリポイント（endpoints/dlsite/fetch-dlsite-unified-data.ts の fetchDLsiteUnifiedData）は catch-all で
 # 例外を ERROR ログ化して正常終了（2xx）するため、アプリレベルの失敗はここでは 5xx にならず
 # dlsite_error_count 側が検知する。この alert はプロセスが応答を返せなかったケース
 # （プラットフォームによる強制終了）専用（役割分担・SPR-234）。
@@ -229,7 +229,7 @@ resource "google_monitoring_alert_policy" "dlsite_function_failure" {
 # ログベースメトリクス - バッチ全滅（Individual Info API 全面停止の兆候）
 # per-work の一時エラーは dlsite_error_count から除外しているため、「全 work が取得失敗する
 # 全面停止」はこのメトリクスが検知の正本（役割分担・SPR-234）。バッチ内 50件全てが失敗すると
-# processBatch が「バッチ N: APIレスポンスなし」を WARN 出力する（dlsite-individual-info-api.ts）。
+# processBatch が「バッチ N: APIレスポンスなし」を WARN 出力する（endpoints/dlsite/process-batch.ts）。
 # 平常時は発生しない（過去30日で0件・2026-07-04 実測）ため閾値は >0 でノイズにならない。
 resource "google_logging_metric" "dlsite_api_batch_all_failed" {
   name    = "dlsite_api_batch_all_failed"
