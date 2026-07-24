@@ -401,22 +401,33 @@ function formatDateDisplay(dateStr: string): string | undefined {
 
 /**
  * 販売状態情報の変換
+ *
+ * SPR-264: 旧実装は存在しないネストオブジェクト `raw.sales_status` を読んでおり、
+ * 常に undefined を返していた（実測150件で0件・実APIはフラットフィールドのみ返す）。
+ * `isSale`（セール中判定）は work-tiering.ts の volatile ティア判定が参照する値のため、
+ * 実フィールド `is_discount_work`（実測150件中78件がtrue）から正しくマッピングする。
+ * `isSoldOut` は実APIに信頼できる直接対応フィールドが無いため undefined のまま。
+ *
+ * `isSale`/`isDiscount` は同一フィールド `is_discount_work` から求めており実質同義（意図的）。
+ * `isTimesale`（タイムセール）・`isReserveWork`（予約）起因の価格変動は `isSale` に含めない。
+ * 実測150件では `is_timesale_work`/`is_limit_sales` が全件 false で、volatile ティア判定
+ * （work-tiering.ts の `salesStatus?.isSale === true`）への実害は無い。DLsite の実APIには
+ * 「一般的なセール中」を示す独立フィールドが無く、現状 `is_discount_work` が最も広く
+ * カバーする信号のため、これを唯一のソースとして採用している。
  */
-function toSalesStatus(raw: DLsiteApiResponse): SalesStatus | undefined {
-	if (!raw.sales_status) return undefined;
-
+function toSalesStatus(raw: DLsiteApiResponse): SalesStatus {
 	return {
-		isSale: raw.sales_status.is_sale,
-		onSale: raw.sales_status.on_sale,
-		isDiscount: raw.sales_status.is_discount,
-		isPointup: raw.sales_status.is_pointup,
-		isFree: raw.sales_status.is_free,
-		isRental: raw.sales_status.is_rental,
-		isSoldOut: raw.sales_status.is_sold_out,
-		isReserveWork: raw.sales_status.is_reserve_work,
-		isReservable: raw.sales_status.is_reservable,
-		isTimesale: raw.sales_status.is_timesale,
-		dlsiteplayWork: raw.sales_status.dlsiteplay_work,
+		isSale: raw.is_discount_work,
+		onSale: raw.on_sale,
+		isDiscount: raw.is_discount_work,
+		isPointup: raw.is_title_pointup ?? undefined,
+		isFree: raw.free,
+		isRental: raw.is_rental_work,
+		isSoldOut: undefined,
+		isReserveWork: raw.is_reserve_work,
+		isReservable: raw.is_reservable,
+		isTimesale: raw.is_timesale_work,
+		dlsiteplayWork: raw.is_dlsiteplay_work,
 	};
 }
 

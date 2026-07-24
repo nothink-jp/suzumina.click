@@ -91,6 +91,43 @@ describe("WorkMapper", () => {
 		});
 	});
 
+	describe("salesStatus（SPR-264: フラットフィールドからのマッピング）", () => {
+		it("is_discount_workがtrueの作品はisSale/isDiscountがtrueになる", () => {
+			const work = WorkMapper.toWork({
+				...mockRawApiData,
+				is_discount_work: true,
+				on_sale: 1,
+			});
+
+			expect(work.salesStatus?.isSale).toBe(true);
+			expect(work.salesStatus?.isDiscount).toBe(true);
+			expect(work.salesStatus?.onSale).toBe(1);
+		});
+
+		it("is_discount_workがfalseの作品はisSale/isDiscountがfalseになる", () => {
+			const work = WorkMapper.toWork({
+				...mockRawApiData,
+				is_discount_work: false,
+			});
+
+			expect(work.salesStatus?.isSale).toBe(false);
+			expect(work.salesStatus?.isDiscount).toBe(false);
+		});
+
+		it("実APIに存在しないネストされたsales_statusフィールドには依存しない", () => {
+			// SPR-264: 旧実装は`raw.sales_status`（実APIには存在しないネストオブジェクト）を
+			// 参照しており、常にsalesStatusがundefinedになっていた。フラットフィールドのみで
+			// 判定できることを確認する。
+			const work = WorkMapper.toWork({
+				...mockRawApiData,
+				is_discount_work: true,
+			});
+
+			expect(work.salesStatus).toBeDefined();
+			expect(work.salesStatus?.isSale).toBe(true);
+		});
+	});
+
 	describe("toPrice", () => {
 		it("通常価格を正しくマッピングできる", () => {
 			const price = WorkMapper.toPrice(mockRawApiData);
