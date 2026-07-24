@@ -2,7 +2,10 @@
  * 定期実行関数の run metadata ストア（SPR-231 段階①）
  *
  * dlsite / youtube の定期実行関数が持つ「メタデータ doc の get-or-create + update」の
- * 骨格（get → exists ? data : set(initial)）は完全同一だったため、ここに集約する。
+ * 骨格は完全同一だったため、ここに集約する。作成は create()（原子的・存在時は
+ * ALREADY_EXISTS）で行い、get→書き込み間の TOCTOU 競合は敗者側の再取得で解決する
+ * （#850 レビューのフォローアップ。本番では doc が恒久存在するため実害は無かったが、
+ * 集約を機に塞いだ）。
  *
  * 一方で update 時のサニタイズ戦略は endpoint ごとに非対称で、これは統一しない:
  * - dlsite: undefined を FieldValue.delete() に変換（フィールドを実際に削除）
@@ -12,6 +15,17 @@
  */
 
 import firestore from "../infrastructure/database/firestore";
+
+/** gRPC ステータスコード: ドキュメントが既に存在する（並行 create の敗者側が受け取る） */
+const GRPC_ALREADY_EXISTS = 6;
+
+function isAlreadyExistsError(error: unknown): boolean {
+	return (
+		typeof error === "object" &&
+		error !== null &&
+		(error as { code?: unknown }).code === GRPC_ALREADY_EXISTS
+	);
+}
 
 export interface RunMetadataStore<T extends object> {
 	/** メタデータ doc を取得し、存在しなければ初期値で作成して返す */
@@ -46,8 +60,21 @@ export function createRunMetadataStore<T extends object>(options: {
 				return doc.data() as T;
 			}
 			const initial = options.createInitial();
-			await metadataRef().set(initial);
-			return initial;
+			try {
+				// set() でなく create()（doc 存在時に ALREADY_EXISTS で失敗する原子的作成）を使い、
+				// get→set 間の TOCTOU（並行呼び出しの両者が「不在」を観測して二重作成する競合）を防ぐ
+				await metadataRef().create(initial);
+				return initial;
+			} catch (error) {
+				if (isAlreadyExistsError(error)) {
+					// 並行呼び出しが先に作成した（本呼び出しは競合の敗者）→ 勝者の doc を正として再取得
+					const winner = await metadataRef().get();
+					if (winner.exists) {
+						return winner.data() as T;
+					}
+				}
+				throw error;
+			}
 		},
 		async update(updates: Partial<T>): Promise<void> {
 			await metadataRef().update(options.sanitizeUpdate(updates));

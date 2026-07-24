@@ -11,8 +11,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("../../infrastructure/database/firestore", () => {
 	const updateMock = vi.fn().mockResolvedValue(undefined);
 	const getMock = vi.fn().mockResolvedValue({ exists: false });
-	const setMock = vi.fn().mockResolvedValue(undefined);
-	const docRef = { update: updateMock, get: getMock, set: setMock };
+	const createMock = vi.fn().mockResolvedValue(undefined);
+	const docRef = { update: updateMock, get: getMock, create: createMock };
 	const collection = vi.fn(() => ({ doc: vi.fn(() => docRef) }));
 
 	return {
@@ -20,7 +20,7 @@ vi.mock("../../infrastructure/database/firestore", () => {
 		Timestamp: { now: vi.fn(() => ({ seconds: 0, nanoseconds: 0 })) },
 		__updateMock: updateMock,
 		__getMock: getMock,
-		__setMock: setMock,
+		__createMock: createMock,
 	};
 });
 
@@ -63,8 +63,8 @@ const updateMock = (firestoreMock as unknown as { __updateMock: ReturnType<typeo
 	.__updateMock;
 const getMetadataMock = (firestoreMock as unknown as { __getMock: ReturnType<typeof vi.fn> })
 	.__getMock;
-const setMetadataMock = (firestoreMock as unknown as { __setMock: ReturnType<typeof vi.fn> })
-	.__setMock;
+const createMetadataMock = (firestoreMock as unknown as { __createMock: ReturnType<typeof vi.fn> })
+	.__createMock;
 
 const dummyClient = {} as youtube_v3.Youtube;
 
@@ -495,7 +495,7 @@ describe("fetchYouTubeVideos: 配信中/配信予定の高速反映（mode=fast_
 		// 共有メタデータを更新しないため実行される（= ロック起因のupdateも発生しない）
 		expect(youtubeFirestore.saveVideosToFirestore).toHaveBeenCalled();
 		expect(updateMock).not.toHaveBeenCalled();
-		expect(setMetadataMock).not.toHaveBeenCalled();
+		expect(createMetadataMock).not.toHaveBeenCalled();
 	});
 
 	describe("discoveryモード=playlist時の軽量新着発見", () => {
@@ -532,7 +532,7 @@ describe("fetchYouTubeVideos: 配信中/配信予定の高速反映（mode=fast_
 			expect(calledIds).toHaveLength(2);
 			expect(youtubeFirestore.saveVideosToFirestore).toHaveBeenCalled();
 			expect(updateMock).not.toHaveBeenCalled();
-			expect(setMetadataMock).not.toHaveBeenCalled();
+			expect(createMetadataMock).not.toHaveBeenCalled();
 		});
 
 		it("uploads playlist IDが未キャッシュなら新着発見をスキップする（メタデータは書き込まない）", async () => {
@@ -548,8 +548,8 @@ describe("fetchYouTubeVideos: 配信中/配信予定の高速反映（mode=fast_
 			expect(youtubeApi.fetchUploadsPlaylistPage).not.toHaveBeenCalled();
 			expect(updateMock).not.toHaveBeenCalled();
 			// 所見対応: FetchMetadataドキュメントが存在しない場合でも
-			// getCachedUploadsPlaylistIdは新規作成(set)しない（読み取り専用）
-			expect(setMetadataMock).not.toHaveBeenCalled();
+			// getCachedUploadsPlaylistIdは新規作成(create)しない（読み取り専用）
+			expect(createMetadataMock).not.toHaveBeenCalled();
 		});
 	});
 });
