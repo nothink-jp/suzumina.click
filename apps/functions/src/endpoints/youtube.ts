@@ -26,6 +26,7 @@ import {
 import { SUZUKA_MINASE_CHANNEL_ID } from "../shared/common";
 import * as logger from "../shared/logger";
 import { decodePubsubMode, type MessagePublishedData } from "../shared/pubsub-utils";
+import { createRunMetadataStore } from "../shared/run-metadata";
 
 // メタデータ保存用のドキュメントID
 const METADATA_DOC_ID = "fetch_metadata";
@@ -104,24 +105,45 @@ interface FetchResult {
 }
 
 /**
+ * メタデータのストア（SPR-231: 骨格は shared/run-metadata に集約）
+ *
+ * update 時は undefined 値を null に変換し、lastFetchedAt を常時注入する（現行挙動の温存）。
+ * dlsite 側（undefined → FieldValue.delete()）との非対称は意図的に統一しない
+ * （Firestore に残る値が変わる＝挙動変更のため。shared/run-metadata.ts 参照）。
+ */
+const fetchMetadataStore = createRunMetadataStore<FetchMetadata>({
+	collection: METADATA_COLLECTION,
+	docId: METADATA_DOC_ID,
+	createInitial: () => ({
+		lastFetchedAt: Timestamp.now(),
+		isInProgress: false,
+	}),
+	sanitizeUpdate: (updates) => {
+		// undefined値を持つプロパティをnullに変換する（テストに合わせるため）
+		const sanitizedUpdates: Record<string, Timestamp | boolean | string | null> = {
+			lastFetchedAt: Timestamp.now(), // 常に最終実行時間を更新
+		};
+
+		// updatesの各プロパティをチェックし、undefined値をnullに変換
+		// lastFetchedAtは常に上記で設定した値を使用するため、処理から除外する
+		for (const [key, value] of Object.entries(updates)) {
+			if (key !== "lastFetchedAt") {
+				// lastFetchedAtは上書きしない
+				// undefinedの場合はnullを設定（テスト互換性のため）
+				sanitizedUpdates[key] = value === undefined ? null : value;
+			}
+		}
+		return sanitizedUpdates;
+	},
+});
+
+/**
  * メタデータの取得または初期化
  *
  * @returns Promise<FetchMetadata> - 取得または初期化されたメタデータ
  */
 async function getOrCreateMetadata(): Promise<FetchMetadata> {
-	const metadataRef = firestore.collection(METADATA_COLLECTION).doc(METADATA_DOC_ID);
-	const doc = await metadataRef.get();
-
-	if (doc.exists) {
-		return doc.data() as FetchMetadata;
-	}
-	// 初期メタデータの作成
-	const initialMetadata: FetchMetadata = {
-		lastFetchedAt: Timestamp.now(),
-		isInProgress: false,
-	};
-	await metadataRef.set(initialMetadata);
-	return initialMetadata;
+	return fetchMetadataStore.getOrCreate();
 }
 
 /**
@@ -131,25 +153,7 @@ async function getOrCreateMetadata(): Promise<FetchMetadata> {
  * @returns Promise<void>
  */
 async function updateMetadata(updates: Partial<FetchMetadata>): Promise<void> {
-	const metadataRef = firestore.collection(METADATA_COLLECTION).doc(METADATA_DOC_ID);
-
-	// undefined値を持つプロパティをnullに変換する（テストに合わせるため）
-	const sanitizedUpdates: Record<string, Timestamp | boolean | string | null> = {
-		lastFetchedAt: Timestamp.now(), // 常に最終実行時間を更新
-	};
-
-	// updatesの各プロパティをチェックし、undefined値をnullに変換
-	// lastFetchedAtは常に上記で設定した値を使用するため、処理から除外する
-	for (const [key, value] of Object.entries(updates)) {
-		if (key !== "lastFetchedAt") {
-			// lastFetchedAtは上書きしない
-			// undefinedの場合はnullを設定（テスト互換性のため）
-			sanitizedUpdates[key] = value === undefined ? null : value;
-		}
-	}
-
-	// 有効な更新データをFirestoreに送信
-	await metadataRef.update(sanitizedUpdates);
+	await fetchMetadataStore.update(updates);
 }
 
 // 注：initializeYouTubeClientはutils/youtube-apiから利用
