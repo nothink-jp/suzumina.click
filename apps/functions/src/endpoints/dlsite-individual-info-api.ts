@@ -11,7 +11,7 @@ import type {
 	DLsiteApiResponse,
 	WorkDocument,
 } from "@suzumina.click/shared-types";
-import firestore, { Timestamp } from "../infrastructure/database/firestore";
+import { Timestamp } from "../infrastructure/database/firestore";
 import { recomputeCreatorStats } from "../services/dlsite/creator-firestore";
 import {
 	resetCreatorRecomputeQueue,
@@ -41,6 +41,7 @@ import { chunkArray } from "../shared/array-utils";
 import { withClearedUndefined } from "../shared/firestore-write";
 import * as logger from "../shared/logger";
 import { decodePubsubMode, type MessagePublishedData } from "../shared/pubsub-utils";
+import { createRunMetadataStore } from "../shared/run-metadata";
 
 /**
  * SPR-229 Stage②: ティア差分によるdue-setフィルタの有効/無効フラグ。
@@ -90,37 +91,36 @@ interface BatchProcessingInfo {
 }
 
 /**
- * 統合データ収集メタデータの取得または初期化
+ * 統合データ収集メタデータのストア（SPR-231: 骨格は shared/run-metadata に集約）
+ *
+ * update 時は undefined フィールドを FieldValue.delete() へ変換してから書き込む。
+ * ignoreUndefinedProperties 環境では undefined がスキップされ旧値が残る（sticky）ため、
+ * メタデータをクリア可能にする（`withClearedUndefined` 参照）。
  */
-async function getOrCreateUnifiedMetadata(): Promise<CollectionMetadata> {
-	const metadataRef = firestore.collection(METADATA_COLLECTION).doc(UNIFIED_METADATA_DOC_ID);
-	const doc = await metadataRef.get();
-
-	if (doc.exists) {
-		return doc.data() as CollectionMetadata;
-	}
-
-	const initialMetadata: CollectionMetadata = {
+const unifiedMetadataStore = createRunMetadataStore<CollectionMetadata>({
+	collection: METADATA_COLLECTION,
+	docId: UNIFIED_METADATA_DOC_ID,
+	createInitial: () => ({
 		lastFetchedAt: Timestamp.now(),
 		isInProgress: false,
 		unifiedSystemStarted: Timestamp.now(),
 		migrationVersion: "v2",
-	};
+	}),
+	sanitizeUpdate: withClearedUndefined,
+});
 
-	await metadataRef.set(initialMetadata);
-	return initialMetadata;
+/**
+ * 統合データ収集メタデータの取得または初期化
+ */
+async function getOrCreateUnifiedMetadata(): Promise<CollectionMetadata> {
+	return unifiedMetadataStore.getOrCreate();
 }
 
 /**
  * 統合データ収集メタデータの更新
- *
- * undefined フィールドは FieldValue.delete() へ変換してから書き込む。
- * ignoreUndefinedProperties 環境では undefined がスキップされ旧値が残る（sticky）ため、
- * メタデータをクリア可能にする（`withClearedUndefined` 参照）。
  */
 async function updateUnifiedMetadata(update: Partial<CollectionMetadata>): Promise<void> {
-	const metadataRef = firestore.collection(METADATA_COLLECTION).doc(UNIFIED_METADATA_DOC_ID);
-	await metadataRef.update(withClearedUndefined(update));
+	await unifiedMetadataStore.update(update);
 }
 
 /**
