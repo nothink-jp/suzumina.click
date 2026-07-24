@@ -113,6 +113,18 @@ describe("createRunMetadataStore", () => {
 			expect(firestoreMock.__getMock).toHaveBeenCalledTimes(2);
 		});
 
+		it("ALREADY_EXISTS 後の再取得でも doc 不在なら元のエラーを throw する（握りつぶさない）", async () => {
+			// 勝者が作成直後に削除した等の異常事態。黙って初期値を返すと「作成済み」と
+			// 誤認させるため、大声で失敗して次の定期実行の自然リトライに任せるのが仕様。
+			firestoreMock.__getMock
+				.mockResolvedValueOnce({ exists: false })
+				.mockResolvedValueOnce({ exists: false });
+			firestoreMock.__createMock.mockRejectedValue(alreadyExistsError());
+
+			await expect(makeStore().getOrCreate()).rejects.toThrow("ALREADY_EXISTS");
+			expect(firestoreMock.__getMock).toHaveBeenCalledTimes(2);
+		});
+
 		it("create が ALREADY_EXISTS 以外のエラーで失敗したらそのまま throw する", async () => {
 			const error = Object.assign(new Error("7 PERMISSION_DENIED"), { code: 7 });
 			firestoreMock.__createMock.mockRejectedValue(error);

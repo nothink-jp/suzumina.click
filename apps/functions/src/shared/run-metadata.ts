@@ -3,9 +3,7 @@
  *
  * dlsite / youtube の定期実行関数が持つ「メタデータ doc の get-or-create + update」の
  * 骨格は完全同一だったため、ここに集約する。作成は create()（原子的・存在時は
- * ALREADY_EXISTS）で行い、get→書き込み間の TOCTOU 競合は敗者側の再取得で解決する
- * （#850 レビューのフォローアップ。本番では doc が恒久存在するため実害は無かったが、
- * 集約を機に塞いだ）。
+ * ALREADY_EXISTS）で行い、get→書き込み間の TOCTOU 競合は敗者側の再取得で解決する。
  *
  * 一方で update 時のサニタイズ戦略は endpoint ごとに非対称で、これは統一しない:
  * - dlsite: undefined を FieldValue.delete() に変換（フィールドを実際に削除）
