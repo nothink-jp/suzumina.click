@@ -27,7 +27,8 @@
 		"check:integrity": "dotenv -e .env -- tsx src/tools/core/run-data-integrity-check.ts",
 		"check:price-history": "dotenv -e .env -- tsx src/tools/check-price-history.ts",
 		"debug:price-history": "dotenv -e .env -- tsx src/tools/debug-price-history.ts",
-		"tools:backfill-video-status": "dotenv -e .env -- tsx src/tools/backfill-video-status.ts"
+		"tools:backfill-video-status": "dotenv -e .env -- tsx src/tools/backfill-video-status.ts",
+		"tools:backfill-missing-videos": "dotenv -e .env -- tsx src/tools/backfill-missing-videos.ts"
 	},
 	"main": "lib/index.js",
 	"engines": {
