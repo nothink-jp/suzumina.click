@@ -205,7 +205,7 @@ jobs:
             --trigger-topic youtube-video-fetch-trigger \
             --region asia-northeast1 \
             --project ${{ secrets.GCP_PROJECT_ID }} \
-            --set-env-vars NODE_ENV=production,FUNCTION_SIGNATURE_TYPE=cloudevent,FUNCTION_TARGET=fetchYouTubeVideos,YOUTUBE_DISCOVERY_MODE=playlist \
+            --set-env-vars NODE_ENV=production,FUNCTION_SIGNATURE_TYPE=cloudevent,FUNCTION_TARGET=fetchYouTubeVideos \
             --memory 256Mi \
             --timeout 540s \
             --max-instances 3 \

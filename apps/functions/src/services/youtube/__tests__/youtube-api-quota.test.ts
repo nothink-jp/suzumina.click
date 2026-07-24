@@ -33,11 +33,9 @@ import {
 	fetchUploadsPlaylistId,
 	fetchUploadsPlaylistPage,
 	fetchVideoDetails,
-	searchVideos,
 } from "../youtube-api";
 
 const makeClient = () => ({
-	search: { list: vi.fn() },
 	videos: { list: vi.fn() },
 	playlists: { list: vi.fn() },
 	playlistItems: { list: vi.fn() },
@@ -52,13 +50,6 @@ beforeEach(() => {
 
 afterEach(() => {
 	vi.clearAllMocks();
-});
-
-describe("searchVideos: クォータ不足", () => {
-	it("クォータ不足は例外", async () => {
-		canExecuteOperation.mockReturnValue(false);
-		await expect(searchVideos(asYoutube(makeClient()))).rejects.toThrow("クォータ");
-	});
 });
 
 describe("fetchVideoDetails: クォータ分岐", () => {

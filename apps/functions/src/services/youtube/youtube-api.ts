@@ -7,7 +7,6 @@ import {
 	QUOTA_COSTS,
 	recordQuotaUsage,
 } from "../../infrastructure/monitoring/youtube-quota-monitor";
-import { SUZUKA_MINASE_CHANNEL_ID } from "../../shared/common";
 import * as logger from "../../shared/logger";
 
 // YouTube API クォータ制限関連の定数
@@ -42,57 +41,6 @@ export function initializeYouTubeClient(): [
 	});
 
 	return [youtube, undefined];
-}
-
-/**
- * YouTube動画IDを検索して取得
- *
- * @param youtube - YouTube APIクライアント
- * @param pageToken - 継続ページトークン（続きから取得する場合）
- * @returns Promise<{items: youtube_v3.Schema$SearchResult[], nextPageToken?: string}> - 検索結果と次ページトークン
- */
-export async function searchVideos(
-	youtube: youtube_v3.Youtube,
-	pageToken?: string,
-): Promise<{
-	items: youtube_v3.Schema$SearchResult[];
-	nextPageToken?: string;
-}> {
-	// クォータチェック
-	if (!canExecuteOperation("search")) {
-		throw new Error("YouTube APIクォータが不足しています");
-	}
-
-	try {
-		// YouTube API 呼び出し
-		const response = await youtube.search.list({
-			part: ["id", "snippet"], // snippetも取得して配信状態を確認できるようにする
-			channelId: SUZUKA_MINASE_CHANNEL_ID,
-			maxResults: MAX_VIDEOS_PER_BATCH,
-			type: ["video"],
-			order: "date",
-			pageToken: pageToken,
-		});
-		const searchResponse: youtube_v3.Schema$SearchListResponse = response.data;
-
-		// 成功時にクォータ使用量を記録
-		recordQuotaUsage("search");
-		getYouTubeQuotaMonitor().logQuotaUsage("search", 100, {
-			channelId: SUZUKA_MINASE_CHANNEL_ID,
-			maxResults: MAX_VIDEOS_PER_BATCH,
-			pageToken: pageToken || "none",
-			resultCount: searchResponse.items?.length || 0,
-		});
-
-		return {
-			items: searchResponse.items || [],
-			nextPageToken: searchResponse.nextPageToken ?? undefined,
-		};
-	} catch (error: unknown) {
-		// エラーログ出力
-		logger.error("YouTube API 呼び出しエラー:", error);
-		throw error;
-	}
 }
 
 /**
@@ -175,16 +123,6 @@ export async function fetchVideoDetails(
 
 	logger.info(`取得した動画詳細合計: ${videoDetails.length}件`);
 	return videoDetails;
-}
-
-/**
- * 検索結果から動画IDを抽出
- *
- * @param searchItems - 検索結果アイテム
- * @returns 動画IDの配列
- */
-export function extractVideoIds(searchItems: youtube_v3.Schema$SearchResult[]): string[] {
-	return searchItems.map((item) => item.id?.videoId).filter((id): id is string => !!id);
 }
 
 /**

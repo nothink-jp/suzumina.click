@@ -1,24 +1,15 @@
 import type { youtube_v3 } from "googleapis";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { SUZUKA_MINASE_CHANNEL_ID } from "../../../shared/common";
 import * as youtubeApi from "../youtube-api";
 
 // モックの型定義
-interface SearchListResponse {
-	data: youtube_v3.Schema$SearchListResponse;
-}
-
 interface VideoListResponse {
 	data: youtube_v3.Schema$VideoListResponse;
 }
 
 // googleapisのモック
-const mockYoutubeSearchList = vi.fn();
 const mockYoutubeVideosList = vi.fn();
 const mockYoutubeClient = {
-	search: {
-		list: mockYoutubeSearchList,
-	},
 	videos: {
 		list: mockYoutubeVideosList,
 	},
@@ -80,87 +71,6 @@ describe("youtube-api", () => {
 				videoCount: 0,
 				error: "YouTube API Keyが設定されていません",
 			});
-		});
-	});
-
-	describe("searchVideos", () => {
-		// テスト用のYouTubeクライアント
-		let youtubeClient: youtube_v3.Youtube;
-
-		beforeEach(() => {
-			youtubeClient = mockYoutubeClient as unknown as youtube_v3.Youtube;
-		});
-
-		it("正常に動画を検索できること", async () => {
-			// APIレスポンスのモック
-			const mockResponse: SearchListResponse = {
-				data: {
-					items: [
-						{ id: { videoId: "video1" }, kind: "", etag: "" },
-						{ id: { videoId: "video2" }, kind: "", etag: "" },
-					],
-					nextPageToken: "next-token",
-				},
-			};
-			mockYoutubeSearchList.mockResolvedValueOnce(mockResponse);
-
-			// 関数を実行
-			const result = await youtubeApi.searchVideos(youtubeClient);
-
-			// 検証
-			expect(mockYoutubeSearchList).toHaveBeenCalledWith({
-				part: ["id", "snippet"],
-				channelId: SUZUKA_MINASE_CHANNEL_ID,
-				maxResults: youtubeApi.MAX_VIDEOS_PER_BATCH,
-				type: ["video"],
-				order: "date",
-				pageToken: undefined,
-			});
-			expect(result.items).toHaveLength(2);
-			expect(result.nextPageToken).toBe("next-token");
-		});
-
-		it("ページトークンが指定された場合、それを使用して検索すること", async () => {
-			// APIレスポンスのモック
-			const mockResponse: SearchListResponse = {
-				data: {
-					items: [],
-					nextPageToken: undefined,
-				},
-			};
-			mockYoutubeSearchList.mockResolvedValueOnce(mockResponse);
-
-			// ページトークンを指定して実行
-			const pageToken = "test-page-token";
-			await youtubeApi.searchVideos(youtubeClient, pageToken);
-
-			// 検証
-			expect(mockYoutubeSearchList).toHaveBeenCalledWith(
-				expect.objectContaining({
-					pageToken: pageToken,
-				}),
-			);
-		});
-
-		it("クォータ超過エラーが発生した場合、適切にエラーをスローすること", async () => {
-			// クォータ超過エラーのモック
-			const quotaError = {
-				code: youtubeApi.QUOTA_EXCEEDED_CODE,
-				message: "Quota exceeded",
-			};
-			mockYoutubeSearchList.mockRejectedValueOnce(quotaError);
-
-			// 関数の実行と検証（元のエラーがそのまま投げられる）
-			await expect(youtubeApi.searchVideos(youtubeClient)).rejects.toThrow("Quota exceeded");
-		});
-
-		it("その他のエラーが発生した場合、そのエラーがスローされること", async () => {
-			// 一般的なエラーのモック
-			const generalError = new Error("一般的なAPIエラー");
-			mockYoutubeSearchList.mockRejectedValueOnce(generalError);
-
-			// 関数の実行と検証
-			await expect(youtubeApi.searchVideos(youtubeClient)).rejects.toThrow("一般的なAPIエラー");
 		});
 	});
 
@@ -329,44 +239,6 @@ describe("youtube-api", () => {
 			const result = await youtubeApi.fetchVideoDetails(youtubeClient, []);
 			expect(result).toEqual([]);
 			expect(mockYoutubeVideosList).not.toHaveBeenCalled();
-		});
-	});
-
-	describe("extractVideoIds", () => {
-		it("検索結果から動画IDを正しく抽出できること", () => {
-			// テスト用の検索結果
-			const searchItems: youtube_v3.Schema$SearchResult[] = [
-				{ id: { videoId: "video1" }, kind: "", etag: "" },
-				{ id: { videoId: "video2" }, kind: "", etag: "" },
-				{ id: { videoId: "video3" }, kind: "", etag: "" },
-			];
-
-			// 関数を実行
-			const result = youtubeApi.extractVideoIds(searchItems);
-
-			// 検証
-			expect(result).toEqual(["video1", "video2", "video3"]);
-		});
-
-		it("videoIdが存在しない項目は無視されること", () => {
-			// テスト用の検索結果（一部にvideoIdがない項目を含む）
-			const searchItems: youtube_v3.Schema$SearchResult[] = [
-				{ id: { videoId: "video1" }, kind: "", etag: "" },
-				{ id: {}, kind: "", etag: "" }, // videoIdなし
-				{ id: undefined, kind: "", etag: "" }, // idがundefined
-				{ id: { videoId: "video2" }, kind: "", etag: "" },
-			];
-
-			// 関数を実行
-			const result = youtubeApi.extractVideoIds(searchItems);
-
-			// 検証
-			expect(result).toEqual(["video1", "video2"]);
-		});
-
-		it("空の検索結果の場合、空の配列を返すこと", () => {
-			const result = youtubeApi.extractVideoIds([]);
-			expect(result).toEqual([]);
 		});
 	});
 });

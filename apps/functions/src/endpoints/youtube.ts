@@ -4,14 +4,12 @@ import firestore, { Timestamp } from "../infrastructure/database/firestore";
 import { getJSTDate } from "../services/price-history";
 import { RECENT_WINDOW_DAYS } from "../services/youtube/video-tiering";
 import {
-	extractVideoIds,
 	fetchChannelPlaylists,
 	fetchPlaylistItems,
 	fetchUploadsPlaylistId,
 	fetchUploadsPlaylistPage,
 	fetchVideoDetails,
 	initializeYouTubeClient,
-	searchVideos,
 } from "../services/youtube/youtube-api";
 import {
 	getAllVideoIds,
@@ -35,7 +33,6 @@ const METADATA_DOC_ID = "fetch_metadata";
 const METADATA_COLLECTION = "youtubeMetadata";
 
 // 実行制限関連の定数
-const MAX_PAGES_PER_EXECUTION = 3; // 1回の実行での最大ページ数（search.listベース経路用）
 const LOCK_TIMEOUT_MS = 30 * 60 * 1000; // ロックのタイムアウト（30分）
 
 // SPR-230: uploads playlistベースdiscoveryのページ数上限（1 unit/ページと安価なため緩め。
@@ -45,34 +42,18 @@ const MAX_DISCOVERY_PAGES = 20;
 // メタデータの型定義
 interface FetchMetadata {
 	lastFetchedAt: Timestamp;
-	nextPageToken?: string;
 	isInProgress: boolean;
 	lastError?: string;
 	/**
 	 * 直近で「打ち切りなく完了した」run の時刻。
-	 * SPR-230レビュー指摘: discoveryモードによって保証の強さが異なる点に注意。
-	 * search経路（既定）ではチャンネル全カタログを最後まで走査できたことを意味するが、
-	 * playlist経路ではその run のincremental走査が`MAX_DISCOVERY_PAGES`上限に達さず
-	 * 終えられたこと（＝early-stopで正常終了、または上限に達さず全件終了）を意味するに
-	 * 留まる。定常運用では早期にearly-stopするため、「全カタログを検証済み」という
-	 * 意味では読めない（そこまでの保証が要る場合は週次フルスイープの`truncated`判定を見る）。
+	 * その run のincremental走査が`MAX_DISCOVERY_PAGES`上限に達さず終えられたこと
+	 * （＝early-stopで正常終了、または上限に達さず全件終了）を意味するに留まる。
+	 * 定常運用では早期にearly-stopするため、「全カタログを検証済み」という意味では
+	 * 読めない（そこまでの保証が要る場合は週次フルスイープの`truncated`判定を見る）。
 	 */
 	lastSuccessfulCompleteFetch?: Timestamp;
 	/** SPR-230: uploads playlist ID（チャンネル固定のため一度取得したらキャッシュする） */
 	uploadsPlaylistId?: string;
-}
-
-/**
- * SPR-230: discovery方式の切り替えフラグ。呼び出し時に都度`process.env`を読む
- * （DLsiteの`isTierFilteringEnabled()`パターン踏襲・テストで環境変数を切り替えられるように）。
- *
- * - "search"（既定）: 現行のsearch.listベース（変更なし）
- * - "shadow": search.list経路は維持しつつ、uploads playlist全走査との差分をログ出力のみ行う
- * - "playlist": uploads playlistベースのincremental discoveryに完全移行
- */
-function getDiscoveryMode(): "search" | "shadow" | "playlist" {
-	const raw = process.env.YOUTUBE_DISCOVERY_MODE;
-	return raw === "shadow" || raw === "playlist" ? raw : "search";
 }
 
 /**
@@ -198,86 +179,6 @@ async function prepareExecution(): Promise<[FetchMetadata | undefined, FetchResu
 }
 
 /**
- * YouTube動画IDをsearch.list経由で検索して取得（現行方式・SPR-230移行前の既存ロジック）
- *
- * @param youtube - YouTube APIクライアント
- * @param metadata - 取得済みのメタデータ
- * @returns Promise<{videoIds: string[], nextPageToken: string | undefined, isComplete: boolean}> - 取得した動画IDと関連情報
- */
-async function fetchVideoIdsViaSearch(
-	youtube: youtube_v3.Youtube,
-	metadata: FetchMetadata,
-): Promise<{
-	videoIds: string[];
-	nextPageToken: string | undefined;
-	isComplete: boolean;
-}> {
-	// 初期化
-	const allVideoIds: string[] = [];
-	let nextPageToken: string | undefined = metadata.nextPageToken;
-	const isInitialFetch = !nextPageToken;
-	let pageCount = 0;
-	let isComplete = false;
-
-	if (nextPageToken) {
-		logger.info(`前回の続きから取得を再開します。トークン: ${nextPageToken}`);
-	} else {
-		logger.debug("新規に全動画の取得を開始します");
-	}
-
-	// ページネーションを使用して動画IDを取得（制限付き）
-	do {
-		try {
-			// youtube-api の検索機能を使用
-			const searchResult = await searchVideos(youtube, nextPageToken);
-			const videoIds = extractVideoIds(searchResult.items);
-
-			allVideoIds.push(...videoIds);
-			nextPageToken = searchResult.nextPageToken;
-
-			logger.debug(
-				`${videoIds.length}件の動画IDを取得しました。次ページトークン: ${nextPageToken || "なし"}`,
-			);
-
-			// メタデータ更新
-			await updateMetadata({ nextPageToken });
-
-			// ページカウントを増やす
-			pageCount++;
-
-			// 1回の実行で処理するページ数を制限
-			if (pageCount >= MAX_PAGES_PER_EXECUTION && nextPageToken) {
-				logger.info(
-					`最大ページ数(${MAX_PAGES_PER_EXECUTION})に達しました。次回の実行で続きを処理します。`,
-				);
-				break;
-			}
-		} catch (error: unknown) {
-			// YouTube APIエラー時の処理
-			if (error instanceof Error && error.message.includes("YouTube APIクォータを超過")) {
-				// クォータ超過の場合
-				logger.error("YouTube API クォータを超過しました。処理を中断します:", error);
-				await updateMetadata({
-					isInProgress: false,
-					lastError: "YouTube API quota exceeded",
-				});
-				throw error; // 元のエラーをそのまま再スロー
-			}
-			// その他のエラー
-			throw error;
-		}
-	} while (nextPageToken);
-
-	// 全ページ取得完了（nextPageTokenがない）
-	if (!nextPageToken && !isInitialFetch) {
-		logger.info("全ての動画IDの取得が完了しました");
-		isComplete = true;
-	}
-
-	return { videoIds: allVideoIds, nextPageToken, isComplete };
-}
-
-/**
  * uploads playlist IDを解決する（メタデータにキャッシュ済みならそれを使い、無ければ取得して保存）
  *
  * SPR-230: 対象は`SUZUKA_MINASE_CHANNEL_ID`固定チャンネルで、uploads playlist IDは
@@ -389,14 +290,16 @@ async function fetchVideoIdsViaPlaylistFull(
 }
 
 /**
- * SPR-230 shadowモード: uploads playlist全走査の発見集合とFirestoreの既知集合を比較し、
- * 対称差をログ出力する。比較自体が失敗しても本処理には影響させない（ログのみ・例外を投げない）。
+ * uploads playlist全走査の発見集合とFirestoreの既知集合を比較し、対称差をログ出力する
+ * （週次フルスイープの取りこぼし検知）。比較自体が失敗しても本処理には影響させない
+ * （ログのみ・例外を投げない）。ログの「SPR-230 shadow:」接頭辞は Cloud Logging の
+ * 検索キーとして定着しているため互換維持する（shadowモード自体は撤去済み）。
  *
  * ページ上限で全走査自体が打ち切られた場合（`truncated`）、未走査分は「Firestoreにあるが
  * playlist走査で見つからない」＝missing判定に必ず引っかかってしまい偽陽性になるため、
  * その回はmissing判定をスキップする（レビュー指摘対応）。
  */
-async function logDiscoveryShadowComparison(
+async function logDiscoveryComparison(
 	youtube: youtube_v3.Youtube,
 	uploadsPlaylistId: string,
 ): Promise<void> {
@@ -443,34 +346,26 @@ async function logDiscoveryShadowComparison(
 }
 
 /**
- * YouTube動画IDを取得する（discoveryモードに応じて経路を切り替える）
+ * YouTube動画IDを取得する（uploads playlistベースのincremental discovery）
  *
- * - "search"/"shadow": 既存のsearch.listベース経路（挙動を変えない）。"shadow"のみ
- *   後続で`logDiscoveryShadowComparison`による比較ログを追加で行う。
- * - "playlist": uploads playlistベースのincremental discoveryに完全移行
+ * SPR-230で search.list 経路から完全移行済み。旧経路（"search"/"shadow"モード切替）は
+ * 本番検証完了を経て撤去した。
  */
 async function fetchVideoIds(
 	youtube: youtube_v3.Youtube,
 	metadata: FetchMetadata,
 ): Promise<{
 	videoIds: string[];
-	nextPageToken: string | undefined;
 	isComplete: boolean;
 }> {
-	const mode = getDiscoveryMode();
-
-	if (mode === "playlist") {
-		const uploadsPlaylistId = await resolveUploadsPlaylistId(youtube, metadata);
-		const { videoIds, truncated } = await fetchVideoIdsViaPlaylistIncremental(
-			youtube,
-			uploadsPlaylistId,
-		);
-		// truncated=true（ページ上限による強制打ち切り）の場合はisComplete:falseとし、
-		// lastSuccessfulCompleteFetchを誤って更新しないようにする（レビュー指摘対応）。
-		return { videoIds, nextPageToken: undefined, isComplete: !truncated };
-	}
-
-	return fetchVideoIdsViaSearch(youtube, metadata);
+	const uploadsPlaylistId = await resolveUploadsPlaylistId(youtube, metadata);
+	const { videoIds, truncated } = await fetchVideoIdsViaPlaylistIncremental(
+		youtube,
+		uploadsPlaylistId,
+	);
+	// truncated=true（ページ上限による強制打ち切り）の場合はisComplete:falseとし、
+	// lastSuccessfulCompleteFetchを誤って更新しないようにする（レビュー指摘対応）。
+	return { videoIds, isComplete: !truncated };
 }
 
 // 注：動画詳細取得機能はutils/youtube-apiから利用
@@ -661,7 +556,7 @@ async function runWeeklyFullSweep(
 			"週次フルスイープを開始します（discovery取りこぼし検知のみ、動画詳細取得は行いません）",
 		);
 		const uploadsPlaylistId = await resolveUploadsPlaylistId(youtube, metadata);
-		await logDiscoveryShadowComparison(youtube, uploadsPlaylistId);
+		await logDiscoveryComparison(youtube, uploadsPlaylistId);
 		await updateMetadata({ isInProgress: false, lastError: undefined });
 		logger.info("週次フルスイープが完了しました");
 		return { videoCount: 0 };
@@ -695,19 +590,11 @@ async function getCachedUploadsPlaylistId(): Promise<string | undefined> {
 /**
  * 新着動画の軽量発見（uploads playlistのincremental early-stop走査）を試みる。
  *
- * search.list（100 units/call）は15分毎には高すぎるため、discoveryモードが"playlist"の
- * ときのみ実行する（既定の本番モード。"search"/"shadow"時はコスト超過を避けるためスキップし、
- * 新着発見はhourly runに委ねる）。
- *
  * uploads playlist IDはFetchMetadataにキャッシュ済みの値を読むだけで、未キャッシュの場合は
  * 何も書き込まずスキップする（`runFastRecheck`が共有メタデータを一切更新しないという
  * 前提を保つため。初回キャッシュはhourly run側の責務のまま）。
  */
 async function tryFastDiscovery(youtube: youtube_v3.Youtube): Promise<{ videoIds: string[] }> {
-	if (getDiscoveryMode() !== "playlist") {
-		return { videoIds: [] };
-	}
-
 	try {
 		const uploadsPlaylistId = await getCachedUploadsPlaylistId();
 		if (!uploadsPlaylistId) {
@@ -815,26 +702,7 @@ async function runNormalFetchAndSave(
 ): Promise<FetchResult> {
 	// 3. 動画IDの取得
 	logger.info(`チャンネル ${SUZUKA_MINASE_CHANNEL_ID} の動画情報取得を開始します`);
-	const {
-		videoIds: discoveredVideoIds,
-		nextPageToken,
-		isComplete,
-	} = await fetchVideoIds(youtube, metadata);
-
-	// SPR-230: shadowモードは発見結果に関わらず毎run比較する（0件run＝定常状態こそ
-	// 両方式が一致すべき基準ケースのため、videoIds空チェックの前に実行する）。
-	// search.list経路の挙動・保存結果には影響させない、比較専用。
-	if (getDiscoveryMode() === "shadow") {
-		try {
-			const uploadsPlaylistId = await resolveUploadsPlaylistId(youtube, metadata);
-			await logDiscoveryShadowComparison(youtube, uploadsPlaylistId);
-		} catch (error) {
-			logger.warn(
-				"SPR-230 shadow: uploads playlist ID解決に失敗しました（本処理には影響しません）",
-				{ error: error instanceof Error ? error.message : String(error) },
-			);
-		}
-	}
+	const { videoIds: discoveredVideoIds, isComplete } = await fetchVideoIds(youtube, metadata);
 
 	logger.info(`新着として発見した動画ID: ${discoveredVideoIds.length}件`);
 
@@ -904,12 +772,8 @@ async function runNormalFetchAndSave(
 	// 8. メタデータを更新
 	if (isComplete) {
 		await updateMetadata({
-			nextPageToken: undefined,
 			lastSuccessfulCompleteFetch: Timestamp.now(),
 		});
-	} else if (nextPageToken) {
-		// 明示的にnextPageTokenを使用（既にfetchVideoIds内で保存されているが、変数使用のため記述）
-		logger.debug(`次回の実行のためにページトークンを保存: ${nextPageToken}`);
 	}
 
 	// 9. 処理完了を記録
