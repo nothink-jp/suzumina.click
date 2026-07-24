@@ -63,7 +63,7 @@ export async function getAudioButtonCount(videoId: string): Promise<number> {
  * 一過性の Firestore 障害で空配列が revalidate 窓の間キャッシュされるのを避ける。
  */
 async function fetchPopularAudioButtonTags(
-	limit: number,
+	limit?: number,
 ): Promise<Array<{ tag: string; count: number }>> {
 	const firestore = getFirestore();
 	const snapshot = await firestore.collection("audioButtons").where("isPublic", "==", true).get();
@@ -81,10 +81,12 @@ async function fetchPopularAudioButtonTags(
 		}
 	}
 
-	return Array.from(tagCounts.entries())
-		.sort((a, b) => b[1] - a[1])
-		.slice(0, limit)
-		.map(([tag, count]) => ({ tag, count }));
+	const sorted = Array.from(tagCounts.entries()).sort((a, b) => b[1] - a[1]);
+	// limit 未指定は全件返却（絞り込みUIで「全タグ選択可能」を満たすため。ADR-012 Filters拡張）
+	return (limit === undefined ? sorted : sorted.slice(0, limit)).map(([tag, count]) => ({
+		tag,
+		count,
+	}));
 }
 
 // limit は unstable_cache が引数として自動でキー化する。
@@ -99,7 +101,7 @@ const getPopularAudioButtonTagsCached = unstable_cache(
  * 一覧ページのタグ絞り込みUIの選択肢に使う。全件スキャンを避けるため revalidate キャッシュ経由。
  * エラー時は空配列を返す（キャッシュ層には正常結果のみ載る）。
  */
-export async function getPopularAudioButtonTags(limit = 30): Promise<
+export async function getPopularAudioButtonTags(limit?: number): Promise<
 	Array<{
 		tag: string;
 		count: number;

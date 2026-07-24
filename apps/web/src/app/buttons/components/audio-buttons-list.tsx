@@ -56,7 +56,7 @@ export default function AudioButtonsList({ searchParams, initialData }: AudioBut
 	useEffect(() => {
 		const fetchTags = async () => {
 			try {
-				const tags = await getPopularAudioButtonTags(20); // 上位20タグを取得
+				const tags = await getPopularAudioButtonTags(); // 全タグを取得（絞り込みポップオーバー側で検索可能）
 				const formattedTags = tags.map((t) => ({
 					value: t.tag,
 					label: `${t.tag} (${t.count}件)`,

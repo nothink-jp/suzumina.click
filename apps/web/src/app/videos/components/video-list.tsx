@@ -29,7 +29,7 @@ export default function VideoList({ initialData }: VideoListProps) {
 	useEffect(() => {
 		const fetchTags = async () => {
 			try {
-				const tags = await getPopularVideoTags(30);
+				const tags = await getPopularVideoTags(); // 全タグを取得（絞り込みポップオーバー側で検索可能）
 				setAvailableTags(tags.map((t) => ({ value: t.tag, label: `${t.tag} (${t.count})` })));
 			} catch {
 				// タグ取得に失敗しても他のフィルタ・検索は動作するため握りつぶす

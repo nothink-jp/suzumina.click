@@ -8,6 +8,7 @@
 "use client";
 
 import { ChevronDown } from "lucide-react";
+import { useState } from "react";
 import { Badge } from "../../ui/badge";
 import { Button } from "../../ui/button";
 import { Checkbox } from "../../ui/checkbox";
@@ -238,6 +239,82 @@ function DateRangeFilter({
 	);
 }
 
+function TagsFilterTriggerLabel({
+	config,
+	keyName,
+	options,
+	selectedValues,
+}: {
+	config: FilterConfig;
+	keyName: string;
+	options: Array<{ value: string; label: string }>;
+	selectedValues: string[];
+}) {
+	if (selectedValues.length === 0) return <>{config.label || keyName}</>;
+	return (
+		<>
+			{config.label || keyName}
+			<div className="mx-1 h-4 w-[1px] bg-border" />
+			<Badge variant="secondary" className="rounded-sm px-1 font-normal lg:hidden">
+				{selectedValues.length}
+			</Badge>
+			<div className="hidden space-x-1 lg:flex">
+				{selectedValues.length > 2 ? (
+					<Badge variant="secondary" className="rounded-sm px-1 font-normal">
+						{selectedValues.length}件選択中
+					</Badge>
+				) : (
+					options
+						.filter((option) => selectedValues.includes(option.value))
+						.map((option) => (
+							<Badge key={option.value} variant="secondary" className="rounded-sm px-1 font-normal">
+								{option.label}
+							</Badge>
+						))
+				)}
+			</div>
+		</>
+	);
+}
+
+function TagsFilterOptionRow({
+	option,
+	checked,
+	onCheckedChange,
+}: {
+	option: { value: string; label: string };
+	checked: boolean;
+	onCheckedChange: (checked: boolean) => void;
+}) {
+	return (
+		<div className="flex items-center space-x-2">
+			<Checkbox id={`tag-${option.value}`} checked={checked} onCheckedChange={onCheckedChange} />
+			<Label htmlFor={`tag-${option.value}`} className="text-sm font-normal cursor-pointer flex-1">
+				{option.label}
+			</Label>
+		</div>
+	);
+}
+
+/**
+ * 選択中の option を常に先頭へピン留めしつつ、検索語で絞り込んだ未選択 option を続けて並べる。
+ * 選択中の項目は検索語に一致しなくても表示し続ける（検索中でも解除できるようにするため）。
+ * React hook は呼ばない純粋関数（"use" プレフィックスは付けない）。
+ */
+function getTagsFilterDisplayOptions(
+	options: Array<{ value: string; label: string }>,
+	selectedValues: string[],
+	search: string,
+) {
+	const query = search.trim().toLowerCase();
+	const selectedOptions = options.filter((opt) => selectedValues.includes(opt.value));
+	const unselectedOptions = options.filter((opt) => !selectedValues.includes(opt.value));
+	const filteredUnselected = query
+		? unselectedOptions.filter((opt) => opt.label.toLowerCase().includes(query))
+		: unselectedOptions;
+	return [...selectedOptions, ...filteredUnselected];
+}
+
 function TagsFilter({
 	keyName,
 	value,
@@ -253,40 +330,32 @@ function TagsFilter({
 	const options = generateOptions(config);
 	const selectedValues = Array.isArray(value) ? value : [];
 	const hasOptions = options.length > 0;
+	const [search, setSearch] = useState("");
+	const displayOptions = getTagsFilterDisplayOptions(options, selectedValues, search);
+
+	const toggleValue = (optionValue: string, checked: boolean) => {
+		const newValues = checked
+			? [...selectedValues, optionValue]
+			: selectedValues.filter((v) => v !== optionValue);
+		onChange(newValues.length > 0 ? newValues : undefined);
+	};
 
 	return (
-		<Popover>
+		<Popover
+			onOpenChange={(open) => {
+				// 閉じたら検索語をリセットする（次回開いたときに前回の検索結果が残って見えるのを防ぐ）
+				if (!open) setSearch("");
+			}}
+		>
 			<PopoverTrigger
 				render={
 					<Button variant="outline" size="sm" className="h-9 border-dashed" disabled={!hasOptions}>
-						{config.label || keyName}
-						{selectedValues.length > 0 && (
-							<>
-								<div className="mx-1 h-4 w-[1px] bg-border" />
-								<Badge variant="secondary" className="rounded-sm px-1 font-normal lg:hidden">
-									{selectedValues.length}
-								</Badge>
-								<div className="hidden space-x-1 lg:flex">
-									{selectedValues.length > 2 ? (
-										<Badge variant="secondary" className="rounded-sm px-1 font-normal">
-											{selectedValues.length}件選択中
-										</Badge>
-									) : (
-										options
-											.filter((option) => selectedValues.includes(option.value))
-											.map((option) => (
-												<Badge
-													key={option.value}
-													variant="secondary"
-													className="rounded-sm px-1 font-normal"
-												>
-													{option.label}
-												</Badge>
-											))
-									)}
-								</div>
-							</>
-						)}
+						<TagsFilterTriggerLabel
+							config={config}
+							keyName={keyName}
+							options={options}
+							selectedValues={selectedValues}
+						/>
 						<ChevronDown className="ml-2 h-4 w-4" />
 					</Button>
 				}
@@ -296,28 +365,32 @@ function TagsFilter({
 					<div className="mb-2 text-sm font-medium">{config.label || keyName}</div>
 					{hasOptions ? (
 						<>
-							<div className="grid gap-2 max-h-[300px] overflow-y-auto">
-								{options.map((option) => (
-									<div key={option.value} className="flex items-center space-x-2">
-										<Checkbox
-											id={`tag-${option.value}`}
+							{/* 検索はクライアント側の部分一致絞り込みのみ（Enter確定不要）で、
+							    fetchFn への再フェッチは発生しない。IME変換中でも安全 */}
+							<Input
+								type="text"
+								placeholder="検索..."
+								aria-label={`${config.label || keyName}を検索`}
+								value={search}
+								onChange={(e) => setSearch(e.target.value)}
+								className="mb-2 h-8"
+							/>
+							{displayOptions.length > 0 ? (
+								<div className="grid gap-2 max-h-[300px] overflow-y-auto">
+									{displayOptions.map((option) => (
+										<TagsFilterOptionRow
+											key={option.value}
+											option={option}
 											checked={selectedValues.includes(option.value)}
-											onCheckedChange={(checked) => {
-												const newValues = checked
-													? [...selectedValues, option.value]
-													: selectedValues.filter((v) => v !== option.value);
-												onChange(newValues.length > 0 ? newValues : undefined);
-											}}
+											onCheckedChange={(checked) => toggleValue(option.value, checked)}
 										/>
-										<Label
-											htmlFor={`tag-${option.value}`}
-											className="text-sm font-normal cursor-pointer flex-1"
-										>
-											{option.label}
-										</Label>
-									</div>
-								))}
-							</div>
+									))}
+								</div>
+							) : (
+								<div className="text-center py-4 text-sm text-muted-foreground">
+									該当するタグがありません
+								</div>
+							)}
 							{selectedValues.length > 0 && (
 								<Button
 									variant="ghost"
