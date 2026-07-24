@@ -237,7 +237,16 @@ export async function collectAllWorkIds(
 			// レート制限対応
 			await new Promise((resolve) => setTimeout(resolve, requestDelay));
 		} catch (error) {
-			logger.error(`作品ID収集エラー (ページ ${currentPage}):`, { error });
+			// 途中ページの失敗（DLsite 側の一過性 5xx 等）はここで打ち切り、それまでに集めた
+			// 部分結果で処理を継続する（run は完走し、取りこぼしは次の定期実行が拾う）。
+			// severity は error のまま: 恒常化するとカタログ末尾が永久に収集されない
+			// silent degradation になるため、catch-all のエラーメトリクスからは見え続ける必要がある。
+			// ただし「収集が失敗して run が中断された」系統的失敗とは別物なので、
+			// dlsite_no_data メトリクスの対象からは外してある（SPR-271）。
+			logger.error(
+				`作品ID収集エラー (ページ ${currentPage}): このページで打ち切り、収集済みの部分結果で継続します`,
+				{ error },
+			);
 			break;
 		}
 	}
