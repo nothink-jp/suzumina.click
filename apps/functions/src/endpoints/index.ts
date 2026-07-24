@@ -12,7 +12,7 @@ import * as functions from "@google-cloud/functions-framework";
 import * as logger from "../shared/logger";
 import type { MessagePublishedData } from "../shared/pubsub-utils";
 // 各モジュールから関数をインポート（統合アーキテクチャ）
-import { checkDataIntegrity } from "./data-integrity-check";
+import { checkDataIntegrity } from "./data-integrity/check-data-integrity";
 import { fetchDLsiteUnifiedData } from "./dlsite/fetch-dlsite-unified-data";
 import { fetchYouTubeVideos } from "./youtube/fetch-youtube-videos";
 

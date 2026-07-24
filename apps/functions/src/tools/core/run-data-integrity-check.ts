@@ -15,7 +15,10 @@
  *   - 未設定 → ADC で本番 Firestore（dry-run 推奨）
  */
 
-import { type IntegrityCheckResult, runIntegrityCheck } from "../../endpoints/data-integrity-check";
+import {
+	type IntegrityCheckResult,
+	runIntegrityCheck,
+} from "../../endpoints/data-integrity/run-integrity-check";
 import * as logger from "../../shared/logger";
 
 function printReport(result: IntegrityCheckResult): void {
