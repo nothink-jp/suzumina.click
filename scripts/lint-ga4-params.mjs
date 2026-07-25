@@ -16,6 +16,10 @@
  *   - `window.gtag("set", { ... })`（traffic_type）
  * 引数が識別子の場合は同一ファイル内の `const <id> = { ... }` に解決する。解決できない呼び出しは
  * 黙って通さず、UNRESOLVED_ALLOWLIST に理由付きで載っていなければ落とす（fail-closed）。
+ *
+ * AST は使わず正規表現 + 括弧マッチで読む。誤認の主因になるコメントは blankComments で潰すが、
+ * 文字列リテラル内に呼び出しそのものを書いた場合（`const s = 'gtag("event", ...)'`）は拾ってしまう。
+ * 誤検知は「宣言を増やせ」と言う過検知方向にしか倒れず、宣言漏れを見逃す方向には倒れない。
  */
 import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
@@ -75,6 +79,36 @@ function endOfString(text, start) {
 }
 
 /**
+ * コメント本体を同じ長さの空白へ潰す（文字列リテラルは温存し、改行も残す）。
+ * 長さと改行を保つのは、走査後の行番号と括弧位置をそのまま使うため。
+ * これが無いと「方式: gtag('set') で…」のような実コード片を載せた説明コメントを
+ * 実呼び出しと誤認して落ちる（このリポジトリのコメントはその密度なので現実的なリスク）。
+ */
+function blankLineComment(out, text, from) {
+	let i = from;
+	while (i < text.length && text[i] !== "\n") out[i++] = " ";
+	return i;
+}
+
+function blankBlockComment(out, text, from) {
+	const end = text.indexOf("*/", from + 2);
+	const stop = end === -1 ? text.length : end + 2;
+	for (let i = from; i < stop; i++) if (text[i] !== "\n") out[i] = " ";
+	return stop - 1;
+}
+
+function blankComments(text) {
+	const out = text.split("");
+	for (let i = 0; i < text.length; i++) {
+		const ch = text[i];
+		if (ch === '"' || ch === "'" || ch === "`") i = endOfString(text, i);
+		else if (ch === "/" && text[i + 1] === "/") i = blankLineComment(out, text, i);
+		else if (ch === "/" && text[i + 1] === "*") i = blankBlockComment(out, text, i);
+	}
+	return out.join("");
+}
+
+/**
  * `open` の位置の括弧に対応する閉じ括弧までを返す（文字列リテラルは読み飛ばす）。
  * @returns 括弧の内側の文字列。対応が取れなければ null
  */
@@ -123,7 +157,7 @@ const unresolved = []; // { id, where }
 let callSites = 0;
 
 for (const file of collectFiles(SCAN_DIR)) {
-	const text = readFileSync(file, "utf8");
+	const text = blankComments(readFileSync(file, "utf8"));
 	const where = relative(repoRoot, file);
 	for (const pattern of CALL_PATTERNS) {
 		for (const m of text.matchAll(pattern)) {
