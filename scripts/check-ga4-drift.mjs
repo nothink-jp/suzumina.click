@@ -1,8 +1,10 @@
 #!/usr/bin/env node
-// scripts/check-ga4-dimension-drift.mjs
+// scripts/check-ga4-drift.mjs
 //
-// live GA4 のカスタムディメンションと宣言（apps/web/src/lib/analytics/ga4-custom-dimensions.json）の
-// drift を検出する（SPR-279）。check-firestore-index-drift.mjs と同型の位置づけ。
+// live GA4 と宣言の drift を検出する（SPR-279 / SPR-285）。check-firestore-index-drift.mjs と同型。
+// 宣言の正本は 2 ファイル（どちらも apps/web/src/lib/analytics/ 配下・Admin API の payload と同一形）:
+//   ga4-custom-dimensions.json  カスタムディメンション
+//   ga4-property-settings.json  プロパティ設定（Googleシグナル / データ保持）
 //
 // 責務の分担:
 //   pnpm lint:ga4        コード（gtag へ渡すパラメータ）↔ 宣言。認証不要なので verify に載る
@@ -14,10 +16,11 @@
 //              発見が遅れた期間のデータは永久に集計不能になる（index の apply 漏れより重い）
 //   ⚪ description 差: --apply で live へ同期できる（内部向けの説明文）
 //   ⚠ displayName / scope 差: 人が判断する（表示名はレポートに出る・scope は変更不可）
+//   🟣 プロパティ設定の差: **人が判断する（--apply の対象外）**。理由は下記
 //
 // 使い方:
-//   node scripts/check-ga4-dimension-drift.mjs           # 検出のみ（読み取り専用）
-//   node scripts/check-ga4-dimension-drift.mjs --apply   # 未登録の登録 + description の同期
+//   node scripts/check-ga4-drift.mjs           # 検出のみ（読み取り専用）
+//   node scripts/check-ga4-drift.mjs --apply   # 未登録の登録 + description の同期
 //   （ローカルは ADC → ga4-reader@ を impersonate。gcloud が PATH に必要。npm 依存なし）
 // 終了コード: 0=drift なし / 1=drift あり / 2=実行エラー
 //
@@ -25,6 +28,10 @@
 //   - GA4 のカスタムディメンションは API で削除できずアーカイブのみ。--apply は追加と
 //     description 同期だけで、「管理外」の掃除は人が GA4 管理画面で判断する
 //     （CLAUDE.md 軸1: 判断をツール任せにしない）
+//   - **プロパティ設定は --apply で直さない**（報告のみ）。保持期間の短縮はイベント単位データの
+//     削除で不可逆、Googleシグナルの切替はプライバシー方針に関わる（privacy ページに
+//     「Googleシグナルは無効に設定しています」と公開記述があり、対で判断すべき）。
+//     変更頻度も年数回なので自動修正の利得が小さい（SPR-285）
 //   - displayName / scope の差も --apply では直さない（表示名は GA4 レポートに出る・
 //     scope は変更不可で作り直しが必要）
 //   - **報告は必ず apply 後の live を再取得して行う**。apply 前の集計で報告すると、
@@ -38,12 +45,19 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const MANIFEST = join(repoRoot, "apps/web/src/lib/analytics/ga4-custom-dimensions.json");
+const ANALYTICS_DIR = join(repoRoot, "apps/web/src/lib/analytics");
+const MANIFEST = join(ANALYTICS_DIR, "ga4-custom-dimensions.json");
+const SETTINGS_MANIFEST = join(ANALYTICS_DIR, "ga4-property-settings.json");
 const PROPERTY = `properties/${process.env.GA4_PROPERTY_ID ?? "496464197"}`;
 const TARGET_SA = process.env.GA4_READER_SA ?? "ga4-reader@suzumina-click.iam.gserviceaccount.com";
 const READ_SCOPE = "https://www.googleapis.com/auth/analytics.readonly";
 const EDIT_SCOPE = "https://www.googleapis.com/auth/analytics.edit";
-const API = "https://analyticsadmin.googleapis.com/v1beta";
+const API_BASE = "https://analyticsadmin.googleapis.com";
+// プロパティ設定のリソースごとの API バージョン。googleSignalsSettings は v1beta に無い
+const SETTINGS_API_VERSION = {
+	googleSignalsSettings: "v1alpha",
+	dataRetentionSettings: "v1beta",
+};
 // 宣言に書いている項目だけ比較する（live の disallowAdsPersonalization 等は宣言側に無いため対象外）
 const COMPARED_FIELDS = ["displayName", "scope", "description"];
 
@@ -77,7 +91,7 @@ function accessToken(scope) {
 }
 
 async function callApi(path, token, init = {}) {
-	const res = await fetch(`${API}/${path}`, {
+	const res = await fetch(`${API_BASE}/${path}`, {
 		...init,
 		headers: {
 			Authorization: `Bearer ${token}`,
@@ -96,7 +110,7 @@ async function fetchLive(token) {
 	do {
 		const query = new URLSearchParams({ pageSize: "200" });
 		if (pageToken) query.set("pageToken", pageToken);
-		const page = await callApi(`${PROPERTY}/customDimensions?${query}`, token);
+		const page = await callApi(`v1beta/${PROPERTY}/customDimensions?${query}`, token);
 		all.push(...(page.customDimensions ?? []));
 		pageToken = page.nextPageToken;
 	} while (pageToken);
@@ -124,6 +138,43 @@ try {
 }
 
 const declaredByParam = new Map(manifest.map((d) => [d.parameterName, d]));
+
+let settingsManifest;
+try {
+	settingsManifest = JSON.parse(readFileSync(SETTINGS_MANIFEST, "utf8"));
+} catch (e) {
+	abort(`プロパティ設定の宣言を読めませんでした（${SETTINGS_MANIFEST}）: ${e.message}`);
+}
+// 未知のリソース名を黙って読み飛ばすと「宣言したのに検査されていない」状態になるため落とす
+for (const resource of Object.keys(settingsManifest)) {
+	if (!SETTINGS_API_VERSION[resource]) {
+		abort(
+			`未知のプロパティ設定 "${resource}"（対応は ${Object.keys(SETTINGS_API_VERSION).join(" / ")}）。SETTINGS_API_VERSION に API バージョンを追加すること`,
+		);
+	}
+}
+
+/**
+ * プロパティ設定（Googleシグナル / データ保持）を宣言と突き合わせる。
+ * 宣言に書いたフィールドだけ比較する（live の name 等は対象外）。--apply では直さない。
+ */
+async function checkSettings(token) {
+	const results = [];
+	for (const [resource, declared] of Object.entries(settingsManifest)) {
+		const version = SETTINGS_API_VERSION[resource];
+		let live;
+		try {
+			live = await callApi(`${version}/${PROPERTY}/${resource}`, token);
+		} catch (e) {
+			return abort(`${resource} を取得できませんでした: ${e.message}`);
+		}
+		const diffs = Object.keys(declared)
+			.filter((f) => String(declared[f]) !== String(live[f]))
+			.map((f) => ({ field: `${resource}.${f}`, declared: declared[f], live: live[f] }));
+		results.push(...diffs);
+	}
+	return results;
+}
 
 /** live を取得して宣言と突き合わせる。--apply の後は必ず呼び直して報告に使う */
 async function computeDrift(token) {
@@ -161,7 +212,7 @@ async function applyDrift({ missing, syncable }) {
 		console.log(`⚙ --apply: 未登録 ${missing.length} 件を登録`);
 		for (const d of missing) {
 			try {
-				await callApi(`${PROPERTY}/customDimensions`, editToken, {
+				await callApi(`v1beta/${PROPERTY}/customDimensions`, editToken, {
 					method: "POST",
 					body: JSON.stringify(d),
 				});
@@ -179,7 +230,7 @@ async function applyDrift({ missing, syncable }) {
 			try {
 				// live のリソース名（properties/*/customDimensions/*）に対して description だけ PATCH
 				const resource = liveDim.name.replace(/^properties\/[^/]+\//, "");
-				await callApi(`${PROPERTY}/${resource}?updateMask=description`, editToken, {
+				await callApi(`v1beta/${PROPERTY}/${resource}?updateMask=description`, editToken, {
 					method: "PATCH",
 					body: JSON.stringify({ description: declared.description ?? "" }),
 				});
@@ -196,9 +247,12 @@ const apply = process.argv.includes("--apply");
 const readToken = accessToken(READ_SCOPE);
 let drift = await computeDrift(readToken);
 
-console.log(`GA4 custom dimension drift check (${PROPERTY})`);
+const settingDiffs = await checkSettings(readToken);
+
+console.log(`GA4 drift check (${PROPERTY})`);
+console.log(`  カスタムディメンション: live ${drift.live.length} / 宣言 ${manifest.length}`);
 console.log(
-	`  live: ${drift.live.length} / 宣言(ga4-custom-dimensions.json): ${manifest.length}\n`,
+	`  プロパティ設定: ${Object.keys(settingsManifest).join(" / ")}（宣言フィールド ${Object.values(settingsManifest).reduce((n, o) => n + Object.keys(o).length, 0)} 件）\n`,
 );
 
 if (apply && (drift.missing.length || drift.syncable.length)) {
@@ -211,9 +265,26 @@ if (apply && (drift.missing.length || drift.syncable.length)) {
 
 const { unmanaged, missing, syncable, needsHuman } = drift;
 
-if (!unmanaged.length && !missing.length && !syncable.length && !needsHuman.length) {
+if (
+	!unmanaged.length &&
+	!missing.length &&
+	!syncable.length &&
+	!needsHuman.length &&
+	!settingDiffs.length
+) {
 	console.log("✅ drift なし（live と宣言が一致）");
 	process.exit(0);
+}
+
+if (settingDiffs.length) {
+	console.log(`🟣 プロパティ設定の差（人が判断・--apply の対象外）: ${settingDiffs.length}`);
+	for (const d of settingDiffs) console.log(`   - ${formatDiff(d)}`);
+	console.log(
+		"   → 意図した変更なら宣言（ga4-property-settings.json）を更新。意図しない変更なら GA4 管理画面で戻す。",
+	);
+	console.log(
+		"     Googleシグナルは privacy ページの公開記述と対で判断する。保持期間の短縮はイベント単位データの削除で不可逆\n",
+	);
 }
 
 if (unmanaged.length) {

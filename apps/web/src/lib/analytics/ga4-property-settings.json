@@ -1,0 +1,10 @@
+{
+	"googleSignalsSettings": {
+		"state": "GOOGLE_SIGNALS_DISABLED"
+	},
+	"dataRetentionSettings": {
+		"eventDataRetention": "FOURTEEN_MONTHS",
+		"userDataRetention": "FOURTEEN_MONTHS",
+		"resetUserDataOnNewActivity": true
+	}
+}
