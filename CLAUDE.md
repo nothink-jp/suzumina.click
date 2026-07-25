@@ -93,7 +93,9 @@ LLM に毎回全部読ませて再構築させない。能動的に効かせた�
   **カスタムディメンションは遡及適用されない**＝登録が遅れた期間のデータは永久に集計不能
   （実測: 登録前の `web_vitals` 113件は `customEvent:metric_name` が全て `(not set)`）。
   Firestore 複合インデックスと同型の負債だが、index は後から足せば効く点で向こうの方が軽い。
-  登録済みは `customEvent:<param>` で Data API からクエリ可能。live↔JSON の突合は未実装（要 GA4 認証）。
+  登録済みは `customEvent:<param>` で Data API からクエリ可能。live↔JSON の突合は `pnpm check:ga4-drift`
+  （GA4 認証が要るため verify には入れない＝`check:index-drift` と同じ扱い。`--apply` で未登録の登録と
+  description の同期まで行う。displayName/scope の差は人が判断・SPR-279）。
   なお計器を足しただけでは測れない: カスタムイベントは consent ゲート内で送るため、同意率がそのまま母数になる
 - **Firestore 時刻フィールド**: 新規コレクション・新規フィールドの日時は Firestore `Timestamp` で保存する。
   既存は string ISO（works / audioButtons / users / contacts）と Timestamp（circles / creators / evaluations / ba_*）が
