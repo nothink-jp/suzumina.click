@@ -4,7 +4,7 @@
 # GA4 のカスタムディメンションそのものは terraform で管理できない（GA4 は GCP リソースではなく
 # Google Marketing Platform 側で、公式 provider に Analytics Admin API のリソースが無い）。
 # 宣言の正本は apps/web/src/lib/analytics/ga4-custom-dimensions.json で、live への反映と
-# drift 検出は scripts/check-ga4-dimension-drift.mjs が Admin API 経由で行う。
+# drift 検出は scripts/check-ga4-drift.mjs が Admin API 経由で行う。
 #
 # つまり terraform が管理するのは **Admin API を叩く GCP 側の identity だけ**。
 # 次の2つは terraform の管轄外なので、変更したらこのコメントも更新すること:

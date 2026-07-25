@@ -1,7 +1,10 @@
-name: GA4 Dimension Drift
+name: GA4 Drift
 
-# live GA4 のカスタムディメンションと宣言（apps/web/src/lib/analytics/ga4-custom-dimensions.json）の
-# drift を検出する（SPR-279 Step 2）。firestore-index-drift.yml と同型。
+# live GA4 と宣言（apps/web/src/lib/analytics/ga4-custom-dimensions.json および
+# ga4-property-settings.json）の drift を検出する（SPR-279 Step 2 / SPR-285）。
+# firestore-index-drift.yml と同型。
+# ファイル名が ga4-dimension-drift.yml のままなのは実行履歴の継続のため（GitHub は
+# ワークフローをファイルパスで同一視する）。表示名と実体は「GA4 Drift」で揃えている。
 # 方針: 非ブロッキング（continue-on-error）。登録/アーカイブの判断はツール任せにせず人が行う
 # （CLAUDE.md 軸1）。そのため CI では --apply を使わず、検出のみ実行する。
 # 認証: WIF で terraform-plan-sa を assume し、スクリプトが GA4 閲覧者の ga4-ci-reader を
@@ -30,7 +33,7 @@ permissions:
 
 jobs:
   drift:
-    name: GA4 dimension drift report
+    name: GA4 drift report
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
