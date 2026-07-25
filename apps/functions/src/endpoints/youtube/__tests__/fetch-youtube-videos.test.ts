@@ -316,49 +316,89 @@ describe("fetchYouTubeVideos: 週次フルスイープ（mode=weekly_full_sweep�
 		expect(youtubeFirestore.getAllVideoIds).toHaveBeenCalled();
 	});
 
-	it("発見集合に差分がある場合はwarnログを出す（検知のみ・本処理は完了する）", async () => {
+	it("未保存の取りこぼしはalertフィールド付きwarnで出す（検知のみ・本処理は完了する・SPR-235）", async () => {
 		vi.mocked(youtubeApi.fetchUploadsPlaylistPage).mockResolvedValue({
 			videoIds: ["v1"],
 			nextPageToken: undefined,
 		});
-		// Firestoreにはv2があるが、uploads playlist走査では見つからない → 差分あり
-		vi.mocked(youtubeFirestore.getAllVideoIds).mockResolvedValue(new Set(["v2"]));
+		// uploads playlistにv1があるがFirestoreは空 → 未保存＝真の取りこぼし
+		vi.mocked(youtubeFirestore.getAllVideoIds).mockResolvedValue(new Set());
 
 		const result = await fetchYouTubeVideos(pubsubEvent({ mode: "weekly_full_sweep" }));
 
 		expect(logger.warn).toHaveBeenCalledWith(
-			expect.stringContaining("差分があります"),
-			expect.anything(),
+			expect.stringContaining("Firestoreに未保存"),
+			// alertフィールドは monitoring_youtube.tf のメトリクスが参照する契約
+			expect.objectContaining({ alert: "youtube_discovery_unsaved", 未保存件数: 1 }),
 		);
-		// 差分検出自体は本処理の完了を妨げない
+		// 取りこぼし検出自体は本処理の完了を妨げない
 		expect(result).toBeUndefined();
 	});
 
-	it("全走査がページ上限で打ち切られた場合はmissing判定をスキップして警告する（レビュー指摘対応）", async () => {
+	it("YouTube側で削除された動画（playlist不在）はINFOに留めアラート対象にしない（SPR-235）", async () => {
+		vi.mocked(youtubeApi.fetchUploadsPlaylistPage).mockResolvedValue({
+			videoIds: ["v1"],
+			nextPageToken: undefined,
+		});
+		// Firestoreにはv1に加えv2があるが、uploads playlistには無い＝削除/非公開の残骸
+		vi.mocked(youtubeFirestore.getAllVideoIds).mockResolvedValue(new Set(["v1", "v2"]));
+
+		await fetchYouTubeVideos(pubsubEvent({ mode: "weekly_full_sweep" }));
+
+		expect(logger.info).toHaveBeenCalledWith(
+			expect.stringContaining("Firestoreにのみ存在する動画があります"),
+			expect.objectContaining({ playlist不在件数: 1 }),
+		);
+		// 常態の床のため、これ単独ではwarnを出さない（毎週の誤発火を避ける）
+		expect(logger.warn).not.toHaveBeenCalledWith(
+			expect.stringContaining("Firestoreに未保存"),
+			expect.anything(),
+		);
+	});
+
+	it("全走査がページ上限で打ち切られた場合はplaylist不在判定のみスキップする（未保存判定は有効・SPR-235）", async () => {
 		// 常にnextPageTokenありを返し続ける → fetchVideoIdsViaPlaylistFullがページ上限で打ち切られる
 		vi.mocked(youtubeApi.fetchUploadsPlaylistPage).mockImplementation(async () => ({
 			videoIds: ["v1"],
 			nextPageToken: "more",
 		}));
-		// Firestoreには走査未到達分のv2がある想定（打ち切られなければmissing判定される状況）
+		// Firestoreには走査未到達分のv2がある想定（打ち切られなければplaylist不在判定される状況）
 		vi.mocked(youtubeFirestore.getAllVideoIds).mockResolvedValue(new Set(["v1", "v2"]));
 
 		await fetchYouTubeVideos(pubsubEvent({ mode: "weekly_full_sweep" }));
 
 		// ページ上限打ち切りの警告が出る
 		expect(logger.warn).toHaveBeenCalledWith(
-			expect.stringContaining("ページ上限で打ち切られたため、今回はmissing判定をスキップします"),
+			expect.stringContaining(
+				"ページ上限で打ち切られたため、今回はplaylist不在判定をスキップします",
+			),
 			expect.anything(),
 		);
-		// missing判定はスキップされるため「差分があります」ログは出ない
-		expect(logger.warn).not.toHaveBeenCalledWith(
-			expect.stringContaining("差分があります"),
+		// playlist不在判定はスキップされるためINFOも出ない（未走査分の偽陽性を避ける）
+		expect(logger.info).not.toHaveBeenCalledWith(
+			expect.stringContaining("Firestoreにのみ存在する動画があります"),
 			expect.anything(),
 		);
 		// 一致ログも出ない（判定自体をスキップしているため）
 		expect(logger.info).not.toHaveBeenCalledWith(
 			expect.stringContaining("発見集合が一致しました"),
 			expect.anything(),
+		);
+	});
+
+	it("走査が打ち切られても未保存の取りこぼしは検知する（SPR-235）", async () => {
+		vi.mocked(youtubeApi.fetchUploadsPlaylistPage).mockImplementation(async () => ({
+			videoIds: ["v1"],
+			nextPageToken: "more",
+		}));
+		// 走査できた範囲のv1がFirestoreに無い＝打ち切りに関係なく真の取りこぼし
+		vi.mocked(youtubeFirestore.getAllVideoIds).mockResolvedValue(new Set());
+
+		await fetchYouTubeVideos(pubsubEvent({ mode: "weekly_full_sweep" }));
+
+		expect(logger.warn).toHaveBeenCalledWith(
+			expect.stringContaining("Firestoreに未保存"),
+			expect.objectContaining({ alert: "youtube_discovery_unsaved" }),
 		);
 	});
 

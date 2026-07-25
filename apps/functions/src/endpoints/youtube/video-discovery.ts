@@ -131,14 +131,32 @@ async function fetchVideoIdsViaPlaylistFull(
 }
 
 /**
- * uploads playlist全走査の発見集合とFirestoreの既知集合を比較し、対称差をログ出力する
- * （週次フルスイープの取りこぼし検知）。比較自体が失敗しても本処理には影響させない
- * （ログのみ・例外を投げない）。ログの「SPR-230 shadow:」接頭辞は Cloud Logging の
- * 検索キーとして定着しているため互換維持する（shadowモード自体は撤去済み）。
+ * 週次フルスイープの取りこぼし検知アラート識別子
  *
- * ページ上限で全走査自体が打ち切られた場合（`truncated`）、未走査分は「Firestoreにあるが
- * playlist走査で見つからない」＝missing判定に必ず引っかかってしまい偽陽性になるため、
- * その回はmissing判定をスキップする（レビュー指摘対応）。
+ * SPR-235: terraform のログベースメトリクス（`youtube_discovery_unsaved`）が
+ * `jsonPayload.alert` でこの値を参照する＝監視の契約。変更する場合は
+ * terraform/monitoring_youtube.tf も同じPRで更新する。
+ */
+const DISCOVERY_UNSAVED_ALERT = "youtube_discovery_unsaved";
+
+/**
+ * uploads playlist全走査の発見集合とFirestoreの既知集合を比較し、差分をログ出力する
+ * （週次フルスイープの取りこぼし検知）。比較自体が失敗しても本処理には影響させない
+ * （ログのみ・例外を投げない）。
+ *
+ * SPR-235: 旧実装は両方向の差分を1本のWARNにまとめていたが、2つの差分は意味も緊急度も
+ * 異なるため分離した（まとめたままではアラート化できない）。
+ *   - **未保存**（uploads playlistにあるがFirestoreに無い）… 発見できているのに保存
+ *     されていない＝真の取りこぼし。WARN＋`alert`フィールドでアラート対象にする
+ *   - **playlist不在**（Firestoreにあるがuploads playlistに無い）… YouTube側で削除/
+ *     非公開になった旧動画の残骸。2026-07実測で3回のスイープとも同一の8件が出続ける
+ *     恒久的な床であり、アラート化すると毎週必ず鳴る（軸2の予測可能性を壊す）。
+ *     件数の推移だけ追えれば十分なのでINFOに留める
+ *
+ * ページ上限で全走査が打ち切られた場合（`truncated`）、未走査分は「Firestoreにあるが
+ * playlist走査で見つからない」＝playlist不在判定に必ず引っかかって偽陽性になるため、
+ * その回はplaylist不在判定のみスキップする。未保存判定は走査できた範囲の実在IDに対する
+ * 判定なので打ち切りの影響を受けず、そのまま有効（SPR-235で早期returnをやめた）。
  */
 export async function logDiscoveryComparison(
 	youtube: youtube_v3.Youtube,
@@ -150,15 +168,24 @@ export async function logDiscoveryComparison(
 			getAllVideoIds(),
 		]);
 		const playlistIdSet = new Set(playlistVideoIds);
-		const extraInPlaylist = playlistVideoIds.filter((id) => !knownIds.has(id));
+		const unsavedInFirestore = playlistVideoIds.filter((id) => !knownIds.has(id));
+
+		if (unsavedInFirestore.length > 0) {
+			logger.warn("uploads playlistにあるがFirestoreに未保存の動画を検出しました", {
+				alert: DISCOVERY_UNSAVED_ALERT,
+				未保存件数: unsavedInFirestore.length,
+				uploadsPlaylist走査件数: playlistVideoIds.length,
+				Firestore既知件数: knownIds.size,
+				未保存サンプル: unsavedInFirestore.slice(0, 10),
+			});
+		}
 
 		if (truncated) {
 			logger.warn(
-				"SPR-230 shadow: uploads playlist全走査がページ上限で打ち切られたため、今回はmissing判定をスキップします",
+				"uploads playlist全走査がページ上限で打ち切られたため、今回はplaylist不在判定をスキップします",
 				{
 					uploadsPlaylist走査件数: playlistVideoIds.length,
 					Firestore既知件数: knownIds.size,
-					uploadsPlaylistのみに存在する件数: extraInPlaylist.length,
 				},
 			);
 			return;
@@ -166,21 +193,22 @@ export async function logDiscoveryComparison(
 
 		const missingInPlaylist = [...knownIds].filter((id) => !playlistIdSet.has(id));
 
-		if (missingInPlaylist.length === 0 && extraInPlaylist.length === 0) {
-			logger.info("SPR-230 shadow: discovery方式の発見集合が一致しました", {
+		if (missingInPlaylist.length > 0) {
+			logger.info("Firestoreにのみ存在する動画があります（YouTube側で削除/非公開の可能性）", {
+				playlist不在件数: missingInPlaylist.length,
+				Firestore既知件数: knownIds.size,
+				playlist不在サンプル: missingInPlaylist.slice(0, 10),
+			});
+		}
+
+		if (missingInPlaylist.length === 0 && unsavedInFirestore.length === 0) {
+			logger.info("discovery方式の発見集合が一致しました", {
 				uploadsPlaylist件数: playlistVideoIds.length,
 				Firestore既知件数: knownIds.size,
 			});
-		} else {
-			logger.warn("SPR-230 shadow: discovery方式の発見集合に差分があります", {
-				uploadsPlaylistに無いFirestore既知件数: missingInPlaylist.length,
-				uploadsPlaylistのみに存在する件数: extraInPlaylist.length,
-				missingSample: missingInPlaylist.slice(0, 10),
-				extraSample: extraInPlaylist.slice(0, 10),
-			});
 		}
 	} catch (error) {
-		logger.warn("SPR-230 shadow: discovery方式の比較に失敗しました（本処理には影響しません）", {
+		logger.warn("discovery方式の比較に失敗しました（本処理には影響しません）", {
 			error: error instanceof Error ? error.message : String(error),
 		});
 	}
