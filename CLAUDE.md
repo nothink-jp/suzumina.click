@@ -83,6 +83,14 @@ LLM に毎回全部読ませて再構築させない。能動的に効かせた�
   クエリを in-memory フィルタへ移行 or フィールド/コレクションを改名したら**対応する旧 index を同時に撤去**（残すと孤立 index 化）。
   `FAILED_PRECONDITION`（index 要求エラー）を catch で握りつぶさない（最低ログ。silent fallback は欠落を隠す）。
   drift 点検は `pnpm check:index-drift`（live↔config 突合）、本番欠落は監視アラート、削除はクエリ→index 対応で未使用確認後（背景: SPR-213）
+- **GA4 イベントパラメータ**: `sendGoogleAnalyticsEvent` に新しいパラメータを**足したら同じタイミングで GA4 の
+  カスタムディメンションも登録**する（正本は GA4 プロパティ側の設定＝コードには無い。未登録のパラメータは
+  送信されても Data API・標準レポートから一切参照できない）。Firestore 複合インデックスと同型の負債だが、
+  index は後から足せば効くのに対し**カスタムディメンションは遡及適用されない**＝登録が遅れた期間のデータは
+  永久に集計不能な点が悪い（実測: 登録前の `web_vitals` 113件は `customEvent:metric_name` が全て `(not set)`）。
+  登録先は GA4 管理画面 → カスタム定義、または Admin API（`ga4-reader@` SA に編集者権限が必要）。
+  登録済みは `customEvent:<param>` で Data API からクエリ可能。
+  なお計器を足しただけでは測れない: カスタムイベントは consent ゲート内で送るため、同意率がそのまま母数になる
 - **Firestore 時刻フィールド**: 新規コレクション・新規フィールドの日時は Firestore `Timestamp` で保存する。
   既存は string ISO（works / audioButtons / users / contacts）と Timestamp（circles / creators / evaluations / ba_*）が
   混在しており、一括移行はしない（既存フィールドの型は現状維持。実測マップは SPR-75 調査コメント参照）
