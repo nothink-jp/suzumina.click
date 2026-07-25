@@ -328,7 +328,8 @@ export default function PrivacyPage() {
 									<div>
 										<h5 className="font-semibold text-foreground text-sm">送信の停止方法</h5>
 										<p className="text-xs text-muted-foreground">
-											Cookie同意バナーで「必須のみ」を選択すると、識別子の送信を停止できます。
+											Cookie同意バナーの「拒否」（または「詳細設定」内の「必須のみ」）を選択すると、
+											識別子の送信を停止できます。
 											匿名の統計情報も含めて停止する場合は、ブラウザのJavaScriptを無効化するか、
 											Googleが提供する
 											<a
