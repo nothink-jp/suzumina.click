@@ -5,8 +5,9 @@ name: GA4 Drift
 # firestore-index-drift.yml と同型。
 # ファイル名が ga4-dimension-drift.yml のままなのは実行履歴の継続のため（GitHub は
 # ワークフローをファイルパスで同一視する）。表示名と実体は「GA4 Drift」で揃えている。
-# 方針: 非ブロッキング（continue-on-error）。登録/アーカイブの判断はツール任せにせず人が行う
-# （CLAUDE.md 軸1）。そのため CI では --apply を使わず、検出のみ実行する。
+# 方針: drift あり(exit 1)は非ブロッキングで warning・検査が動かない(exit 2)は run を赤にする（SPR-282）。
+# 登録/アーカイブの判断はツール任せにせず人が行う（CLAUDE.md 軸1）。
+# そのため CI では --apply を使わず、検出のみ実行する。
 # 認証: WIF で terraform-plan-sa を assume し、スクリプトが GA4 閲覧者の ga4-ci-reader を
 # impersonate する。GA4 編集者の ga4-reader は CI からは使わない（実体は terraform/analytics_ga4.tf）。
 
@@ -60,8 +61,35 @@ jobs:
         with:
           node-version: '24.18.0'
 
-      # 非ブロッキング: drift があっても PR を落とさない。結果はこのステップのログで確認する。
       # スクリプトは npm 依存ゼロなので install 不要。
-      - name: Check GA4 dimension drift
-        continue-on-error: true
-        run: node scripts/check-ga4-drift.mjs
+      # continue-on-error は使わない（ステップの conclusion まで success に塗られ、
+      # 「緑だが壊れている」を作るため＝SPR-282）。代わりに exit code を出力して次の
+      # ステップで意味づけする。結果は Summary に出るのでログを開かなくても読める。
+      - name: Run GA4 drift check (capture exit code)
+        id: drift
+        run: |
+          set +e
+          node scripts/check-ga4-drift.mjs 2>&1 | tee /tmp/drift.txt
+          code=${PIPESTATUS[0]}
+          {
+            echo "### GA4 Drift (exit ${code})"
+            echo '```'
+            cat /tmp/drift.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "exit_code=${code}" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      # exit 1（drift あり）は非ブロッキングで warning に留める＝対応の判断は人が行う（軸1）。
+      # exit 2（検査そのものが動かない）は run を赤にする。必須チェックではないのでマージは
+      # 止まらないが、緑に埋もれると検出が停止したことに気づけない（SPR-282 の本体）。
+      - name: Report drift result
+        env:
+          DRIFT_EXIT: ${{ steps.drift.outputs.exit_code }}
+        run: |
+          case "$DRIFT_EXIT" in
+            0) echo "::notice::GA4 drift なし（live と宣言が一致）" ;;
+            1) echo "::warning::GA4 drift を検出しました。Summary を確認してください" ;;
+            *) echo "::error::GA4 drift 検査が実行できませんでした（exit ${DRIFT_EXIT}）。検出が停止しています"
+               exit 1 ;;
+          esac
