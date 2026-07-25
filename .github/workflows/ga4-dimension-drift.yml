@@ -65,7 +65,7 @@ jobs:
       # continue-on-error は使わない（ステップの conclusion まで success に塗られ、
       # 「緑だが壊れている」を作るため＝SPR-282）。代わりに exit code を出力して次の
       # ステップで意味づけする。結果は Summary に出るのでログを開かなくても読める。
-      - name: Check GA4 drift
+      - name: Run GA4 drift check (capture exit code)
         id: drift
         run: |
           set +e
