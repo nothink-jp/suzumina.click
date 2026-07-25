@@ -9,7 +9,7 @@ export default function PrivacyPage() {
 			<div className="text-center mb-8">
 				<h1 className="text-3xl font-bold text-foreground mb-4">プライバシーポリシー</h1>
 				<p className="text-lg text-muted-foreground">個人情報の取扱いに関する方針</p>
-				<p className="text-sm text-muted-foreground mt-2">最終更新: 2025年7月13日</p>
+				<p className="text-sm text-muted-foreground mt-2">最終更新: 2026年7月25日</p>
 			</div>
 
 			<div className="space-y-8">
@@ -219,7 +219,7 @@ export default function PrivacyPage() {
 											<strong>データ:</strong> 匿名化されたアクセス情報
 										</p>
 										<p>
-											<strong>Cookie:</strong> 分析用Cookie使用
+											<strong>Cookie:</strong> 分析用Cookieは同意時のみ使用
 										</p>
 										<p>
 											<strong>制御:</strong> ユーザー同意管理で制御可能
@@ -285,9 +285,67 @@ export default function PrivacyPage() {
 									</ul>
 								</div>
 								<p className="text-sm text-muted-foreground mt-2">
-									これらのツールは、ユーザーの明示的な同意がある場合のみ使用されます。
+									訪問者を識別するための分析Cookieは、ユーザーの明示的な同意がある場合のみ使用されます。
 									同意はいつでも撤回可能です。
 								</p>
+								<p className="text-sm text-muted-foreground mt-2">
+									同意がない場合は、Cookieや識別子を保存せず、個々の訪問者を追跡しない匿名の統計情報のみが
+									送信されます（ページの表示回数・滞在時間などの集計）。
+								</p>
+							</div>
+							<div>
+								<h4 className="font-semibold text-foreground">外部送信される情報</h4>
+								<p className="text-sm text-muted-foreground mt-2">
+									電気通信事業法に基づき、当サイトの利用に際して利用者の端末から外部へ送信される情報を公表します。
+								</p>
+								<div className="bg-muted p-3 rounded-lg mt-2 space-y-3">
+									<div>
+										<h5 className="font-semibold text-foreground text-sm">送信先</h5>
+										<p className="text-xs text-muted-foreground">
+											Google LLC（Google Analytics 4 / Googleタグマネージャー）
+										</p>
+									</div>
+									<div>
+										<h5 className="font-semibold text-foreground text-sm">送信される情報の内容</h5>
+										<ul className="text-xs text-muted-foreground space-y-1">
+											<li>• アクセス日時、閲覧したページのURL、参照元（リファラ）</li>
+											<li>• ブラウザ・OSの種類、デバイス種別、画面サイズ、言語設定</li>
+											<li>
+												• IPアドレスから推定されるおおよその地域（IPアドレス自体はGoogle Analytics
+												4に保存されません）
+											</li>
+											<li>
+												•
+												同意した場合のみ：Cookieに保存される識別子、およびGoogleアカウントに紐づく情報（Googleシグナル。Google側で広告のパーソナライズを有効にしている利用者に限ります）
+											</li>
+										</ul>
+									</div>
+									<div>
+										<h5 className="font-semibold text-foreground text-sm">利用目的</h5>
+										<p className="text-xs text-muted-foreground">
+											アクセス状況の分析およびサイトの改善です。当サイト自身は広告を掲載していません。
+											ただしGoogleシグナルが有効なため、Googleアカウントで広告のパーソナライズを
+											有効にしている利用者については、Google側で広告関連の目的に利用される場合があります。
+										</p>
+									</div>
+									<div>
+										<h5 className="font-semibold text-foreground text-sm">送信の停止方法</h5>
+										<p className="text-xs text-muted-foreground">
+											Cookie同意バナーで「必須のみ」を選択すると、識別子の送信を停止できます。
+											匿名の統計情報も含めて停止する場合は、ブラウザのJavaScriptを無効化するか、
+											Googleが提供する
+											<a
+												href="https://tools.google.com/dlpage/gaoptout"
+												className="text-primary hover:underline"
+												target="_blank"
+												rel="noopener noreferrer"
+											>
+												アナリティクス オプトアウト アドオン
+											</a>
+											をご利用ください。
+										</p>
+									</div>
+								</div>
 							</div>
 							<div>
 								<h4 className="font-semibold text-foreground">Cookieの制御</h4>
