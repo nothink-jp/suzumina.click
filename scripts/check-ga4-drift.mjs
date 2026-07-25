@@ -175,6 +175,17 @@ function valuesEqual(declared, live) {
 	return String(declared) === String(live);
 }
 
+/**
+ * 表示用に live 値を正規化する。**比較（valuesEqual）と同じ規則を使う**のが要点で、
+ * 揃えないと「live=undefined」と出るのに undefined=false として一致判定される、という
+ * 読み手が混乱する組み合わせが生まれる。
+ */
+function normalizeForDisplay(declared, live) {
+	if (typeof declared === "boolean") return Boolean(live);
+	if (Array.isArray(declared)) return live ?? [];
+	return live;
+}
+
 /** 単一リソース（googleSignalsSettings / dataRetentionSettings）の突合 */
 function diffObject(label, declared, live) {
 	return Object.keys(declared)
@@ -182,18 +193,27 @@ function diffObject(label, declared, live) {
 		.map((f) => ({
 			field: `${label}.${f}`,
 			declared: declared[f],
-			// boolean は live 側が省略されうる。比較と同じ正規化を表示にも適用する
-			// （そのままだと "live=undefined" と出て、undefined=false という比較規則とズレて読める）
-			live: typeof declared[f] === "boolean" ? Boolean(live?.[f]) : live?.[f],
+			live: normalizeForDisplay(declared[f], live?.[f]),
 		}));
 }
 
-/** リストリソース（bigQueryLinks）の突合。「宣言した数だけ、宣言した設定で存在する」を見る */
+/**
+ * リストリソース（bigQueryLinks）の突合。「宣言した数だけ、宣言した設定で存在する」を見る。
+ * **live の返却順に依存しない**（API は順序を保証しないため、宣言ごとに全フィールド一致する
+ * live 要素を探して消費する）。一致しなかった宣言は残った live 要素と並べて差分を出す。
+ */
 function diffList(resource, declaredList, liveList) {
 	if (declaredList.length !== liveList.length) {
 		return [{ field: `${resource}.length`, declared: declaredList.length, live: liveList.length }];
 	}
-	return declaredList.flatMap((d, i) => diffObject(`${resource}[${i}]`, d, liveList[i]));
+	const remaining = [...liveList];
+	const unmatched = [];
+	for (const declared of declaredList) {
+		const hit = remaining.findIndex((l) => diffObject("", declared, l).length === 0);
+		if (hit >= 0) remaining.splice(hit, 1);
+		else unmatched.push(declared);
+	}
+	return unmatched.flatMap((d, i) => diffObject(`${resource}[${i}]`, d, remaining[i]));
 }
 
 /**
