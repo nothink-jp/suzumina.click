@@ -45,8 +45,11 @@ async function buildPlaylistVideoMapping(
 		try {
 			const { videoIds, complete } = await fetchPlaylistItems(youtube, playlist.id);
 			if (!complete) {
-				logger.warn(
-					`プレイリスト「${playlist.title}」の動画取得が打ち切られました（タグが不完全になります）`,
+				// SPR-274: 不完全なマップで書くと、取りこぼした分の playlistTags が空で上書きされる
+				// （merge:true でも [] は値として存在するため既存値を消す）。この一回限りツールは
+				// 対話的に再実行できるので、部分的に壊すより中断して再実行を促す方が安全。
+				throw new Error(
+					`プレイリスト「${playlist.title}」の動画取得が打ち切られました。タグを正しく再計算できないため中断します`,
 				);
 			}
 			for (const videoId of videoIds) {
@@ -56,8 +59,12 @@ async function buildPlaylistVideoMapping(
 				}
 				videoPlaylistMap.set(videoId, current);
 			}
-		} catch (_error) {
-			logger.warn(`プレイリスト「${playlist.title}」の動画取得に失敗`);
+		} catch (error) {
+			// 個別プレイリストの失敗も同様にタグを欠損させるため中断する。
+			logger.error(`プレイリスト「${playlist.title}」の動画取得に失敗したため中断します`, {
+				error: error instanceof Error ? error.message : String(error),
+			});
+			throw error;
 		}
 	}
 	return videoPlaylistMap;
