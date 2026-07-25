@@ -1,0 +1,86 @@
+[
+	{
+		"parameterName": "from_draft",
+		"displayName": "下書き経由の作成",
+		"scope": "EVENT",
+		"description": "create_start / create_success。配信中マーキングの下書き(SPR-146)からの作成かどうか"
+	},
+	{
+		"parameterName": "reason",
+		"displayName": "失敗理由",
+		"scope": "EVENT",
+		"description": "create_error / suggestion_generate / login_error の失敗理由（先頭100文字）"
+	},
+	{
+		"parameterName": "provider",
+		"displayName": "ログインプロバイダ",
+		"scope": "EVENT",
+		"description": "login_start / login_success の OAuth プロバイダ（discord）"
+	},
+	{
+		"parameterName": "success",
+		"displayName": "AI候補の成否",
+		"scope": "EVENT",
+		"description": "suggestion_generate の成否。Phase 2（マーク時事前生成）の投資判断に使う"
+	},
+	{
+		"parameterName": "target",
+		"displayName": "AI候補の採用先",
+		"scope": "EVENT",
+		"description": "suggestion_apply の採用先（title / tag）"
+	},
+	{
+		"parameterName": "has_player_time",
+		"displayName": "マーク時プレーヤー時刻あり",
+		"scope": "EVENT",
+		"description": "mark_draft。false は壁時計のみの劣化モード（SPR-146）"
+	},
+	{
+		"parameterName": "tag_count",
+		"displayName": "ユーザータグ件数",
+		"scope": "EVENT",
+		"description": "user_tag_save の保存件数。0件=全削除を独立した行として区別するため metric ではなく dimension で登録"
+	},
+	{
+		"parameterName": "metric_name",
+		"displayName": "Web Vitals 指標名",
+		"scope": "EVENT",
+		"description": "web_vitals の指標名（LCP / INP / CLS / FCP / TTFB）"
+	},
+	{
+		"parameterName": "rating",
+		"displayName": "Web Vitals 評価",
+		"scope": "EVENT",
+		"description": "web_vitals の評価（good / needs-improvement / poor）"
+	},
+	{
+		"parameterName": "navigation_type",
+		"displayName": "Web Vitals ナビゲーション種別",
+		"scope": "EVENT",
+		"description": "web_vitals の navigationType（navigate / reload / back-forward 等）"
+	},
+	{
+		"parameterName": "video_id",
+		"displayName": "動画ID",
+		"scope": "EVENT",
+		"description": "create_* / mark_draft / suggestion_* / user_tag_* の対象 YouTube 動画ID"
+	},
+	{
+		"parameterName": "audio_button_id",
+		"displayName": "音声ボタンID",
+		"scope": "EVENT",
+		"description": "play_button / create_success / お気に入りトグルの対象ボタンID"
+	},
+	{
+		"parameterName": "consent_analytics",
+		"displayName": "分析Cookie同意",
+		"scope": "EVENT",
+		"description": "consent_update。分析Cookieの同意率＝page_view/カスタムイベントが測れる母数の実測に使う"
+	},
+	{
+		"parameterName": "traffic_type",
+		"displayName": "トラフィック種別",
+		"scope": "EVENT",
+		"description": "internal はオーナー自身のアクセス（SPR-149）。常連の継続利用を見るとき除外する"
+	}
+]

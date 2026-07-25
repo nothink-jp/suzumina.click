@@ -57,6 +57,7 @@ LLM に毎回全部読ませて再構築させない。能動的に効かせた�
   個別確認は `pnpm lint` / `pnpm typecheck` / `pnpm test`。doc・トークンの整合は次の2つ:
   - `pnpm lint:docs`: docs のリンク整合 + 型 shape 転記禁止。ポインタ doc のリンク腐敗＝#652 型 drift・転記の再混入を弾く（`scripts/lint-docs.mjs`・SPR-205）
   - `pnpm lint:tokens`: globals.css の `:root` トークンで「定義あり・参照なし」を弾く＝chart-*/a11y 型の死にトークン再混入防止（`scripts/lint-css-tokens.mjs`）
+  - `pnpm lint:ga4`: gtag に送っている GA4 パラメータで「宣言なし」を弾く＝遡及不可なカスタムディメンション登録漏れの防止（`scripts/lint-ga4-params.mjs`）
 - **テスト配置**: `__tests__` ディレクトリに置く（ソースと同居させない）
 - **コード品質**: TypeScript strict / Biome 準拠 / 型は `@suzumina.click/shared-types` を使う
 - **コード設計**: 純粋関数・短い関数・単一責務を基本に重複を避ける。関連コードは**近接配置（collocation）**し可読性を最優先（軸2の予測可能性に直結）
@@ -83,13 +84,16 @@ LLM に毎回全部読ませて再構築させない。能動的に効かせた�
   クエリを in-memory フィルタへ移行 or フィールド/コレクションを改名したら**対応する旧 index を同時に撤去**（残すと孤立 index 化）。
   `FAILED_PRECONDITION`（index 要求エラー）を catch で握りつぶさない（最低ログ。silent fallback は欠落を隠す）。
   drift 点検は `pnpm check:index-drift`（live↔config 突合）、本番欠落は監視アラート、削除はクエリ→index 対応で未使用確認後（背景: SPR-213）
-- **GA4 イベントパラメータ**: `sendGoogleAnalyticsEvent` に新しいパラメータを**足したら同じタイミングで GA4 の
-  カスタムディメンションも登録**する（正本は GA4 プロパティ側の設定＝コードには無い。未登録のパラメータは
-  送信されても Data API・標準レポートから一切参照できない）。Firestore 複合インデックスと同型の負債だが、
-  index は後から足せば効くのに対し**カスタムディメンションは遡及適用されない**＝登録が遅れた期間のデータは
-  永久に集計不能な点が悪い（実測: 登録前の `web_vitals` 113件は `customEvent:metric_name` が全て `(not set)`）。
-  登録先は GA4 管理画面 → カスタム定義、または Admin API（`ga4-reader@` SA に編集者権限が必要）。
-  登録済みは `customEvent:<param>` で Data API からクエリ可能。
+- **GA4 カスタムディメンション**: 正本は `apps/web/src/lib/analytics/ga4-custom-dimensions.json`
+  （Admin API の payload と同一形＝変換なしで登録できる。`events.ts` の隣に置くのは、パラメータを足す人の
+  視界に必ず入れるため）。**terraform では管理できない**（GA4 は GCP リソースではなく Marketing Platform 側で、
+  公式 provider に Analytics Admin API のリソースが無い）ので、live への反映は Admin API か GA4 管理画面で行う。
+  パラメータを**足したら同じ PR で JSON にも追加**する。`pnpm lint:ga4` が「送っているが宣言していない」を弾く。
+  未登録のパラメータは送信されても Data API・標準レポートから一切参照できず、
+  **カスタムディメンションは遡及適用されない**＝登録が遅れた期間のデータは永久に集計不能
+  （実測: 登録前の `web_vitals` 113件は `customEvent:metric_name` が全て `(not set)`）。
+  Firestore 複合インデックスと同型の負債だが、index は後から足せば効く点で向こうの方が軽い。
+  登録済みは `customEvent:<param>` で Data API からクエリ可能。live↔JSON の突合は未実装（要 GA4 認証）。
   なお計器を足しただけでは測れない: カスタムイベントは consent ゲート内で送るため、同意率がそのまま母数になる
 - **Firestore 時刻フィールド**: 新規コレクション・新規フィールドの日時は Firestore `Timestamp` で保存する。
   既存は string ISO（works / audioButtons / users / contacts）と Timestamp（circles / creators / evaluations / ba_*）が
