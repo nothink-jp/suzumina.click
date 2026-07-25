@@ -10,6 +10,7 @@
 import * as functions from "@google-cloud/functions-framework";
 // 適切なロギング
 import * as logger from "../shared/logger";
+import { logRuntimeMemoryLimits } from "../shared/memory-diagnostics";
 import type { MessagePublishedData } from "../shared/pubsub-utils";
 // 各モジュールから関数をインポート（統合アーキテクチャ）
 import { checkDataIntegrity } from "./data-integrity/check-data-integrity";
@@ -29,6 +30,10 @@ export function initializeApplication(): boolean {
 
 		// 基本的な初期化処理
 		// 注意: 個別モジュール固有の初期化は各モジュールで行う
+
+		// SPR-277: この時点で全モジュールの読み込みが済んでいる＝cold start のベースラインと
+		// V8 に見えている上限が確定している。3関数とも同じバンドルなのでここで一括して出す。
+		logRuntimeMemoryLimits();
 
 		// 初期化完了
 		initialized = true;

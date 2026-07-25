@@ -1,5 +1,9 @@
-import type { youtube_v3 } from "googleapis";
-import { google } from "googleapis";
+// SPR-277: umbrella の `googleapis` ではなく分割パッケージを使う（戻すと本番が壊れる）。
+// `googleapis` の index は全 Google API を eager に require する自動生成ファイルで、
+// これ1行で cold start の rss が +115MB（実測 215MB → 100MB）増える。
+// 256Mi 時代の fetchYouTubeVideos は起動直後で使用率 0.86 に張り付き OOM した。
+// 型（youtube_v3）も同じパッケージから取る＝`googleapis` への依存自体を残さない。
+import { youtube as createYouTubeClient, type youtube_v3 } from "@googleapis/youtube";
 import { getYouTubeConfig } from "../../infrastructure/management/config-manager";
 import {
 	canExecuteOperation,
@@ -35,7 +39,7 @@ export function initializeYouTubeClient(): [
 	}
 
 	// YouTubeクライアント初期化
-	const youtube = google.youtube({
+	const youtube = createYouTubeClient({
 		version: "v3",
 		auth: apiKey,
 	});

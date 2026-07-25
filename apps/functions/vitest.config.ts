@@ -14,7 +14,7 @@ export default defineConfig({
 		exclude: ["node_modules/**", "lib/**"],
 		server: {
 			deps: {
-				external: ["googleapis"],
+				external: ["@googleapis/youtube"],
 				inline: ["cheerio", "css-select", "css-what", "cheerio-select", "domutils", "boolbase"],
 			},
 		},

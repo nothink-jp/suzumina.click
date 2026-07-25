@@ -5,8 +5,8 @@
  * 新規データには_v2Migrationフラグを自動付与
  */
 
+import type { youtube_v3 } from "@googleapis/youtube";
 import { videoToFirestore } from "@suzumina.click/shared-types";
-import type { youtube_v3 } from "googleapis";
 import firestore, { Timestamp } from "../../infrastructure/database/firestore";
 import { chunkArray } from "../../shared/array-utils";
 import { SUZUKA_MINASE_CHANNEL_ID } from "../../shared/common";

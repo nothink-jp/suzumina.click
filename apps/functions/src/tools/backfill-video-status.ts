@@ -15,7 +15,7 @@
  * 保有）。ここで正しく再計算せず放置すると新しいバグを生む。
  */
 
-import type { youtube_v3 } from "googleapis";
+import type { youtube_v3 } from "@googleapis/youtube";
 import firestore from "../infrastructure/database/firestore";
 import {
 	fetchChannelPlaylists,

@@ -5,10 +5,9 @@
  * This is a simplified version that works with plain objects instead of entities.
  */
 
+import type { youtube_v3 } from "@googleapis/youtube";
 import type { VideoPlainObject } from "@suzumina.click/shared-types";
 import { parseDurationToSeconds } from "@suzumina.click/shared-types";
-
-import type { youtube_v3 } from "googleapis";
 import * as logger from "../../shared/logger";
 
 /**
