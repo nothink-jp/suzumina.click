@@ -140,24 +140,28 @@ export function resetAllConsent() {
 /**
  * Send a page view to Google Analytics
  * Only works if analytics consent is granted
+ *
+ * @returns 実際に送信したか。同意前のロードでは false を返すため、呼び出し側は
+ * 同意反映後に再送する判断ができる（未送信を「送信済み」と誤認すると landing page が欠ける）
  */
-export function sendGoogleAnalyticsPageView(url?: string) {
-	if (typeof window === "undefined" || !window.gtag) return;
+export function sendGoogleAnalyticsPageView(url?: string): boolean {
+	if (typeof window === "undefined" || !window.gtag) return false;
 
 	const consentState = getCurrentConsentState();
 	if (!consentState?.analytics) {
 		// Page view blocked - no consent
-		return;
+		return false;
 	}
 
 	const measurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
-	if (!measurementId) return;
+	if (!measurementId) return false;
 
 	window.gtag("config", measurementId, {
 		page_path: url || window.location.pathname,
 		page_title: document.title,
 		page_location: window.location.href,
 	});
+	return true;
 }
 
 /**
