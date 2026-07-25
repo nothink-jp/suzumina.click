@@ -50,7 +50,12 @@ async function buildPlaylistVideoMapping(
 
 	for (const playlist of playlists) {
 		try {
-			const videoIds = await fetchPlaylistItems(youtube, playlist.id);
+			const { videoIds, complete } = await fetchPlaylistItems(youtube, playlist.id);
+			if (!complete) {
+				logger.warn(
+					`プレイリスト「${playlist.title}」の動画取得が打ち切られました（タグが不完全になります）`,
+				);
+			}
 			for (const videoId of videoIds) {
 				const current = videoPlaylistMap.get(videoId) || [];
 				if (!current.includes(playlist.title)) {

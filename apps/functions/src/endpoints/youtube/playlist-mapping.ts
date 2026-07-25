@@ -33,8 +33,12 @@ function isPlaylistCacheEnabled(): boolean {
 async function buildPlaylistVideoMapping(
 	youtube: youtube_v3.Youtube,
 	channelId: string,
-): Promise<Map<string, string[]>> {
+): Promise<{ mapping: Map<string, string[]>; complete: boolean }> {
 	const videoPlaylistMap = new Map<string, string[]>();
+	// SPR-274: 「取得できた分だけのマップ」と「全プレイリストを網羅したマップ」を
+	// 呼び出し側が区別できるようにする。不完全なマップを完全なものとして永続化すると、
+	// 欠けた分のタグが空で上書きされ、その日いっぱい残り続ける。
+	let complete = true;
 
 	try {
 		// プレイリスト一覧を取得
@@ -44,7 +48,15 @@ async function buildPlaylistVideoMapping(
 		// 各プレイリストの動画を取得
 		for (const playlist of playlists) {
 			try {
-				const videoIds = await fetchPlaylistItems(youtube, playlist.id);
+				const { videoIds, complete: itemsComplete } = await fetchPlaylistItems(
+					youtube,
+					playlist.id,
+				);
+				if (!itemsComplete) {
+					// ページングが打ち切られた＝このプレイリストの動画を取りこぼしている
+					logger.warn(`プレイリスト「${playlist.title}」の動画取得が打ち切られました`);
+					complete = false;
+				}
 				logger.debug(`プレイリスト「${playlist.title}」から${videoIds.length}件の動画を取得`);
 
 				// 動画IDごとにプレイリスト名を記録
@@ -57,17 +69,19 @@ async function buildPlaylistVideoMapping(
 				}
 			} catch (_error) {
 				logger.warn(`プレイリスト「${playlist.title}」の動画取得に失敗`);
-				// 個別のプレイリストエラーは継続
+				// 個別のプレイリストエラーは継続するが、結果は不完全
+				complete = false;
 			}
 		}
 
 		logger.info(`${videoPlaylistMap.size}件の動画にプレイリストタグをマッピング`);
 	} catch (error) {
+		// プレイリスト一覧自体が取れなかった＝マップは空。処理は継続するが完全ではない。
 		logger.error("プレイリスト情報の取得に失敗:", error);
-		// プレイリスト取得に失敗しても処理は継続（空のマップを返す）
+		complete = false;
 	}
 
-	return videoPlaylistMap;
+	return { mapping: videoPlaylistMap, complete };
 }
 
 /**
@@ -84,6 +98,13 @@ async function buildPlaylistVideoMapping(
  * （このrunで新着として発見された動画）のうち1件でもキャッシュ未反映のものがあれば、
  * 当日中でも再構築する。新着discoveryが起きたrunでしか再構築は走らないため、
  * 定常run（新着0件）のクォータ削減効果は維持される。
+ *
+ * SPR-274: 再構築が不完全（プレイリスト一覧の取得失敗・個別プレイリストの打ち切り等）だった
+ * 場合はその結果を**キャッシュしない**。以前は成否に関わらず保存していたため、JST日の最初の
+ * runが一過性APIエラーに当たると空マップがその日のキャッシュとして固定され、同日の全runが
+ * それを再利用して全動画の`playlistTags`を空で上書きしていた（old-tierのローテーション順の
+ * 都合で復旧に約10日かかる）。不完全な場合は直前のキャッシュ（前日以前でも可）を優先して使う。
+ * プレイリスト構成は日単位でほぼ変わらないため、空マップより前日の内容の方が実態に近い。
  */
 export async function resolvePlaylistVideoMapping(
 	youtube: youtube_v3.Youtube,
@@ -91,18 +112,20 @@ export async function resolvePlaylistVideoMapping(
 	discoveredVideoIds: string[],
 ): Promise<Map<string, string[]>> {
 	if (!isPlaylistCacheEnabled()) {
-		return buildPlaylistVideoMapping(youtube, channelId);
+		return (await buildPlaylistVideoMapping(youtube, channelId)).mapping;
 	}
 
 	const todayJST = getJSTDate();
 
+	// 不完全な再構築だったときのフォールバック元として、読めたキャッシュは保持しておく。
+	let cached: Awaited<ReturnType<typeof getPlaylistMappingCache>>;
 	try {
-		const cache = await getPlaylistMappingCache();
-		if (cache && cache.updatedAtJST === todayJST) {
-			const hasUncoveredNewVideo = discoveredVideoIds.some((id) => !cache.mapping.has(id));
+		cached = await getPlaylistMappingCache();
+		if (cached && cached.updatedAtJST === todayJST) {
+			const hasUncoveredNewVideo = discoveredVideoIds.some((id) => !cached?.mapping.has(id));
 			if (!hasUncoveredNewVideo) {
 				logger.debug("playlist→videoマッピングのキャッシュを再利用します", { todayJST });
-				return cache.mapping;
+				return cached.mapping;
 			}
 			logger.info(
 				"新着動画がキャッシュに未反映のため、当日中でもplaylist→videoマッピングを再構築します",
@@ -115,7 +138,22 @@ export async function resolvePlaylistVideoMapping(
 		});
 	}
 
-	const mapping = await buildPlaylistVideoMapping(youtube, channelId);
+	const { mapping, complete } = await buildPlaylistVideoMapping(youtube, channelId);
+
+	if (!complete) {
+		// 不完全な結果は永続化しない（当日の全runがこれを再利用してしまうため）。
+		logger.error(
+			"playlist→videoマッピングの再構築が不完全でした。キャッシュせず、この run 限りで扱います",
+			{
+				todayJST,
+				構築できた件数: mapping.size,
+				直前キャッシュを使用: Boolean(cached),
+				直前キャッシュ件数: cached?.mapping.size,
+			},
+		);
+		// 前日以前のキャッシュでも、不完全な今回の結果より実態に近い。
+		return cached?.mapping ?? mapping;
+	}
 
 	try {
 		await savePlaylistMappingCache(mapping, todayJST);

@@ -290,10 +290,14 @@ export async function fetchUploadsPlaylistPage(
 export async function fetchPlaylistItems(
 	youtube: youtube_v3.Youtube,
 	playlistId: string,
-): Promise<string[]> {
+): Promise<{ videoIds: string[]; complete: boolean }> {
 	const videoIds: string[] = [];
 	let nextPageToken: string | undefined;
 	let pageCount = 0;
+	// SPR-274: クォータ不足・APIエラーでの打ち切りは「途中まで取れた一覧」を返す。
+	// 呼び出し側がこれを完全な一覧と誤認すると、欠けたプレイリストのタグが
+	// 空扱いで永続化されるため、打ち切りの有無を明示的に返す。
+	let complete = true;
 
 	logger.debug("プレイリストアイテム取得開始", { playlistId });
 
@@ -305,6 +309,7 @@ export async function fetchPlaylistItems(
 				pageCount,
 				currentVideoIds: videoIds.length,
 			});
+			complete = false;
 			break;
 		}
 
@@ -336,10 +341,13 @@ export async function fetchPlaylistItems(
 			logger.debug(`プレイリスト ${playlistId} ページ ${pageCount}: ${batchVideoIds.length}件取得`);
 		} catch (error: unknown) {
 			logger.error("プレイリストアイテム取得エラー:", error);
+			complete = false;
 			break;
 		}
 	} while (nextPageToken);
 
-	logger.info(`プレイリスト ${playlistId} 総取得動画数: ${videoIds.length}件`);
-	return videoIds;
+	logger.info(
+		`プレイリスト ${playlistId} 総取得動画数: ${videoIds.length}件${complete ? "" : "（打ち切りにより不完全）"}`,
+	);
+	return { videoIds, complete };
 }

@@ -92,7 +92,7 @@ beforeEach(() => {
 		nextPageToken: undefined,
 	});
 	vi.mocked(youtubeApi.fetchChannelPlaylists).mockResolvedValue([]);
-	vi.mocked(youtubeApi.fetchPlaylistItems).mockResolvedValue([]);
+	vi.mocked(youtubeApi.fetchPlaylistItems).mockResolvedValue({ videoIds: [], complete: true });
 	vi.mocked(youtubeApi.fetchVideoDetails).mockResolvedValue([]);
 	vi.mocked(youtubeFirestore.saveVideosToFirestore).mockResolvedValue(0);
 	vi.mocked(youtubeFirestore.getKnownVideoIdsSet).mockResolvedValue(new Set());
@@ -526,7 +526,7 @@ describe("fetchYouTubeVideos: playlist→videoマッピングのキャッシュ�
 			return { mapping: new Map([["v1", ["タグ"]]]), updatedAtJST: getJSTDate() };
 		});
 		vi.mocked(youtubeApi.fetchChannelPlaylists).mockResolvedValue([]);
-		vi.mocked(youtubeApi.fetchPlaylistItems).mockResolvedValue([]);
+		vi.mocked(youtubeApi.fetchPlaylistItems).mockResolvedValue({ videoIds: [], complete: true });
 
 		await fetchYouTubeVideos(pubsubEvent());
 
@@ -547,7 +547,10 @@ describe("fetchYouTubeVideos: playlist→videoマッピングのキャッシュ�
 		vi.mocked(youtubeApi.fetchChannelPlaylists).mockResolvedValue([
 			{ id: "PL1", title: "タグ", videoCount: 1, description: "", publishedAt: "" },
 		]);
-		vi.mocked(youtubeApi.fetchPlaylistItems).mockResolvedValue(["v1"]);
+		vi.mocked(youtubeApi.fetchPlaylistItems).mockResolvedValue({
+			videoIds: ["v1"],
+			complete: true,
+		});
 
 		await fetchYouTubeVideos(pubsubEvent());
 
@@ -572,7 +575,7 @@ describe("fetchYouTubeVideos: playlist→videoマッピングのキャッシュ�
 			updatedAtJST: "2000-01-01",
 		});
 		vi.mocked(youtubeApi.fetchChannelPlaylists).mockResolvedValue([]);
-		vi.mocked(youtubeApi.fetchPlaylistItems).mockResolvedValue([]);
+		vi.mocked(youtubeApi.fetchPlaylistItems).mockResolvedValue({ videoIds: [], complete: true });
 
 		await fetchYouTubeVideos(pubsubEvent());
 
@@ -591,13 +594,68 @@ describe("fetchYouTubeVideos: playlist→videoマッピングのキャッシュ�
 		]);
 		vi.mocked(youtubeFirestore.saveVideosToFirestore).mockResolvedValue(1);
 		vi.mocked(youtubeApi.fetchChannelPlaylists).mockResolvedValue([]);
-		vi.mocked(youtubeApi.fetchPlaylistItems).mockResolvedValue([]);
+		vi.mocked(youtubeApi.fetchPlaylistItems).mockResolvedValue({ videoIds: [], complete: true });
 
 		await fetchYouTubeVideos(pubsubEvent());
 
 		expect(youtubeApi.fetchChannelPlaylists).toHaveBeenCalled();
 		expect(youtubeFirestore.getPlaylistMappingCache).not.toHaveBeenCalled();
 		expect(youtubeFirestore.savePlaylistMappingCache).not.toHaveBeenCalled();
+	});
+
+	describe("不完全な再構築をキャッシュしない（SPR-274 キャッシュ汚染の回帰防止）", () => {
+		it("プレイリスト一覧の取得に失敗したら保存せず、前日のキャッシュを使う", async () => {
+			vi.mocked(youtubeApi.fetchUploadsPlaylistPage).mockResolvedValue({
+				videoIds: ["v1"],
+				nextPageToken: undefined,
+			});
+			vi.mocked(youtubeApi.fetchVideoDetails).mockResolvedValue([
+				{ id: "v1" } as youtube_v3.Schema$Video,
+			]);
+			vi.mocked(youtubeFirestore.saveVideosToFirestore).mockResolvedValue(1);
+			// 前日のキャッシュは存在する（当日分ではないので再構築が走る）
+			vi.mocked(youtubeFirestore.getPlaylistMappingCache).mockResolvedValue({
+				mapping: new Map([["v1", ["前日タグ"]]]),
+				updatedAtJST: "2000-01-01",
+			});
+			// 再構築は playlists.list の失敗で空マップになる
+			vi.mocked(youtubeApi.fetchChannelPlaylists).mockRejectedValue(new Error("playlists 5xx"));
+
+			await fetchYouTubeVideos(pubsubEvent());
+
+			// 汚染された（空の）マップを永続化しないこと＝本バグの核心
+			expect(youtubeFirestore.savePlaylistMappingCache).not.toHaveBeenCalled();
+			// 空マップではなく前日のタグが動画に付与されること
+			const saved = vi.mocked(youtubeFirestore.saveVideosToFirestore).mock.calls[0]?.[0];
+			expect(
+				(saved?.[0] as youtube_v3.Schema$Video & { _playlistTags?: string[] })?._playlistTags,
+			).toEqual(["前日タグ"]);
+		});
+
+		it("個別プレイリストの取得が打ち切られた場合も保存しない", async () => {
+			vi.mocked(youtubeApi.fetchUploadsPlaylistPage).mockResolvedValue({
+				videoIds: [],
+				nextPageToken: undefined,
+			});
+			vi.mocked(youtubeFirestore.getRecentTierVideoIds).mockResolvedValue(["v1"]);
+			vi.mocked(youtubeApi.fetchVideoDetails).mockResolvedValue([
+				{ id: "v1" } as youtube_v3.Schema$Video,
+			]);
+			vi.mocked(youtubeFirestore.saveVideosToFirestore).mockResolvedValue(1);
+			vi.mocked(youtubeFirestore.getPlaylistMappingCache).mockResolvedValue(undefined);
+			vi.mocked(youtubeApi.fetchChannelPlaylists).mockResolvedValue([
+				{ id: "PL1", title: "タグ", videoCount: 1, description: "", publishedAt: "" },
+			]);
+			// ページング打ち切り＝この一覧は不完全
+			vi.mocked(youtubeApi.fetchPlaylistItems).mockResolvedValue({
+				videoIds: ["v1"],
+				complete: false,
+			});
+
+			await fetchYouTubeVideos(pubsubEvent());
+
+			expect(youtubeFirestore.savePlaylistMappingCache).not.toHaveBeenCalled();
+		});
 	});
 });
 

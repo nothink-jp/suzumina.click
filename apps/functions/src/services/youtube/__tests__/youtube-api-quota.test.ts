@@ -115,9 +115,12 @@ describe("fetchChannelPlaylists", () => {
 });
 
 describe("fetchPlaylistItems", () => {
-	it("クォータ不足は空配列（即 break）", async () => {
+	it("クォータ不足は空配列＋complete=false（即 break・SPR-274）", async () => {
 		canExecuteOperation.mockReturnValue(false);
-		expect(await fetchPlaylistItems(asYoutube(makeClient()), "pl")).toEqual([]);
+		expect(await fetchPlaylistItems(asYoutube(makeClient()), "pl")).toEqual({
+			videoIds: [],
+			complete: false,
+		});
 	});
 
 	it("ページネーションして videoId を集約する（空 videoId は除外）", async () => {
@@ -130,14 +133,31 @@ describe("fetchPlaylistItems", () => {
 				data: { items: [{ contentDetails: { videoId: "b" } }, { contentDetails: {} }] },
 			});
 		const r = await fetchPlaylistItems(asYoutube(c), "pl");
-		expect(r).toEqual(["a", "b"]);
+		// 最後まで辿れた場合のみ complete=true
+		expect(r).toEqual({ videoIds: ["a", "b"], complete: true });
 		expect(c.playlistItems.list).toHaveBeenCalledTimes(2);
 	});
 
-	it("API エラーは break して取得済みを返す", async () => {
+	it("API エラーは break して取得済み＋complete=false を返す（SPR-274）", async () => {
 		const c = makeClient();
 		c.playlistItems.list.mockRejectedValue(new Error("items fail"));
-		expect(await fetchPlaylistItems(asYoutube(c), "pl")).toEqual([]);
+		expect(await fetchPlaylistItems(asYoutube(c), "pl")).toEqual({
+			videoIds: [],
+			complete: false,
+		});
+	});
+
+	it("途中ページで失敗しても取得済みは返すが complete=false になる（SPR-274）", async () => {
+		const c = makeClient();
+		c.playlistItems.list
+			.mockResolvedValueOnce({
+				data: { items: [{ contentDetails: { videoId: "a" } }], nextPageToken: "n1" },
+			})
+			.mockRejectedValueOnce(new Error("page2 fail"));
+		expect(await fetchPlaylistItems(asYoutube(c), "pl")).toEqual({
+			videoIds: ["a"],
+			complete: false,
+		});
 	});
 });
 
