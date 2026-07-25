@@ -6,5 +6,14 @@
 		"eventDataRetention": "FOURTEEN_MONTHS",
 		"userDataRetention": "FOURTEEN_MONTHS",
 		"resetUserDataOnNewActivity": true
-	}
+	},
+	"bigQueryLinks": [
+		{
+			"datasetLocation": "asia-northeast1",
+			"dailyExportEnabled": true,
+			"streamingExportEnabled": false,
+			"includeAdvertisingId": false,
+			"exportStreams": ["properties/496464197/dataStreams/11473068450"]
+		}
+	]
 }

@@ -4,7 +4,11 @@
 // live GA4 と宣言の drift を検出する（SPR-279 / SPR-285）。check-firestore-index-drift.mjs と同型。
 // 宣言の正本は 2 ファイル（どちらも apps/web/src/lib/analytics/ 配下・Admin API の payload と同一形）:
 //   ga4-custom-dimensions.json  カスタムディメンション
-//   ga4-property-settings.json  プロパティ設定（Googleシグナル / データ保持）
+//   ga4-property-settings.json  プロパティ設定（Googleシグナル / データ保持 / BigQuery リンク）
+//
+// bigQueryLinks は宣言から `project` を意図的に外している（プロジェクト番号は CI 側で
+// secrets.GCP_PROJECT_NUMBER として扱っているため、リポジトリに置かない）。
+// エクスポートが有効かどうかは dailyExportEnabled / datasetLocation / exportStreams で判定できる。
 //
 // 責務の分担:
 //   pnpm lint:ga4        コード（gtag へ渡すパラメータ）↔ 宣言。認証不要なので verify に載る
@@ -53,10 +57,16 @@ const TARGET_SA = process.env.GA4_READER_SA ?? "ga4-reader@suzumina-click.iam.gs
 const READ_SCOPE = "https://www.googleapis.com/auth/analytics.readonly";
 const EDIT_SCOPE = "https://www.googleapis.com/auth/analytics.edit";
 const API_BASE = "https://analyticsadmin.googleapis.com";
-// プロパティ設定のリソースごとの API バージョン。googleSignalsSettings は v1beta に無い
+// プロパティ設定のリソースごとの API バージョン。googleSignalsSettings / bigQueryLinks は v1beta に無い
 const SETTINGS_API_VERSION = {
 	googleSignalsSettings: "v1alpha",
 	dataRetentionSettings: "v1beta",
+	bigQueryLinks: "v1alpha",
+};
+// リスト応答のリソースと、その配列が入るレスポンスキー
+// （URL は bigQueryLinks だがレスポンスキーは bigqueryLinks で q の大小が違う）
+const SETTINGS_LIST_FIELD = {
+	bigQueryLinks: "bigqueryLinks",
 };
 // 宣言に書いている項目だけ比較する（live の disallowAdsPersonalization 等は宣言側に無いため対象外）
 const COMPARED_FIELDS = ["displayName", "scope", "description"];
@@ -155,8 +165,40 @@ for (const resource of Object.keys(settingsManifest)) {
 }
 
 /**
- * プロパティ設定（Googleシグナル / データ保持）を宣言と突き合わせる。
- * 宣言に書いたフィールドだけ比較する（live の name 等は対象外）。--apply では直さない。
+ * 宣言値と live 値が一致するか。
+ * **false の boolean は live のレスポンスから省略される**ため、undefined を false として扱う
+ * （素朴に String() 比較すると "false" ≠ "undefined" で誤検知する）。
+ */
+function valuesEqual(declared, live) {
+	if (typeof declared === "boolean") return Boolean(live) === declared;
+	if (Array.isArray(declared)) return JSON.stringify(declared) === JSON.stringify(live ?? []);
+	return String(declared) === String(live);
+}
+
+/** 単一リソース（googleSignalsSettings / dataRetentionSettings）の突合 */
+function diffObject(label, declared, live) {
+	return Object.keys(declared)
+		.filter((f) => !valuesEqual(declared[f], live?.[f]))
+		.map((f) => ({
+			field: `${label}.${f}`,
+			declared: declared[f],
+			// boolean は live 側が省略されうる。比較と同じ正規化を表示にも適用する
+			// （そのままだと "live=undefined" と出て、undefined=false という比較規則とズレて読める）
+			live: typeof declared[f] === "boolean" ? Boolean(live?.[f]) : live?.[f],
+		}));
+}
+
+/** リストリソース（bigQueryLinks）の突合。「宣言した数だけ、宣言した設定で存在する」を見る */
+function diffList(resource, declaredList, liveList) {
+	if (declaredList.length !== liveList.length) {
+		return [{ field: `${resource}.length`, declared: declaredList.length, live: liveList.length }];
+	}
+	return declaredList.flatMap((d, i) => diffObject(`${resource}[${i}]`, d, liveList[i]));
+}
+
+/**
+ * プロパティ設定（Googleシグナル / データ保持 / BigQuery リンク）を宣言と突き合わせる。
+ * 宣言に書いたフィールドだけ比較する（live の name / createTime 等は対象外）。--apply では直さない。
  */
 async function checkSettings(token) {
 	const results = [];
@@ -168,10 +210,12 @@ async function checkSettings(token) {
 		} catch (e) {
 			return abort(`${resource} を取得できませんでした: ${e.message}`);
 		}
-		const diffs = Object.keys(declared)
-			.filter((f) => String(declared[f]) !== String(live[f]))
-			.map((f) => ({ field: `${resource}.${f}`, declared: declared[f], live: live[f] }));
-		results.push(...diffs);
+		const listField = SETTINGS_LIST_FIELD[resource];
+		results.push(
+			...(listField
+				? diffList(resource, declared, live[listField] ?? [])
+				: diffObject(resource, declared, live)),
+		);
 	}
 	return results;
 }
@@ -251,8 +295,15 @@ const settingDiffs = await checkSettings(readToken);
 
 console.log(`GA4 drift check (${PROPERTY})`);
 console.log(`  カスタムディメンション: live ${drift.live.length} / 宣言 ${manifest.length}`);
+// リスト（bigQueryLinks）は要素内のフィールドまで数える。配列を1件と数えると実数とズレる
+const declaredFieldCount = Object.values(settingsManifest).reduce(
+	(n, v) =>
+		n +
+		(Array.isArray(v) ? v.reduce((m, o) => m + Object.keys(o).length, 0) : Object.keys(v).length),
+	0,
+);
 console.log(
-	`  プロパティ設定: ${Object.keys(settingsManifest).join(" / ")}（宣言フィールド ${Object.values(settingsManifest).reduce((n, o) => n + Object.keys(o).length, 0)} 件）\n`,
+	`  プロパティ設定: ${Object.keys(settingsManifest).join(" / ")}（宣言フィールド ${declaredFieldCount} 件）\n`,
 );
 
 if (apply && (drift.missing.length || drift.syncable.length)) {
