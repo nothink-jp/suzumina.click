@@ -2,6 +2,7 @@ import type { VideoPlainObject } from "@suzumina.click/shared-types";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { updateUserTagsAction } from "@/actions/user-tags";
+import { trackUserTagEditOpen, trackUserTagSave } from "@/lib/analytics/events";
 import { buildTagSearchHref } from "@/lib/tag-search";
 import { mockUseSession } from "@/test-utils/auth";
 import { VideoUserTagEditor } from "../video-user-tag-editor";
@@ -10,6 +11,12 @@ vi.mock("@/lib/auth/client");
 
 vi.mock("@/actions/user-tags", () => ({
 	updateUserTagsAction: vi.fn(),
+}));
+
+// SPR-273 の修正後、この機能が実際に使われるかを測る計装（GA4）の発火を検証する
+vi.mock("@/lib/analytics/events", () => ({
+	trackUserTagEditOpen: vi.fn(),
+	trackUserTagSave: vi.fn(),
 }));
 
 // router.push / router.refresh の副作用を検証するため next/navigation をローカルでモックして捕捉する
@@ -198,6 +205,67 @@ describe("VideoUserTagEditor", () => {
 
 		fireEvent.click(screen.getByRole("button", { name: /編集/ }));
 		expect(screen.getByRole("button", { name: "保存" })).toBeInTheDocument();
+	});
+
+	describe("利用実態の計測（GA4）", () => {
+		it("編集ボタンで user_tag_edit_open を送る", () => {
+			mockUseSession(loggedIn);
+			render(<VideoUserTagEditor video={createVideo()} />);
+
+			fireEvent.click(screen.getByRole("button", { name: /編集/ }));
+
+			expect(trackUserTagEditOpen).toHaveBeenCalledWith("abc123");
+		});
+
+		it("保存成功時のみ user_tag_save をタグ数付きで送る", async () => {
+			mockUseSession(loggedIn);
+			(updateUserTagsAction as any).mockResolvedValue({ success: true });
+			render(<VideoUserTagEditor video={createVideo()} />);
+
+			fireEvent.click(screen.getByRole("button", { name: /編集/ }));
+			fireEvent.click(screen.getByRole("button", { name: "保存" }));
+
+			await waitFor(() => {
+				// スタブは ["new-tag"] を渡すのでタグ数は1
+				expect(trackUserTagSave).toHaveBeenCalledWith("abc123", 1);
+			});
+		});
+
+		it("open と save は同じ video_id を載せる（GA4 で突き合わせられること）", async () => {
+			// save 側は VideoTagEditor から返る videoId を使うため open 側（video.videoId）とは
+			// 変数系統が異なる。実体は同じ prop の往復だが、将来 VideoTagEditor が別の id を
+			// 返すようになると計測が静かに突き合わせ不能になるため、ここで不変条件を固定する。
+			mockUseSession(loggedIn);
+			(updateUserTagsAction as any).mockResolvedValue({ success: true });
+			render(<VideoUserTagEditor video={createVideo()} />);
+
+			fireEvent.click(screen.getByRole("button", { name: /編集/ }));
+			fireEvent.click(screen.getByRole("button", { name: "保存" }));
+
+			await waitFor(() => {
+				expect(trackUserTagSave).toHaveBeenCalled();
+			});
+			const openVideoId = vi.mocked(trackUserTagEditOpen).mock.calls[0]?.[0];
+			const saveVideoId = vi.mocked(trackUserTagSave).mock.calls[0]?.[0];
+			expect(saveVideoId).toBe(openVideoId);
+		});
+
+		it("保存失敗時は user_tag_save を送らない（open との差分が失敗を表す）", async () => {
+			mockUseSession(loggedIn);
+			(updateUserTagsAction as any).mockResolvedValue({
+				success: false,
+				error: "権限がありません",
+			});
+			render(<VideoUserTagEditor video={createVideo()} />);
+
+			fireEvent.click(screen.getByRole("button", { name: /編集/ }));
+			fireEvent.click(screen.getByRole("button", { name: "保存" }));
+
+			await waitFor(() => {
+				expect(updateResult.value).toEqual({ success: false, error: "権限がありません" });
+			});
+			expect(trackUserTagSave).not.toHaveBeenCalled();
+		});
 	});
 
 	it("タグクリックで buildTagSearchHref の URL に router.push する", () => {

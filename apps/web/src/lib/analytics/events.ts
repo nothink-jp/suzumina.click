@@ -100,3 +100,24 @@ export function trackLoginSuccess(provider: string): void {
 export function trackLoginError(reason: string): void {
 	sendGoogleAnalyticsEvent("login_error", { reason: reason.slice(0, MAX_PARAM_LENGTH) });
 }
+
+/**
+ * 動画のユーザータグ編集ファネル: 編集モードに入った（SPR-273 の修正後に利用実態を測るため）。
+ *
+ * この機能は長らく壊れており（保存先とUIの読み出し先が別フィールド・cron が空配列で上書き）、
+ * Firestore 上の userTags は全件空だった。そのため「データが無い＝使われていない」とは言えず、
+ * 「気づかれていない」のか「使われた上で定着しない」のかを区別できる行動データが要る。
+ * open と save の差がその判別材料になる。
+ */
+export function trackUserTagEditOpen(videoId: string): void {
+	sendGoogleAnalyticsEvent("user_tag_edit_open", { video_id: videoId });
+}
+
+/**
+ * 動画のユーザータグ編集ファネル: 保存した。
+ *
+ * @param tagCount 保存後のタグ数。0 は「全タグを削除した」を意味し、追加と区別して見たい
+ */
+export function trackUserTagSave(videoId: string, tagCount: number): void {
+	sendGoogleAnalyticsEvent("user_tag_save", { video_id: videoId, tag_count: tagCount });
+}
