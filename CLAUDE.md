@@ -115,6 +115,9 @@ PR は「やり直しが効くか」で自己マージ可否を分ける。AI �
 ## 2. プロジェクトの座標（事実）
 
 - **URL**: https://suzumina.click ／ Status: PRODUCTION READY
+- **Issue トラッカーの正本は Linear**（`nothink` workspace / **Sprints** チーム＝本文中の `SPR-*` / プロジェクト `suzumina.click`）。
+  Issue を起票・参照するときは Linear を使う。**GitHub Issues は #386 までで運用終了**（2026 年前半の遺物）。
+  MCP が未接続なら起票せず、内容を提示して人に渡す（`gh issue create` に流れない）
 - **構成**: pnpm monorepo — `apps/web`, `apps/functions`, `packages/shared-types`, `packages/ui`, `packages/typescript-config`
   （`apps/admin` は廃止。`/admin` 画面・admin/moderator ロールも SPR-164 で撤去＝ユーザーは認証/isActive のみで区別）
 - **技術スタック**: Next.js App Router + TypeScript + Tailwind CSS ／ Cloud Functions + Firestore ／
