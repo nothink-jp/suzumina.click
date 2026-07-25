@@ -96,6 +96,9 @@ LLM に毎回全部読ませて再構築させない。能動的に効かせた�
   登録済みは `customEvent:<param>` で Data API からクエリ可能。live↔JSON の突合は `pnpm check:ga4-drift`
   （GA4 認証が要るため verify には入れない＝`check:index-drift` と同じ扱い。`--apply` で未登録の登録と
   description の同期まで行う。displayName/scope の差は人が判断・SPR-279）。
+  **プロパティ設定（Googleシグナル / データ保持）の正本は `ga4-property-settings.json`** で、同じスクリプトが
+  突合する。ただし**設定は `--apply` で直さない**（保持期間の短縮はデータ削除で不可逆・Googleシグナルは
+  privacy ページの公開記述「無効に設定しています」と対で判断する＝SPR-285）。
   週次の非ブロッキング CI（`ga4-dimension-drift.yml`）も同じスクリプトを検出のみで走らせる。
   GCP 側の identity は terraform（`analytics_ga4.tf`）だが、**GA4 プロパティのアクセス権は
   terraform では付与できず GA4 管理画面のみ**（CI は閲覧者の `ga4-ci-reader@`・ローカルの `--apply` は編集者の `ga4-reader@`）
