@@ -71,9 +71,14 @@ export async function updateVideoUserTags(
 			};
 		}
 
-		// ユーザータグを更新
+		// SPR-273: 正本は `tags.userTags`（3層タグの1層）。読み手（一覧のタグ絞り込み・
+		// 動画カード・タグエディタ）はすべて `video.tags?.userTags` を見ており、
+		// 旧実装が書いていたトップレベル `userTags`（Legacy）は誰も読んでいなかったため
+		// 保存したタグが表示されない状態だった。
+		// ドット記法で書くこと: `{ tags: { userTags } }` だと update() は tags マップ全体を
+		// 置換し、同じ層の playlistTags/contentTags を消してしまう。
 		await videoRef.update({
-			userTags: userTags,
+			"tags.userTags": userTags,
 			updatedAt: new Date().toISOString(),
 		});
 
@@ -107,8 +112,9 @@ export async function getVideoUserTags(videoId: string): Promise<string[]> {
 			return [];
 		}
 
+		// SPR-273: 正本は `tags.userTags`。トップレベル `userTags` は Legacy で読み手がいない。
 		const data = videoDoc.data();
-		return data?.userTags || [];
+		return data?.tags?.userTags || [];
 	} catch (error) {
 		handleFirestoreError("getVideoUserTags", { videoId }, error);
 		return [];

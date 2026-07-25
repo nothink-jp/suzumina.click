@@ -65,7 +65,7 @@ function determineVideoType(
 export function mapYouTubeToVideoPlainObject(
 	youtubeVideo: youtube_v3.Schema$Video,
 	playlistTags: string[] = [],
-	userTags: string[] = [],
+	userTags?: string[],
 ): VideoPlainObject | null {
 	try {
 		// Validate required fields
@@ -136,6 +136,11 @@ export function mapYouTubeToVideoPlainObject(
 			// Use both new and old format for compatibility
 			tags: {
 				playlistTags,
+				// SPR-273: userTags は web 側（ユーザーが編集）が維持するもので YouTube 由来ではない。
+				// 既定値 [] を入れると merge:true でユーザーのタグを空で上書きしてしまう
+				// （[] は undefined と違い値として存在するため ignoreUndefinedProperties で守られない）。
+				// 呼び出し側が明示しない限り undefined のままにし、Firestore の既存値を温存する。
+				// audioButtonCount と同じ「web が正本のフィールドは YouTube 更新で書かない」方針。
 				userTags,
 				contentTags: snippet.tags || [],
 			},
@@ -192,7 +197,9 @@ export const VideoMapper = {
 	fromYouTubeAPIWithTags(
 		video: youtube_v3.Schema$Video,
 		playlistTags: string[] = [],
-		userTags: string[] = [],
+		// SPR-273: 既定値を [] にすると呼び出し側が省略しただけでユーザータグを消す。
+		// 省略時は undefined を伝播させ Firestore の既存値を温存する。
+		userTags?: string[],
 	): VideoPlainObject | null {
 		return mapYouTubeToVideoPlainObject(video, playlistTags, userTags);
 	},

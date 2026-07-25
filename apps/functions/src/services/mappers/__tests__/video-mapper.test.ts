@@ -190,3 +190,31 @@ describe("VideoMapper（互換 API）", () => {
 		);
 	});
 });
+
+describe("userTags を省略した場合は書き込み対象にしない（SPR-273 回帰防止）", () => {
+	// userTags は web 側（ユーザー編集）が正本。YouTube 取り込みが既定値 [] を書くと
+	// merge:true でユーザーのタグを空で上書きしてしまう（[] は undefined と違い値として
+	// 存在するため ignoreUndefinedProperties では守られない）。
+	it("mapYouTubeToVideoPlainObject: 省略時は undefined のまま（[] にしない）", () => {
+		const v = mapYouTubeToVideoPlainObject(ytVideo(), ["pl"]);
+
+		expect(v?.tags?.userTags).toBeUndefined();
+		expect(v?.userTags).toBeUndefined();
+		// 同じ層の playlistTags / contentTags は従来どおり書き込む
+		expect(v?.tags?.playlistTags).toEqual(["pl"]);
+		expect(v?.tags?.contentTags).toEqual(["t1", "t2"]);
+	});
+
+	it("VideoMapper.fromYouTubeAPIWithTags: 第3引数省略時も undefined のまま", () => {
+		const v = VideoMapper.fromYouTubeAPIWithTags(ytVideo(), ["pl"]);
+
+		expect(v?.tags?.userTags).toBeUndefined();
+		expect(v?.userTags).toBeUndefined();
+	});
+
+	it("明示的に渡した場合は従来どおり反映する", () => {
+		const v = VideoMapper.fromYouTubeAPIWithTags(ytVideo(), ["pl"], ["u1"]);
+
+		expect(v?.tags?.userTags).toEqual(["u1"]);
+	});
+});
