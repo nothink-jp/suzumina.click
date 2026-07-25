@@ -231,6 +231,25 @@ describe("VideoUserTagEditor", () => {
 			});
 		});
 
+		it("open と save は同じ video_id を載せる（GA4 で突き合わせられること）", async () => {
+			// save 側は VideoTagEditor から返る videoId を使うため open 側（video.videoId）とは
+			// 変数系統が異なる。実体は同じ prop の往復だが、将来 VideoTagEditor が別の id を
+			// 返すようになると計測が静かに突き合わせ不能になるため、ここで不変条件を固定する。
+			mockUseSession(loggedIn);
+			(updateUserTagsAction as any).mockResolvedValue({ success: true });
+			render(<VideoUserTagEditor video={createVideo()} />);
+
+			fireEvent.click(screen.getByRole("button", { name: /編集/ }));
+			fireEvent.click(screen.getByRole("button", { name: "保存" }));
+
+			await waitFor(() => {
+				expect(trackUserTagSave).toHaveBeenCalled();
+			});
+			const openVideoId = vi.mocked(trackUserTagEditOpen).mock.calls[0]?.[0];
+			const saveVideoId = vi.mocked(trackUserTagSave).mock.calls[0]?.[0];
+			expect(saveVideoId).toBe(openVideoId);
+		});
+
 		it("保存失敗時は user_tag_save を送らない（open との差分が失敗を表す）", async () => {
 			mockUseSession(loggedIn);
 			(updateUserTagsAction as any).mockResolvedValue({
