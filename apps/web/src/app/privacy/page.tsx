@@ -314,18 +314,15 @@ export default function PrivacyPage() {
 												• IPアドレスから推定されるおおよその地域（IPアドレス自体はGoogle Analytics
 												4に保存されません）
 											</li>
-											<li>
-												•
-												同意した場合のみ：Cookieに保存される識別子、およびGoogleアカウントに紐づく情報（Googleシグナル。Google側で広告のパーソナライズを有効にしている利用者に限ります）
-											</li>
+											<li>• 同意した場合のみ：Cookieに保存される識別子</li>
 										</ul>
 									</div>
 									<div>
 										<h5 className="font-semibold text-foreground text-sm">利用目的</h5>
 										<p className="text-xs text-muted-foreground">
-											アクセス状況の分析およびサイトの改善です。当サイト自身は広告を掲載していません。
-											ただしGoogleシグナルが有効なため、Googleアカウントで広告のパーソナライズを
-											有効にしている利用者については、Google側で広告関連の目的に利用される場合があります。
+											アクセス状況の分析およびサイトの改善です。当サイトは広告を掲載しておらず、
+											Googleアカウントに紐づく広告向け機能（Googleシグナル）は無効に設定しています。
+											Google広告アカウントとの連携も行っていません。
 										</p>
 									</div>
 									<div>
