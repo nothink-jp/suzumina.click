@@ -22,14 +22,15 @@ describe("WorkMapper", () => {
 		official_price: 1100,
 		discount_rate: 0,
 
-		rate_average_star: 4.5,
-		rate_count: 100,
+		// SPR-272: 実APIの値域に合わせる。rate_average_star は 10-50 の整数（0.5刻み）で、
+		// 評価件数を表す rate_count は API が返さない（件数の実体は rate_count_detail の合計）。
+		rate_average_star: 45,
 		rate_count_detail: {
 			"1": 10,
 			"2": 0,
 			"3": 10,
 			"4": 30,
-			"5": 60,
+			"5": 50,
 		},
 
 		regist_date: "2024-01-15",
@@ -170,12 +171,24 @@ describe("WorkMapper", () => {
 	});
 
 	describe("toRating", () => {
-		it("評価情報を正しくマッピングできる", () => {
+		it("評価情報を正しくマッピングできる（10-50スケール→0-5・件数は分布の合計）", () => {
 			const rating = WorkMapper.toRating(mockRawApiData);
 
 			expect(rating).toBeDefined();
-			expect(rating!.stars).toBe(45); // 45 on 0-50 scale
+			// rate_average_star=45（10-50スケール）→ 4.5（RatingInfo.stars は 0-5）
+			expect(rating!.stars).toBe(4.5);
+			// APIは合計値を返さないため rate_count_detail の合計を評価件数とする
 			expect(rating!.count).toBe(100);
+		});
+
+		it("stars はスキーマ上限(5)を超えない", () => {
+			// SPR-272 回帰防止: 旧実装は `* 10` していたため満点作品で 500 になっていた
+			const maxRated: DLsiteApiResponse = {
+				...mockRawApiData,
+				rate_average_star: 50,
+			};
+
+			expect(WorkMapper.toRating(maxRated)!.stars).toBe(5);
 		});
 
 		it("評価分布を正しくマッピングできる", () => {
@@ -187,14 +200,14 @@ describe("WorkMapper", () => {
 				{ review_point: 1, count: 10, ratio: 10 },
 				{ review_point: 3, count: 10, ratio: 10 },
 				{ review_point: 4, count: 30, ratio: 30 },
-				{ review_point: 5, count: 60, ratio: 60 },
+				{ review_point: 5, count: 50, ratio: 50 },
 			]);
 		});
 
 		it("評価がない場合はundefinedを返す", () => {
 			const noRatingData: DLsiteApiResponse = {
 				...mockRawApiData,
-				rate_count: 0,
+				rate_count_detail: undefined,
 				rate_average_star: undefined,
 			};
 
@@ -203,16 +216,15 @@ describe("WorkMapper", () => {
 			expect(rating).toBeUndefined();
 		});
 
-		it("評価分布がない場合も正しく処理できる", () => {
+		it("評価分布が無ければ件数を確定できないためundefinedを返す", () => {
+			// SPR-272: 件数の唯一のソースが rate_count_detail になったため、
+			// 分布が無い＝評価が付いていない、と扱う（実APIでは150件中150件で分布あり）。
 			const noDistributionData: DLsiteApiResponse = {
 				...mockRawApiData,
 				rate_count_detail: undefined,
 			};
 
-			const rating = WorkMapper.toRating(noDistributionData);
-
-			expect(rating).toBeDefined();
-			expect(rating!.ratingDetail).toBeUndefined();
+			expect(WorkMapper.toRating(noDistributionData)).toBeUndefined();
 		});
 	});
 

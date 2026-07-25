@@ -152,29 +152,43 @@ function toPrice(raw: DLsiteApiResponse): PriceInfo | undefined {
 
 /**
  * 評価情報への変換
- * APIが提供する評価分布をそのまま保持
+ *
+ * SPR-272: 旧実装は `raw.rate_count` を評価件数として読んでいたが、DLsite Individual Info API は
+ * このフィールドを返さない（実キャプチャ150件中0件）。そのため `count` が常に 0 となり
+ * 早期 return で **rating が本番で一度も生成されていなかった**（本番 works 300件で 0件）。
+ * 件数の実体は `rate_count_detail`（星ごとの内訳）なので、その合計を評価件数とする。
+ *
+ * スケールにも注意: `rate_average_star` は **10-50 の整数（0.5刻み。実測 40/45/50）** で、
+ * `RatingInfo.stars` は 0-5（`work-schemas.ts` で max 5、読み手も `>= 4.0` や `toFixed(1)` で
+ * 0-5 前提）。よって 10 で「割る」。旧実装のコメント「Convert 0-5 scale to 0-50 scale」は
+ * 変換の向きと対象を取り違えており、仮に count が埋まっていれば 50 → 500 になっていた。
+ * 生値 10-50 を保持するフィールド `rateAverageStar` はスキーマ上は存在するが、現状 toWork は
+ * これを書いていない（未配線）。生値が必要になった時点で配線する。
  */
 function toRating(raw: DLsiteApiResponse): RatingInfo | undefined {
-	const avgRating = raw.rate_average_star ?? raw.rate_average ?? 0;
-	const count = raw.rate_count ?? 0;
-	if (!avgRating || !count) return undefined;
+	// 分布が唯一の件数ソースなので、不在なら評価が付いていないものとして扱う。
+	const detail = raw.rate_count_detail;
+	if (!detail) return undefined;
 
-	// Convert 0-5 scale to 0-50 scale
-	const stars = Math.round(avgRating * 10);
+	// 評価件数は星ごとの内訳の合計（APIは合計値を直接返さない）
+	const count = Object.values(detail).reduce((sum, n) => sum + (typeof n === "number" ? n : 0), 0);
+	const rawStar = raw.rate_average_star ?? 0;
+	if (!rawStar || !count) return undefined;
 
-	// Convert rate_count_detail to proper ratingDetail format
-	const ratingDetail = raw.rate_count_detail
-		? [1, 2, 3, 4, 5]
-				.map((reviewPoint) => {
-					const detailCount = raw.rate_count_detail?.[reviewPoint.toString()] || 0;
-					return {
-						review_point: reviewPoint,
-						count: detailCount,
-						ratio: count > 0 ? Math.round((detailCount / count) * 100) : 0,
-					};
-				})
-				.filter((detail) => detail.count > 0)
-		: undefined;
+	// 10-50スケール → 0-5スケール
+	const stars = rawStar / 10;
+
+	// rate_count_detail を ratingDetail 形式へ変換する
+	const ratingDetail = [1, 2, 3, 4, 5]
+		.map((reviewPoint) => {
+			const detailCount = detail[reviewPoint.toString()] || 0;
+			return {
+				review_point: reviewPoint,
+				count: detailCount,
+				ratio: Math.round((detailCount / count) * 100),
+			};
+		})
+		.filter((entry) => entry.count > 0);
 
 	return {
 		stars,
