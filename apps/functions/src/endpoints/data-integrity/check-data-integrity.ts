@@ -21,6 +21,13 @@ export async function checkDataIntegrity(event: CloudEvent<unknown>): Promise<vo
 		const result = await runIntegrityCheck();
 
 		logger.info("データ整合性チェック完了", {
+			// totalChecked は「走査した doc 数」をコレクション単位で数える（circles + creators + works）。
+			// 4つ目の検査 creatorWorkRestore.checked を足さないのは意図的:
+			// `creatorWorkRestore.checked` と `workCircleConsistency.checked` は
+			// **どちらも works 全件の件数で常に同値**（両者とも collection("works") を走査する）。
+			// したがって加算すると works が必ず二重計上になる（件数の多寡によらず成立する）。
+			// creatorWorkRestore の「成果」は totalFixed 側に restored/creatorsCreated として
+			// 計上済みなので、この検査がサマリから漏れているわけではない（SPR-270）。
 			totalChecked:
 				result.checks.circleWorkCounts.checked +
 				result.checks.orphanedCreators.checked +
