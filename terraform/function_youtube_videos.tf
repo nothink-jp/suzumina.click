@@ -22,7 +22,7 @@ locals {
 # Terraform では google_cloudfunctions2_function リソースを管理しない（ADR-009 / SPR-92）。
 #
 # spec の正本（deploy-functions.yml の gcloud functions deploy）:
-#   runtime=nodejs24 / memory=256Mi / timeout=540s / max-instances=3
+#   runtime=nodejs24 / memory=512Mi / timeout=540s / max-instances=3
 #   entry-point=fetchYouTubeVideos / trigger-topic=youtube-video-fetch-trigger
 #
 # デプロイ手順:
