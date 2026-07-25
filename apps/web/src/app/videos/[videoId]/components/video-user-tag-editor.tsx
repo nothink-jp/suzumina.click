@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { updateUserTagsAction } from "@/actions/user-tags";
 import { VideoTagEditor } from "@/components/video/video-tag-editor";
+import { trackUserTagEditOpen, trackUserTagSave } from "@/lib/analytics/events";
 import { useSession } from "@/lib/auth/client";
 import { buildTagSearchHref } from "@/lib/tag-search";
 
@@ -38,6 +39,8 @@ export function VideoUserTagEditor({ video }: VideoUserTagEditorProps) {
 				});
 
 				if (result.success) {
+					// 保存成功のみ計上する（失敗は user_tag_edit_open との差分として現れる）
+					trackUserTagSave(videoId, tags.length);
 					// 成功時はページをリフレッシュして最新データを取得
 					router.refresh();
 					setIsEditingUserTags(false);
@@ -56,6 +59,12 @@ export function VideoUserTagEditor({ video }: VideoUserTagEditorProps) {
 		},
 		[router],
 	);
+
+	/** 編集モードへ入る。open と save の差が「編集を試みたが保存に至らなかった」を表す */
+	const handleStartEditing = useCallback(() => {
+		trackUserTagEditOpen(video.videoId);
+		setIsEditingUserTags(true);
+	}, [video.videoId]);
 
 	// 編集権限チェック: 認証済みユーザーのみ編集可能
 	const canEdit = !!user?.discordId;
@@ -93,7 +102,7 @@ export function VideoUserTagEditor({ video }: VideoUserTagEditorProps) {
 					<div className="flex items-center justify-between mb-4">
 						<h4 className="text-lg font-semibold">みんなのタグ編集</h4>
 						{!isEditingUserTags && (
-							<Button variant="outline" size="sm" onClick={() => setIsEditingUserTags(true)}>
+							<Button variant="outline" size="sm" onClick={handleStartEditing}>
 								<Edit className="h-4 w-4 mr-2" />
 								編集
 							</Button>
