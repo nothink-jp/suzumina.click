@@ -98,7 +98,7 @@ export function createRunMetadataStore<T extends object>(options: {
 
 ### 良くない点・残課題
 
-- （解決済み・記録として残す）`checkDataIntegrity` の `totalChecked` が `creatorWorkRestore.checked` を含まない点を「欠落」として SPR-270 に起票したが、調査の結果**現状が正しい実装**と判明した。`creatorWorkRestore` は `workCircleConsistency` と同じ `works` コレクションを再走査しており、加算すると works が二重計上になる（実測: circles 383 + creators 1,178 + works 2,114 = 3,675。足すと 5,789）。当該検査の成果は `totalFixed` 側に計上済みでサマリから漏れてもいない。同じ誤解の再発を防ぐため、理由をコード側コメントに明記した（SPR-270 は Won't Fix でクローズ）。
+- （解決済み・記録として残す）`checkDataIntegrity` の `totalChecked` が `creatorWorkRestore.checked` を含まない点を「欠落」として SPR-270 に起票したが、調査の結果**現状が正しい実装**と判明した。`creatorWorkRestore.checked` と `workCircleConsistency.checked` はどちらも `works` 全件の件数で**常に同値**のため、加算すると works が必ず二重計上になる（件数によらず成立）。当該検査の成果は `totalFixed` 側に計上済みでサマリから漏れてもいない。判断の根拠にした実測値は 2026-07-18 時点で circles 383 + creators 1,178 + works 2,114 = 3,675（ログの `totalChecked` と一致・加算すると 5,789）。同じ誤解の再発を防ぐため、理由をコード側コメントに明記した（SPR-270 は Won't Fix でクローズ）。
 
 ## 参考
 
