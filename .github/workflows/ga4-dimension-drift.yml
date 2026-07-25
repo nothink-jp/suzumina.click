@@ -1,0 +1,63 @@
+name: GA4 Dimension Drift
+
+# live GA4 のカスタムディメンションと宣言（apps/web/src/lib/analytics/ga4-custom-dimensions.json）の
+# drift を検出する（SPR-279 Step 2）。firestore-index-drift.yml と同型。
+# 方針: 非ブロッキング（continue-on-error）。登録/アーカイブの判断はツール任せにせず人が行う
+# （CLAUDE.md 軸1）。そのため CI では --apply を使わず、検出のみ実行する。
+# 認証: WIF で terraform-plan-sa を assume し、スクリプトが GA4 閲覧者の ga4-ci-reader を
+# impersonate する。GA4 編集者の ga4-reader は CI からは使わない（実体は terraform/analytics_ga4.tf）。
+
+on:
+  schedule:
+    - cron: '30 0 * * 1' # 毎週月曜 00:30 UTC（index-drift の 00:00 とずらす）
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'apps/web/src/lib/analytics/ga4-custom-dimensions.json'
+      - 'scripts/check-ga4-dimension-drift.mjs'
+      - '.github/workflows/ga4-dimension-drift.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  drift:
+    name: GA4 dimension drift report
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      # スクリプトの既定は GA4 編集者の ga4-reader。CI では読み取り専用の SA に差し替える
+      GA4_READER_SA: ga4-ci-reader@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com
+    steps:
+      - uses: actions/checkout@v7
+
+      # 読み取り専用。terraform plan と同じ SA を入口に流用する（WIF 連携先を増やさない）。
+      # この SA には ga4-ci-reader への serviceAccountTokenCreator のみを付与している。
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+          service_account: 'terraform-plan-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com'
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24.18.0'
+
+      # 非ブロッキング: drift があっても PR を落とさない。結果はこのステップのログで確認する。
+      # スクリプトは npm 依存ゼロなので install 不要。
+      - name: Check GA4 dimension drift
+        continue-on-error: true
+        run: node scripts/check-ga4-dimension-drift.mjs
