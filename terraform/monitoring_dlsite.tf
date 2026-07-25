@@ -86,22 +86,42 @@ resource "google_monitoring_alert_policy" "dlsite_function_error" {
   ]
 }
 
-# ログベースメトリクス - 作品ID収集の失敗（scrape 失敗 or 0件）
+# ログベースメトリクス - 作品ID収集の系統的失敗（run 中断 or 0件）
 # 旧 filter の「取得した作品数: 0件」は現行コードに存在しないログ文言だった（SPR-234）。
 # SPR-232 で scrape 失敗時の asset fallback を撤去し run 中断となったため、
-# 「作品ID収集エラー」（scrape 例外）と「収集対象の作品IDが見つかりません」（scrape 成功だが0件）
-# の2つが現行の系統的失敗シグナル。恒常化すると works 更新が止まる（次 run=2h後が自動リトライ）。
+# 「run 中断」と「scrape 成功だが0件」の2つが現行の系統的失敗シグナル。
+# 恒常化すると works 更新が止まる（次 run=2h後が自動リトライ）。
+#
+# SPR-271: 旧 filter は "作品ID収集エラー" の部分一致で、意味の異なる2つのログを区別できて
+# いなかった。per-page の一過性エラー（`作品ID収集エラー (ページ N)`・work-id-collector.ts）は
+# 部分結果で処理を継続し run は完走するため、この「収集が失敗した」メトリクスの対象ではない
+# （2026-07-24 の DLsite 側 500 で実際に誤発火。2,100件収集・35バッチ完走したのに
+# 「作品数0件を検出」が鳴った）。run 中断を表す文言そのものを対象にして両者を分離する。
+# per-page エラーは ERROR のまま catch-all の dlsite_error_count 側で拾う（恒常化＝
+# カタログ末尾が永久に更新されない silent degradation を隠さないため。軸1）。
 resource "google_logging_metric" "dlsite_no_data" {
   name    = "dlsite_no_data_fetched"
   project = var.gcp_project_id
 
   # 注意: 付加フィールド無しの logger 呼び出しは Cloud Run が message を textPayload へ昇格させる
   # （jsonPayload は残らない）ため、両フィールドを OR で張る（SPR-234）。
+  #
+  # 2つの OR 節の役割（どちらも run 中断に至る。#857 レビュー指摘の明確化）:
+  #   - "収集対象の作品IDが見つかりません" … **実質的な全滅検知はこちら**。
+  #     collectAllWorkIds は per-page 例外を内部で捕捉して break するため（再 throw しない）、
+  #     1ページ目が落ちると例外ではなく「0件」として返る → prepareNewBatchProcessing の
+  #     0件分岐に落ちて run 中断。
+  #   - "この run を中断します" … collectWorkIdsForProduction がループ外の予期せぬ例外を
+  #     投げた場合の防御的な節。通常運用では到達しないが、握り潰しを避けるため残す。
+  #
+  # なお「2ページ目で落ちて ~100件しか集まらない」ような重篤な部分失敗はどちらの節にも
+  # 該当しない（0件でなく run も完走する）。これは catch-all の dlsite_error_count 側が
+  # per-page エラー（severity=error のまま据え置き）で拾う二段構えにしてある。
   filter = <<-EOT
     resource.type="cloud_run_revision"
     resource.labels.service_name="fetchdlsiteunifieddata"
     (
-      jsonPayload.message:"作品ID収集エラー" OR textPayload:"作品ID収集エラー"
+      jsonPayload.message:"この run を中断します" OR textPayload:"この run を中断します"
       OR jsonPayload.message:"収集対象の作品IDが見つかりません" OR textPayload:"収集対象の作品IDが見つかりません"
     )
   EOT
@@ -113,14 +133,16 @@ resource "google_logging_metric" "dlsite_no_data" {
   }
 }
 
-# DLsiteデータ取得失敗アラート（0件取得）
+# DLsiteデータ取得失敗アラート（run 中断 or 0件）
 resource "google_monitoring_alert_policy" "dlsite_no_data_fetched" {
   display_name = "DLsite No Data Fetched Alert"
   project      = var.gcp_project_id
   combiner     = "OR"
 
   conditions {
-    display_name = "作品数0件を検出"
+    # SPR-271: 旧名「作品数0件を検出」は per-page エラーでの誤発火時に実態（2,100件取得済み）と
+    # 乖離し、通知を見た人が「全滅した」と誤読する。run が中断された事実を名前で表す。
+    display_name = "作品ID収集の失敗でrunが中断"
 
     condition_threshold {
       filter = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.dlsite_no_data.id}\" resource.type=\"cloud_run_revision\""
@@ -142,11 +164,17 @@ resource "google_monitoring_alert_policy" "dlsite_no_data_fetched" {
 
   documentation {
     content   = <<-EOT
-    # DLsite作品ID収集の失敗（scrape 失敗 or 0件）
+    # DLsite作品ID収集の系統的失敗（run 中断 or 0件）
 
-    DLsite関数の作品ID収集が失敗（scrape 例外）または0件でした。
-    この run は中断され、次の定期実行（2時間後）が自動リトライします（SPR-232 で
-    asset fallback を撤去済み）。恒常化すると works の更新が完全に止まります。
+    DLsite関数の作品ID収集が1ページ目から失敗して **run が中断された**、または
+    scrape は成功したが0件でした。この run では works が一切更新されず、次の定期実行
+    （2時間後）が自動リトライします（SPR-232 で asset fallback を撤去済み）。
+    恒常化すると works の更新が完全に止まります。
+
+    ## このアラートが鳴らないケース（SPR-271）
+    途中ページの一過性エラー（`作品ID収集エラー (ページ N)`）は対象外です。その場合は
+    部分結果で処理を継続し run は完走するため、取りこぼした分は次 run が拾います。
+    そちらは catch-all の「DLsite関数でエラーログ検出」側で通知されます。
 
     ## 考えられる原因
     1. DLsiteのHTML/AJAX構造が変更された
@@ -156,7 +184,7 @@ resource "google_monitoring_alert_policy" "dlsite_no_data_fetched" {
     ## 対応方法
     1. DLsiteのWebサイトを手動で確認
     2. work-id-collector（AJAX パーサー）のアップデートが必要
-    3. ログ確認: jsonPayload.message:"作品ID収集エラー" を Cloud Logging で検索
+    3. ログ確認: jsonPayload.message:"この run を中断します" を Cloud Logging で検索
     EOT
     mime_type = "text/markdown"
   }
