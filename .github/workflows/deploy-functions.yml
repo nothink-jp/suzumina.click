@@ -197,6 +197,11 @@ jobs:
           declare -A deploy_pids
           
           # fetchYouTubeVideos
+          # メモリ 512Mi の理由（SPR-235・2026-07 実測）: 旧設定 256Mi では memory utilization が
+          # 常時 0.86〜1.00 で張り付き、2026-07-23 に OOM でインスタンスが強制終了した。
+          # SPR-266 の fast_recheck（15分毎）投入でインスタンスが常時ウォームになり、
+          # 毎時のコールドスタートによる暗黙のプロセスリサイクルが無くなったことで顕在化した
+          # （新インスタンス直後でも 0.86 と元々マージンが薄く、37時間で約 +19MiB 増加する）。
           gcloud functions deploy fetchYouTubeVideos \
             --gen2 \
             --source ${{ env.DEPLOYMENT_SOURCE }} \
@@ -206,7 +211,7 @@ jobs:
             --region asia-northeast1 \
             --project ${{ secrets.GCP_PROJECT_ID }} \
             --set-env-vars NODE_ENV=production,FUNCTION_SIGNATURE_TYPE=cloudevent,FUNCTION_TARGET=fetchYouTubeVideos \
-            --memory 256Mi \
+            --memory 512Mi \
             --timeout 540s \
             --max-instances 3 \
             --service-account fetch-youtube-videos-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
