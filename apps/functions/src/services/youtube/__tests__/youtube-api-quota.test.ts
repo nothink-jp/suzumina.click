@@ -1,4 +1,4 @@
-import type { youtube_v3 } from "googleapis";
+import type { youtube_v3 } from "@googleapis/youtube";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // quota monitor をモックして quota 充足/不足の両分岐を検証する

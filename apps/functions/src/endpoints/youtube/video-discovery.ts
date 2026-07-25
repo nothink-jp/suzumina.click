@@ -5,7 +5,7 @@
  * 取りこぼし検知（週次フルスイープ）、fast_recheck 向けの軽量新着発見を担う。
  */
 
-import type { youtube_v3 } from "googleapis";
+import type { youtube_v3 } from "@googleapis/youtube";
 import {
 	fetchUploadsPlaylistId,
 	fetchUploadsPlaylistPage,

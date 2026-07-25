@@ -10,7 +10,7 @@
  * 「uploadsPlaylistのみに存在する件数」と一致する固定リスト。
  */
 
-import type { youtube_v3 } from "googleapis";
+import type { youtube_v3 } from "@googleapis/youtube";
 import {
 	fetchChannelPlaylists,
 	fetchPlaylistItems,

@@ -5,7 +5,7 @@
  * dlsite/fetch-dlsite-unified-data.test.tsと同様のパターンでエンドポイントの分岐を検証する。
  */
 
-import type { youtube_v3 } from "googleapis";
+import type { youtube_v3 } from "@googleapis/youtube";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../../infrastructure/database/firestore", () => {

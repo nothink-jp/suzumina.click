@@ -1,4 +1,4 @@
-import type { youtube_v3 } from "googleapis";
+import type { youtube_v3 } from "@googleapis/youtube";
 import { describe, expect, it, vi } from "vitest";
 import { mapYouTubeToVideoPlainObject, VideoMapper } from "../video-mapper";
 

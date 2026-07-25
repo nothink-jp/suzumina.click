@@ -1,4 +1,4 @@
-import type { youtube_v3 } from "googleapis";
+import type { youtube_v3 } from "@googleapis/youtube";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as youtubeApi from "../youtube-api";
 
@@ -7,7 +7,7 @@ interface VideoListResponse {
 	data: youtube_v3.Schema$VideoListResponse;
 }
 
-// googleapisのモック
+// @googleapis/youtubeのモック
 const mockYoutubeVideosList = vi.fn();
 const mockYoutubeClient = {
 	videos: {
@@ -15,10 +15,8 @@ const mockYoutubeClient = {
 	},
 };
 
-vi.mock("googleapis", () => ({
-	google: {
-		youtube: vi.fn().mockImplementation(() => mockYoutubeClient),
-	},
+vi.mock("@googleapis/youtube", () => ({
+	youtube: vi.fn().mockImplementation(() => mockYoutubeClient),
 }));
 
 // logger関数のモック

@@ -22,7 +22,7 @@ const buildOptions = {
 	minify: !watch,
 	conditions: ["import", "node"],
 	mainFields: ["module", "main"],
-	external: ["googleapis", "@google-cloud/firestore", "@google-cloud/functions-framework"],
+	external: ["@googleapis/youtube", "@google-cloud/firestore", "@google-cloud/functions-framework"],
 	logLevel: "info",
 	legalComments: "none",
 };

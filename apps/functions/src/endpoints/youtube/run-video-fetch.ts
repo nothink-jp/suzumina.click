@@ -7,7 +7,7 @@
  * `fetchYouTubeVideosLogic` が呼ばれる。
  */
 
-import type { youtube_v3 } from "googleapis";
+import type { youtube_v3 } from "@googleapis/youtube";
 import { Timestamp } from "../../infrastructure/database/firestore";
 import { getJSTDate } from "../../services/price-history";
 import { RECENT_WINDOW_DAYS } from "../../services/youtube/video-tiering";

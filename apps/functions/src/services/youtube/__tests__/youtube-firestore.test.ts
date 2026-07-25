@@ -2,7 +2,7 @@
  * YouTube Firestore Service Tests
  */
 
-import type { youtube_v3 } from "googleapis";
+import type { youtube_v3 } from "@googleapis/youtube";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SUZUKA_MINASE_CHANNEL_ID } from "../../../shared/common";
 

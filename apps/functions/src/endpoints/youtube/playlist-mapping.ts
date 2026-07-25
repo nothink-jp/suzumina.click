@@ -5,7 +5,7 @@
  * プレイリストタグ付与を担う。通常 run と fast_recheck の両方から使われる。
  */
 
-import type { youtube_v3 } from "googleapis";
+import type { youtube_v3 } from "@googleapis/youtube";
 import { getJSTDate } from "../../services/price-history";
 import { fetchChannelPlaylists, fetchPlaylistItems } from "../../services/youtube/youtube-api";
 import {

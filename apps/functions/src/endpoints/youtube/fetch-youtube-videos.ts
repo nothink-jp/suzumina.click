@@ -7,6 +7,7 @@
 
 import type { CloudEvent } from "@google-cloud/functions-framework";
 import * as logger from "../../shared/logger";
+import { logRunMemoryUsage } from "../../shared/memory-diagnostics";
 import { decodePubsubMode, type MessagePublishedData } from "../../shared/pubsub-utils";
 import { updateMetadata } from "./fetch-metadata";
 import { type FetchMode, fetchYouTubeVideosLogic } from "./run-video-fetch";
@@ -22,6 +23,9 @@ export const fetchYouTubeVideos = async (
 ): Promise<void> => {
 	logger.info("fetchYouTubeVideos 関数を開始しました (GCFv2 CloudEvent Handler)");
 
+	// SPR-277: メモリ使用量ログ（finally）でモード別に集計するため try の外で保持する
+	let fetchMode: FetchMode = "normal";
+
 	try {
 		// CloudEvent（Pub/Sub）の場合
 		logger.info("Pub/Subトリガーからの実行を検出しました");
@@ -33,7 +37,7 @@ export const fetchYouTubeVideos = async (
 
 		// SPR-230/SPR-263: ペイロードのmodeを確認し、実行モードを判定する
 		const decodedMode = decodePubsubMode(event.data);
-		const fetchMode: FetchMode =
+		fetchMode =
 			decodedMode === "weekly_full_sweep" || decodedMode === "fast_recheck"
 				? decodedMode
 				: "normal";
@@ -69,5 +73,9 @@ export const fetchYouTubeVideos = async (
 		} catch (updateError) {
 			logger.error("エラー状態の記録に失敗しました:", updateError);
 		}
+	} finally {
+		// SPR-277: run 完了時のメモリ使用量を必ず記録する。ウォームインスタンスでしか
+		// 観測できないため、成功した run だけに絞ると蓄積の主因を取り逃がす
+		logRunMemoryUsage(fetchMode);
 	}
 };
