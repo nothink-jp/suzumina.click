@@ -96,6 +96,9 @@ LLM に毎回全部読ませて再構築させない。能動的に効かせた�
   登録済みは `customEvent:<param>` で Data API からクエリ可能。live↔JSON の突合は `pnpm check:ga4-drift`
   （GA4 認証が要るため verify には入れない＝`check:index-drift` と同じ扱い。`--apply` で未登録の登録と
   description の同期まで行う。displayName/scope の差は人が判断・SPR-279）。
+  週次の非ブロッキング CI（`ga4-dimension-drift.yml`）も同じスクリプトを検出のみで走らせる。
+  GCP 側の identity は terraform（`analytics_ga4.tf`）だが、**GA4 プロパティのアクセス権は
+  terraform では付与できず GA4 管理画面のみ**（CI は閲覧者の `ga4-ci-reader@`・ローカルの `--apply` は編集者の `ga4-reader@`）
   なお計器を足しただけでは測れない: カスタムイベントは consent ゲート内で送るため、同意率がそのまま母数になる
 - **Firestore 時刻フィールド**: 新規コレクション・新規フィールドの日時は Firestore `Timestamp` で保存する。
   既存は string ISO（works / audioButtons / users / contacts）と Timestamp（circles / creators / evaluations / ba_*）が
