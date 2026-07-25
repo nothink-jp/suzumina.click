@@ -17,9 +17,13 @@
  * 引数が識別子の場合は同一ファイル内の `const <id> = { ... }` に解決する。解決できない呼び出しは
  * 黙って通さず、UNRESOLVED_ALLOWLIST に理由付きで載っていなければ落とす（fail-closed）。
  *
- * AST は使わず正規表現 + 括弧マッチで読む。誤認の主因になるコメントは blankComments で潰すが、
- * 文字列リテラル内に呼び出しそのものを書いた場合（`const s = 'gtag("event", ...)'`）は拾ってしまう。
- * 誤検知は「宣言を増やせ」と言う過検知方向にしか倒れず、宣言漏れを見逃す方向には倒れない。
+ * AST は使わず正規表現 + 括弧マッチで読む。誤認の主因になるコメントは blankComments で潰す。
+ * その際に正規表現リテラルも読み飛ばすのが必須で、これが無いと `/https?:\/\//` の内部の `//` を
+ * 行コメントの開始と誤認して行末まで空白化し、同じ行にある実呼び出しが消える＝**宣言漏れを
+ * 見逃す方向**に倒れる（実測で再現。call sites が 1 減り未宣言パラメータが検出されなくなった）。
+ *
+ * 残る限界は、文字列リテラル内に呼び出しそのものを書いた場合（`const s = 'gtag("event", ...)'`）に
+ * 拾ってしまうこと。これは「宣言を増やせ」と言う過検知方向で、CI が赤くなるだけで見逃しはしない。
  */
 import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
@@ -84,6 +88,49 @@ function endOfString(text, start) {
  * これが無いと「方式: gtag('set') で…」のような実コード片を載せた説明コメントを
  * 実呼び出しと誤認して落ちる（このリポジトリのコメントはその密度なので現実的なリスク）。
  */
+/** 正規表現リテラルの開始になり得る直前トークン（除算と区別するための標準的な近似） */
+const REGEX_PRECEDING_CHARS = new Set("(,=:[!&|?{};+-*%^~<>".split(""));
+const REGEX_PRECEDING_KEYWORDS = new Set([
+	"return",
+	"typeof",
+	"case",
+	"in",
+	"of",
+	"do",
+	"else",
+	"void",
+	"delete",
+	"new",
+	"instanceof",
+	"yield",
+	"await",
+]);
+
+/** この `/` が除算ではなく正規表現リテラルの開始かを直前トークンから推定する */
+function isRegexStart(text, slash) {
+	let i = slash - 1;
+	while (i >= 0 && /\s/.test(text[i])) i--;
+	if (i < 0) return true;
+	if (REGEX_PRECEDING_CHARS.has(text[i])) return true;
+	// 最長キーワード instanceof(10文字) が収まる窓だけ見る
+	const word = /[\w$]+$/.exec(text.slice(Math.max(0, i - 12), i + 1))?.[0] ?? "";
+	return REGEX_PRECEDING_KEYWORDS.has(word);
+}
+
+/** 正規表現リテラルの終端 `/` の index。未終端なら start を返す（呼び出し側は前進するだけ） */
+function endOfRegex(text, start) {
+	let inClass = false;
+	for (let i = start + 1; i < text.length; i++) {
+		const ch = text[i];
+		if (ch === "\\") i++;
+		else if (ch === "\n") return start;
+		else if (ch === "[") inClass = true;
+		else if (ch === "]") inClass = false;
+		else if (ch === "/" && !inClass) return i;
+	}
+	return start;
+}
+
 function blankLineComment(out, text, from) {
 	let i = from;
 	while (i < text.length && text[i] !== "\n") out[i++] = " ";
@@ -102,8 +149,10 @@ function blankComments(text) {
 	for (let i = 0; i < text.length; i++) {
 		const ch = text[i];
 		if (ch === '"' || ch === "'" || ch === "`") i = endOfString(text, i);
+		// `//` は JS では常にコメント（空の正規表現は書けない）ので正規表現判定より先に見る
 		else if (ch === "/" && text[i + 1] === "/") i = blankLineComment(out, text, i);
 		else if (ch === "/" && text[i + 1] === "*") i = blankBlockComment(out, text, i);
+		else if (ch === "/" && isRegexStart(text, i)) i = endOfRegex(text, i);
 	}
 	return out.join("");
 }
