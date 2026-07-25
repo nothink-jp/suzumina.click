@@ -105,6 +105,18 @@ resource "google_logging_metric" "dlsite_no_data" {
 
   # 注意: 付加フィールド無しの logger 呼び出しは Cloud Run が message を textPayload へ昇格させる
   # （jsonPayload は残らない）ため、両フィールドを OR で張る（SPR-234）。
+  #
+  # 2つの OR 節の役割（どちらも run 中断に至る。#857 レビュー指摘の明確化）:
+  #   - "収集対象の作品IDが見つかりません" … **実質的な全滅検知はこちら**。
+  #     collectAllWorkIds は per-page 例外を内部で捕捉して break するため（再 throw しない）、
+  #     1ページ目が落ちると例外ではなく「0件」として返る → prepareNewBatchProcessing の
+  #     0件分岐に落ちて run 中断。
+  #   - "この run を中断します" … collectWorkIdsForProduction がループ外の予期せぬ例外を
+  #     投げた場合の防御的な節。通常運用では到達しないが、握り潰しを避けるため残す。
+  #
+  # なお「2ページ目で落ちて ~100件しか集まらない」ような重篤な部分失敗はどちらの節にも
+  # 該当しない（0件でなく run も完走する）。これは catch-all の dlsite_error_count 側が
+  # per-page エラー（severity=error のまま据え置き）で拾う二段構えにしてある。
   filter = <<-EOT
     resource.type="cloud_run_revision"
     resource.labels.service_name="fetchdlsiteunifieddata"
