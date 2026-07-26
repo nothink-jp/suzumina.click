@@ -9,6 +9,7 @@ import { Input } from "@suzumina.click/ui/components/ui/input";
 import { Clock, MousePointer, Play, Square } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { matchShortcutKey } from "@/lib/keyboard-shortcut";
+import { ClipExploreLane } from "./clip-explore-lane";
 import { ClipTrimLane } from "./clip-trim-lane";
 
 /** ズーム段階（レーンの片幅・秒） */
@@ -130,6 +131,10 @@ interface TimeControlPanelProps {
 	// 試聴
 	audition: AuditionControls;
 
+	// 探索レーンの目印（SPR-289）。省略時はレーンだけ表示する（編集画面など）
+	madeMarks?: number[];
+	draftMarks?: number[];
+
 	// UI状態
 	isCreating: boolean;
 }
@@ -221,6 +226,8 @@ export function TimeControlPanel({
 	onSetEndTime,
 	onSeek,
 	audition,
+	madeMarks = [],
+	draftMarks = [],
 	isCreating,
 }: TimeControlPanelProps) {
 	const prerollId = useId();
@@ -273,6 +280,19 @@ export function TimeControlPanel({
 		[onSetStartTime, onSetEndTime],
 	);
 
+	// 探索レーンのジャンプ: クリップを長さを保ったままその位置へ動かし、トリムレーンも追従させる。
+	// プレイヤーのシークは editor 側の境界追従（調整のたび自動シーク）に任せる
+	const handleExploreJump = useCallback(
+		(time: number) => {
+			const length = Math.max(roundTenth(endTime - startTime), 1);
+			const nextStart = roundTenth(Math.max(0, Math.min(time, videoDuration - length)));
+			onSetStartTime(nextStart);
+			onSetEndTime(roundTenth(nextStart + length));
+			setViewCenter(clampCenter(nextStart + length / 2, halfWindow));
+		},
+		[startTime, endTime, videoDuration, onSetStartTime, onSetEndTime, clampCenter, halfWindow],
+	);
+
 	return (
 		<div className="space-y-3">
 			{/* 再生位置と I/O 設定 */}
@@ -313,6 +333,36 @@ export function TimeControlPanel({
 							O
 						</kbd>
 					</Button>
+				</div>
+			</div>
+
+			{/* 動画全体の探索レーン（SPR-289） */}
+			<div className="space-y-1.5">
+				<div className="flex items-baseline justify-between gap-2">
+					<span className="text-sm font-medium sm:text-base">動画全体から探す</span>
+					<span className="text-xs text-muted-foreground">クリックでその位置へ</span>
+				</div>
+				<ClipExploreLane
+					videoDuration={videoDuration}
+					windowStart={viewCenter - halfWindow}
+					windowEnd={viewCenter + halfWindow}
+					madeMarks={madeMarks}
+					draftMarks={draftMarks}
+					disabled={isCreating}
+					onJump={handleExploreJump}
+				/>
+				<div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+					{draftMarks.length > 0 && (
+						<span className="flex items-center gap-1 whitespace-nowrap">
+							<span className="inline-block h-2.5 w-1 rounded-full bg-heart" />
+							下書き {draftMarks.length}
+						</span>
+					)}
+					<span className="flex items-center gap-1 whitespace-nowrap">
+						<span className="inline-block h-2.5 w-1 rounded-full bg-suzuka-600" />
+						作成済み {madeMarks.length}
+					</span>
+					<span className="ml-auto whitespace-nowrap">▼ の枠内が下の拡大表示の範囲</span>
 				</div>
 			</div>
 

@@ -305,6 +305,47 @@ describe("TimeControlPanel", () => {
 		});
 	});
 
+	describe("Explore Lane (SPR-289)", () => {
+		it("探索レーンと凡例が表示される", () => {
+			render(<TimeControlPanel {...defaultProps} madeMarks={[10, 50]} draftMarks={[100]} />);
+
+			expect(screen.getByText("動画全体から探す")).toBeInTheDocument();
+			expect(screen.getByTestId("clip-explore-lane")).toBeInTheDocument();
+			expect(screen.getByText("作成済み 2")).toBeInTheDocument();
+			expect(screen.getByText("下書き 1")).toBeInTheDocument();
+		});
+
+		it("下書きが無いときは下書き凡例を出さない", () => {
+			render(<TimeControlPanel {...defaultProps} madeMarks={[10]} />);
+
+			expect(screen.getByText("作成済み 1")).toBeInTheDocument();
+			expect(screen.queryByText(/下書き/)).not.toBeInTheDocument();
+		});
+
+		it("探索レーンのクリックでクリップが長さを保ったまま移動する", () => {
+			const rectSpy = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
+				left: 0,
+				top: 0,
+				right: 800,
+				bottom: 64,
+				width: 800,
+				height: 64,
+				x: 0,
+				y: 0,
+				toJSON: () => ({}),
+			} as DOMRect);
+
+			render(<TimeControlPanel {...defaultProps} startTime={10} endTime={20} />);
+
+			// 400px = 動画(300秒)の中央 150 秒 → 長さ10秒のまま 150-160 へ
+			fireEvent.click(screen.getByTestId("clip-explore-lane"), { clientX: 400 });
+			expect(defaultProps.onSetStartTime).toHaveBeenCalledWith(150);
+			expect(defaultProps.onSetEndTime).toHaveBeenCalledWith(160);
+
+			rectSpy.mockRestore();
+		});
+	});
+
 	describe("I/O Set Buttons", () => {
 		it("開始・終了時間に設定ボタンでコールバックが呼ばれる", async () => {
 			const user = userEvent.setup();
