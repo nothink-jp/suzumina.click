@@ -36,6 +36,13 @@ interface AudioButtonCreatorProps {
 	draftMarks?: number[];
 }
 
+/** 同値が複数あっても1件分だけ取り除く（下書きマークは同時刻が並存しうる） */
+function removeOneOccurrence(list: number[], value: number): number[] {
+	const index = list.indexOf(value);
+	if (index === -1) return list;
+	return [...list.slice(0, index), ...list.slice(index + 1)];
+}
+
 /**
  * 音声ボタン作成フォーム。
  * フォーム値（タイトル/説明/タグ/開始・終了時刻）は useState で保持する。
@@ -85,8 +92,10 @@ export function AudioButtonCreator({
 	);
 	const [lastCreated, setLastCreated] = useState<{ id: string; buttonText: string } | null>(null);
 
-	// 探索レーンの作成済みマーク。作成成功時にその場で追記する（再取得はしない・SPR-289）
+	// 探索レーンのマーク。作成成功時にその場で加減する（再取得はしない・SPR-289）。
+	// 下書きマークも state 化しないと、連続仕上げ（遷移なし）で消化した下書きが残って見える
 	const [madeMarks, setMadeMarks] = useState<number[]>(() => initialMadeMarks ?? []);
+	const [draftMarkList, setDraftMarkList] = useState<number[]>(() => draftMarks ?? []);
 
 	// 次の下書きへフォームとプレイヤーを進める（遷移なし＝プレイヤー維持が連続仕上げの本体）
 	const { setStartTime, setEndTime } = timeAdjustment;
@@ -118,6 +127,17 @@ export function AudioButtonCreator({
 			seekTo,
 		],
 	);
+
+	// 下書きの消化: 削除（ベストエフォート）＋探索レーンのマーク除去。
+	// 削除 API の成否に関わらずボタン作成は成立している＝「未処理」表示のまま残すほうが誤誘導になる
+	const consumeActiveDraft = useCallback(async () => {
+		if (!activeDraftId) return;
+		await deleteButtonDraft(activeDraftId).catch(() => undefined);
+		const consumed = videoDrafts?.find((draft) => draft.id === activeDraftId);
+		if (consumed) {
+			setDraftMarkList((prev) => removeOneOccurrence(prev, consumed.suggestedStartTime));
+		}
+	}, [activeDraftId, videoDrafts]);
 
 	// スキップ: 現在の下書きは消化せず（/live から再度仕上げられる）次へ進む
 	const handleSkip = useCallback(() => {
@@ -156,11 +176,8 @@ export function AudioButtonCreator({
 				});
 				// 探索レーンへ即時反映（連続作成時に同じ箇所の二重作成を防ぐ）
 				setMadeMarks((prev) => [...prev, input.startTime]);
-				// 下書きから開いた場合は消化（削除）する。ベストエフォート＝失敗してもボタン作成は
-				// 成立しているため遷移を止めない（残った下書きは /live から手動削除できる）。
-				if (activeDraftId) {
-					await deleteButtonDraft(activeDraftId).catch(() => undefined);
-				}
+				// 下書きから開いた場合は消化する（残った下書きは /live から手動削除できる）
+				await consumeActiveDraft();
 				// 連続仕上げ: 同一動画の下書きが残っていれば遷移せず次へ（プレイヤー維持・SPR-266）
 				const [next, ...rest] = remainingDrafts;
 				if (next) {
@@ -200,6 +217,7 @@ export function AudioButtonCreator({
 		activeDraftId,
 		remainingDrafts,
 		advanceToDraft,
+		consumeActiveDraft,
 	]);
 
 	// 時間調整用のハンドラーは共通フックから取得
@@ -258,7 +276,7 @@ export function AudioButtonCreator({
 									onSeek={youtubeManager.seekTo}
 									audition={audition}
 									madeMarks={madeMarks}
-									draftMarks={draftMarks}
+									draftMarks={draftMarkList}
 									isCreating={isCreating}
 								/>
 							</div>
@@ -345,7 +363,7 @@ export function AudioButtonCreator({
 								<div className="mb-1 text-xs font-semibold">この動画からの作成</div>
 								<div className="text-xs">
 									作成済み {madeMarks.length}個
-									{(draftMarks?.length ?? 0) > 0 && ` ・ 下書き ${draftMarks?.length}個`}
+									{draftMarkList.length > 0 && ` ・ 下書き ${draftMarkList.length}個`}
 								</div>
 							</div>
 						</div>

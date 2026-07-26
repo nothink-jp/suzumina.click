@@ -557,6 +557,35 @@ describe("AudioButtonCreator - Refactored Architecture", () => {
 
 			expect(screen.queryByText("仕上げキュー")).not.toBeInTheDocument();
 		});
+
+		it("作成成功で消化した下書きのマークが探索レーンから消える（SPR-289 レビュー対応）", async () => {
+			const user = userEvent.setup();
+			render(
+				<AudioButtonCreator
+					{...defaultProps}
+					initialStartTime={30}
+					draftId="draft-1"
+					videoDrafts={[makeDraft("draft-1", 30), makeDraft("draft-2", 120)]}
+					draftMarks={[30, 120]}
+					madeMarks={[500]}
+				/>,
+			);
+
+			expect(screen.getAllByTestId("explore-draft-mark")).toHaveLength(2);
+			expect(screen.getByText(/作成済み 1個 ・ 下書き 2個/)).toBeInTheDocument();
+
+			await createWithTitle(user, "1個目のボタン");
+
+			await waitFor(() => {
+				expect(mockDeleteButtonDraft).toHaveBeenCalledWith("draft-1");
+			});
+			// 消化した draft-1（30秒）のマークが消え、作成済みマークが増える
+			await waitFor(() => {
+				expect(screen.getAllByTestId("explore-draft-mark")).toHaveLength(1);
+			});
+			expect(screen.getAllByTestId("explore-made-mark")).toHaveLength(2);
+			expect(screen.getByText(/作成済み 2個 ・ 下書き 1個/)).toBeInTheDocument();
+		});
 	});
 
 	describe("Accessibility", () => {
