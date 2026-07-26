@@ -28,8 +28,16 @@ export function AudioButtonEditor({ audioButton, videoDuration = 600 }: AudioBut
 		audioButton,
 	});
 
-	const { state, setState, youtubeManager, timeAdjustment, timeHandlers, validation, hasChanges } =
-		editor;
+	const {
+		state,
+		setState,
+		youtubeManager,
+		timeAdjustment,
+		timeHandlers,
+		audition,
+		validation,
+		hasChanges,
+	} = editor;
 	const { buttonText, description, tags, isProcessing: isUpdating, error } = state;
 	const {
 		setButtonText,
@@ -101,29 +109,28 @@ export function AudioButtonEditor({ audioButton, videoDuration = 600 }: AudioBut
 								/>
 							</div>
 
-							<UsageGuide />
-						</div>
-
-						<div className="lg:col-span-1 xl:col-span-1 space-y-4">
-							<div className="bg-card border rounded-lg p-4 lg:p-6 shadow-sm">
-								<div className="mb-4">
-									<h3 className="text-lg font-semibold">音声操作</h3>
-								</div>
-
+							{/* トリムレーンは幅が要るためプレイヤー直下（左カラム）に置く（SPR-288） */}
+							<div className="mt-4 bg-card border rounded-lg p-3 sm:p-4 shadow-sm">
 								<TimeControlPanel
 									startTime={timeAdjustment.startTime}
 									endTime={timeAdjustment.endTime}
 									currentTime={youtubeManager.currentTime}
+									videoDuration={youtubeManager.videoDuration || videoDuration}
 									startTimeInput={timeAdjustment.startTimeInput}
 									endTimeInput={timeAdjustment.endTimeInput}
 									isEditingStartTime={timeAdjustment.isEditingStartTime}
 									isEditingEndTime={timeAdjustment.isEditingEndTime}
-									isAdjusting={timeAdjustment.isAdjusting}
 									{...timeHandlers}
+									onSeek={youtubeManager.seekTo}
+									audition={audition}
 									isCreating={isUpdating}
 								/>
 							</div>
 
+							<UsageGuide />
+						</div>
+
+						<div className="lg:col-span-1 xl:col-span-1 space-y-4">
 							<BasicInfoPanel
 								title={buttonText}
 								description={description}

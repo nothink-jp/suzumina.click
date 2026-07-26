@@ -8,7 +8,6 @@ export interface TimeState {
 	endTimeInput: string;
 	isEditingStartTime: boolean;
 	isEditingEndTime: boolean;
-	isAdjusting: boolean;
 }
 
 export interface TimeStateActions {
@@ -18,7 +17,6 @@ export interface TimeStateActions {
 	setEndTimeInput: (input: string) => void;
 	setIsEditingStartTime: (editing: boolean) => void;
 	setIsEditingEndTime: (editing: boolean) => void;
-	setIsAdjusting: (adjusting: boolean) => void;
 }
 
 export interface UseTimeStateProps {
@@ -48,7 +46,6 @@ export function useTimeState({
 	const [endTimeInput, setEndTimeInput] = useState(formatTimestamp(initialEndTime));
 	const [isEditingStartTime, setIsEditingStartTime] = useState(false);
 	const [isEditingEndTime, setIsEditingEndTime] = useState(false);
-	const [isAdjusting, setIsAdjusting] = useState(false);
 
 	// 時間設定関数（入力フィールドも同期更新）
 	const setStartTimeWithInput = useCallback(
@@ -77,7 +74,6 @@ export function useTimeState({
 			endTimeInput,
 			isEditingStartTime,
 			isEditingEndTime,
-			isAdjusting,
 		},
 		actions: {
 			setStartTime: setStartTimeWithInput,
@@ -86,7 +82,6 @@ export function useTimeState({
 			setEndTimeInput,
 			setIsEditingStartTime,
 			setIsEditingEndTime,
-			setIsAdjusting,
 		},
 	};
 }

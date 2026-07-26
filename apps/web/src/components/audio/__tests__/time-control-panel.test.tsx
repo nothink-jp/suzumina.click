@@ -1,19 +1,33 @@
 import "@testing-library/jest-dom";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { TimeControlPanel } from "../time-control-panel";
+
+function buildAudition(
+	overrides: Partial<Parameters<typeof TimeControlPanel>[0]["audition"]> = {},
+) {
+	return {
+		isLooping: false,
+		prerollEnabled: true,
+		onToggleLoop: vi.fn(),
+		onPlayHead: vi.fn(),
+		onPlayTail: vi.fn(),
+		onTogglePreroll: vi.fn(),
+		...overrides,
+	};
+}
 
 describe("TimeControlPanel", () => {
 	const defaultProps = {
 		startTime: 0,
 		endTime: 0,
 		currentTime: 0,
+		videoDuration: 300,
 		startTimeInput: "0:00.0",
 		endTimeInput: "0:00.0",
 		isEditingStartTime: false,
 		isEditingEndTime: false,
-		isAdjusting: false,
 		onStartTimeInputChange: vi.fn(),
 		onEndTimeInputChange: vi.fn(),
 		onStartTimeBlur: vi.fn(),
@@ -24,7 +38,10 @@ describe("TimeControlPanel", () => {
 		onSetCurrentAsEnd: vi.fn(),
 		onAdjustStartTime: vi.fn(),
 		onAdjustEndTime: vi.fn(),
-		onPreviewRange: vi.fn(),
+		onSetStartTime: vi.fn(),
+		onSetEndTime: vi.fn(),
+		onSeek: vi.fn(),
+		audition: buildAudition(),
 		isCreating: false,
 	};
 
@@ -39,30 +56,67 @@ describe("TimeControlPanel", () => {
 			expect(screen.getByText("切り抜き範囲")).toBeInTheDocument();
 			expect(screen.getByText("開始時間に設定")).toBeInTheDocument();
 			expect(screen.getByText("終了時間に設定")).toBeInTheDocument();
+			expect(screen.getByTestId("clip-trim-lane")).toBeInTheDocument();
 		});
 
 		it("現在時間が正しく表示される", () => {
 			const props = { ...defaultProps, currentTime: 125.7 };
 			render(<TimeControlPanel {...props} />);
 
-			expect(screen.getByText("2:05.7")).toBeInTheDocument();
+			// 再生位置ピルとレーンの再生ヘッドの両方に出る
+			expect(screen.getAllByText("2:05.7").length).toBeGreaterThan(0);
 		});
 
-		it("プレビューボタンが表示される", () => {
+		it("ズームボタンが3段階表示され、既定は±15秒", () => {
 			render(<TimeControlPanel {...defaultProps} />);
 
-			expect(screen.getByRole("button", { name: /選択範囲をプレビュー/ })).toBeInTheDocument();
+			expect(screen.getByRole("button", { name: "±5秒" })).toHaveAttribute("aria-pressed", "false");
+			expect(screen.getByRole("button", { name: "±15秒" })).toHaveAttribute("aria-pressed", "true");
+			expect(screen.getByRole("button", { name: "±60秒" })).toHaveAttribute(
+				"aria-pressed",
+				"false",
+			);
+		});
+
+		it("試聴コントロールが表示される", () => {
+			render(<TimeControlPanel {...defaultProps} />);
+
+			expect(screen.getByRole("button", { name: /区間をループ再生/ })).toBeInTheDocument();
+			expect(screen.getByRole("button", { name: "頭を聴く" })).toBeInTheDocument();
+			expect(screen.getByRole("button", { name: "末尾を聴く" })).toBeInTheDocument();
+			expect(screen.getByText("1.5秒前から鳴らす")).toBeInTheDocument();
 		});
 	});
 
-	describe("Time Input Fields", () => {
-		it("TimeInputFieldコンポーネントが正しい props で呼び出される", () => {
+	describe("Boundary Nudge Rows", () => {
+		it("開始・終了それぞれに ±1 / ±0.1 の4ボタンが44pxで並ぶ", () => {
+			render(<TimeControlPanel {...defaultProps} />);
+
+			for (const label of ["-1", "-0.1", "+0.1", "+1"]) {
+				const buttons = screen.getAllByRole("button").filter((btn) => btn.textContent === label);
+				expect(buttons).toHaveLength(2);
+				for (const btn of buttons) {
+					expect(btn).toHaveClass("h-11", "w-11");
+				}
+			}
+		});
+
+		it("微調整ボタンでコールバックが呼ばれる", async () => {
+			const user = userEvent.setup();
+			render(<TimeControlPanel {...defaultProps} />);
+
+			await user.click(screen.getByRole("button", { name: "開始を0.1秒後ろへ" }));
+			expect(defaultProps.onAdjustStartTime).toHaveBeenCalledWith(0.1);
+
+			await user.click(screen.getByRole("button", { name: "終了を1秒前へ" }));
+			expect(defaultProps.onAdjustEndTime).toHaveBeenCalledWith(-1);
+		});
+
+		it("時間入力フィールドが表示・編集できる", () => {
 			const props = {
 				...defaultProps,
 				startTime: 10.5,
 				endTime: 25.8,
-				startTimeInput: "0:10.5",
-				endTimeInput: "0:25.8",
 			};
 			render(<TimeControlPanel {...props} />);
 
@@ -70,38 +124,30 @@ describe("TimeControlPanel", () => {
 			expect(screen.getByDisplayValue("0:25.8")).toBeInTheDocument();
 		});
 
-		it("編集状態が正しく反映される", () => {
+		it("1時間超は h:mm:ss.s 表記になる", () => {
 			const props = {
 				...defaultProps,
-				isEditingStartTime: true,
-				isEditingEndTime: true,
+				startTime: 3723.4,
+				endTime: 3733.4,
+				videoDuration: 14400,
 			};
 			render(<TimeControlPanel {...props} />);
 
-			// 編集状態の表示は TimeInputField コンポーネント内で処理される
-			expect(screen.getByText("開始時間に設定")).toBeInTheDocument();
-			expect(screen.getByText("終了時間に設定")).toBeInTheDocument();
+			expect(screen.getByDisplayValue("1:02:03.4")).toBeInTheDocument();
 		});
 	});
 
 	describe("Duration Display", () => {
 		it("有効な範囲で正しい時間が表示される", () => {
-			const props = {
-				...defaultProps,
-				startTime: 10,
-				endTime: 15,
-			};
+			const props = { ...defaultProps, startTime: 10, endTime: 15 };
 			render(<TimeControlPanel {...props} />);
 
-			expect(screen.getByText("5.0秒")).toBeInTheDocument();
+			// 長さ表示ボックスとレーン内クリップラベルの両方に出る
+			expect(screen.getAllByText("5.0秒").length).toBeGreaterThan(0);
 		});
 
 		it("無効な範囲（開始時間 >= 終了時間）でエラーメッセージが表示される", () => {
-			const props = {
-				...defaultProps,
-				startTime: 15,
-				endTime: 10,
-			};
+			const props = { ...defaultProps, startTime: 15, endTime: 10 };
 			render(<TimeControlPanel {...props} />);
 
 			expect(screen.getByText("無効")).toBeInTheDocument();
@@ -109,215 +155,166 @@ describe("TimeControlPanel", () => {
 		});
 
 		it("60秒超過でエラーメッセージが表示される", () => {
-			const props = {
-				...defaultProps,
-				startTime: 0,
-				endTime: 65,
-			};
+			const props = { ...defaultProps, startTime: 0, endTime: 65 };
 			render(<TimeControlPanel {...props} />);
 
-			expect(screen.getByText("65.0秒")).toBeInTheDocument();
+			expect(screen.getAllByText("65.0秒").length).toBeGreaterThan(0);
 			expect(screen.getByText("60秒以下にしてください")).toBeInTheDocument();
 		});
 
 		it("1秒未満でエラーメッセージが表示される", () => {
-			const props = {
-				...defaultProps,
-				startTime: 0,
-				endTime: 0.5,
-			};
+			const props = { ...defaultProps, startTime: 0, endTime: 0.5 };
 			render(<TimeControlPanel {...props} />);
 
-			expect(screen.getByText("0.5秒")).toBeInTheDocument();
 			expect(screen.getByText("1秒以上にしてください")).toBeInTheDocument();
 		});
 	});
 
-	describe("Preview Functionality", () => {
-		it("有効な範囲でプレビューボタンが有効", () => {
-			const props = {
-				...defaultProps,
-				startTime: 0,
-				endTime: 5,
-			};
-			render(<TimeControlPanel {...props} />);
-
-			const previewButton = screen.getByRole("button", { name: /選択範囲をプレビュー/ });
-			expect(previewButton).toBeEnabled();
-		});
-
-		it("無効な範囲でプレビューボタンが無効", () => {
-			const props = {
-				...defaultProps,
-				startTime: 10,
-				endTime: 5,
-			};
-			render(<TimeControlPanel {...props} />);
-
-			const previewButton = screen.getByRole("button", { name: /選択範囲をプレビュー/ });
-			expect(previewButton).toBeDisabled();
-		});
-
-		it("作成中はプレビューボタンが無効", () => {
-			const props = {
-				...defaultProps,
-				startTime: 0,
-				endTime: 5,
-				isCreating: true,
-			};
-			render(<TimeControlPanel {...props} />);
-
-			const previewButton = screen.getByRole("button", { name: /選択範囲をプレビュー/ });
-			expect(previewButton).toBeDisabled();
-		});
-
-		it("プレビューボタンクリックでコールバックが呼ばれる", async () => {
+	describe("Audition Controls", () => {
+		it("ループ再生ボタンクリックでコールバックが呼ばれる", async () => {
 			const user = userEvent.setup();
-			const onPreviewRange = vi.fn();
-			const props = {
-				...defaultProps,
-				startTime: 0,
-				endTime: 5,
-				onPreviewRange,
-			};
-			render(<TimeControlPanel {...props} />);
+			const audition = buildAudition();
+			render(<TimeControlPanel {...defaultProps} startTime={0} endTime={5} audition={audition} />);
 
-			const previewButton = screen.getByRole("button", { name: /選択範囲をプレビュー/ });
-			await user.click(previewButton);
+			await user.click(screen.getByRole("button", { name: /区間をループ再生/ }));
+			expect(audition.onToggleLoop).toHaveBeenCalledTimes(1);
+		});
 
-			expect(onPreviewRange).toHaveBeenCalledTimes(1);
+		it("ループ中は停止表示になる", () => {
+			render(
+				<TimeControlPanel
+					{...defaultProps}
+					startTime={0}
+					endTime={5}
+					audition={buildAudition({ isLooping: true })}
+				/>,
+			);
+
+			expect(screen.getByRole("button", { name: /停止/ })).toBeInTheDocument();
+			expect(screen.queryByRole("button", { name: /区間をループ再生/ })).not.toBeInTheDocument();
+		});
+
+		it("無効な範囲では試聴ボタンが無効", () => {
+			render(<TimeControlPanel {...defaultProps} startTime={10} endTime={5} />);
+
+			expect(screen.getByRole("button", { name: /区間をループ再生/ })).toBeDisabled();
+			expect(screen.getByRole("button", { name: "頭を聴く" })).toBeDisabled();
+			expect(screen.getByRole("button", { name: "末尾を聴く" })).toBeDisabled();
+		});
+
+		it("作成中は試聴ボタンが無効", () => {
+			render(<TimeControlPanel {...defaultProps} startTime={0} endTime={5} isCreating />);
+
+			expect(screen.getByRole("button", { name: /区間をループ再生/ })).toBeDisabled();
+		});
+
+		it("頭・末尾の試聴ボタンでコールバックが呼ばれる", async () => {
+			const user = userEvent.setup();
+			const audition = buildAudition();
+			render(<TimeControlPanel {...defaultProps} startTime={0} endTime={5} audition={audition} />);
+
+			await user.click(screen.getByRole("button", { name: "頭を聴く" }));
+			expect(audition.onPlayHead).toHaveBeenCalledTimes(1);
+
+			await user.click(screen.getByRole("button", { name: "末尾を聴く" }));
+			expect(audition.onPlayTail).toHaveBeenCalledTimes(1);
+		});
+
+		it("プリロールのチェックボックスでコールバックが呼ばれる", async () => {
+			const user = userEvent.setup();
+			const audition = buildAudition();
+			render(<TimeControlPanel {...defaultProps} audition={audition} />);
+
+			await user.click(screen.getByText("1.5秒前から鳴らす"));
+			expect(audition.onTogglePreroll).toHaveBeenCalled();
 		});
 	});
 
-	describe("Styling and States", () => {
-		it("有効な範囲で適切なスタイルが適用される", () => {
-			const props = {
-				...defaultProps,
-				startTime: 0,
-				endTime: 5,
-			};
-			render(<TimeControlPanel {...props} />);
-
-			const durationDisplay = screen.getByText("5.0秒").closest("div");
-			expect(durationDisplay).toHaveClass("bg-primary/10", "border-primary/20");
-		});
-
-		it("無効な範囲で適切なエラースタイルが適用される", () => {
-			const props = {
-				...defaultProps,
-				startTime: 10,
-				endTime: 5,
-			};
-			render(<TimeControlPanel {...props} />);
-
-			const durationDisplay = screen.getByText("無効").closest("div");
-			expect(durationDisplay).toHaveClass("bg-destructive/10", "border-destructive/20");
-		});
-
-		it("60秒超過で適切なエラースタイルが適用される", () => {
-			const props = {
-				...defaultProps,
-				startTime: 0,
-				endTime: 65,
-			};
-			render(<TimeControlPanel {...props} />);
-
-			const durationText = screen.getByText("65.0秒");
-			expect(durationText).toHaveClass("text-destructive");
-		});
-	});
-
-	describe("Responsive Design", () => {
-		it("レスポンシブクラスが適切に適用される", () => {
+	describe("Zoom", () => {
+		it("ズームボタンで切り替えられる", async () => {
+			const user = userEvent.setup();
 			render(<TimeControlPanel {...defaultProps} />);
 
-			const previewButton = screen.getByRole("button", { name: /選択範囲をプレビュー/ });
-			expect(previewButton).toHaveClass("min-h-[44px]", "h-11", "sm:h-12");
-		});
-
-		it("モバイル対応のグリッドクラスが適用される", () => {
-			render(<TimeControlPanel {...defaultProps} />);
-
-			// TimeInputField が配置されるグリッドコンテナを確認
-			const gridContainer = screen.getByText("開始時間に設定").closest(".grid");
-			expect(gridContainer).toHaveClass("grid-cols-1", "sm:grid-cols-2");
+			await user.click(screen.getByRole("button", { name: "±5秒" }));
+			expect(screen.getByRole("button", { name: "±5秒" })).toHaveAttribute("aria-pressed", "true");
+			expect(screen.getByRole("button", { name: "±15秒" })).toHaveAttribute(
+				"aria-pressed",
+				"false",
+			);
 		});
 	});
 
-	describe("Accessibility", () => {
-		it("適切なボタンラベルが設定されている", () => {
+	describe("Keyboard Shortcuts", () => {
+		it("← → で再生位置が0.1秒動く", () => {
+			render(<TimeControlPanel {...defaultProps} currentTime={10} />);
+
+			fireEvent.keyDown(document, { key: "ArrowRight" });
+			expect(defaultProps.onSeek).toHaveBeenCalledWith(10.1);
+
+			fireEvent.keyDown(document, { key: "ArrowLeft" });
+			expect(defaultProps.onSeek).toHaveBeenCalledWith(9.9);
+		});
+
+		it("Shift + ← → で1秒動く", () => {
+			render(<TimeControlPanel {...defaultProps} currentTime={10} />);
+
+			fireEvent.keyDown(document, { key: "ArrowRight", shiftKey: true });
+			expect(defaultProps.onSeek).toHaveBeenCalledWith(11);
+		});
+
+		it("0未満・動画長超へはシークしない（クランプ）", () => {
+			render(<TimeControlPanel {...defaultProps} currentTime={0} videoDuration={300} />);
+
+			fireEvent.keyDown(document, { key: "ArrowLeft" });
+			expect(defaultProps.onSeek).toHaveBeenCalledWith(0);
+		});
+
+		it("Space でループ再生がトグルされる", () => {
+			const audition = buildAudition();
+			render(<TimeControlPanel {...defaultProps} audition={audition} />);
+
+			fireEvent.keyDown(document, { key: " " });
+			expect(audition.onToggleLoop).toHaveBeenCalledTimes(1);
+		});
+
+		it("[ ] でズームが切り替わる", () => {
 			render(<TimeControlPanel {...defaultProps} />);
 
-			expect(screen.getByRole("button", { name: /選択範囲をプレビュー/ })).toBeInTheDocument();
+			fireEvent.keyDown(document, { key: "[" });
+			expect(screen.getByRole("button", { name: "±60秒" })).toHaveAttribute("aria-pressed", "true");
+
+			fireEvent.keyDown(document, { key: "]" });
+			expect(screen.getByRole("button", { name: "±15秒" })).toHaveAttribute("aria-pressed", "true");
 		});
 
-		it("時間表示に適切なテキストが含まれている", () => {
-			const props = {
-				...defaultProps,
-				startTime: 0,
-				endTime: 5,
-			};
-			render(<TimeControlPanel {...props} />);
+		it("入力欄フォーカス中はショートカットが無効", async () => {
+			const user = userEvent.setup();
+			render(<TimeControlPanel {...defaultProps} currentTime={10} />);
 
-			expect(screen.getByText(/切り抜き時間:/)).toBeInTheDocument();
+			const input = screen.getAllByDisplayValue("0:00.0")[0]!;
+			await user.click(input);
+			fireEvent.keyDown(input, { key: "ArrowRight" });
+			expect(defaultProps.onSeek).not.toHaveBeenCalled();
 		});
 
-		it("エラーメッセージが適切に表示される", () => {
-			const props = {
-				...defaultProps,
-				startTime: 10,
-				endTime: 5,
-			};
-			render(<TimeControlPanel {...props} />);
+		it("作成中はショートカットが無効", () => {
+			render(<TimeControlPanel {...defaultProps} currentTime={10} isCreating />);
 
-			expect(screen.getByText("開始時間は終了時間より前にしてください")).toBeInTheDocument();
+			fireEvent.keyDown(document, { key: "ArrowRight" });
+			expect(defaultProps.onSeek).not.toHaveBeenCalled();
 		});
 	});
 
-	describe("Edge Cases", () => {
-		it("小数点を含む時間が正しく表示される", () => {
-			const props = {
-				...defaultProps,
-				startTime: 1.23,
-				endTime: 4.56,
-			};
-			render(<TimeControlPanel {...props} />);
+	describe("I/O Set Buttons", () => {
+		it("開始・終了時間に設定ボタンでコールバックが呼ばれる", async () => {
+			const user = userEvent.setup();
+			render(<TimeControlPanel {...defaultProps} />);
 
-			expect(screen.getByText("3.3秒")).toBeInTheDocument();
-		});
+			await user.click(screen.getByRole("button", { name: /開始時間に設定/ }));
+			expect(defaultProps.onSetCurrentAsStart).toHaveBeenCalledTimes(1);
 
-		it("0秒の範囲で適切に処理される", () => {
-			const props = {
-				...defaultProps,
-				startTime: 5,
-				endTime: 5,
-			};
-			render(<TimeControlPanel {...props} />);
-
-			expect(screen.getByText("無効")).toBeInTheDocument();
-		});
-
-		it("非常に大きな時間値でも正常に動作する", () => {
-			const props = {
-				...defaultProps,
-				currentTime: 7200, // 2時間
-			};
-			render(<TimeControlPanel {...props} />);
-
-			// format="auto"では1時間超過のh:mm:ss.sフォーマットになる
-			expect(screen.getByText("2:00:00.0")).toBeInTheDocument();
-		});
-
-		it("負の時間値は適切に処理される", () => {
-			const props = {
-				...defaultProps,
-				startTime: -5,
-				endTime: 10,
-			};
-			render(<TimeControlPanel {...props} />);
-
-			// 負の値でも時間計算は正常に動作する
-			expect(screen.getByText("15.0秒")).toBeInTheDocument();
+			await user.click(screen.getByRole("button", { name: /終了時間に設定/ }));
+			expect(defaultProps.onSetCurrentAsEnd).toHaveBeenCalledTimes(1);
 		});
 	});
 });

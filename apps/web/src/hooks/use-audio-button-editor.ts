@@ -6,6 +6,13 @@ import { useTimeAdjustment } from "./use-time-adjustment";
 import { useTimeHandlers } from "./use-time-handlers";
 import { useYouTubePlayerManager } from "./use-youtube-player-manager";
 
+/** プリロール（開始境界の何秒前から鳴らすか） */
+const PREROLL_SECONDS = 1.5;
+/** 頭/末尾試聴で境界の周辺を聴く長さ */
+const EDGE_AUDITION_SECONDS = 2;
+/** 境界調整→プレイヤー追従シークの trailing throttle */
+const FOLLOW_SEEK_DELAY_MS = 200;
+
 export interface AudioButtonEditorState {
 	buttonText: string;
 	description: string;
@@ -21,6 +28,16 @@ export interface AudioButtonEditorConfig {
 	initialStartTime?: number;
 	initialEndTime?: number;
 	audioButton?: AudioButtonPlainObject; // 編集モードの場合に提供
+}
+
+/** 試聴（ループ再生・境界試聴・プリロール）の状態とアクション */
+export interface AuditionState {
+	isLooping: boolean;
+	prerollEnabled: boolean;
+	onToggleLoop: () => void;
+	onPlayHead: () => void;
+	onPlayTail: () => void;
+	onTogglePreroll: () => void;
 }
 
 export interface AudioButtonEditorResult {
@@ -42,6 +59,9 @@ export interface AudioButtonEditorResult {
 
 	// 時間調整ハンドラー
 	timeHandlers: ReturnType<typeof useTimeHandlers>;
+
+	// 試聴
+	audition: AuditionState;
 
 	// バリデーション
 	validation: ReturnType<typeof useAudioButtonValidation>;
@@ -97,22 +117,90 @@ export function useAudioButtonEditor(config: AudioButtonEditorConfig): AudioButt
 
 	const timeAdjustment = useTimeAdjustment(timeAdjustmentProps);
 
-	// プレビュー再生
-	const previewRange = useCallback(() => {
-		if (!youtubeManager.isPlayerReady) return;
-		youtubeManager.playRange(timeAdjustment.startTime, timeAdjustment.endTime);
-	}, [
-		youtubeManager.playRange,
-		youtubeManager.isPlayerReady,
-		timeAdjustment.startTime,
-		timeAdjustment.endTime,
-	]);
-
 	// 時間調整ハンドラー
-	const timeHandlers = useTimeHandlers({
-		timeAdjustment,
-		onPreviewRange: previewRange,
-	});
+	const timeHandlers = useTimeHandlers({ timeAdjustment });
+
+	// ---- 試聴（SPR-288）----
+	// プリロール: 開始境界の判定は直前の文脈込みで聴かないと「言い始めが切れてる」が分からない
+	const [prerollEnabled, setPrerollEnabled] = useState(true);
+	const preroll = prerollEnabled ? PREROLL_SECONDS : 0;
+	const isLooping = youtubeManager.clipPlayback.isActive && youtubeManager.clipPlayback.isLoop;
+
+	const { startClip, stopClip, updateClipBounds, seekTo } = youtubeManager;
+	const { startTime, endTime } = timeAdjustment;
+
+	const onToggleLoop = useCallback(() => {
+		if (isLooping) {
+			stopClip();
+			return;
+		}
+		startClip(startTime - preroll, endTime, { loop: true });
+	}, [isLooping, stopClip, startClip, startTime, endTime, preroll]);
+
+	// 頭を聴く: 開始境界の前後だけを1回再生（プリロール込み）
+	const onPlayHead = useCallback(() => {
+		startClip(startTime - preroll, Math.min(startTime + EDGE_AUDITION_SECONDS, endTime), {
+			loop: false,
+		});
+	}, [startClip, startTime, endTime, preroll]);
+
+	// 末尾を聴く: 終了境界の手前だけを1回再生し、境界ちょうどで止める
+	const onPlayTail = useCallback(() => {
+		startClip(Math.max(startTime, endTime - EDGE_AUDITION_SECONDS), endTime, { loop: false });
+	}, [startClip, startTime, endTime]);
+
+	const audition: AuditionState = {
+		isLooping,
+		prerollEnabled,
+		onToggleLoop,
+		onPlayHead,
+		onPlayTail,
+		onTogglePreroll: () => setPrerollEnabled((prev) => !prev),
+	};
+
+	// 境界を調整するたびプレイヤーを追従シークさせる（デザイン確定事項: 耳での即時判定）。
+	// ドラッグの連続変更で iframe に seekTo を乱射しないよう trailing 200ms でまとめる。
+	// ループ試聴中は範囲の正本（clipRef）も即時更新し、シーク先は「聴き直しに最短の位置」にする
+	const prevTimesRef = useRef({ start: startTime, end: endTime });
+	const followSeekTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+	useEffect(() => {
+		const prev = prevTimesRef.current;
+		prevTimesRef.current = { start: startTime, end: endTime };
+		const startChanged = startTime !== prev.start;
+		const endChanged = endTime !== prev.end;
+		if ((!startChanged && !endChanged) || !youtubeManager.isPlayerReady) {
+			return;
+		}
+		if (isLooping) {
+			updateClipBounds(startTime - preroll, endTime);
+		}
+		if (followSeekTimeoutRef.current) {
+			clearTimeout(followSeekTimeoutRef.current);
+		}
+		followSeekTimeoutRef.current = setTimeout(() => {
+			const target = startChanged
+				? Math.max(0, startTime - (isLooping ? preroll : 0))
+				: isLooping
+					? Math.max(startTime, endTime - EDGE_AUDITION_SECONDS)
+					: endTime;
+			seekTo(target);
+		}, FOLLOW_SEEK_DELAY_MS);
+	}, [
+		startTime,
+		endTime,
+		youtubeManager.isPlayerReady,
+		isLooping,
+		preroll,
+		updateClipBounds,
+		seekTo,
+	]);
+	useEffect(() => {
+		return () => {
+			if (followSeekTimeoutRef.current) {
+				clearTimeout(followSeekTimeoutRef.current);
+			}
+		};
+	}, []);
 
 	// バリデーション
 	const validation = useAudioButtonValidation({
@@ -199,6 +287,7 @@ export function useAudioButtonEditor(config: AudioButtonEditorConfig): AudioButt
 		youtubeManager,
 		timeAdjustment,
 		timeHandlers,
+		audition,
 		validation,
 		hasChanges,
 	};

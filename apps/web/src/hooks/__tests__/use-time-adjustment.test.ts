@@ -34,7 +34,6 @@ describe("useTimeAdjustment", () => {
 			expect(result.current.endTimeInput).toBe("0:00.0");
 			expect(result.current.isEditingStartTime).toBe(false);
 			expect(result.current.isEditingEndTime).toBe(false);
-			expect(result.current.isAdjusting).toBe(false);
 		});
 
 		it("外部のcurrentTimeが正しく参照される", () => {
@@ -102,12 +101,10 @@ describe("useTimeAdjustment", () => {
 		it("浮動小数点の精度が正しく維持される", async () => {
 			const { result } = renderHook(() => useTimeAdjustment(defaultProps));
 
-			// 0.1秒を10回調整、デバウンスを避けるため間隔をあける
+			// 0.1秒を10回連続調整（スロットル撤廃後は待ち時間なしで累積する）
 			for (let i = 0; i < 10; i++) {
-				await act(async () => {
+				act(() => {
 					result.current.adjustStartTime(0.1);
-					// デバウンスを避けるため少し待つ
-					await new Promise((resolve) => setTimeout(resolve, 120));
 				});
 			}
 
@@ -118,65 +115,40 @@ describe("useTimeAdjustment", () => {
 		});
 	});
 
-	describe("Debounce Functionality", () => {
-		it("デバウンス機能が連続調整を制限する", async () => {
+	describe("Rapid Adjustments (SPR-288 スロットル撤廃)", () => {
+		it("短時間の連打がすべて累積する", async () => {
 			const { result } = renderHook(() => useTimeAdjustment(defaultProps));
 
-			// 短時間で連続実行
+			// かつては 100ms スロットルで1回に間引かれていた。全回反映が正
 			act(() => {
 				result.current.adjustStartTime(1);
+			});
+			act(() => {
 				result.current.adjustStartTime(1);
+			});
+			act(() => {
 				result.current.adjustStartTime(1);
 			});
 
 			await waitFor(() => {
-				// デバウンスにより1回のみ実行される
-				expect(result.current.startTime).toBe(1);
+				expect(result.current.startTime).toBe(3);
 			});
 		});
 
-		it("デバウンス期間後は正常に実行される", async () => {
+		it("開始→終了の連続操作が両方反映される（旧実装は共有スロットルで後者が落ちた）", async () => {
 			const { result } = renderHook(() => useTimeAdjustment(defaultProps));
 
-			// 最初の調整
-			await act(async () => {
+			act(() => {
 				result.current.adjustStartTime(1);
 			});
-
-			// 初回の調整が完了するまで待つ
-			await waitFor(() => {
-				expect(result.current.startTime).toBe(1);
-			});
-
-			// デバウンス期間を経過するまで待つ
-			await new Promise((resolve) => setTimeout(resolve, 150));
-
-			// 2回目の調整
-			await act(async () => {
-				result.current.adjustStartTime(1);
+			act(() => {
+				result.current.adjustEndTime(5);
 			});
 
 			await waitFor(() => {
-				expect(result.current.startTime).toBe(2);
+				expect(result.current.startTime).toBe(1);
+				expect(result.current.endTime).toBe(5);
 			});
-		});
-
-		it("調整中フラグが適切に制御される", async () => {
-			const { result } = renderHook(() => useTimeAdjustment(defaultProps));
-
-			await act(async () => {
-				result.current.adjustStartTime(1);
-			});
-
-			expect(result.current.isAdjusting).toBe(true);
-
-			// 100ms後にフラグがfalseになることを確認
-			await waitFor(
-				() => {
-					expect(result.current.isAdjusting).toBe(false);
-				},
-				{ timeout: 200 },
-			);
 		});
 	});
 

@@ -59,7 +59,8 @@ export function AudioButtonCreator({
 		initialStartTime,
 	});
 
-	const { state, setState, youtubeManager, timeAdjustment, timeHandlers, validation } = editor;
+	const { state, setState, youtubeManager, timeAdjustment, timeHandlers, audition, validation } =
+		editor;
 	const { buttonText, description, tags, isProcessing: isCreating, error } = state;
 	const {
 		setButtonText,
@@ -231,6 +232,24 @@ export function AudioButtonCreator({
 								/>
 							</div>
 
+							{/* トリムレーンは幅が要るためプレイヤー直下（左カラム）に置く（SPR-288） */}
+							<div className="mt-4 bg-card border rounded-lg p-3 sm:p-4 shadow-sm">
+								<TimeControlPanel
+									startTime={timeAdjustment.startTime}
+									endTime={timeAdjustment.endTime}
+									currentTime={youtubeManager.currentTime}
+									videoDuration={youtubeManager.videoDuration || videoDuration}
+									startTimeInput={timeAdjustment.startTimeInput}
+									endTimeInput={timeAdjustment.endTimeInput}
+									isEditingStartTime={timeAdjustment.isEditingStartTime}
+									isEditingEndTime={timeAdjustment.isEditingEndTime}
+									{...timeHandlers}
+									onSeek={youtubeManager.seekTo}
+									audition={audition}
+									isCreating={isCreating}
+								/>
+							</div>
+
 							<UsageGuide />
 						</div>
 
@@ -282,25 +301,6 @@ export function AudioButtonCreator({
 									)}
 								</div>
 							)}
-
-							<div className="bg-card border rounded-lg p-4 lg:p-6 shadow-sm">
-								<div className="mb-4">
-									<h3 className="text-lg font-semibold">音声操作</h3>
-								</div>
-
-								<TimeControlPanel
-									startTime={timeAdjustment.startTime}
-									endTime={timeAdjustment.endTime}
-									currentTime={youtubeManager.currentTime}
-									startTimeInput={timeAdjustment.startTimeInput}
-									endTimeInput={timeAdjustment.endTimeInput}
-									isEditingStartTime={timeAdjustment.isEditingStartTime}
-									isEditingEndTime={timeAdjustment.isEditingEndTime}
-									isAdjusting={timeAdjustment.isAdjusting}
-									{...timeHandlers}
-									isCreating={isCreating}
-								/>
-							</div>
 
 							<MetaSuggestionPanel
 								videoId={videoId}

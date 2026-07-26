@@ -1,5 +1,5 @@
 import type { YTPlayer } from "@suzumina.click/ui/components/custom/youtube-player";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useRef } from "react";
 import type { TimeStateActions } from "./use-time-state";
 import type { TimeValidationUtilities } from "./use-time-validation";
 
@@ -27,7 +27,9 @@ export interface UseTimeActionsProps {
 
 /**
  * 時間操作・調整フック
- * 時間の微調整、現在時間の設定、デバッグ機能を提供
+ * 時間の微調整と現在時間の設定を提供する。
+ * かつての 100ms スロットルは撤廃（SPR-288）: 連打を黙って捨てる挙動が
+ * ±0.1 の連続操作を壊していた。連続クリックはそのまま累積する。
  */
 export function useTimeActions({
 	startTime,
@@ -38,43 +40,18 @@ export function useTimeActions({
 	currentTime,
 	youtubePlayerRef,
 }: UseTimeActionsProps): TimeActions {
-	const lastAdjustmentRef = useRef<number>(0);
 	const startTimeRef = useRef<number>(startTime);
 	const endTimeRef = useRef<number>(endTime);
-	const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
 	startTimeRef.current = startTime;
 	endTimeRef.current = endTime;
 
-	// Cleanup timeout on unmount
-	useEffect(() => {
-		return () => {
-			if (timeoutRef.current) {
-				clearTimeout(timeoutRef.current);
-			}
-		};
-	}, []);
-
-	// 時間調整関数
+	// 時間調整関数。ref は set 前に自前で進める＝再レンダー（React のバッチング）を挟まず
+	// 連打されても全クリック分が累積する
 	const adjustStartTime = useCallback(
 		(deltaSeconds: number) => {
-			const now = Date.now();
-			if (now - lastAdjustmentRef.current < 100) {
-				return;
-			}
-			lastAdjustmentRef.current = now;
-
-			actions.setIsAdjusting(true);
-			if (timeoutRef.current) {
-				clearTimeout(timeoutRef.current);
-			}
-			timeoutRef.current = setTimeout(() => actions.setIsAdjusting(false), 100);
-
-			const currentStartTime = startTimeRef.current;
-			const _currentEndTime = endTimeRef.current;
-			const expectedTime = currentStartTime + deltaSeconds;
-			const clampedTime = validation.clampTime(expectedTime, videoDuration);
-
+			const clampedTime = validation.clampTime(startTimeRef.current + deltaSeconds, videoDuration);
+			startTimeRef.current = clampedTime;
 			actions.setStartTime(clampedTime);
 		},
 		[actions, validation, videoDuration],
@@ -82,23 +59,8 @@ export function useTimeActions({
 
 	const adjustEndTime = useCallback(
 		(deltaSeconds: number) => {
-			const now = Date.now();
-			if (now - lastAdjustmentRef.current < 100) {
-				return;
-			}
-			lastAdjustmentRef.current = now;
-
-			actions.setIsAdjusting(true);
-			if (timeoutRef.current) {
-				clearTimeout(timeoutRef.current);
-			}
-			timeoutRef.current = setTimeout(() => actions.setIsAdjusting(false), 100);
-
-			const _currentStartTime = startTimeRef.current;
-			const currentEndTime = endTimeRef.current;
-			const expectedTime = currentEndTime + deltaSeconds;
-			const clampedTime = validation.clampTime(expectedTime, videoDuration);
-
+			const clampedTime = validation.clampTime(endTimeRef.current + deltaSeconds, videoDuration);
+			endTimeRef.current = clampedTime;
 			actions.setEndTime(clampedTime);
 		},
 		[actions, validation, videoDuration],
