@@ -174,6 +174,51 @@ describe("AudioButtonCreator - Refactored Architecture", () => {
 			expect(screen.getAllByTestId("explore-made-mark")).toHaveLength(2);
 		});
 
+		it("下書き起点の最後の1件を continue で仕上げたら activeDraftId がクリアされる（AIレビュー対応）", async () => {
+			const user = userEvent.setup();
+			render(
+				<AudioButtonCreator
+					{...defaultProps}
+					initialStartTime={30}
+					draftId="draft-1"
+					videoDrafts={[
+						{
+							id: "draft-1",
+							videoId: "test-video-id",
+							videoTitle: "テスト動画タイトル",
+							playerTime: 45,
+							markedAt: "2026-07-15T12:00:00.000Z",
+							createdAt: "2026-07-15T12:00:00.000Z",
+							suggestedStartTime: 30,
+						},
+					]}
+					draftMarks={[30]}
+				/>,
+			);
+
+			// 1回目: 下書きを continue で仕上げる → 消化される
+			await user.type(screen.getByPlaceholderText("例: おはようございます"), "下書きから作成");
+			const continueButton = screen.getByRole("button", { name: "作成して次を切り抜く" });
+			await waitFor(() => expect(continueButton).toBeEnabled());
+			await user.click(continueButton);
+
+			await waitFor(() => {
+				expect(mockDeleteButtonDraft).toHaveBeenCalledTimes(1);
+			});
+			await waitFor(() => {
+				expect(screen.queryAllByTestId("explore-draft-mark")).toHaveLength(0);
+			});
+
+			// 2回目: 同じ画面で続けて作成 → もう下書き由来ではない＝再削除されない
+			await user.type(screen.getByPlaceholderText("例: おはようございます"), "続けて作成");
+			await user.click(screen.getByRole("button", { name: "作成して次を切り抜く" }));
+
+			await waitFor(() => {
+				expect(screen.getByText(/「続けて作成」を作成しました/)).toBeInTheDocument();
+			});
+			expect(mockDeleteButtonDraft).toHaveBeenCalledTimes(1);
+		});
+
 		it("下書きキュー進行中は「作成して次を切り抜く」を出さない（作成自体が次へ進む）", () => {
 			render(
 				<AudioButtonCreator
@@ -252,16 +297,17 @@ describe("AudioButtonCreator - Refactored Architecture", () => {
 
 			render(<AudioButtonCreator {...defaultProps} />);
 
-			// Wait for player to be ready
+			// プレイヤー ready（モックは 10ms 遅延で onReady）を待ってからクリックする。
+			// ready 前にクリックすると youtubePlayerRef が null で currentTime(0) にフォールバックし
+			// 恒久的に失敗する（ready 後は 100ms ポーリングが getCurrentTime を呼ぶ＝ready の観測点）
 			await waitFor(() => {
-				expect(screen.getByRole("button", { name: /開始時間に設定/ })).toBeInTheDocument();
+				expect(mockYouTubePlayer.getCurrentTime).toHaveBeenCalled();
 			});
 
 			const setStartTimeButton = screen.getByRole("button", { name: /開始時間に設定/ });
 			await user.click(setStartTimeButton);
 
 			await waitFor(() => {
-				expect(mockYouTubePlayer.getCurrentTime).toHaveBeenCalled();
 				expect(screen.getByDisplayValue("0:10.5")).toBeInTheDocument();
 			});
 		});

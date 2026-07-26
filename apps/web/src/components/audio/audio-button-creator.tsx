@@ -47,8 +47,9 @@ function removeOneOccurrence(list: number[], value: number): number[] {
 /**
  * 音声ボタン作成フォーム。
  * フォーム値（タイトル/説明/タグ/開始・終了時刻）は useState で保持する。
- * 作成成功・キャンセルはいずれも create セグメント外（詳細ページ / 戻り先）へ遷移するため
- * この instance は unmount され、次に作成画面へ来たときは必ずまっさらに mount される。
+ * 「作成」・キャンセルは create セグメント外（詳細ページ / 戻り先）へ遷移して instance が
+ * unmount される。一方「作成して次を切り抜く」と下書きキュー進行（SPR-266/290）は遷移せず
+ * 残留するため、フォーム値のリセットは finishAfterCreate / advanceToDraft が明示的に行う。
  * 同一セグメントを別動画で再訪したときの値残留は page 側の `key`（videoId+startTime）で
  * remount して防ぐ（apps/web/src/app/buttons/create/page.tsx）。
  */
@@ -165,7 +166,10 @@ export function AudioButtonCreator({
 			}
 			if (continueAfter) {
 				// 遷移せず同じ画面で次の切り抜きへ。時刻とプレイヤーは維持し、テキストだけ空にする
-				// （次の切り抜き位置は探索レーンやシークで選ぶ想定）
+				// （次の切り抜き位置は探索レーンやシークで選ぶ想定）。
+				// 下書き起点で来ていた場合もここで下書きは消化済み＝以降の作成は下書き由来ではない。
+				// クリアしないと fromDraft の誤記録と消化済み下書きの再削除・マーク誤除去が起きる
+				setActiveDraftId(undefined);
 				setLastCreated({ id: createdId, buttonText: createdText });
 				setButtonText("");
 				setDescription("");
