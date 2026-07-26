@@ -30,6 +30,10 @@ interface AudioButtonCreatorProps {
 	 * 作成成功後に遷移せず次の下書きへ進む連続仕上げに使う（SPR-266 第2段）
 	 */
 	videoDrafts?: AudioButtonDraft[];
+	/** この動画の作成済みボタンの開始時刻（探索レーンの目印・SPR-289） */
+	madeMarks?: number[];
+	/** 自分の下書きの開始時刻（探索レーンの目印・SPR-289）。キューとは独立に常時渡る */
+	draftMarks?: number[];
 }
 
 /**
@@ -47,6 +51,8 @@ export function AudioButtonCreator({
 	initialStartTime = 0,
 	draftId,
 	videoDrafts,
+	madeMarks: initialMadeMarks,
+	draftMarks,
 }: AudioButtonCreatorProps) {
 	const router = useRouter();
 	const user = useSession();
@@ -78,6 +84,9 @@ export function AudioButtonCreator({
 		(videoDrafts ?? []).filter((draft) => draft.id !== draftId),
 	);
 	const [lastCreated, setLastCreated] = useState<{ id: string; buttonText: string } | null>(null);
+
+	// 探索レーンの作成済みマーク。作成成功時にその場で追記する（再取得はしない・SPR-289）
+	const [madeMarks, setMadeMarks] = useState<number[]>(() => initialMadeMarks ?? []);
 
 	// 次の下書きへフォームとプレイヤーを進める（遷移なし＝プレイヤー維持が連続仕上げの本体）
 	const { setStartTime, setEndTime } = timeAdjustment;
@@ -145,6 +154,8 @@ export function AudioButtonCreator({
 					videoId,
 					fromDraft: Boolean(activeDraftId),
 				});
+				// 探索レーンへ即時反映（連続作成時に同じ箇所の二重作成を防ぐ）
+				setMadeMarks((prev) => [...prev, input.startTime]);
 				// 下書きから開いた場合は消化（削除）する。ベストエフォート＝失敗してもボタン作成は
 				// 成立しているため遷移を止めない（残った下書きは /live から手動削除できる）。
 				if (activeDraftId) {
@@ -246,6 +257,8 @@ export function AudioButtonCreator({
 									{...timeHandlers}
 									onSeek={youtubeManager.seekTo}
 									audition={audition}
+									madeMarks={madeMarks}
+									draftMarks={draftMarks}
 									isCreating={isCreating}
 								/>
 							</div>
@@ -326,6 +339,15 @@ export function AudioButtonCreator({
 								onTagsChange={setTags}
 								disabled={isCreating}
 							/>
+
+							{/* この動画からの作成サマリー（SPR-289）。本日の作成数の統合はヘッダー簡素化（SPR-290）で行う */}
+							<div className="rounded-lg border bg-minase-100 p-3 text-minase-900">
+								<div className="mb-1 text-xs font-semibold">この動画からの作成</div>
+								<div className="text-xs">
+									作成済み {madeMarks.length}個
+									{(draftMarks?.length ?? 0) > 0 && ` ・ 下書き ${draftMarks?.length}個`}
+								</div>
+							</div>
 						</div>
 
 						<div className="col-span-full flex flex-col gap-4 mt-6 pt-6 border-t">

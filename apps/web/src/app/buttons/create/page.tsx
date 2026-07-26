@@ -9,6 +9,7 @@ import { AlertCircle, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getMyButtonDrafts } from "@/actions/button-drafts";
+import { getAudioButtonsList } from "@/app/buttons/actions";
 import { getVideoById } from "@/app/videos/actions";
 import { AudioButtonCreator } from "@/components/audio/audio-button-creator";
 import ProtectedRoute from "@/components/system/protected-route";
@@ -166,18 +167,25 @@ export default async function CreateAudioButtonPage({ searchParams }: CreateAudi
 	// フォールバック: 取得失敗時は10分
 	const videoDuration = videoDurationSeconds > 0 ? videoDurationSeconds : 600;
 
-	// 下書き起点のときだけ同一動画の下書きキューを渡す（連続仕上げ・SPR-266）。
-	// getMyButtonDrafts は未ログイン時に success:false を返すだけなので ProtectedRoute の外で呼んでも安全
-	let videoDrafts: AudioButtonDraft[] | undefined;
-	if (resolvedSearchParams.draft_id) {
-		// 既定 limit=100 だと下書き多数のユーザーでキューが黙って欠けるため、保持上限の500で全件取る
-		const draftsResult = await getMyButtonDrafts(500);
-		if (draftsResult.success) {
-			videoDrafts = draftsResult.data
+	// 探索レーンの目印用に、この動画の作成済みボタンと自分の下書きを取得する（SPR-289）。
+	// getMyButtonDrafts は未ログイン時に success:false を返すだけなので ProtectedRoute の外で呼んでも安全。
+	// 下書きは既定 limit=100 だと多数保持ユーザーで黙って欠けるため、保持上限の500で全件取る
+	const [buttonsResult, draftsResult] = await Promise.all([
+		getAudioButtonsList({ videoId, onlyPublic: true, limit: 1000 }),
+		getMyButtonDrafts(500),
+	]);
+	const madeMarks = buttonsResult.success
+		? buttonsResult.data.audioButtons.map((button) => button.startTime)
+		: [];
+	const myVideoDrafts: AudioButtonDraft[] = draftsResult.success
+		? draftsResult.data
 				.filter((draft) => draft.videoId === videoId)
-				.sort((a, b) => a.suggestedStartTime - b.suggestedStartTime);
-		}
-	}
+				.sort((a, b) => a.suggestedStartTime - b.suggestedStartTime)
+		: [];
+	const draftMarks = myVideoDrafts.map((draft) => draft.suggestedStartTime);
+	// 連続仕上げキュー（SPR-266）に使うのは下書き起点で開いたときだけ。
+	// 常に渡すと通常作成でも成功時にキューへ進んでしまい遷移挙動が変わる（一般化は SPR-290）
+	const videoDrafts = resolvedSearchParams.draft_id ? myVideoDrafts : undefined;
 
 	const callbackQuery = new URLSearchParams(
 		Object.entries({
@@ -202,6 +210,8 @@ export default async function CreateAudioButtonPage({ searchParams }: CreateAudi
 				initialStartTime={startTime}
 				draftId={resolvedSearchParams.draft_id}
 				videoDrafts={videoDrafts}
+				madeMarks={madeMarks}
+				draftMarks={draftMarks}
 			/>
 		</ProtectedRoute>
 	);

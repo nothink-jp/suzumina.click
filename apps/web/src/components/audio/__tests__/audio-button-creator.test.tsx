@@ -130,6 +130,24 @@ describe("AudioButtonCreator - Refactored Architecture", () => {
 		});
 	});
 
+	describe("Explore Lane Marks (SPR-289)", () => {
+		it("マークとサマリーカードが表示される", () => {
+			render(<AudioButtonCreator {...defaultProps} madeMarks={[5, 20]} draftMarks={[40]} />);
+
+			expect(screen.getAllByTestId("explore-made-mark")).toHaveLength(2);
+			expect(screen.getAllByTestId("explore-draft-mark")).toHaveLength(1);
+			expect(screen.getByText("この動画からの作成")).toBeInTheDocument();
+			expect(screen.getByText(/作成済み 2個 ・ 下書き 1個/)).toBeInTheDocument();
+		});
+
+		it("マーク未指定（未ログイン相当）でも探索レーンは表示される", () => {
+			render(<AudioButtonCreator {...defaultProps} />);
+
+			expect(screen.getByTestId("clip-explore-lane")).toBeInTheDocument();
+			expect(screen.getByText(/作成済み 0個/)).toBeInTheDocument();
+		});
+	});
+
 	describe("useTimeAdjustment Hook Integration", () => {
 		it("時間調整フックが正常に動作する", async () => {
 			const user = userEvent.setup();
