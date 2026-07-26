@@ -110,7 +110,7 @@ describe("AudioButtonCreator - Refactored Architecture", () => {
 			expect(screen.getByRole("heading", { name: /音声ボタンを作成/ })).toBeInTheDocument();
 			expect(screen.getByTestId("youtube-player")).toBeInTheDocument();
 			expect(screen.getByTestId("clip-trim-lane")).toBeInTheDocument();
-			expect(screen.getByText("基本情報")).toBeInTheDocument();
+			expect(screen.getByText(/ボタンタイトル/)).toBeInTheDocument();
 		});
 
 		it("全ての子コンポーネントが存在する", () => {
@@ -121,12 +121,90 @@ describe("AudioButtonCreator - Refactored Architecture", () => {
 			expect(screen.getByText("開始時間に設定")).toBeInTheDocument();
 			expect(screen.getByText("終了時間に設定")).toBeInTheDocument();
 
-			// Basic Info Panel
+			// Basic Info Panel（説明は既定で折りたたまれている・SPR-290）
 			expect(screen.getByPlaceholderText("例: おはようございます")).toBeInTheDocument();
-			expect(screen.getByPlaceholderText("音声ボタンの詳細説明を入力（任意）")).toBeInTheDocument();
+			expect(screen.getByRole("button", { name: /説明を追加/ })).toBeInTheDocument();
 
 			// Usage Guide
 			expect(screen.getByText("動画を見ながら範囲を決めてください")).toBeInTheDocument();
+		});
+	});
+
+	describe("固定アクションバー・作成して次を切り抜く (SPR-290)", () => {
+		it("押せない理由がバーに表示され、入力すると消える", async () => {
+			const user = userEvent.setup();
+			render(<AudioButtonCreator {...defaultProps} />);
+
+			expect(screen.getByText("タイトルを入力すると作成できます")).toBeInTheDocument();
+
+			await user.type(screen.getByPlaceholderText("例: おはようございます"), "タイトル");
+			const timeInputs = screen.getAllByPlaceholderText("0:00.0");
+			await user.clear(timeInputs[1]!);
+			await user.type(timeInputs[1]!, "0:05.0");
+			await user.tab();
+
+			await waitFor(() => {
+				expect(screen.queryByText("タイトルを入力すると作成できます")).not.toBeInTheDocument();
+			});
+		});
+
+		it("作成して次を切り抜く: 遷移せずタイトルだけリセットして残留する", async () => {
+			const user = userEvent.setup();
+			render(<AudioButtonCreator {...defaultProps} madeMarks={[500]} />);
+
+			await user.type(screen.getByPlaceholderText("例: おはようございます"), "連続作成ボタン");
+			const timeInputs = screen.getAllByPlaceholderText("0:00.0");
+			await user.clear(timeInputs[1]!);
+			await user.type(timeInputs[1]!, "0:05.0");
+			await user.tab();
+
+			const continueButton = screen.getByRole("button", { name: "作成して次を切り抜く" });
+			await waitFor(() => expect(continueButton).toBeEnabled());
+			await user.click(continueButton);
+
+			// 遷移せず残留し、タイトルはリセット・時刻は維持
+			await waitFor(() => {
+				expect(screen.getByText(/「連続作成ボタン」を作成しました/)).toBeInTheDocument();
+			});
+			expect(mockPush).not.toHaveBeenCalled();
+			expect(window.location.href).not.toContain("/buttons/new-audio-button-id");
+			expect(screen.getByPlaceholderText("例: おはようございます")).toHaveValue("");
+			expect(screen.getByDisplayValue("0:05.0")).toBeInTheDocument();
+			// 作成済みマークが即時反映される（500 と 0 の2箇所）
+			expect(screen.getAllByTestId("explore-made-mark")).toHaveLength(2);
+		});
+
+		it("下書きキュー進行中は「作成して次を切り抜く」を出さない（作成自体が次へ進む）", () => {
+			render(
+				<AudioButtonCreator
+					{...defaultProps}
+					draftId="draft-1"
+					videoDrafts={[
+						{
+							id: "draft-1",
+							videoId: "test-video-id",
+							videoTitle: "テスト動画タイトル",
+							playerTime: 45,
+							markedAt: "2026-07-15T12:00:00.000Z",
+							createdAt: "2026-07-15T12:00:00.000Z",
+							suggestedStartTime: 30,
+						},
+						{
+							id: "draft-2",
+							videoId: "test-video-id",
+							videoTitle: "テスト動画タイトル",
+							playerTime: 135,
+							markedAt: "2026-07-15T12:00:00.000Z",
+							createdAt: "2026-07-15T12:00:00.000Z",
+							suggestedStartTime: 120,
+						},
+					]}
+				/>,
+			);
+
+			expect(
+				screen.queryByRole("button", { name: "作成して次を切り抜く" }),
+			).not.toBeInTheDocument();
 		});
 	});
 

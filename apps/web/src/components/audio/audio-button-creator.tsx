@@ -3,7 +3,7 @@
 import type { AudioButtonDraft, CreateAudioButtonInput } from "@suzumina.click/shared-types";
 import { YouTubePlayer } from "@suzumina.click/ui/components/custom/youtube-player";
 import { Button } from "@suzumina.click/ui/components/ui/button";
-import { ExternalLink, Loader2, Plus, SkipForward } from "lucide-react";
+import { ExternalLink, SkipForward } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { deleteButtonDraft } from "@/actions/button-drafts";
@@ -14,6 +14,7 @@ import { useSession } from "@/lib/auth/client";
 import { formatSeconds } from "@/utils/format-seconds";
 import { BasicInfoPanel } from "./basic-info-panel";
 import { CreateButtonLimit } from "./create-button-limit";
+import { CreationActionBar } from "./creation-action-bar";
 import { MetaSuggestionPanel } from "./meta-suggestion-panel";
 import { TimeControlPanel } from "./time-control-panel";
 import { UsageGuide } from "./usage-guide";
@@ -147,96 +148,118 @@ export function AudioButtonCreator({
 		advanceToDraft(next);
 	}, [remainingDrafts, advanceToDraft]);
 
-	// 作成処理
-	const handleCreate = useCallback(async () => {
-		if (!isValid) return;
-
-		setIsCreating(true);
-		setError("");
-		trackCreateStart(videoId, Boolean(activeDraftId));
-
-		try {
-			const input: CreateAudioButtonInput = {
-				videoId: videoId,
-				videoTitle: videoTitle,
-				buttonText: buttonText.trim(),
-				tags,
-				startTime: timeAdjustment.startTime,
-				endTime: timeAdjustment.endTime,
-				isPublic: true,
-			};
-
-			const result = await createAudioButton(input);
-
-			if (result.success) {
-				trackCreateSuccess({
-					audioButtonId: result.data.id,
-					videoId,
-					fromDraft: Boolean(activeDraftId),
-				});
-				// 探索レーンへ即時反映（連続作成時に同じ箇所の二重作成を防ぐ）
-				setMadeMarks((prev) => [...prev, input.startTime]);
-				// 下書きから開いた場合は消化する（残った下書きは /live から手動削除できる）
-				await consumeActiveDraft();
-				// 連続仕上げ: 同一動画の下書きが残っていれば遷移せず次へ（プレイヤー維持・SPR-266）
-				const [next, ...rest] = remainingDrafts;
-				if (next) {
-					setLastCreated({ id: result.data.id, buttonText: buttonText.trim() });
-					setRemainingDrafts(rest);
-					advanceToDraft(next);
-					setIsCreating(false);
-					return;
-				}
-				// 詳細ページへフルロード遷移（SPR-252）。router.push だと /buttons ツリー内の soft nav が
-				// @modal にインターセプトされ、作成フォームの上にクイックビューが重なってしまう
-				// （フォーム instance も破棄されず「作成中…」が固着する）。フルロードなら
-				// フル詳細ページ表示と instance 破棄の両方が保証される。
-				// 遷移完了まで「作成中…」を維持し、フォームを空白化しない（ちらつき防止）。
-				window.location.href = `/buttons/${result.data.id}`;
+	// 作成成功後の行き先を1箇所に集約:
+	// 1) 下書きキューが残っていれば次へ（SPR-266） 2) 「作成して次を切り抜く」なら残留（SPR-290）
+	// 3) それ以外は詳細ページへフルロード遷移（SPR-252。router.push だと /buttons ツリー内の
+	//    soft nav が @modal にインターセプトされフォームの上にクイックビューが重なる。
+	//    遷移完了まで「作成中…」を維持し、フォームを空白化しない＝ちらつき防止）
+	const finishAfterCreate = useCallback(
+		(createdId: string, createdText: string, continueAfter: boolean) => {
+			const [next, ...rest] = remainingDrafts;
+			if (next) {
+				setLastCreated({ id: createdId, buttonText: createdText });
+				setRemainingDrafts(rest);
+				advanceToDraft(next);
+				setIsCreating(false);
 				return;
 			}
+			if (continueAfter) {
+				// 遷移せず同じ画面で次の切り抜きへ。時刻とプレイヤーは維持し、テキストだけ空にする
+				// （次の切り抜き位置は探索レーンやシークで選ぶ想定）
+				setLastCreated({ id: createdId, buttonText: createdText });
+				setButtonText("");
+				setDescription("");
+				setTags([]);
+				setIsCreating(false);
+				return;
+			}
+			window.location.href = `/buttons/${createdId}`;
+		},
+		[remainingDrafts, advanceToDraft, setIsCreating, setButtonText, setDescription, setTags],
+	);
 
-			trackCreateError(videoId, result.error || "unknown");
-			setError(result.error || "作成に失敗しました");
-			setIsCreating(false);
-		} catch (_error) {
-			trackCreateError(videoId, "unexpected");
-			setError("予期しないエラーが発生しました");
-			setIsCreating(false);
-		}
-	}, [
-		isValid,
-		videoId,
-		buttonText,
-		tags,
-		timeAdjustment.startTime,
-		timeAdjustment.endTime,
-		setIsCreating,
-		setError,
-		videoTitle,
-		activeDraftId,
-		remainingDrafts,
-		advanceToDraft,
-		consumeActiveDraft,
-	]);
+	// 作成処理。continueAfter=true は「作成して次を切り抜く」（SPR-290）
+	const handleCreate = useCallback(
+		async (continueAfter: boolean) => {
+			if (!isValid) return;
 
-	// 時間調整用のハンドラーは共通フックから取得
+			setIsCreating(true);
+			setError("");
+			trackCreateStart(videoId, Boolean(activeDraftId));
+
+			try {
+				const input: CreateAudioButtonInput = {
+					videoId: videoId,
+					videoTitle: videoTitle,
+					buttonText: buttonText.trim(),
+					tags,
+					startTime: timeAdjustment.startTime,
+					endTime: timeAdjustment.endTime,
+					isPublic: true,
+				};
+
+				const result = await createAudioButton(input);
+
+				if (result.success) {
+					trackCreateSuccess({
+						audioButtonId: result.data.id,
+						videoId,
+						fromDraft: Boolean(activeDraftId),
+					});
+					// 探索レーンへ即時反映（連続作成時に同じ箇所の二重作成を防ぐ）
+					setMadeMarks((prev) => [...prev, input.startTime]);
+					// 下書きから開いた場合は消化する（残った下書きは /live から手動削除できる）
+					await consumeActiveDraft();
+					finishAfterCreate(result.data.id, input.buttonText, continueAfter);
+					return;
+				}
+
+				trackCreateError(videoId, result.error || "unknown");
+				setError(result.error || "作成に失敗しました");
+				setIsCreating(false);
+			} catch (_error) {
+				trackCreateError(videoId, "unexpected");
+				setError("予期しないエラーが発生しました");
+				setIsCreating(false);
+			}
+		},
+		[
+			isValid,
+			videoId,
+			buttonText,
+			tags,
+			timeAdjustment.startTime,
+			timeAdjustment.endTime,
+			setIsCreating,
+			setError,
+			videoTitle,
+			activeDraftId,
+			consumeActiveDraft,
+			finishAfterCreate,
+		],
+	);
+
+	// 作成できない理由（固定バーに併記する。disabled ボタンは tooltip が出ないため文言で示す）
+	const disabledReason =
+		validation.errors.title === "タイトルを入力してください"
+			? "タイトルを入力すると作成できます"
+			: (validation.errors.title ??
+				validation.errors.timeRange ??
+				validation.errors.duration ??
+				validation.errors.tags ??
+				validation.errors.description ??
+				null);
 
 	return (
-		<div className="min-h-screen bg-background">
+		<div className="min-h-screen bg-background flex flex-col">
 			<div className="container mx-auto px-4 py-6">
-				<div className="mb-6">
-					<div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-						<div>
-							<h1 className="text-2xl font-bold mb-2">音声ボタンを作成</h1>
-							<p className="text-muted-foreground text-sm">動画: {videoTitle}</p>
-						</div>
-						{user?.discordId && (
-							<div className="sm:min-w-[280px]">
-								<CreateButtonLimit userId={user.discordId} />
-							</div>
-						)}
-					</div>
+				{/* ヘッダーは1行に簡素化（SPR-290）。作成数はサマリーカード側（右カラム）へ */}
+				<div className="mb-4 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+					<h1 className="text-xl sm:text-2xl font-bold">音声ボタンを作成</h1>
+					<p className="min-w-0 flex-1 truncate text-sm text-muted-foreground">{videoTitle}</p>
+					<span className="text-xs text-muted-foreground whitespace-nowrap">
+						{formatSeconds(youtubeManager.videoDuration || videoDuration)}
+					</span>
 				</div>
 
 				{error && (
@@ -333,21 +356,6 @@ export function AudioButtonCreator({
 								</div>
 							)}
 
-							<MetaSuggestionPanel
-								videoId={videoId}
-								startTime={timeAdjustment.startTime}
-								endTime={timeAdjustment.endTime}
-								disabled={isCreating}
-								currentTags={tags}
-								onSelectTitle={setButtonText}
-								onAddTag={(tag) => {
-									// バリデーション上限（10個）内でのみ追加。重複はパネル側で disabled 済み
-									if (!tags.includes(tag) && tags.length < 10) {
-										setTags([...tags, tag]);
-									}
-								}}
-							/>
-
 							<BasicInfoPanel
 								title={buttonText}
 								description={description}
@@ -356,9 +364,26 @@ export function AudioButtonCreator({
 								onDescriptionChange={setDescription}
 								onTagsChange={setTags}
 								disabled={isCreating}
+								metaSuggestion={
+									<MetaSuggestionPanel
+										videoId={videoId}
+										startTime={timeAdjustment.startTime}
+										endTime={timeAdjustment.endTime}
+										disabled={isCreating}
+										currentTags={tags}
+										onSelectTitle={setButtonText}
+										onAddTag={(tag) => {
+											// バリデーション上限（10個）内でのみ追加。重複はパネル側で disabled 済み
+											if (!tags.includes(tag) && tags.length < 10) {
+												setTags([...tags, tag]);
+											}
+										}}
+									/>
+								}
 							/>
 
-							{/* この動画からの作成サマリー（SPR-289）。本日の作成数の統合はヘッダー簡素化（SPR-290）で行う */}
+							{/* ヘッダーから移した作成上限と、この動画からのサマリー（SPR-289/290） */}
+							{user?.discordId && <CreateButtonLimit userId={user.discordId} />}
 							<div className="rounded-lg border bg-minase-100 p-3 text-minase-900">
 								<div className="mb-1 text-xs font-semibold">この動画からの作成</div>
 								<div className="text-xs">
@@ -367,42 +392,21 @@ export function AudioButtonCreator({
 								</div>
 							</div>
 						</div>
-
-						<div className="col-span-full flex flex-col gap-4 mt-6 pt-6 border-t">
-							<div className="flex flex-col sm:flex-row gap-3 w-full lg:justify-end">
-								<Button
-									variant="outline"
-									onClick={() => {
-										router.back();
-									}}
-									disabled={isCreating}
-									className="w-full sm:w-auto min-h-[44px] order-2 sm:order-1"
-								>
-									キャンセル
-								</Button>
-								<Button
-									onClick={handleCreate}
-									disabled={!isValid || isCreating}
-									className="w-full sm:w-auto min-h-[44px] h-11 sm:h-12 px-6 sm:px-8 order-1 sm:order-2"
-									size="lg"
-								>
-									{isCreating ? (
-										<>
-											<Loader2 className="h-4 w-4 mr-2 animate-spin" />
-											作成中...
-										</>
-									) : (
-										<>
-											<Plus className="h-4 w-4 mr-2" />
-											音声ボタンを作成
-										</>
-									)}
-								</Button>
-							</div>
-						</div>
 					</div>
 				</div>
 			</div>
+
+			{/* 固定アクションバー（SPR-290）。ラッパーで包むと sticky の可動域が潰れるため直下に置く */}
+			<CreationActionBar
+				startTime={timeAdjustment.startTime}
+				endTime={timeAdjustment.endTime}
+				disabledReason={disabledReason}
+				isCreating={isCreating}
+				showContinue={remainingDrafts.length === 0}
+				onCancel={() => router.back()}
+				onCreate={() => handleCreate(false)}
+				onCreateAndContinue={() => handleCreate(true)}
+			/>
 		</div>
 	);
 }

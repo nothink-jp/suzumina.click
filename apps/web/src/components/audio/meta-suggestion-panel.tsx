@@ -19,7 +19,8 @@ interface MetaSuggestionPanelProps {
 }
 
 /**
- * 選択区間から buttonText・タグ候補を生成して提示するパネル（SPR-148 Phase 1）。
+ * 選択区間から buttonText・タグ候補を生成して提示するブロック（SPR-148 Phase 1）。
+ * SPR-290 で独立カードからタイトル入力直下の埋め込みに変更（BasicInfoPanel の metaSuggestion）。
  * 候補はクリックで入力欄へ反映する提案であって自動上書きはしない。
  * 生成失敗時も手入力フローには影響しない（graceful degradation）。
  */
@@ -73,12 +74,12 @@ export function MetaSuggestionPanel({
 	);
 
 	return (
-		<div className="bg-card border rounded-lg p-4 lg:p-6 shadow-sm">
-			<div className="flex items-center justify-between gap-2 mb-2">
-				<h3 className="text-lg font-semibold flex items-center gap-2">
+		<div className="border-t pt-3">
+			<div className="flex items-center justify-between gap-2 mb-1">
+				<span className="text-sm font-medium flex items-center gap-1.5">
 					<Sparkles className="h-4 w-4 text-primary" />
 					AI候補
-				</h3>
+				</span>
 				<Button
 					size="sm"
 					variant="outline"
@@ -98,7 +99,7 @@ export function MetaSuggestionPanel({
 					)}
 				</Button>
 			</div>
-			<p className="text-xs text-muted-foreground mb-3">
+			<p className="text-xs text-muted-foreground mb-2">
 				選択中の区間の発話からタイトル・タグ候補を生成します（10秒ほどかかります）
 			</p>
 
