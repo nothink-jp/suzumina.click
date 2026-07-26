@@ -8,7 +8,7 @@
 	"entry": "packages/ui/ds-entry.tsx",
 	"tsconfig": "../../.design-sync/sync.tsconfig.json",
 	"extraEntries": ["./ds-entry.tsx"],
-	"titleMap": { "Sonner(Toast)": "Toaster" },
+	"titleMap": { "Sonner(Toast)": "Toaster", "Chart": "ChartContainer", "BrandMark": "SakuraMark" },
 	"readmeHeader": ".design-sync/conventions.md",
 	"overrides": {
 		"Dialog": { "skip": ["ui-dialog--opens"] },
@@ -21,7 +21,23 @@
 			"primaryStory": "Default",
 			"skip": ["custom-audio-audioplayer--auto-play"]
 		},
-		"Progress": { "cardMode": "column", "skip": ["ui-progress--default"] },
+		"Progress": {
+			"cardMode": "single",
+			"primaryStory": "BasicValues",
+			"skip": ["ui-progress--default"]
+		},
+		"ChartContainer": {
+			"cardMode": "column",
+			"skip": ["ui-chart--tooltip-interaction"]
+		},
+		"SakuraMark": { "cardMode": "column" },
+		"Combobox": {
+			"cardMode": "column",
+			"skip": [
+				"ui-combobox--select-interaction",
+				"ui-combobox--ime-composition-does-not-commit-on-confirm-enter"
+			]
+		},
 		"Tabs": { "cardMode": "column", "skip": ["ui-tabs--switch-tabs-interaction"] },
 		"ToggleGroup": { "cardMode": "column", "skip": ["ui-togglegroup--switch-selection"] },
 		"LoadingSkeleton": { "cardMode": "column", "skip": ["custom-utility-loadingskeleton--form"] },
