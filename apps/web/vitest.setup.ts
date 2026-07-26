@@ -231,6 +231,7 @@ vi.mock("lucide-react", () => {
 		Plus: createMockIcon("Plus"),
 		SkipForward: createMockIcon("SkipForward"),
 		Sparkles: createMockIcon("Sparkles"),
+		Square: createMockIcon("Square"),
 		// Icons for VideoCard
 		Eye: createMockIcon("Eye"),
 		Radio: createMockIcon("Radio"),

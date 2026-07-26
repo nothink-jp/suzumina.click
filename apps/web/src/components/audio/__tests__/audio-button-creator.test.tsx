@@ -109,7 +109,7 @@ describe("AudioButtonCreator - Refactored Architecture", () => {
 			// Main sections should be present
 			expect(screen.getByRole("heading", { name: /音声ボタンを作成/ })).toBeInTheDocument();
 			expect(screen.getByTestId("youtube-player")).toBeInTheDocument();
-			expect(screen.getByText("音声操作")).toBeInTheDocument();
+			expect(screen.getByTestId("clip-trim-lane")).toBeInTheDocument();
 			expect(screen.getByText("基本情報")).toBeInTheDocument();
 		});
 
@@ -243,8 +243,8 @@ describe("AudioButtonCreator - Refactored Architecture", () => {
 		});
 	});
 
-	describe("Preview Functionality", () => {
-		it("プレビューボタンが動作する", async () => {
+	describe("Audition Functionality (SPR-288)", () => {
+		it("ループ再生ボタンでシークと再生が始まり、停止表示に切り替わる", async () => {
 			const user = userEvent.setup();
 			render(<AudioButtonCreator {...defaultProps} />);
 
@@ -254,22 +254,19 @@ describe("AudioButtonCreator - Refactored Architecture", () => {
 			await user.type(timeInputs[1]!, "0:05.0");
 			await user.tab();
 
+			const loopButton = screen.getByRole("button", { name: /区間をループ再生/ });
+			await waitFor(() => expect(loopButton).toBeEnabled());
+			await user.click(loopButton);
+
+			// プリロール既定 ON: 開始0秒 - 1.5秒 は 0 にクランプされる
+			expect(mockYouTubePlayer.seekTo).toHaveBeenCalledWith(0, true);
+			expect(mockYouTubePlayer.playVideo).toHaveBeenCalled();
 			await waitFor(() => {
-				const previewButton = screen.getByRole("button", { name: /選択範囲をプレビュー/ });
-				expect(previewButton).toBeEnabled();
+				expect(screen.getByRole("button", { name: /停止/ })).toBeInTheDocument();
 			});
-
-			const previewButton = screen.getByRole("button", { name: /選択範囲をプレビュー/ });
-
-			// プレビューボタンが存在してクリックできることを確認
-			expect(previewButton).toBeInTheDocument();
-			expect(previewButton).toBeEnabled();
-
-			// クリックしてもエラーが発生しないことを確認
-			await expect(user.click(previewButton)).resolves.not.toThrow();
 		});
 
-		it("無効な範囲ではプレビューボタンが無効", async () => {
+		it("無効な範囲では試聴ボタンが無効", async () => {
 			const user = userEvent.setup();
 			render(<AudioButtonCreator {...defaultProps} />);
 
@@ -282,57 +279,46 @@ describe("AudioButtonCreator - Refactored Architecture", () => {
 			await user.tab();
 
 			await waitFor(() => {
-				const previewButton = screen.getByRole("button", { name: /選択範囲をプレビュー/ });
-				expect(previewButton).toBeDisabled();
+				expect(screen.getByRole("button", { name: /区間をループ再生/ })).toBeDisabled();
+				expect(screen.getByRole("button", { name: "頭を聴く" })).toBeDisabled();
 			});
 		});
 	});
 
 	describe("Edge Cases", () => {
-		it("境界値での時間調整が正常に動作する", async () => {
+		it("動画長を超える入力がクランプされる", async () => {
 			const user = userEvent.setup();
-			render(<AudioButtonCreator {...defaultProps} videoDuration={10} />);
+			render(<AudioButtonCreator {...defaultProps} />);
 
-			// Adjust to near video duration limit
-			const plus10Buttons = screen
-				.getAllByRole("button")
-				.filter((btn) => btn.textContent === "+10");
+			// プレイヤーの実長 300 秒を超える値を直接入力
+			const timeInputs = screen.getAllByPlaceholderText("0:00.0");
+			await user.clear(timeInputs[0]!);
+			await user.type(timeInputs[0]!, "9:00.0");
+			await user.tab();
 
-			// Click multiple times to test clamping
-			await user.click(plus10Buttons[0]!);
-			await user.click(plus10Buttons[0]!);
-
-			// Should be clamped to video duration - use getAllByDisplayValue to handle multiple matches
+			// 300 秒 = 5:00.0 でクランプ
 			await waitFor(() => {
-				const timeInputs = screen.getAllByDisplayValue("0:10.0");
-				expect(timeInputs.length).toBeGreaterThan(0);
-				// At least one input should have the clamped value
-				expect(timeInputs[0]).toBeInTheDocument();
+				expect(screen.getByDisplayValue("5:00.0")).toBeInTheDocument();
 			});
 		});
 
-		it("負の値への調整が正常に動作する", async () => {
+		it("負の値への調整が0でクランプされる", async () => {
 			const user = userEvent.setup();
-			render(<AudioButtonCreator {...defaultProps} initialStartTime={5} />);
+			render(<AudioButtonCreator {...defaultProps} />);
 
-			// First set start time to 5
 			const timeInputs = screen.getAllByPlaceholderText("0:00.0");
 			await user.clear(timeInputs[0]!);
-			await user.type(timeInputs[0]!, "0:05.0");
+			await user.type(timeInputs[0]!, "0:00.5");
 			await user.tab();
 
-			// Verify initial state
 			await waitFor(() => {
-				expect(screen.getByDisplayValue("0:05.0")).toBeInTheDocument();
+				expect(screen.getByDisplayValue("0:00.5")).toBeInTheDocument();
 			});
 
-			// Then adjust down past zero
-			const minus10Buttons = screen
-				.getAllByRole("button")
-				.filter((btn) => btn.textContent === "-10");
-			await user.click(minus10Buttons[0]!);
+			// -1 で 0 を下回る調整 → 0 でクランプ
+			const minus1Buttons = screen.getAllByRole("button").filter((btn) => btn.textContent === "-1");
+			await user.click(minus1Buttons[0]!);
 
-			// Should be clamped to 0 - check the start time input specifically
 			await waitFor(() => {
 				const startTimeInputs = screen.getAllByPlaceholderText("0:00.0");
 				expect(startTimeInputs[0]).toHaveValue("0:00.0");
@@ -343,15 +329,13 @@ describe("AudioButtonCreator - Refactored Architecture", () => {
 			const user = userEvent.setup();
 			render(<AudioButtonCreator {...defaultProps} />);
 
-			// Perform multiple 0.1 second adjustments with delays to avoid debounce
+			// スロットル撤廃（SPR-288）後は待ち時間なしの連打が全て累積する
 			const plusPoint1Buttons = screen
 				.getAllByRole("button")
 				.filter((btn) => btn.textContent === "+0.1");
 
 			for (let i = 0; i < 10; i++) {
 				await user.click(plusPoint1Buttons[0]!);
-				// Wait for debounce to finish
-				await new Promise((resolve) => setTimeout(resolve, 120));
 			}
 
 			// Should be exactly 1.0, not 0.9999999...
@@ -360,20 +344,18 @@ describe("AudioButtonCreator - Refactored Architecture", () => {
 			});
 		});
 
-		it("デバウンス機能が連続クリックを制限する", async () => {
+		it("連続クリックが間引かれず全て反映される（SPR-288 スロットル撤廃）", async () => {
 			const user = userEvent.setup();
 			render(<AudioButtonCreator {...defaultProps} />);
 
 			const plus1Buttons = screen.getAllByRole("button").filter((btn) => btn.textContent === "+1");
 
-			// Rapid clicks within debounce window
 			await user.click(plus1Buttons[0]!);
 			await user.click(plus1Buttons[0]!);
 			await user.click(plus1Buttons[0]!);
 
-			// Should only register one click due to debounce
 			await waitFor(() => {
-				expect(screen.getByDisplayValue("0:01.0")).toBeInTheDocument();
+				expect(screen.getByDisplayValue("0:03.0")).toBeInTheDocument();
 			});
 		});
 

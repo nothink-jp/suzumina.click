@@ -12,21 +12,18 @@ export interface TimeHandlers {
 	onSetCurrentAsEnd: () => void;
 	onAdjustStartTime: (delta: number) => void;
 	onAdjustEndTime: (delta: number) => void;
-	onPreviewRange: () => void;
+	onSetStartTime: (time: number) => void;
+	onSetEndTime: (time: number) => void;
 }
 
 export interface UseTimeHandlersProps {
 	timeAdjustment: TimeAdjustmentHook;
-	onPreviewRange: () => void;
 }
 
 /**
  * 時間調整用のハンドラーを提供する共通フック
  */
-export function useTimeHandlers({
-	timeAdjustment,
-	onPreviewRange,
-}: UseTimeHandlersProps): TimeHandlers {
+export function useTimeHandlers({ timeAdjustment }: UseTimeHandlersProps): TimeHandlers {
 	const onStartTimeInputChange = useCallback(
 		(value: string) => {
 			timeAdjustment.setStartTimeInput(value);
@@ -95,6 +92,7 @@ export function useTimeHandlers({
 		onSetCurrentAsEnd: timeAdjustment.setCurrentAsEnd,
 		onAdjustStartTime: timeAdjustment.adjustStartTime,
 		onAdjustEndTime: timeAdjustment.adjustEndTime,
-		onPreviewRange,
+		onSetStartTime: timeAdjustment.setStartTime,
+		onSetEndTime: timeAdjustment.setEndTime,
 	};
 }
