@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BasicInfoPanel } from "../basic-info-panel";
@@ -29,6 +29,11 @@ vi.mock("../audio-button-tag-editor", () => ({
 	),
 }));
 
+/** 折りたたまれた説明入力を開く（SPR-290: 既定は畳まれている） */
+function openDescription() {
+	fireEvent.click(screen.getByRole("button", { name: /説明を追加/ }));
+}
+
 describe("BasicInfoPanel", () => {
 	const defaultProps = {
 		title: "",
@@ -48,10 +53,11 @@ describe("BasicInfoPanel", () => {
 		it("コンポーネントが正常にレンダリングされる", () => {
 			render(<BasicInfoPanel {...defaultProps} />);
 
-			expect(screen.getByText("基本情報")).toBeInTheDocument();
 			expect(screen.getByLabelText(/ボタンタイトル/)).toBeInTheDocument();
-			expect(screen.getByLabelText(/説明（任意）/)).toBeInTheDocument();
 			expect(screen.getByTestId("tag-editor")).toBeInTheDocument();
+			// 説明は既定で折りたたまれている（SPR-290）
+			expect(screen.getByRole("button", { name: /説明を追加/ })).toBeInTheDocument();
+			expect(screen.queryByLabelText(/説明（任意）/)).not.toBeInTheDocument();
 		});
 
 		it("必須マークが正しく表示される", () => {
@@ -64,6 +70,7 @@ describe("BasicInfoPanel", () => {
 
 		it("入力フィールドが適切な属性を持つ", () => {
 			render(<BasicInfoPanel {...defaultProps} />);
+			openDescription();
 
 			const titleInput = screen.getByPlaceholderText("例: おはようございます");
 			const descriptionInput = screen.getByPlaceholderText("音声ボタンの詳細説明を入力（任意）");
@@ -126,6 +133,7 @@ describe("BasicInfoPanel", () => {
 			const props = { ...defaultProps, onDescriptionChange };
 
 			render(<BasicInfoPanel {...props} />);
+			openDescription();
 
 			const descriptionInput = screen.getByPlaceholderText("音声ボタンの詳細説明を入力（任意）");
 			await user.type(descriptionInput, "テスト説明文");
@@ -156,15 +164,33 @@ describe("BasicInfoPanel", () => {
 		});
 
 		it("説明文入力が無効化状態を反映する", () => {
-			const props = { ...defaultProps, disabled: true };
+			// 初期値があると開いた状態で始まる（編集画面相当）
+			const props = { ...defaultProps, description: "既存", disabled: true };
 			render(<BasicInfoPanel {...props} />);
 
 			const descriptionInput = screen.getByPlaceholderText("音声ボタンの詳細説明を入力（任意）");
 			expect(descriptionInput).toBeDisabled();
 		});
 
+		it("説明は既定で折りたたまれ、ボタンで開ける", () => {
+			render(<BasicInfoPanel {...defaultProps} />);
+
+			expect(
+				screen.queryByPlaceholderText("音声ボタンの詳細説明を入力（任意）"),
+			).not.toBeInTheDocument();
+			openDescription();
+			expect(screen.getByPlaceholderText("音声ボタンの詳細説明を入力（任意）")).toBeInTheDocument();
+		});
+
+		it("disabled 中は説明を開くボタンも無効", () => {
+			render(<BasicInfoPanel {...defaultProps} disabled />);
+
+			expect(screen.getByRole("button", { name: /説明を追加/ })).toBeDisabled();
+		});
+
 		it("テキストエリアのリサイズが無効化されている", () => {
 			render(<BasicInfoPanel {...defaultProps} />);
+			openDescription();
 
 			const descriptionInput = screen.getByPlaceholderText("音声ボタンの詳細説明を入力（任意）");
 			expect(descriptionInput).toHaveClass("resize-none");
@@ -212,6 +238,7 @@ describe("BasicInfoPanel", () => {
 
 		it("説明文の最大文字数制限が適用される", () => {
 			render(<BasicInfoPanel {...defaultProps} />);
+			openDescription();
 
 			const descriptionInput = screen.getByPlaceholderText("音声ボタンの詳細説明を入力（任意）");
 			expect(descriptionInput).toHaveAttribute("maxLength", "500");
@@ -237,6 +264,7 @@ describe("BasicInfoPanel", () => {
 	describe("Accessibility", () => {
 		it("ラベルとフィールドが適切に関連付けられている", () => {
 			render(<BasicInfoPanel {...defaultProps} />);
+			openDescription();
 
 			const titleInput = screen.getByLabelText(/ボタンタイトル/);
 			const descriptionInput = screen.getByLabelText(/説明（任意）/);
@@ -247,6 +275,7 @@ describe("BasicInfoPanel", () => {
 
 		it("適切なフォームラベルが設定されている", () => {
 			render(<BasicInfoPanel {...defaultProps} />);
+			openDescription();
 
 			expect(screen.getByText("ボタンタイトル")).toBeInTheDocument();
 			expect(screen.getByText("説明（任意）")).toBeInTheDocument();
@@ -254,6 +283,7 @@ describe("BasicInfoPanel", () => {
 
 		it("適切なIDが設定されている", () => {
 			render(<BasicInfoPanel {...defaultProps} />);
+			openDescription();
 
 			const titleInput = screen.getByPlaceholderText("例: おはようございます");
 			const descriptionInput = screen.getByPlaceholderText("音声ボタンの詳細説明を入力（任意）");
@@ -266,6 +296,7 @@ describe("BasicInfoPanel", () => {
 	describe("Responsive Design", () => {
 		it("レスポンシブテキストクラスが適用されている", () => {
 			render(<BasicInfoPanel {...defaultProps} />);
+			openDescription();
 
 			const titleInput = screen.getByPlaceholderText("例: おはようございます");
 			const descriptionInput = screen.getByPlaceholderText("音声ボタンの詳細説明を入力（任意）");
@@ -276,6 +307,7 @@ describe("BasicInfoPanel", () => {
 
 		it("レスポンシブラベルクラスが適用されている", () => {
 			render(<BasicInfoPanel {...defaultProps} />);
+			openDescription();
 
 			const titleLabel = screen.getByText("ボタンタイトル").closest("label");
 			const descriptionLabel = screen.getByText("説明（任意）").closest("label");
@@ -298,6 +330,7 @@ describe("BasicInfoPanel", () => {
 	describe("Edge Cases", () => {
 		it("空文字での文字数カウンターが正しく動作する", () => {
 			render(<BasicInfoPanel {...defaultProps} />);
+			openDescription();
 
 			expect(screen.getByText("0/100")).toBeInTheDocument();
 			expect(screen.getByText("0/500")).toBeInTheDocument();
@@ -385,6 +418,7 @@ describe("BasicInfoPanel", () => {
 			const props = { ...defaultProps, onTitleChange, onDescriptionChange };
 
 			render(<BasicInfoPanel {...props} />);
+			openDescription();
 
 			const titleInput = screen.getByPlaceholderText("例: おはようございます");
 			const descriptionInput = screen.getByPlaceholderText("音声ボタンの詳細説明を入力（任意）");
