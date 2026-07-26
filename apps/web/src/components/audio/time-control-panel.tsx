@@ -1,5 +1,6 @@
 "use client";
 
+import { formatTimestamp } from "@suzumina.click/shared-types";
 import { TimeDisplay } from "@suzumina.click/ui/components/custom/time-display";
 import { ValidationMessages } from "@suzumina.click/ui/components/custom/validation-message";
 import { Button } from "@suzumina.click/ui/components/ui/button";
@@ -133,18 +134,6 @@ interface TimeControlPanelProps {
 	isCreating: boolean;
 }
 
-/** 時刻表示（h:mm:ss.s / m:ss.s）。TimeDisplay の format="auto" と同じ表記 */
-function formatBoundaryTime(timeValue: number): string {
-	const decimal = Math.floor((timeValue % 1) * 10);
-	const seconds = Math.floor(timeValue % 60);
-	const minutes = Math.floor((timeValue % 3600) / 60);
-	if (timeValue >= 3600) {
-		const hours = Math.floor(timeValue / 3600);
-		return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}.${decimal}`;
-	}
-	return `${minutes}:${String(seconds).padStart(2, "0")}.${decimal}`;
-}
-
 interface BoundaryNudgeRowProps {
 	label: string;
 	timeValue: number;
@@ -189,7 +178,7 @@ function BoundaryNudgeRow({
 			{nudgeButton(-0.1)}
 			<Input
 				type="text"
-				value={isEditing ? timeInput : formatBoundaryTime(timeValue)}
+				value={isEditing ? timeInput : formatTimestamp(timeValue)}
 				onChange={(e) => onInputChange(e.target.value)}
 				onBlur={onBlur}
 				onKeyDown={onKeyDown}
