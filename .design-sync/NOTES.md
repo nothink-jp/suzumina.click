@@ -144,10 +144,71 @@ component-style 配下／未分類が大量に出る（報告値: 89 件 compone
 | AudioPlayer | custom-audio-audioplayer--auto-play | sb-error（headless・render wrapper なし） |
 | LoadingSkeleton | custom-utility-loadingskeleton--form | sb-error（form variant が storybook で不可視） |
 
+## 再 sync #7（2026-07-26・Base UI 全面移行 + 新規4件）の知見
+
+- **churn 内容**: Radix UI → **Base UI** 全面移行（#838）で UI プリミティブ 16 件の story source が動き
+  （changed = AlertDialog/AudioButton/Button/Checkbox/Collapsible/Dialog/DropdownMenu/ListPageLayout/
+  NavigationMenu/Popover/Separator/Sheet/Switch/TagInput/Toggle/ToggleGroup）、bundleSha 変化で
+  **全 22 件 renderHash churn（trigger=render_churn）**。新規 4 件（ChartContainer/Combobox/EmptyState/SakuraMark）。
+  **25 component / 135 story を image-judge して全 match**。deletePaths=[]・bundle/styling/aux=true。
+  → **Base UI 移行は preview 側に何のグローバル破壊も持ち込まなかった**（最初に Switch を 1 枚見て判定→
+  以降は per-component。移行系 re-sync では「1 枚で global を否定してから fan-out」が効く）。
+- **[GENERAL] 新規コンポーネントは barrel と titleMap の両方を疑う（#7 で両方踏んだ）**:
+  - `ui/chart` `ui/combobox` が **`ds-entry.tsx` の barrel 未追加**だった → bundle に載らず floor card 化する寸前。
+    custom 配下（EmptyState / BrandMark / PlayHero 等）は `export * from custom/index` 経由なので barrel 編集不要。
+    **UI 配下（`src/components/ui/<name>`）を足したときだけ barrel に 1 行**。判定は
+    `for f in packages/ui/src/components/ui/*.tsx; grep -q "ui/$(basename $f .tsx)\"" ds-entry.tsx`。
+  - barrel に載せた直後は **`[TITLE_UNMAPPED]`** が出る（story title ≠ export 名）。今回の恒久 titleMap:
+    `"Chart": "ChartContainer"`（chart.tsx は `ChartContainer`/`ChartTooltip`… を出し `Chart` という export は無い）、
+    `"BrandMark": "SakuraMark"`（`SakuraMark`/`RabbitMark` の 2 export で `BrandMark` は型名のみ）。
+    **titleMap を足すと component 名＝export 名になる**ので、以降 overrides のキーも
+    `ChartContainer` / `SakuraMark`（`Chart`/`BrandMark` ではない）。カード group も `ui/ChartContainer`・`brand/SakuraMark`。
+- **Base UI Progress は `[GRID_OVERFLOW] escape` に転じた**: 従来 `cardMode:"column"` で足りていたが Base UI 化で
+  セル外に描画するようになり `{"cardMode":"single","primaryStory":"BasicValues"}` へ変更（skip は
+  `ui-progress--default` を維持）。**移行で既存 override の種類が変わり得る**＝warn の suggestedOverride を素直に見る。
+- **recharts は問題なく bundle される**（#842 の chart）: bundle 2173KB（inlined npm packages: 1）。
+  `_preview/ChartContainer.js` は約 1MB 級で upload chunk では重い側。ChartContainer は `[PORTAL?]` も出るが
+  tooltip は hover 起因で製品カードの初期状態には出ないため **column で可**（single 不要）。
+- **[GENERAL] contact sheet の縮小は 1px ボーダーを消す → raw を見るまで mismatch と判定しない**:
+  Checkbox `With Label` と Toggle `Outline` がシートでは枠線なしに見えたが
+  `_screenshots/compare/raw/<...>__ds.png` では両側同一の角丸ボーダーが描画されていた。
+  シートは「どの story を見るか」の索引、**判定の正本は raw**。
+- **[GENERAL] ラベル無し Checkbox は `layout:"centered"` で両側とも 2px の縦スリバーに潰れる**:
+  storybook 側も preview 側も同一に潰れるので rubric 上は match（既知の degenerate-centered クラス）。
+  DS バグを疑って `.size-4` と `--spacing:.25rem` を bundled/reference 両 CSS で確認済み＝**どちらも正常**
+  （潰れは story の shrink-wrap 由来）。次回同じ絵を見ても掘り直さないこと。
+- **[GENERAL] `[REFERENCE_STALE?]` は config だけ変えた driver 再走でも出る（偽陽性）**:
+  sb-reference をセッション頭で建てた後、titleMap/overrides 編集で bundle だけが動くと
+  「bundle changed but sb-reference did not」と警告されるが、DS source は動いていないので reference は最新。
+  **DS source を触っていないなら無視**（触ったなら本物 → 建て直す）。
+- **収束レシピは #6 の記述どおり有効**: grade.json を書いた後
+  `compare.mjs --components <全部> --spot-check-components <同じリスト>` を 1 回 → ログに
+  `[SPOT_CHECK] … grades kept` が出て capture json が `pendingGrade:false` に落ち、次の driver が
+  **pendingGrade=[] / 20 carried forward / 0 grade cleared** でクリーンに閉じた（fresh worktree でも収束する）。
+  ※ 未 grade のまま残った旧 canary 候補の capture json（今回 Badge/Carousel/DockedPanel/MetaPillRow/Tabs/
+  Textarea/VideoTagDisplay）は dirty のままでも、canary は clean 側から選ぶので閉じるのを妨げない。
+- **upload chunk は「件数」でなく「バイト」で切る**: 120 件でも 6.8MB になり得る。2MB バジェットで切ると 11 chunk
+  （`_ds_bundle.js` 2.1MB は単独 chunk）。253 ファイル = 49×4 component + 49 `_preview` + `_vendor`×2 + top-level 6。
+- **プロジェクトに同居する design agent の成果物は今回も無傷**（home/・proposals/・review/・uploads/・
+  `CLAUDE_CODE_*.md`・`_adherence.oxlintrc.json`・`.bundles/`・`.thumbnail`・`_ds_manifest.json`）。
+  deletePaths=[] なので plan の deletes も `[]` で出す＝glob を渡さないのが最も安全。
+- **conventions.md validation = ほぼ drift なし（書き換えず／作者所有）**。要報告 2 点:
+  - 列挙名は semantic utility 21・radius 5・heart/info/success/warning・`--color-suzuka-700`・`--radius-xl`・
+    コンポーネント名すべて OK。**例示の `bg-minase-100` だけ utility 非生成**（tree-shake。今回の
+    `bg-minase-*` は 50/200/500/600）。`--minase-100`/`--color-minase-100` 変数は存在し、conventions 自身の
+    「utility が無い shade は変数を直参照」ルールで実用上カバー＝**非 drift**（#6 と同型・shade 集合だけ変動）。
+  - **「shadcn/ui ベース」「shadcn-derived primitives」の記述は #838 以降プリミティブが Base UI**。
+    shadcn は copy-paste 方式の系譜としては依然妥当なので validation 失敗ではないが、
+    正確を期すなら「shadcn/ui 由来の構成 + Base UI プリミティブ」。文面は作者判断。
+
 ## Re-sync risks（次回 sync が監視すべき点）
 
 - **barrel の同期**: コンポーネントを追加/削除したら `packages/ui/ds-entry.tsx` の `export *` 行を
-  更新する。漏れると bundle に載らず floor card 化する。
+  更新する。漏れると bundle に載らず floor card 化する。**#7 で実際に 2 件漏れた（chart/combobox）**＝
+  「UI 配下を足したら barrel」「barrel に足したら titleMap を疑う」を毎回チェック（#7 の知見に判定コマンドあり）。
+- **titleMap は増える一方**: 現在 `Sonner(Toast)→Toaster` / `Chart→ChartContainer` / `BrandMark→SakuraMark`。
+  1 ファイルが複数コンポーネントを export する（chart.tsx / brand-mark.tsx）パターンでは story title と
+  export 名が一致しないのが常態。**titleMap 適用後は overrides のキーも export 名側**（`ChartContainer` 等）。
 - **next/* alias の腐敗**: 新しい `next/*` サブパス（next/image 等）を使うコンポーネントが増えると
   実体 Next.js が bundle され "process is not defined" で全 component が落ちる。
   `.design-sync/sync.tsconfig.json` の paths に shim を追加すること。現状 next/link・next/navigation のみ対応。
@@ -166,6 +227,12 @@ component-style 配下／未分類が大量に出る（報告値: 89 件 compone
   端折らず、`{shape,styleSha,renderHashes,sourceKeys,keyRecipe,scriptsSha,sourceHashes,auxSha,bundleSha12}`
   を完全に保存すること。保存後 `node -e` で 9 フィールド presence + renderHashes/sourceKeys=41 /
   sourceHashes=123 を検証してから driver を回すと一撃で気づける。
+  **件数は sync ごとに増える**（#7 時点のアンカーは 45 component＝renderHashes/sourceKeys 各 45・
+  sourceHashes 135＝45×3。今回 upload 後は 49 component＝sourceHashes 147 になる）。
+  数を決め打ちせず「renderHashes と sourceKeys のキー集合が一致」「sourceHashes = component 数×3」で検証する。
+- **Base UI のサブパス specifier**: import は `@base-ui/react/<part>`（`@base-ui-components/react` ではない）で
+  `packages/ui/node_modules` から解決される。**現状 shim/alias は不要**（next/link・next/navigation のみ shim）。
+  Base UI 側が export 構造を変えたら preview の "Element type is invalid" 系で出る。
 - **styling だけ変えた再 sync（例: DS Phase 2 のトークン semantic 化）の正常な振る舞い**: sourceKeys は
   全 41 unchanged（story ソース不変）で carried-forward、styleSha 変化で render は full tier・bundle/styling/aux
   が再 ship、`verification.canary`（trigger: render_churn/both）が render が動いた数件を grades-kept で spot-check
