@@ -1,8 +1,13 @@
 "use client";
 
+import {
+	normalizeForTranscriptSearch,
+	type TranscriptUtterance,
+} from "@suzumina.click/shared-types";
 import { Button } from "@suzumina.click/ui/components/ui/button";
-import { Captions, Loader2 } from "lucide-react";
-import type { TranscriptUtterance } from "@/lib/gemini/transcription-core";
+import { Input } from "@suzumina.click/ui/components/ui/input";
+import { Captions, Loader2, Search } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { formatSeconds } from "@/utils/format-seconds";
 
 const roundTenth = (value: number) => Math.round(value * 10) / 10;
@@ -20,12 +25,18 @@ interface UtteranceListPanelProps {
 	onLoadAt: (timeSeconds: number) => void;
 	/** 行クリック（extend=Shift クリック: 現在区間を発話まで広げる） */
 	onSelect: (utterance: TranscriptUtterance, extend: boolean) => void;
+	/** セリフ検索（SPR-293）: 初回の検索入力でキャッシュ済み全チャンクを読み込む */
+	onLoadAllCached: () => void;
+	hasLoadedAllCached: boolean;
+	/** 検索ヒットの開始秒（探索レーンの縦線マーク用）。検索が空なら [] */
+	onSearchHitsChange: (hitStartTimes: number[]) => void;
 }
 
 /**
- * 読み込み済み範囲の発話リスト（SPR-292）。
+ * 発話リストとセリフ検索（SPR-292/293）。
  * 「探す＝聴く」を「読む」に変える段。クリックで発話に区間スナップ＋タイトルプリフィル。
- * 全編検索は Stage 2（SPR-293）。
+ * 検索はキャッシュ済み文字起こし（バックログ処理が随時埋める）に対する
+ * かな正規化の部分一致。カバレッジが部分的な間はその旨を表示する。
  */
 export function UtteranceListPanel({
 	utterances,
@@ -37,7 +48,35 @@ export function UtteranceListPanel({
 	disabled = false,
 	onLoadAt,
 	onSelect,
+	onLoadAllCached,
+	hasLoadedAllCached,
+	onSearchHitsChange,
 }: UtteranceListPanelProps) {
+	const [query, setQuery] = useState("");
+	const normalizedQuery = normalizeForTranscriptSearch(query);
+	const isSearching = normalizedQuery.length > 0;
+
+	// 検索意図が見えた時点でキャッシュ済み全チャンクを読み込む（生成なし＝軽い）
+	useEffect(() => {
+		if (isSearching && !hasLoadedAllCached) {
+			onLoadAllCached();
+		}
+	}, [isSearching, hasLoadedAllCached, onLoadAllCached]);
+
+	const visibleUtterances = useMemo(() => {
+		if (!isSearching) {
+			return utterances;
+		}
+		return utterances.filter((utterance) =>
+			normalizeForTranscriptSearch(utterance.text).includes(normalizedQuery),
+		);
+	}, [utterances, isSearching, normalizedQuery]);
+
+	// 探索レーンの縦線マーク（検索中のみ）
+	useEffect(() => {
+		onSearchHitsChange(isSearching ? visibleUtterances.map((u) => u.start) : []);
+	}, [isSearching, visibleUtterances, onSearchHitsChange]);
+
 	const rangeLabel =
 		loadedRanges.length > 0
 			? loadedRanges
@@ -57,11 +96,32 @@ export function UtteranceListPanel({
 				で隣の発話まで広げます
 			</p>
 
+			<div className="relative mb-3">
+				<Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+				<Input
+					type="text"
+					value={query}
+					onChange={(event) => setQuery(event.target.value)}
+					placeholder="セリフで探す（例: あはは）"
+					disabled={disabled}
+					className="min-h-[44px] pl-9 text-sm"
+				/>
+			</div>
+
 			{error && <p className="mb-2 text-sm text-destructive">{error}</p>}
 
-			{utterances.length > 0 && (
+			{isSearching && (
+				<p className="mb-2 text-xs text-muted-foreground">
+					{visibleUtterances.length > 0
+						? `${visibleUtterances.length}件ヒット（探索レーンに位置を表示中）`
+						: "ヒットなし"}
+					{!hasLoadedAllCached && "・全編読み込み中…"}
+				</p>
+			)}
+
+			{visibleUtterances.length > 0 && (
 				<div className="mb-3 flex max-h-72 flex-col gap-1 overflow-y-auto">
-					{utterances.map((utterance) => (
+					{visibleUtterances.map((utterance) => (
 						<button
 							key={`row-${utterance.start}`}
 							type="button"
@@ -88,6 +148,7 @@ export function UtteranceListPanel({
 					文字起こしを生成しています（初回は30秒ほどかかります）
 				</div>
 			) : (
+				!isSearching &&
 				!currentLoaded && (
 					<Button
 						variant="outline"
@@ -101,7 +162,7 @@ export function UtteranceListPanel({
 				)
 			)}
 
-			{rangeLabel && (
+			{rangeLabel && !isSearching && (
 				<p className="mt-2 text-xs text-muted-foreground">読み込み済み: {rangeLabel}</p>
 			)}
 		</div>

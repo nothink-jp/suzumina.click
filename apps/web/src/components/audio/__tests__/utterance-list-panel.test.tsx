@@ -17,6 +17,9 @@ describe("UtteranceListPanel", () => {
 		isLoadedAt: vi.fn(() => true),
 		onLoadAt: vi.fn(),
 		onSelect: vi.fn(),
+		onLoadAllCached: vi.fn(),
+		hasLoadedAllCached: false,
+		onSearchHitsChange: vi.fn(),
 	};
 
 	beforeEach(() => {
@@ -75,5 +78,53 @@ describe("UtteranceListPanel", () => {
 			expect(row).toBeDisabled();
 		}
 		expect(screen.getByRole("button", { name: /再生位置の周辺の発話を読み込む/ })).toBeDisabled();
+	});
+
+	describe("セリフ検索 (SPR-293)", () => {
+		it("検索でかな正規化の部分一致に絞り込み、ヒット位置を通知する", () => {
+			render(<UtteranceListPanel {...defaultProps} hasLoadedAllCached />);
+
+			const input = screen.getByPlaceholderText(/セリフで探す/);
+			// カタカナ入力でもひらがな発話にヒットする
+			fireEvent.change(input, { target: { value: "コンニチハ" } });
+
+			expect(screen.getAllByTestId("utterance-row")).toHaveLength(1);
+			expect(screen.getByText("こんにちは")).toBeInTheDocument();
+			expect(screen.getByText(/1件ヒット/)).toBeInTheDocument();
+			expect(defaultProps.onSearchHitsChange).toHaveBeenLastCalledWith([601.5]);
+		});
+
+		it("検索を消すと全件表示に戻りヒット通知は空になる", () => {
+			render(<UtteranceListPanel {...defaultProps} hasLoadedAllCached />);
+
+			const input = screen.getByPlaceholderText(/セリフで探す/);
+			fireEvent.change(input, { target: { value: "こんにちは" } });
+			fireEvent.change(input, { target: { value: "" } });
+
+			expect(screen.getAllByTestId("utterance-row")).toHaveLength(2);
+			expect(defaultProps.onSearchHitsChange).toHaveBeenLastCalledWith([]);
+		});
+
+		it("初回の検索入力でキャッシュ済み全チャンクの読み込みが走る", () => {
+			render(<UtteranceListPanel {...defaultProps} />);
+
+			fireEvent.change(screen.getByPlaceholderText(/セリフで探す/), {
+				target: { value: "あはは" },
+			});
+
+			expect(defaultProps.onLoadAllCached).toHaveBeenCalled();
+			expect(screen.getByText(/全編読み込み中/)).toBeInTheDocument();
+		});
+
+		it("読み込み済みなら再読み込みしない", () => {
+			render(<UtteranceListPanel {...defaultProps} hasLoadedAllCached />);
+
+			fireEvent.change(screen.getByPlaceholderText(/セリフで探す/), {
+				target: { value: "あはは" },
+			});
+
+			expect(defaultProps.onLoadAllCached).not.toHaveBeenCalled();
+			expect(screen.getByText("ヒットなし")).toBeInTheDocument();
+		});
 	});
 });

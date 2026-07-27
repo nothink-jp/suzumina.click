@@ -24,6 +24,8 @@ interface ClipExploreLaneProps {
 	madeMarks?: number[];
 	/** 自分の下書きの開始時刻 */
 	draftMarks?: number[];
+	/** セリフ検索のヒット開始時刻（SPR-293）。全編から一発で引くための縦線 */
+	searchHitMarks?: number[];
 	disabled?: boolean;
 	/** クリックでその位置へジャンプ（クリップ移動＋トリムレーン追従は親が行う） */
 	onJump: (time: number) => void;
@@ -40,6 +42,7 @@ export function ClipExploreLane({
 	windowEnd,
 	madeMarks = [],
 	draftMarks = [],
+	searchHitMarks = [],
 	disabled = false,
 	onJump,
 }: ClipExploreLaneProps) {
@@ -58,6 +61,7 @@ export function ClipExploreLane({
 	// 同一時刻のマークは重なって見分けがつかないため重複排除（key の一意性も兼ねる）
 	const uniqueDraftMarks = [...new Set(draftMarks)];
 	const uniqueMadeMarks = [...new Set(madeMarks)];
+	const uniqueSearchHitMarks = [...new Set(searchHitMarks)];
 
 	const onLaneClick = (event: React.MouseEvent<HTMLDivElement>) => {
 		if (disabled) return;
@@ -88,6 +92,16 @@ export function ClipExploreLane({
 						{formatSeconds(t)}
 					</div>
 				</div>
+			))}
+
+			{/* セリフ検索ヒット（縦通し・SPR-293）: 「あの一言」を全編から一発で引く */}
+			{uniqueSearchHitMarks.map((t) => (
+				<div
+					key={`hit-${t}`}
+					data-testid="explore-search-hit"
+					className="pointer-events-none absolute top-1 h-8 w-0.5 bg-heart"
+					style={{ left: `${positionPercent(t)}%` }}
+				/>
 			))}
 
 			{/* 下書きマーク（上段） */}

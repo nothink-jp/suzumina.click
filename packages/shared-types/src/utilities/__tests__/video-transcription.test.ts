@@ -5,9 +5,10 @@ import {
 	chunkIndexForTime,
 	chunkRange,
 	maxChunkIndex,
+	normalizeForTranscriptSearch,
 	parseTranscriptionResponse,
 	snapRangeForUtterance,
-} from "../transcription-core";
+} from "../video-transcription";
 
 describe("chunkIndexForTime / maxChunkIndex", () => {
 	it("10分単位でチャンク番号を返す", () => {
@@ -138,5 +139,26 @@ describe("snapRangeForUtterance", () => {
 			startTime: 0,
 			endTime: 3600,
 		});
+	});
+});
+
+describe("normalizeForTranscriptSearch", () => {
+	it("カタカナをひらがなへ寄せる（表記ゆれ吸収）", () => {
+		expect(normalizeForTranscriptSearch("コンニチハ")).toBe(
+			normalizeForTranscriptSearch("こんにちは"),
+		);
+	});
+
+	it("空白・句読点・感嘆・長音・♪ を除去する", () => {
+		expect(normalizeForTranscriptSearch("え、ほんと！？ 〜すごい…♪ー")).toBe("えほんとすごい");
+	});
+
+	it("英字は小文字へ寄せる", () => {
+		expect(normalizeForTranscriptSearch("OK です")).toBe("okです");
+	});
+
+	it("正規化後に部分一致で使える（実利用の形）", () => {
+		const utterance = normalizeForTranscriptSearch("えっ、ベェ〜！");
+		expect(utterance.includes(normalizeForTranscriptSearch("べぇ"))).toBe(true);
 	});
 });

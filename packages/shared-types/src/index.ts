@@ -163,3 +163,5 @@ export * from "./utilities/price-history";
 export * from "./utilities/user/display-name";
 // DLsite ID validators (extracted from entities/circle-creator)
 export * from "./utilities/validators/dlsite-ids";
+// 発話文字起こし（SPR-292/293）: web と functions が共有するチャンク割り・パース・スナップ
+export * from "./utilities/video-transcription";

@@ -1,16 +1,16 @@
 "use server";
 
-import { parseDurationToSeconds } from "@suzumina.click/shared-types";
-import { getCurrentUser } from "@/lib/auth/server";
-import { getFirestore } from "@/lib/firestore";
-import { generateClipContent } from "@/lib/gemini/client";
 import {
 	buildTranscriptionPrompt,
 	chunkRange,
 	maxChunkIndex,
+	parseDurationToSeconds,
 	parseTranscriptionResponse,
 	type TranscriptUtterance,
-} from "@/lib/gemini/transcription-core";
+} from "@suzumina.click/shared-types";
+import { getCurrentUser } from "@/lib/auth/server";
+import { getFirestore } from "@/lib/firestore";
+import { generateClipContent } from "@/lib/gemini/client";
 import * as logger from "@/lib/logger";
 
 const VIDEO_ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
@@ -33,6 +33,47 @@ interface TranscriptChunkDocument {
 export interface GetTranscriptChunkInput {
 	videoId: string;
 	chunkIndex: number;
+}
+
+export type GetCachedTranscriptChunksResult =
+	| {
+			success: true;
+			data: { chunks: Array<{ chunkIndex: number; utterances: TranscriptUtterance[] }> };
+	  }
+	| { success: false; error: string };
+
+/**
+ * キャッシュ済みの全チャンクを返す（SPR-293 セリフ検索用）。
+ * **生成はしない**（読み取りのみ）。バックログ処理（transcribeVideoBacklog）が
+ * 埋めた分だけが返る＝カバレッジはクライアント側で表示する
+ */
+export async function getCachedTranscriptChunks(input: {
+	videoId: string;
+}): Promise<GetCachedTranscriptChunksResult> {
+	try {
+		const user = await getCurrentUser();
+		if (!user?.discordId || !user.isActive) {
+			return { success: false, error: "ログインが必要です" };
+		}
+		if (!VIDEO_ID_PATTERN.test(input.videoId)) {
+			return { success: false, error: "動画IDが不正です" };
+		}
+
+		const snapshot = await chunkCollection(input.videoId).get();
+		const chunks = snapshot.docs
+			.map((doc) => {
+				const data = doc.data() as TranscriptChunkDocument;
+				return { chunkIndex: data.chunkIndex, utterances: data.utterances ?? [] };
+			})
+			.sort((a, b) => a.chunkIndex - b.chunkIndex);
+		return { success: true, data: { chunks } };
+	} catch (error) {
+		logger.error("キャッシュ済み文字起こしの取得でエラーが発生", {
+			videoId: input.videoId,
+			error: error instanceof Error ? error.message : String(error),
+		});
+		return { success: false, error: "文字起こしの取得に失敗しました" };
+	}
 }
 
 export type GetTranscriptChunkResult =
