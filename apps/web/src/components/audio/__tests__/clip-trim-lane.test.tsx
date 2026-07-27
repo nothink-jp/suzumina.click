@@ -157,4 +157,47 @@ describe("ClipTrimLane", () => {
 
 		expect(screen.queryByText("1:40.0")).not.toBeInTheDocument();
 	});
+
+	describe("発話行 (SPR-292)", () => {
+		const utterances = [
+			{ start: 5, end: 8, text: "窓内の発話" },
+			{ start: 100, end: 103, text: "窓外の発話" },
+		];
+
+		it("窓内の発話だけがブロック表示される", () => {
+			render(<ClipTrimLane {...defaultProps} utterances={utterances} onUtteranceClick={vi.fn()} />);
+
+			const blocks = screen.getAllByTestId("lane-utterance");
+			expect(blocks).toHaveLength(1);
+			expect(blocks[0]).toHaveTextContent("窓内の発話");
+		});
+
+		it("発話クリックで onUtteranceClick が呼ばれ、レーンのシークは発火しない", () => {
+			const onUtteranceClick = vi.fn();
+			render(
+				<ClipTrimLane
+					{...defaultProps}
+					utterances={utterances}
+					onUtteranceClick={onUtteranceClick}
+				/>,
+			);
+
+			fireEvent.click(screen.getByTestId("lane-utterance"), { clientX: 133 });
+			expect(onUtteranceClick).toHaveBeenCalledWith(utterances[0], false);
+			expect(defaultProps.onSeek).not.toHaveBeenCalled();
+
+			fireEvent.click(screen.getByTestId("lane-utterance"), { shiftKey: true });
+			expect(onUtteranceClick).toHaveBeenLastCalledWith(utterances[0], true);
+		});
+
+		it("発話行ありのときはレーンが縦に広がる", () => {
+			const { rerender } = render(<ClipTrimLane {...defaultProps} />);
+			expect(screen.getByTestId("clip-trim-lane")).toHaveClass("h-24");
+
+			rerender(
+				<ClipTrimLane {...defaultProps} utterances={utterances} onUtteranceClick={vi.fn()} />,
+			);
+			expect(screen.getByTestId("clip-trim-lane")).toHaveClass("h-32");
+		});
+	});
 });

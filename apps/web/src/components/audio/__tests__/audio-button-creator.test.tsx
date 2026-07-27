@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { mockUseSession } from "@/test-utils/auth";
@@ -17,6 +17,11 @@ vi.mock("@/app/buttons/actions", () => ({
 const mockDeleteButtonDraft = vi.fn().mockResolvedValue({ success: true });
 vi.mock("@/actions/button-drafts", () => ({
 	deleteButtonDraft: (draftId: string) => mockDeleteButtonDraft(draftId),
+}));
+
+const mockGetVideoTranscriptChunk = vi.fn();
+vi.mock("@/actions/video-transcription", () => ({
+	getVideoTranscriptChunk: (input: unknown) => mockGetVideoTranscriptChunk(input),
 }));
 
 // Mock rate limit actions
@@ -250,6 +255,97 @@ describe("AudioButtonCreator - Refactored Architecture", () => {
 			expect(
 				screen.queryByRole("button", { name: "作成して次を切り抜く" }),
 			).not.toBeInTheDocument();
+		});
+	});
+
+	describe("発話スナップ・タイトルプリフィル (SPR-292)", () => {
+		beforeEach(() => {
+			mockGetVideoTranscriptChunk.mockResolvedValue({
+				success: true,
+				data: {
+					chunkIndex: 0,
+					utterances: [{ start: 3, end: 5, text: "なんで落とすんですか" }],
+				},
+			});
+		});
+
+		it("読み込みボタンで発話を取得し、行クリックでスナップ＋タイトルプリフィルされる", async () => {
+			const user = userEvent.setup();
+			render(<AudioButtonCreator {...defaultProps} />);
+
+			await user.click(screen.getByRole("button", { name: /再生位置の周辺の発話を読み込む/ }));
+			await waitFor(() => {
+				expect(screen.getByTestId("utterance-row")).toBeInTheDocument();
+			});
+			expect(mockGetVideoTranscriptChunk).toHaveBeenCalledWith({
+				videoId: "test-video-id",
+				chunkIndex: 0,
+			});
+
+			await user.click(screen.getByTestId("utterance-row"));
+
+			// スナップ: 3-0.15=2.9 / 5+0.35=5.4、タイトルは発話テキストで初期化
+			await waitFor(() => {
+				expect(screen.getByDisplayValue("0:02.9")).toBeInTheDocument();
+			});
+			expect(screen.getByDisplayValue("0:05.4")).toBeInTheDocument();
+			expect(screen.getByPlaceholderText("例: おはようございます")).toHaveValue(
+				"なんで落とすんですか",
+			);
+			// トリムレーンにも発話ブロックが出る
+			expect(screen.getAllByTestId("lane-utterance").length).toBeGreaterThan(0);
+		});
+
+		it("タイトル入力済みならプリフィルで上書きしない", async () => {
+			const user = userEvent.setup();
+			render(<AudioButtonCreator {...defaultProps} />);
+
+			await user.type(screen.getByPlaceholderText("例: おはようございます"), "手入力タイトル");
+			await user.click(screen.getByRole("button", { name: /再生位置の周辺の発話を読み込む/ }));
+			await waitFor(() => {
+				expect(screen.getByTestId("utterance-row")).toBeInTheDocument();
+			});
+			await user.click(screen.getByTestId("utterance-row"));
+
+			await waitFor(() => {
+				expect(screen.getByDisplayValue("0:02.9")).toBeInTheDocument();
+			});
+			expect(screen.getByPlaceholderText("例: おはようございます")).toHaveValue("手入力タイトル");
+		});
+
+		it("Shift＋クリックで現在区間を発話まで広げる", async () => {
+			const user = userEvent.setup();
+			render(<AudioButtonCreator {...defaultProps} initialStartTime={20} />);
+
+			await user.click(screen.getByRole("button", { name: /再生位置の周辺の発話を読み込む/ }));
+			await waitFor(() => {
+				expect(screen.getByTestId("utterance-row")).toBeInTheDocument();
+			});
+			// 現在区間 20-30、発話 2.9-5.4 → Shift クリックで 2.9-30 に拡張
+			fireEvent.click(screen.getByTestId("utterance-row"), { shiftKey: true });
+
+			await waitFor(() => {
+				expect(screen.getByDisplayValue("0:02.9")).toBeInTheDocument();
+			});
+			expect(screen.getByDisplayValue("0:30.0")).toBeInTheDocument();
+			// 拡張ではタイトルを入れない
+			expect(screen.getByPlaceholderText("例: おはようございます")).toHaveValue("");
+		});
+
+		it("取得失敗はエラー表示のみで既存フローに影響しない", async () => {
+			const user = userEvent.setup();
+			mockGetVideoTranscriptChunk.mockResolvedValue({
+				success: false,
+				error: "ログインが必要です",
+			});
+			render(<AudioButtonCreator {...defaultProps} />);
+
+			await user.click(screen.getByRole("button", { name: /再生位置の周辺の発話を読み込む/ }));
+			await waitFor(() => {
+				expect(screen.getByText("ログインが必要です")).toBeInTheDocument();
+			});
+			// フォームは通常どおり使える
+			expect(screen.getByPlaceholderText("例: おはようございます")).toBeEnabled();
 		});
 	});
 
