@@ -9,8 +9,10 @@ import { useCallback, useState } from "react";
 import { deleteButtonDraft } from "@/actions/button-drafts";
 import { createAudioButton } from "@/app/buttons/actions";
 import { useAudioButtonEditor } from "@/hooks/use-audio-button-editor";
+import { useVideoTranscript } from "@/hooks/use-video-transcript";
 import { trackCreateError, trackCreateStart, trackCreateSuccess } from "@/lib/analytics/events";
 import { useSession } from "@/lib/auth/client";
+import { snapRangeForUtterance, type TranscriptUtterance } from "@/lib/gemini/transcription-core";
 import { formatSeconds } from "@/utils/format-seconds";
 import { BasicInfoPanel } from "./basic-info-panel";
 import { CreateButtonLimit } from "./create-button-limit";
@@ -18,6 +20,7 @@ import { CreationActionBar } from "./creation-action-bar";
 import { MetaSuggestionPanel } from "./meta-suggestion-panel";
 import { TimeControlPanel } from "./time-control-panel";
 import { UsageGuide } from "./usage-guide";
+import { UtteranceListPanel } from "./utterance-list-panel";
 
 interface AudioButtonCreatorProps {
 	videoId: string;
@@ -99,6 +102,9 @@ export function AudioButtonCreator({
 	const [madeMarks, setMadeMarks] = useState<number[]>(() => initialMadeMarks ?? []);
 	const [draftMarkList, setDraftMarkList] = useState<number[]>(() => draftMarks ?? []);
 
+	// 発話文字起こし（SPR-292）。オンデマンド読み込み＝開いただけでは Gemini を呼ばない
+	const transcript = useVideoTranscript(videoId, youtubeManager.videoDuration || videoDuration);
+
 	// 次の下書きへフォームとプレイヤーを進める（遷移なし＝プレイヤー維持が連続仕上げの本体）
 	const { setStartTime, setEndTime } = timeAdjustment;
 	const { seekTo, videoDuration: playerDuration } = youtubeManager;
@@ -140,6 +146,36 @@ export function AudioButtonCreator({
 			setDraftMarkList((prev) => removeOneOccurrence(prev, consumed.suggestedStartTime));
 		}
 	}, [activeDraftId, videoDrafts]);
+
+	// 発話スナップ（SPR-292）: クリックで発話区間（前後パディング込み）へ。
+	// Shift＋クリックは現在区間を発話まで広げる。プレイヤーは editor の境界追従シークに乗る
+	const handleUtteranceSelect = useCallback(
+		(utterance: TranscriptUtterance, extend: boolean) => {
+			const duration = playerDuration || videoDuration;
+			const range = snapRangeForUtterance(utterance, duration);
+			if (extend) {
+				setStartTime(Math.min(timeAdjustment.startTime, range.startTime));
+				setEndTime(Math.max(timeAdjustment.endTime, range.endTime));
+				return;
+			}
+			setStartTime(range.startTime);
+			setEndTime(range.endTime);
+			// タイトル未入力なら発話テキストを初期値に（上書きはしない・歌唱の ♪ は入れない）
+			if (utterance.kind !== "song" && buttonText.trim().length === 0) {
+				setButtonText(utterance.text.slice(0, 100));
+			}
+		},
+		[
+			playerDuration,
+			videoDuration,
+			setStartTime,
+			setEndTime,
+			timeAdjustment.startTime,
+			timeAdjustment.endTime,
+			buttonText,
+			setButtonText,
+		],
+	);
 
 	// スキップ: 現在の下書きは消化せず（/live から再度仕上げられる）次へ進む
 	const handleSkip = useCallback(() => {
@@ -304,6 +340,8 @@ export function AudioButtonCreator({
 									audition={audition}
 									madeMarks={madeMarks}
 									draftMarks={draftMarkList}
+									utterances={transcript.utterances}
+									onUtteranceClick={handleUtteranceSelect}
 									isCreating={isCreating}
 								/>
 							</div>
@@ -359,6 +397,18 @@ export function AudioButtonCreator({
 									)}
 								</div>
 							)}
+
+							<UtteranceListPanel
+								utterances={transcript.utterances}
+								loadedRanges={transcript.loadedRanges}
+								isLoading={transcript.isLoading}
+								error={transcript.error}
+								currentTime={youtubeManager.currentTime}
+								isLoadedAt={transcript.isLoadedAt}
+								disabled={isCreating}
+								onLoadAt={transcript.loadChunkAt}
+								onSelect={handleUtteranceSelect}
+							/>
 
 							<BasicInfoPanel
 								title={buttonText}

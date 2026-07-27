@@ -2,6 +2,7 @@
 
 import { formatTimestamp } from "@suzumina.click/shared-types";
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { TranscriptUtterance } from "@/lib/gemini/transcription-core";
 import { formatSeconds } from "@/utils/format-seconds";
 
 /** 切り抜き長の制約（バリデーションの正本は use-audio-button-validation。ドラッグ時の先行クランプ用） */
@@ -67,6 +68,10 @@ interface ClipTrimLaneProps {
 	onMoveClip: (startTime: number, endTime: number) => void;
 	/** レーン余白クリック: 再生位置をその時刻へ */
 	onSeek: (time: number) => void;
+	/** 読み込み済みの発話（SPR-292）。渡すと発話行が出てレーンが縦に広がる */
+	utterances?: TranscriptUtterance[];
+	/** 発話クリック（extend=Shift クリック: 現在区間を発話まで広げる） */
+	onUtteranceClick?: (utterance: TranscriptUtterance, extend: boolean) => void;
 }
 
 /**
@@ -86,7 +91,11 @@ export function ClipTrimLane({
 	onChangeEnd,
 	onMoveClip,
 	onSeek,
+	utterances,
+	onUtteranceClick,
 }: ClipTrimLaneProps) {
+	// 発話行の有無でレーンの高さとクリップ位置が変わる（編集画面は発話なしの従来レイアウト）
+	const hasUtteranceRow = utterances !== undefined;
 	const laneRef = useRef<HTMLDivElement | null>(null);
 	const [drag, setDrag] = useState<{ kind: DragKind; grabOffset: number } | null>(null);
 	// ドラッグを離した直後に lane の click が発火して意図せずシークするのを抑止する
@@ -218,7 +227,7 @@ export function ClipTrimLane({
 			ref={laneRef}
 			data-testid="clip-trim-lane"
 			onClick={onLaneClick}
-			className="relative h-24 overflow-hidden rounded-md border bg-muted/60 select-none"
+			className={`relative overflow-hidden rounded-md border bg-muted/60 select-none ${hasUtteranceRow ? "h-32" : "h-24"}`}
 			style={{ touchAction: "none" }}
 		>
 			{/* 動画範囲外（0 より前 / 末尾より後）の遮蔽 */}
@@ -257,9 +266,36 @@ export function ClipTrimLane({
 				</div>
 			))}
 
+			{/* 発話行（SPR-292）: クリックで区間スナップ・Shift で拡張 */}
+			{hasUtteranceRow &&
+				utterances
+					.filter((u) => u.end > windowStart && u.start < windowEnd)
+					.map((u) => {
+						const left = Math.max(positionPercent(u.start), 0);
+						const right = Math.min(positionPercent(u.end), 100);
+						return (
+							<button
+								key={`utterance-${u.start}`}
+								type="button"
+								data-testid="lane-utterance"
+								title={u.text}
+								disabled={disabled}
+								onClick={(event) => {
+									// レーン背景のクリックシークを発火させない
+									event.stopPropagation();
+									onUtteranceClick?.(u, event.shiftKey);
+								}}
+								className="absolute top-5 flex h-[26px] items-center overflow-hidden rounded-sm border bg-card px-1 text-left font-normal text-[11px] whitespace-nowrap text-muted-foreground hover:border-suzuka-400 hover:text-foreground disabled:pointer-events-none"
+								style={{ left: `${left}%`, width: `${Math.max(right - left, 0.5)}%` }}
+							>
+								<span className="truncate">{u.text}</span>
+							</button>
+						);
+					})}
+
 			{/* クリップブロック */}
 			<div
-				className="absolute top-5 bottom-0 border-y-2 border-suzuka-600 bg-suzuka-500/25"
+				className={`absolute bottom-0 border-y-2 border-suzuka-600 bg-suzuka-500/25 ${hasUtteranceRow ? "top-[52px]" : "top-5"}`}
 				style={{
 					left: `${clipLeft}%`,
 					width: `${Math.max(clipRight - clipLeft, 0)}%`,

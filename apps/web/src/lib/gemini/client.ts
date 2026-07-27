@@ -23,6 +23,16 @@ export interface GenerateClipContentInput {
 	startOffsetSeconds: number;
 	endOffsetSeconds: number;
 	prompt: string;
+	/**
+	 * 長尺クリップ（文字起こし等）用の上書き（SPR-292）。
+	 * thinkingBudget はスパイク実測で必須と確定: 上限なしだと思考トークンが暴走して
+	 * maxOutputTokens 到達で JSON が切断され、レイテンシも数倍になる（SPR-291）
+	 */
+	options?: {
+		timeoutMs?: number;
+		maxOutputTokens?: number;
+		thinkingBudget?: number;
+	};
 }
 
 /**
@@ -60,6 +70,12 @@ export async function generateClipContent(
 		generationConfig: {
 			response_mime_type: "application/json",
 			temperature: 0.4,
+			...(input.options?.maxOutputTokens !== undefined
+				? { maxOutputTokens: input.options.maxOutputTokens }
+				: {}),
+			...(input.options?.thinkingBudget !== undefined
+				? { thinkingConfig: { thinkingBudget: input.options.thinkingBudget } }
+				: {}),
 		},
 	};
 
@@ -72,7 +88,7 @@ export async function generateClipContent(
 				"x-goog-api-key": apiKey,
 			},
 			body: JSON.stringify(body),
-			signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+			signal: AbortSignal.timeout(input.options?.timeoutMs ?? REQUEST_TIMEOUT_MS),
 		});
 		const elapsedMs = Date.now() - startedAt;
 
