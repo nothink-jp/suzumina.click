@@ -21,6 +21,14 @@ describe("chunkIndexForTime / maxChunkIndex", () => {
 		expect(chunkIndexForTime(-5)).toBe(0);
 	});
 
+	it("動画長を渡すと最終チャンクへクランプする（AIレビュー対応: 動画長ちょうどの再生位置）", () => {
+		// 動画長が600の倍数ぴったりのとき、素の floor は存在しないチャンクを指す
+		expect(chunkIndexForTime(1200, 1200)).toBe(1);
+		expect(chunkIndexForTime(600, 600)).toBe(0);
+		// 通常位置はクランプの影響を受けない
+		expect(chunkIndexForTime(650, 1200)).toBe(1);
+	});
+
 	it("動画長から最終チャンク番号を返す", () => {
 		expect(maxChunkIndex(600)).toBe(0);
 		expect(maxChunkIndex(601)).toBe(1);

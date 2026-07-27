@@ -26,7 +26,10 @@ export interface VideoTranscriptState {
  * チャンク（10分）単位でオンデマンド取得する。生成初回は約30秒かかるため
  * isLoading を進捗表示に使う。失敗しても既存フローに影響しない（error 表示のみ）。
  */
-export function useVideoTranscript(videoId: string): VideoTranscriptState {
+export function useVideoTranscript(
+	videoId: string,
+	videoDurationSeconds: number,
+): VideoTranscriptState {
 	const [chunks, setChunks] = useState<Map<number, TranscriptUtterance[]>>(new Map());
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -35,7 +38,8 @@ export function useVideoTranscript(videoId: string): VideoTranscriptState {
 
 	const loadChunkAt = useCallback(
 		(timeSeconds: number) => {
-			const chunkIndex = chunkIndexForTime(timeSeconds);
+			// 再生位置がちょうど動画長のとき存在しないチャンクを要求しないよう最終チャンクへクランプ
+			const chunkIndex = chunkIndexForTime(timeSeconds, videoDurationSeconds);
 			if (chunks.has(chunkIndex) || inFlightRef.current.has(chunkIndex)) {
 				return;
 			}
@@ -62,7 +66,7 @@ export function useVideoTranscript(videoId: string): VideoTranscriptState {
 					setIsLoading(inFlightRef.current.size > 0);
 				});
 		},
-		[videoId, chunks],
+		[videoId, videoDurationSeconds, chunks],
 	);
 
 	const utterances = useMemo(() => {
@@ -90,8 +94,8 @@ export function useVideoTranscript(videoId: string): VideoTranscriptState {
 	}, [chunks]);
 
 	const isLoadedAt = useCallback(
-		(timeSeconds: number) => chunks.has(chunkIndexForTime(timeSeconds)),
-		[chunks],
+		(timeSeconds: number) => chunks.has(chunkIndexForTime(timeSeconds, videoDurationSeconds)),
+		[chunks, videoDurationSeconds],
 	);
 
 	return { utterances, loadedRanges, isLoading, error, loadChunkAt, isLoadedAt };

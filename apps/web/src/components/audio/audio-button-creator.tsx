@@ -103,7 +103,7 @@ export function AudioButtonCreator({
 	const [draftMarkList, setDraftMarkList] = useState<number[]>(() => draftMarks ?? []);
 
 	// 発話文字起こし（SPR-292）。オンデマンド読み込み＝開いただけでは Gemini を呼ばない
-	const transcript = useVideoTranscript(videoId);
+	const transcript = useVideoTranscript(videoId, youtubeManager.videoDuration || videoDuration);
 
 	// 次の下書きへフォームとプレイヤーを進める（遷移なし＝プレイヤー維持が連続仕上げの本体）
 	const { setStartTime, setEndTime } = timeAdjustment;

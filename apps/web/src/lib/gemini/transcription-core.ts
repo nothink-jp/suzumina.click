@@ -26,15 +26,23 @@ export const SNAP_PADDING_AFTER_SECONDS = 0.35;
 
 const roundTenth = (value: number) => Math.round(value * 10) / 10;
 
-/** 指定秒を含むチャンク番号 */
-export function chunkIndexForTime(timeSeconds: number): number {
-	return Math.max(0, Math.floor(timeSeconds / CHUNK_SECONDS));
-}
-
 /** 動画に存在する最後のチャンク番号 */
 export function maxChunkIndex(videoDurationSeconds: number): number {
 	if (videoDurationSeconds <= 0) return 0;
 	return Math.floor((videoDurationSeconds - 1) / CHUNK_SECONDS);
+}
+
+/**
+ * 指定秒を含むチャンク番号。
+ * 動画長を渡すと最終チャンクへクランプする（再生位置がちょうど動画長のとき、
+ * floor(duration/600) が存在しないチャンクを指してしまう境界のズレ対策）
+ */
+export function chunkIndexForTime(timeSeconds: number, videoDurationSeconds?: number): number {
+	const index = Math.max(0, Math.floor(timeSeconds / CHUNK_SECONDS));
+	if (videoDurationSeconds !== undefined) {
+		return Math.min(index, maxChunkIndex(videoDurationSeconds));
+	}
+	return index;
 }
 
 /** チャンクの担当範囲と生成窓（オーバーラップ込み・動画長でクランプ） */
