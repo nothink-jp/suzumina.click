@@ -71,6 +71,12 @@ describe("ClipExploreLane", () => {
 		expect(screen.getAllByTestId("explore-made-mark")).toHaveLength(2);
 	});
 
+	it("セリフ検索ヒットマークが描画される（重複排除つき・SPR-293）", () => {
+		render(<ClipExploreLane {...defaultProps} searchHitMarks={[300, 300, 4993.6]} />);
+
+		expect(screen.getAllByTestId("explore-search-hit")).toHaveLength(2);
+	});
+
 	it("マーク未指定でも描画できる（未ログイン・編集画面）", () => {
 		render(
 			<ClipExploreLane

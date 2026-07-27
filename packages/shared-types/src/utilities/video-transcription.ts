@@ -1,7 +1,8 @@
 /**
- * 動画の発話単位文字起こし（SPR-292）の純粋ロジック。
- * Gemini API 呼び出し本体は client.ts。ここはチャンク計算・プロンプト・応答検証のみ（テスト対象）。
- * 設計パラメータ（10分チャンク・オーバーラップ・思考上限）の根拠は SPR-291 スパイク実測。
+ * 動画の発話単位文字起こし（SPR-292/293）の純粋ロジック。
+ * web（オンデマンド取得）と functions（バッチ生成）が同じチャンク割り・プロンプト・
+ * 応答検証を使うため shared-types に置く（正本の一元化）。Gemini API 呼び出し本体は
+ * 各アプリ側のクライアント。設計パラメータの根拠は SPR-291 スパイク実測。
  */
 
 /** 発話1件（時刻は動画先頭からの絶対秒） */
@@ -130,6 +131,18 @@ export function parseTranscriptionResponse(
 	}
 	utterances.sort((a, b) => a.start - b.start);
 	return utterances;
+}
+
+/**
+ * セリフ検索用の正規化（SPR-293）。
+ * 叫び・感嘆の音写は揺れる（例: ベェ→たー、SPR-291 実測）ため完全一致は狙わず、
+ * カタカナ→ひらがな・空白/記号除去・小文字化の部分一致で再現率を上げる
+ */
+export function normalizeForTranscriptSearch(text: string): string {
+	return text
+		.toLowerCase()
+		.replace(/[ァ-ヶ]/g, (char) => String.fromCharCode(char.charCodeAt(0) - 0x60))
+		.replace(/[\s、。・！!？?〜~ー…♪]/g, "");
 }
 
 /** 発話スナップの区間（パディング込み・動画長でクランプ） */

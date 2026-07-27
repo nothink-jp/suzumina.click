@@ -1,5 +1,6 @@
 "use client";
 
+import type { TranscriptUtterance } from "@suzumina.click/shared-types";
 import { formatTimestamp } from "@suzumina.click/shared-types";
 import { TimeDisplay } from "@suzumina.click/ui/components/custom/time-display";
 import { ValidationMessages } from "@suzumina.click/ui/components/custom/validation-message";
@@ -8,7 +9,6 @@ import { Checkbox } from "@suzumina.click/ui/components/ui/checkbox";
 import { Input } from "@suzumina.click/ui/components/ui/input";
 import { Clock, MousePointer, Play, Square } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import type { TranscriptUtterance } from "@/lib/gemini/transcription-core";
 import { matchShortcutKey } from "@/lib/keyboard-shortcut";
 import { ClipExploreLane } from "./clip-explore-lane";
 import { ClipTrimLane } from "./clip-trim-lane";
@@ -139,6 +139,8 @@ interface TimeControlPanelProps {
 	// 発話行（SPR-292）。省略時は従来レイアウト（編集画面など）
 	utterances?: TranscriptUtterance[];
 	onUtteranceClick?: (utterance: TranscriptUtterance, extend: boolean) => void;
+	// セリフ検索ヒットの探索レーン表示（SPR-293）
+	searchHitMarks?: number[];
 
 	// UI状態
 	isCreating: boolean;
@@ -235,6 +237,7 @@ export function TimeControlPanel({
 	draftMarks = [],
 	utterances,
 	onUtteranceClick,
+	searchHitMarks,
 	isCreating,
 }: TimeControlPanelProps) {
 	const prerollId = useId();
@@ -355,6 +358,7 @@ export function TimeControlPanel({
 					windowEnd={viewCenter + halfWindow}
 					madeMarks={madeMarks}
 					draftMarks={draftMarks}
+					searchHitMarks={searchHitMarks}
 					disabled={isCreating}
 					onJump={handleExploreJump}
 				/>

@@ -11,7 +11,9 @@ vi.mock("@/lib/logger", () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() })
 const mockGetFirestore = vi.fn();
 vi.mock("@/lib/firestore", () => ({ getFirestore: mockGetFirestore }));
 
-const { getVideoTranscriptChunk } = await import("../video-transcription");
+const { getCachedTranscriptChunks, getVideoTranscriptChunk } = await import(
+	"../video-transcription"
+);
 
 const VALID_INPUT = { videoId: "97UnRtIlMc0", chunkIndex: 1 };
 
@@ -26,10 +28,12 @@ function setupFirestore({
 	cachedChunk = null,
 	videoDuration = "PT2H23M59S",
 	videoExists = true,
+	allChunks = [],
 }: {
 	cachedChunk?: Record<string, unknown> | null;
 	videoDuration?: string;
 	videoExists?: boolean;
+	allChunks?: Array<Record<string, unknown>>;
 } = {}) {
 	const mockSet = vi.fn(async (_doc: Record<string, unknown>) => undefined);
 	const chunkDoc = {
@@ -39,12 +43,18 @@ function setupFirestore({
 		})),
 		set: mockSet,
 	};
+	const chunkCollectionRef = {
+		doc: vi.fn(() => chunkDoc),
+		get: vi.fn(async () => ({
+			docs: allChunks.map((chunk) => ({ data: () => chunk })),
+		})),
+	};
 	const videoDocRef = {
 		get: vi.fn(async () => ({
 			exists: videoExists,
 			data: () => ({ duration: videoDuration }),
 		})),
-		collection: vi.fn(() => ({ doc: vi.fn(() => chunkDoc) })),
+		collection: vi.fn(() => chunkCollectionRef),
 	};
 	mockGetFirestore.mockReturnValue({
 		collection: vi.fn(() => ({ doc: vi.fn(() => videoDocRef) })),
@@ -155,5 +165,54 @@ describe("getVideoTranscriptChunk (SPR-292)", () => {
 		mockGenerateClipContent.mockResolvedValue({ success: true, text: "not json" });
 		expect((await getVideoTranscriptChunk(VALID_INPUT)).success).toBe(false);
 		expect(mockSet).not.toHaveBeenCalled();
+	});
+});
+
+describe("getCachedTranscriptChunks (SPR-293)", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		mockGetCurrentUser.mockResolvedValue({ discordId: "u1", isActive: true });
+	});
+
+	it("キャッシュ済みチャンクを chunkIndex 昇順で返す（生成はしない）", async () => {
+		setupFirestore({
+			allChunks: [
+				{ chunkIndex: 2, utterances: [{ start: 1201, end: 1203, text: "後半" }] },
+				{ chunkIndex: 0, utterances: [{ start: 1, end: 3, text: "冒頭" }] },
+			],
+		});
+
+		const result = await getCachedTranscriptChunks({ videoId: "97UnRtIlMc0" });
+
+		expect(result).toEqual({
+			success: true,
+			data: {
+				chunks: [
+					{ chunkIndex: 0, utterances: [{ start: 1, end: 3, text: "冒頭" }] },
+					{ chunkIndex: 2, utterances: [{ start: 1201, end: 1203, text: "後半" }] },
+				],
+			},
+		});
+		expect(mockGenerateClipContent).not.toHaveBeenCalled();
+	});
+
+	it("未ログイン・無効ユーザー・不正な videoId は弾く", async () => {
+		setupFirestore();
+		mockGetCurrentUser.mockResolvedValue(null);
+		expect((await getCachedTranscriptChunks({ videoId: "97UnRtIlMc0" })).success).toBe(false);
+
+		mockGetCurrentUser.mockResolvedValue({ discordId: "u1", isActive: false });
+		expect((await getCachedTranscriptChunks({ videoId: "97UnRtIlMc0" })).success).toBe(false);
+
+		mockGetCurrentUser.mockResolvedValue({ discordId: "u1", isActive: true });
+		expect((await getCachedTranscriptChunks({ videoId: "bad id!" })).success).toBe(false);
+	});
+
+	it("キャッシュが空でも成功として空配列を返す", async () => {
+		setupFirestore({ allChunks: [] });
+
+		const result = await getCachedTranscriptChunks({ videoId: "97UnRtIlMc0" });
+
+		expect(result).toEqual({ success: true, data: { chunks: [] } });
 	});
 });

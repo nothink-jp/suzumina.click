@@ -1,12 +1,12 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
-import { getVideoTranscriptChunk } from "@/actions/video-transcription";
 import {
 	CHUNK_SECONDS,
 	chunkIndexForTime,
 	type TranscriptUtterance,
-} from "@/lib/gemini/transcription-core";
+} from "@suzumina.click/shared-types";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { getCachedTranscriptChunks, getVideoTranscriptChunk } from "@/actions/video-transcription";
 
 export interface VideoTranscriptState {
 	/** 読み込み済み発話（チャンク横断・start 昇順） */
@@ -19,6 +19,10 @@ export interface VideoTranscriptState {
 	loadChunkAt: (timeSeconds: number) => void;
 	/** 指定秒が読み込み済みか */
 	isLoadedAt: (timeSeconds: number) => boolean;
+	/** キャッシュ済み全チャンクを読み込む（生成なし・セリフ検索用・SPR-293） */
+	loadAllCached: () => void;
+	/** loadAllCached 実行済みか（検索の初回トリガ判定用） */
+	hasLoadedAllCached: boolean;
 }
 
 /**
@@ -69,6 +73,37 @@ export function useVideoTranscript(
 		[videoId, videoDurationSeconds, chunks],
 	);
 
+	// キャッシュ済み全チャンクの一括読み込み（生成なし＝doc 読み取りのみで高速）
+	const [hasLoadedAllCached, setHasLoadedAllCached] = useState(false);
+	const loadAllCachedInFlightRef = useRef(false);
+	const loadAllCached = useCallback(() => {
+		if (hasLoadedAllCached || loadAllCachedInFlightRef.current) {
+			return;
+		}
+		loadAllCachedInFlightRef.current = true;
+		void getCachedTranscriptChunks({ videoId })
+			.then((result) => {
+				if (result.success) {
+					setChunks((prev) => {
+						const next = new Map(prev);
+						for (const chunk of result.data.chunks) {
+							next.set(chunk.chunkIndex, chunk.utterances);
+						}
+						return next;
+					});
+					setHasLoadedAllCached(true);
+				} else {
+					setError(result.error);
+				}
+			})
+			.catch(() => {
+				setError("文字起こしの取得に失敗しました");
+			})
+			.finally(() => {
+				loadAllCachedInFlightRef.current = false;
+			});
+	}, [videoId, hasLoadedAllCached]);
+
 	const utterances = useMemo(() => {
 		const merged: TranscriptUtterance[] = [];
 		for (const list of chunks.values()) {
@@ -98,5 +133,14 @@ export function useVideoTranscript(
 		[chunks, videoDurationSeconds],
 	);
 
-	return { utterances, loadedRanges, isLoading, error, loadChunkAt, isLoadedAt };
+	return {
+		utterances,
+		loadedRanges,
+		isLoading,
+		error,
+		loadChunkAt,
+		isLoadedAt,
+		loadAllCached,
+		hasLoadedAllCached,
+	};
 }

@@ -1,8 +1,8 @@
 "use client";
 
+import type { TranscriptUtterance } from "@suzumina.click/shared-types";
 import { formatTimestamp } from "@suzumina.click/shared-types";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { TranscriptUtterance } from "@/lib/gemini/transcription-core";
 import { formatSeconds } from "@/utils/format-seconds";
 
 /** 切り抜き長の制約（バリデーションの正本は use-audio-button-validation。ドラッグ時の先行クランプ用） */

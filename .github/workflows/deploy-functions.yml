@@ -252,7 +252,29 @@ jobs:
             --ingress-settings internal-only \
             --quiet &
           deploy_pids["checkDataIntegrity"]=$!
-          
+
+          # transcribeVideoBacklog（SPR-293）
+          # 1実行 = 最大12チャンク×約30秒の直列 Gemini 呼び出し。CPU はほぼ待ちだが
+          # timeout は上限の 540s を取り、処理側の 420s デッドラインで安全に切り上げる。
+          # GEMINI_API_KEY は --set-secrets で明示宣言する（暗黙の secret 持ち越しに依存しない）
+          gcloud functions deploy transcribeVideoBacklog \
+            --gen2 \
+            --source ${{ env.DEPLOYMENT_SOURCE }} \
+            --runtime nodejs24 \
+            --entry-point transcribeVideoBacklog \
+            --trigger-topic transcribe-video-backlog-trigger \
+            --region asia-northeast1 \
+            --project ${{ secrets.GCP_PROJECT_ID }} \
+            --set-env-vars NODE_ENV=production,FUNCTION_SIGNATURE_TYPE=cloudevent,FUNCTION_TARGET=transcribeVideoBacklog \
+            --set-secrets GEMINI_API_KEY=GEMINI_API_KEY:latest \
+            --memory 512Mi \
+            --timeout 540s \
+            --max-instances 1 \
+            --service-account transcribe-video-backlog-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
+            --ingress-settings internal-only \
+            --quiet &
+          deploy_pids["transcribeVideoBacklog"]=$!
+
           # 全デプロイの完了を待つ
           failed=false
           for func_name in "${!deploy_pids[@]}"; do

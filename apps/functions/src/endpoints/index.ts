@@ -15,6 +15,7 @@ import type { MessagePublishedData } from "../shared/pubsub-utils";
 // 各モジュールから関数をインポート（統合アーキテクチャ）
 import { checkDataIntegrity } from "./data-integrity/check-data-integrity";
 import { fetchDLsiteUnifiedData } from "./dlsite/fetch-dlsite-unified-data";
+import { transcribeVideoBacklog } from "./transcription/transcribe-video-backlog";
 import { fetchYouTubeVideos } from "./youtube/fetch-youtube-videos";
 
 /**
@@ -50,6 +51,7 @@ initializeApplication();
 functions.cloudEvent<MessagePublishedData>("fetchYouTubeVideos", fetchYouTubeVideos);
 functions.cloudEvent<MessagePublishedData>("fetchDLsiteUnifiedData", fetchDLsiteUnifiedData);
 functions.cloudEvent<unknown>("checkDataIntegrity", checkDataIntegrity);
+functions.cloudEvent<unknown>("transcribeVideoBacklog", transcribeVideoBacklog);
 
 /**
  * プロセス終了処理

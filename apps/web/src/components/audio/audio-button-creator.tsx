@@ -1,6 +1,7 @@
 "use client";
 
 import type { AudioButtonDraft, CreateAudioButtonInput } from "@suzumina.click/shared-types";
+import { snapRangeForUtterance, type TranscriptUtterance } from "@suzumina.click/shared-types";
 import { YouTubePlayer } from "@suzumina.click/ui/components/custom/youtube-player";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { ExternalLink, SkipForward } from "lucide-react";
@@ -12,7 +13,6 @@ import { useAudioButtonEditor } from "@/hooks/use-audio-button-editor";
 import { useVideoTranscript } from "@/hooks/use-video-transcript";
 import { trackCreateError, trackCreateStart, trackCreateSuccess } from "@/lib/analytics/events";
 import { useSession } from "@/lib/auth/client";
-import { snapRangeForUtterance, type TranscriptUtterance } from "@/lib/gemini/transcription-core";
 import { formatSeconds } from "@/utils/format-seconds";
 import { BasicInfoPanel } from "./basic-info-panel";
 import { CreateButtonLimit } from "./create-button-limit";
@@ -104,6 +104,8 @@ export function AudioButtonCreator({
 
 	// 発話文字起こし（SPR-292）。オンデマンド読み込み＝開いただけでは Gemini を呼ばない
 	const transcript = useVideoTranscript(videoId, youtubeManager.videoDuration || videoDuration);
+	// セリフ検索のヒット位置（SPR-293）。リストパネルが検索するたび探索レーンへ反映する
+	const [searchHits, setSearchHits] = useState<number[]>([]);
 
 	// 次の下書きへフォームとプレイヤーを進める（遷移なし＝プレイヤー維持が連続仕上げの本体）
 	const { setStartTime, setEndTime } = timeAdjustment;
@@ -342,6 +344,7 @@ export function AudioButtonCreator({
 									draftMarks={draftMarkList}
 									utterances={transcript.utterances}
 									onUtteranceClick={handleUtteranceSelect}
+									searchHitMarks={searchHits}
 									isCreating={isCreating}
 								/>
 							</div>
@@ -408,6 +411,9 @@ export function AudioButtonCreator({
 								disabled={isCreating}
 								onLoadAt={transcript.loadChunkAt}
 								onSelect={handleUtteranceSelect}
+								onLoadAllCached={transcript.loadAllCached}
+								hasLoadedAllCached={transcript.hasLoadedAllCached}
+								onSearchHitsChange={setSearchHits}
 							/>
 
 							<BasicInfoPanel
