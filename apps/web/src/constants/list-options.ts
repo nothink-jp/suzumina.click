@@ -28,7 +28,11 @@ export const AUDIO_SORT_OPTIONS = [
 	{ value: "mostPlayed", label: "再生回数順" },
 ];
 
-export const VIDEO_SORT_OPTIONS = [...BASIC_SORT_OPTIONS];
+export const VIDEO_SORT_OPTIONS = [
+	...BASIC_SORT_OPTIONS,
+	// 拾える配信（導線再設計 段3・S4）: ボタンが少ない順 → 同数なら新しい順
+	{ value: "least_buttons", label: "ボタンが少ない順" },
+];
 
 // グリッドカラム設定
 export const GRID_COLUMNS_4 = {

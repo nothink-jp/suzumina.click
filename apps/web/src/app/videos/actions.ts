@@ -275,13 +275,16 @@ async function getVideosWithFiltering(
 
 	// 年代フィルタがある場合、全データを取得する必要がある
 	// （フィルタリング後のページネーションを正確に行うため）
+	// least_buttons（拾える配信・導線再設計 段3）は audioButtonCount の in-memory ソートが
+	// 必要なため全件取得側に倒す（複合インデックスは足さない＝SPR-213 の既定に従う）
 	if (
 		params.year ||
 		params.search ||
 		params.playlistTags?.length ||
 		params.userTags?.length ||
 		params.categoryNames?.length ||
-		params.videoType
+		params.videoType ||
+		sort === "least_buttons"
 	) {
 		// フィルタがある場合は全件取得
 		const snapshot = await query.get();
@@ -294,6 +297,15 @@ async function getVideosWithFiltering(
 
 		// フィルタリング処理
 		const filteredVideos = filterVideos(allVideos, params);
+
+		// 拾える配信順: ボタンが少ない順 → 同数なら新しい順（まだ誰も拾っていない配信を先頭へ）
+		if (sort === "least_buttons") {
+			filteredVideos.sort(
+				(a, b) =>
+					(a.audioButtonCount ?? 0) - (b.audioButtonCount ?? 0) ||
+					b.publishedAt.localeCompare(a.publishedAt),
+			);
+		}
 
 		// ページネーション
 		const startOffset = (page - 1) * limit;

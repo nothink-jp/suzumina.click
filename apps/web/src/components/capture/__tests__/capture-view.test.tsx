@@ -184,10 +184,15 @@ describe("CaptureView の対象動画（配信・アーカイブ動画の両対�
 		expect(screen.getByText(/埋め込みが制限されている/)).toBeInTheDocument();
 	});
 
-	it("動画未選択は選択状態として表示する（配信が無いことをエラー扱いしない）", () => {
+	it("動画未選択は選択状態として表示し、拾える配信タブへ誘導する（段3）", () => {
 		renderView({ video: null });
 
 		expect(screen.getByText("マーキングする動画を選ぶ")).toBeInTheDocument();
+		// 「選ぶ」は /videos の仕事＝主導線は拾える配信タブのプリセット URL
+		expect(screen.getByRole("link", { name: /拾える配信から選ぶ/ })).toHaveAttribute(
+			"href",
+			"/videos?videoType=live_archive&sort=least_buttons",
+		);
 		expect(screen.getByRole("link", { name: /動画一覧から選ぶ/ })).toHaveAttribute(
 			"href",
 			"/videos",

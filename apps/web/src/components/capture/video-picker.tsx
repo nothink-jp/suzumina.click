@@ -1,50 +1,40 @@
 "use client";
 
 import { Button } from "@suzumina.click/ui/components/ui/button";
-import { Input } from "@suzumina.click/ui/components/ui/input";
+import { Bookmark } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
 
 interface VideoPickerProps {
 	/** ?v= で指定されたが videos に無かった動画ID（理由の提示にだけ使う） */
 	notFoundVideoId?: string;
-	onSubmit: (rawInput: string) => void;
 }
 
 /**
- * マーキング対象の動画を選ぶ。
- * 「配信が見つからないエラー」ではなく選択状態として扱う（動画視聴マーキングでは未選択が常態）。
+ * マーキング対象の動画が未選択のときの案内（導線再設計 段3で縮退）。
+ * 「選ぶ」は動画一覧（拾える配信タブ）の仕事になったため、この画面は行き先を指すだけ。
+ * URL・ID の直接指定も /videos 側（OpenByVideoId）へ移設済み。
  */
-export function VideoPicker({ notFoundVideoId, onSubmit }: VideoPickerProps) {
-	const [manualInput, setManualInput] = useState("");
-
+export function VideoPicker({ notFoundVideoId }: VideoPickerProps) {
 	return (
-		<div className="border rounded-lg p-6 space-y-4">
-			<div className="text-center space-y-1">
+		<div className="border rounded-lg p-6 space-y-4 text-center">
+			<div className="space-y-1">
 				<p className="font-medium">マーキングする動画を選ぶ</p>
 				<p className="text-sm text-muted-foreground">
 					{notFoundVideoId
 						? `指定された動画（${notFoundVideoId}）が見つかりません。まだ取り込まれていない可能性があります。`
-						: "配信中・配信予定があれば自動で選ばれます。動画一覧から選ぶか、URL / ID を直接指定してください。"}
+						: "配信中・配信予定があれば自動で選ばれます。いまはありません。"}
 				</p>
 			</div>
-			<div className="flex gap-2 max-w-md mx-auto">
-				<Input
-					value={manualInput}
-					onChange={(e) => setManualInput(e.target.value)}
-					placeholder="動画の URL または ID を直接指定"
-					onKeyDown={(e) => {
-						if (e.key === "Enter") {
-							onSubmit(manualInput);
-						}
-					}}
+			<div className="flex flex-wrap justify-center gap-2">
+				<Button
+					render={
+						<Link href="/videos?videoType=live_archive&sort=least_buttons">
+							<Bookmark className="h-4 w-4 mr-2" />
+							拾える配信から選ぶ
+						</Link>
+					}
 				/>
-				<Button onClick={() => onSubmit(manualInput)} variant="outline">
-					表示
-				</Button>
-			</div>
-			<div className="text-center">
-				<Button size="sm" variant="ghost" render={<Link href="/videos">動画一覧から選ぶ</Link>} />
+				<Button variant="outline" render={<Link href="/videos">動画一覧から選ぶ</Link>} />
 			</div>
 		</div>
 	);

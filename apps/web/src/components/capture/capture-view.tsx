@@ -3,7 +3,6 @@
 import type { AudioButtonDraft, VideoPlainObject } from "@suzumina.click/shared-types";
 import type { YTPlayer } from "@suzumina.click/ui/components/custom/youtube-types";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef } from "react";
 import { useCaptureDrafts } from "@/hooks/use-capture-drafts";
 import { matchShortcutKey } from "@/lib/keyboard-shortcut";
@@ -28,17 +27,6 @@ interface CaptureViewProps {
 	madeMarks: number[];
 	/** 動画の長さ（秒）。取得できない場合は 0 = レーン非表示 */
 	videoDurationSeconds: number;
-}
-
-const VIDEO_ID_PATTERN = /(?:v=|youtu\.be\/|\/live\/|\/embed\/|\/shorts\/)([A-Za-z0-9_-]{11})/;
-
-function parseVideoIdInput(value: string): string | null {
-	const trimmed = value.trim();
-	const match = trimmed.match(VIDEO_ID_PATTERN);
-	if (match?.[1]) {
-		return match[1];
-	}
-	return /^[A-Za-z0-9_-]{11}$/.test(trimmed) ? trimmed : null;
 }
 
 /** まとめて仕上げるの行き先（先頭 = 推奨開始秒が最小の下書き。連続仕上げ SPR-266 の入口） */
@@ -73,7 +61,6 @@ export function CaptureView({
 	madeMarks,
 	videoDurationSeconds,
 }: CaptureViewProps) {
-	const router = useRouter();
 	const playerRef = useRef<YTPlayer | null>(null);
 
 	// モード導出の正本は resolveCaptureVideoMode（/drafts 側の仕上げ可否判定と同じ関数を使う）
@@ -94,7 +81,6 @@ export function CaptureView({
 		justMarked,
 		error,
 		notice,
-		setError,
 		mark,
 		adjust,
 		remove,
@@ -113,24 +99,11 @@ export function CaptureView({
 		return () => document.removeEventListener("keydown", onKeyDown);
 	}, [mark]);
 
-	const handleManualSubmit = useCallback(
-		(rawInput: string) => {
-			const videoId = parseVideoIdInput(rawInput);
-			if (!videoId) {
-				setError("動画の URL または ID（11文字）を入力してください");
-				return;
-			}
-			setError("");
-			router.push(`/watch?v=${videoId}`);
-		},
-		[router, setError],
-	);
-
 	const handleSeek = useCallback((seconds: number) => {
 		playerRef.current?.seekTo?.(seconds, true);
 	}, []);
 
-	// 動画未選択 = 選択状態（Stage D で「拾える配信」に置き換わる面）
+	// 動画未選択 = 選択状態。「選ぶ」は /videos（拾える配信タブ）の仕事なので行き先を指すだけ（段3）
 	if (!video) {
 		return (
 			<div className="container mx-auto px-4 py-6 max-w-4xl space-y-6">
@@ -141,12 +114,7 @@ export function CaptureView({
 						キー）。下書きはあとからまとめて音声ボタンに仕上げられます。
 					</p>
 				</div>
-				{error && (
-					<div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-						<p className="text-sm text-destructive">{error}</p>
-					</div>
-				)}
-				<VideoPicker notFoundVideoId={notFoundVideoId} onSubmit={handleManualSubmit} />
+				<VideoPicker notFoundVideoId={notFoundVideoId} />
 				{otherDraftsSummary && <OtherDraftsNote summary={otherDraftsSummary} />}
 			</div>
 		);
