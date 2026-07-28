@@ -10,7 +10,7 @@ describe("CreationActionBar", () => {
 		endTime: 75.5,
 		disabledReason: null,
 		isCreating: false,
-		showContinue: true,
+		continueLabel: "作成して次を切り抜く",
 		onCancel: vi.fn(),
 		onCreate: vi.fn(),
 		onCreateAndContinue: vi.fn(),
@@ -53,9 +53,12 @@ describe("CreationActionBar", () => {
 		expect(screen.getByRole("button", { name: /音声ボタンを作成/ })).toBeEnabled();
 	});
 
-	it("showContinue=false では「作成して次を切り抜く」を出さない", () => {
-		render(<CreationActionBar {...defaultProps} showContinue={false} />);
+	it("continueLabel で副アクションの文字だけがモードに応じて変わる（段4）", () => {
+		render(<CreationActionBar {...defaultProps} continueLabel="作成して次の下書きへ（残り6）" />);
 
+		expect(
+			screen.getByRole("button", { name: "作成して次の下書きへ（残り6）" }),
+		).toBeInTheDocument();
 		expect(screen.queryByRole("button", { name: "作成して次を切り抜く" })).not.toBeInTheDocument();
 	});
 

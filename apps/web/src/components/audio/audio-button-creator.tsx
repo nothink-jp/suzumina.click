@@ -2,8 +2,7 @@
 
 import type { AudioButtonDraft, CreateAudioButtonInput } from "@suzumina.click/shared-types";
 import { YouTubePlayer } from "@suzumina.click/ui/components/custom/youtube-player";
-import { Button } from "@suzumina.click/ui/components/ui/button";
-import { ExternalLink, SkipForward } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { deleteButtonDraft } from "@/actions/button-drafts";
@@ -17,6 +16,7 @@ import { formatSeconds } from "@/utils/format-seconds";
 import { BasicInfoPanel } from "./basic-info-panel";
 import { CreateButtonLimit } from "./create-button-limit";
 import { CreationActionBar } from "./creation-action-bar";
+import { FinishQueueBand } from "./finish-queue-band";
 import { MetaSuggestionPanel } from "./meta-suggestion-panel";
 import { TimeControlPanel } from "./time-control-panel";
 import { UsageGuide } from "./usage-guide";
@@ -185,22 +185,24 @@ export function AudioButtonCreator({
 		advanceToDraft(next);
 	}, [remainingDrafts, advanceToDraft]);
 
-	// 作成成功後の行き先を1箇所に集約:
-	// 1) 下書きキューが残っていれば次へ（SPR-266） 2) 「作成して次を切り抜く」なら残留（SPR-290）
-	// 3) それ以外は詳細ページへフルロード遷移（SPR-252。router.push だと /buttons ツリー内の
-	//    soft nav が @modal にインターセプトされフォームの上にクイックビューが重なる。
-	//    遷移完了まで「作成中…」を維持し、フォームを空白化しない＝ちらつき防止）
+	// 作成成功後の行き先を1箇所に集約（導線再設計 段4で「続けるかは毎回ボタンで選ぶ」に変更）:
+	// 1) 「作成して次の下書きへ」= キューの次へ残留（SPR-266）
+	// 2) 「作成して次を切り抜く」（キュー無し）= 同じ画面に残留（SPR-290）
+	// 3) 主ボタン「音声ボタンを作成」= 常に詳細ページへフルロード遷移（SPR-252。router.push だと
+	//    /buttons ツリー内の soft nav が @modal にインターセプトされフォームの上にクイックビューが
+	//    重なる。遷移完了まで「作成中…」を維持し、フォームを空白化しない＝ちらつき防止）。
+	//    キューが残っていても主ボタンで抜けられる＝続行はユーザーの選択であって自動ではない
 	const finishAfterCreate = useCallback(
 		(createdId: string, createdText: string, continueAfter: boolean) => {
-			const [next, ...rest] = remainingDrafts;
-			if (next) {
-				setLastCreated({ id: createdId, buttonText: createdText });
-				setRemainingDrafts(rest);
-				advanceToDraft(next);
-				setIsCreating(false);
-				return;
-			}
 			if (continueAfter) {
+				const [next, ...rest] = remainingDrafts;
+				if (next) {
+					setLastCreated({ id: createdId, buttonText: createdText });
+					setRemainingDrafts(rest);
+					advanceToDraft(next);
+					setIsCreating(false);
+					return;
+				}
 				// 遷移せず同じ画面で次の切り抜きへ。時刻とプレイヤーは維持し、テキストだけ空にする
 				// （次の切り抜き位置は探索レーンやシークで選ぶ想定）。
 				// 下書き起点で来ていた場合もここで下書きは消化済み＝以降の作成は下書き由来ではない。
@@ -302,6 +304,18 @@ export function AudioButtonCreator({
 					</span>
 				</div>
 
+				{/* 連続モードのキュー帯（0の帯・導線再設計 段4）。マーク棚から来たときだけ出る */}
+				{activeDraftId && (videoDrafts?.length ?? 0) > 0 && (
+					<FinishQueueBand
+						queue={videoDrafts ?? []}
+						activeDraftId={activeDraftId}
+						remainingDrafts={remainingDrafts}
+						madeCount={madeMarks.length}
+						isCreating={isCreating}
+						onSkip={handleSkip}
+					/>
+				)}
+
 				{error && (
 					<div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
 						<p className="text-sm text-destructive">{error}</p>
@@ -368,35 +382,7 @@ export function AudioButtonCreator({
 								</div>
 							)}
 
-							{activeDraftId && (videoDrafts?.length ?? 0) > 1 && (
-								<div className="bg-card border rounded-lg p-4 shadow-sm text-sm space-y-2">
-									<div className="flex items-center justify-between">
-										<span className="font-medium">仕上げキュー</span>
-										<span className="text-muted-foreground">残り {remainingDrafts.length} 件</span>
-									</div>
-									{remainingDrafts[0] ? (
-										<div className="flex items-center justify-between gap-2">
-											<span className="text-muted-foreground">
-												次: {formatSeconds(remainingDrafts[0].suggestedStartTime)} 付近
-											</span>
-											<Button
-												size="sm"
-												variant="ghost"
-												onClick={handleSkip}
-												disabled={isCreating}
-												className="whitespace-nowrap"
-											>
-												<SkipForward className="h-3.5 w-3.5 mr-1" />
-												スキップして次へ
-											</Button>
-										</div>
-									) : (
-										<p className="text-muted-foreground">
-											これが最後の下書きです。作成すると詳細ページへ移動します。
-										</p>
-									)}
-								</div>
-							)}
+							{/* 仕上げキューの表示・スキップはページ上部のキュー帯（FinishQueueBand）に集約（段4） */}
 
 							<UtteranceListPanel
 								utterances={transcript.utterances}
@@ -450,13 +436,19 @@ export function AudioButtonCreator({
 				</div>
 			</div>
 
-			{/* 固定アクションバー（SPR-290）。ラッパーで包むと sticky の可動域が潰れるため直下に置く */}
+			{/* 固定アクションバー（SPR-290）。ラッパーで包むと sticky の可動域が潰れるため直下に置く。
+			    副アクションはボタンを増やさず文字だけモードで変える（段4）:
+			    キューあり=作成して次の下書きへ（残り N）／ キューなし=作成して次を切り抜く */}
 			<CreationActionBar
 				startTime={timeAdjustment.startTime}
 				endTime={timeAdjustment.endTime}
 				disabledReason={disabledReason}
 				isCreating={isCreating}
-				showContinue={remainingDrafts.length === 0}
+				continueLabel={
+					remainingDrafts.length > 0
+						? `作成して次の下書きへ（残り${remainingDrafts.length}）`
+						: "作成して次を切り抜く"
+				}
 				onCancel={() => router.back()}
 				onCreate={() => handleCreate(false)}
 				onCreateAndContinue={() => handleCreate(true)}
