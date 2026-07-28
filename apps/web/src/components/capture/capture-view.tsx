@@ -98,7 +98,7 @@ export function CaptureView({
 				return;
 			}
 			setError("");
-			router.push(`/capture?v=${videoId}`);
+			router.push(`/watch?v=${videoId}`);
 		},
 		[router, setError],
 	);

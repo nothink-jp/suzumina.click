@@ -107,7 +107,7 @@ describe("UserMenu", () => {
 		await user.click(triggerButton);
 
 		const liveLink = screen.getByRole("link", { name: /マーキング/i });
-		expect(liveLink).toHaveAttribute("href", "/capture");
+		expect(liveLink).toHaveAttribute("href", "/watch");
 	});
 
 	async function clickLogout() {

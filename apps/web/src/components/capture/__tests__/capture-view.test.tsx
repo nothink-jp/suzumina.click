@@ -246,6 +246,6 @@ describe("CaptureView の対象動画（配信・アーカイブ動画の両対�
 
 		const resumeLinks = screen.getAllByRole("link", { name: /マークを続ける/ });
 		expect(resumeLinks).toHaveLength(1);
-		expect(resumeLinks[0]).toHaveAttribute("href", "/capture?v=video-aaaaaaa");
+		expect(resumeLinks[0]).toHaveAttribute("href", "/watch?v=video-aaaaaaa");
 	});
 });

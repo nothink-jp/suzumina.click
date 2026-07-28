@@ -52,7 +52,7 @@ function GroupHeader({
 					size="sm"
 					variant="outline"
 					render={
-						<Link href={`/capture?v=${group.videoId}`}>
+						<Link href={`/watch?v=${group.videoId}`}>
 							<Bookmark className="h-3.5 w-3.5 mr-1" />
 							マークを続ける
 						</Link>

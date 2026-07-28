@@ -27,7 +27,7 @@ interface AudioButtonCreatorProps {
 	videoTitle: string;
 	videoDuration?: number;
 	initialStartTime?: number;
-	/** /capture の下書きから開いた場合の下書きID。作成成功時に消化（削除）する（SPR-146） */
+	/** /watch の下書きから開いた場合の下書きID。作成成功時に消化（削除）する（SPR-146） */
 	draftId?: string;
 	/**
 	 * 同一動画の下書きキュー（suggestedStartTime 昇順・現在の下書きを含む）。
@@ -177,7 +177,7 @@ export function AudioButtonCreator({
 		],
 	);
 
-	// スキップ: 現在の下書きは消化せず（/capture から再度仕上げられる）次へ進む
+	// スキップ: 現在の下書きは消化せず（/watch から再度仕上げられる）次へ進む
 	const handleSkip = useCallback(() => {
 		const [next, ...rest] = remainingDrafts;
 		if (!next) return;
@@ -248,7 +248,7 @@ export function AudioButtonCreator({
 					});
 					// 探索レーンへ即時反映（連続作成時に同じ箇所の二重作成を防ぐ）
 					setMadeMarks((prev) => [...prev, input.startTime]);
-					// 下書きから開いた場合は消化する（残った下書きは /capture から手動削除できる）
+					// 下書きから開いた場合は消化する（残った下書きは /watch から手動削除できる）
 					await consumeActiveDraft();
 					finishAfterCreate(result.data.id, input.buttonText, continueAfter);
 					return;

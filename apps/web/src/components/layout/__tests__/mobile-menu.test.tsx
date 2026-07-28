@@ -76,10 +76,10 @@ describe("MobileMenu", () => {
 			expectLink(/ボタン検索/, "/buttons");
 			expectLink(/作品一覧/, "/works");
 
-			// ログイン時セクション（/capture は配信終了後も下書き仕上げに戻れる常設導線）
+			// ログイン時セクション（/watch は配信終了後も下書き仕上げに戻れる常設導線）
 			expectLink(/お気に入り/, "/favorites");
 			expectLink(/マイページ/, "/users/me");
-			expectLink(/マーキング/, "/capture");
+			expectLink(/マーキング/, "/watch");
 			expectLink(/設定/, "/settings");
 
 			expect(screen.getByTestId("auth-button")).toHaveTextContent("ログイン中");

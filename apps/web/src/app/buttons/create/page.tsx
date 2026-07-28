@@ -18,7 +18,7 @@ interface CreateAudioButtonPageProps {
 	searchParams: Promise<{
 		video_id?: string;
 		start_time?: string;
-		/** /capture の下書きから開いた場合に付与。作成成功時にその下書きを消化する（SPR-146） */
+		/** /watch の下書きから開いた場合に付与。作成成功時にその下書きを消化する（SPR-146） */
 		draft_id?: string;
 	}>;
 }

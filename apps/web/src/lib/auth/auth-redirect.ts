@@ -23,7 +23,7 @@ export function isAuthGatedPath(pathname: string): boolean {
 		pathname === "/users/me" ||
 		pathname.startsWith("/users/me/") ||
 		pathname === "/buttons/create" ||
-		pathname === "/capture" ||
+		pathname === "/watch" ||
 		/^\/buttons\/[^/]+\/edit$/.test(pathname)
 	);
 }

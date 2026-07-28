@@ -31,7 +31,7 @@ async function findTargetVideo(manualVideoId?: string): Promise<VideoPlainObject
 	}
 
 	// getVideosList はリポジトリ既定の「全件取得 + in-memory フィルタ」（SPR-213）。videos は数百件規模かつ
-	// /capture はログイン者専用の低頻度ページのため許容。レイテンシが実測で問題になったら専用クエリ + 複合
+	// /watch はログイン者専用の低頻度ページのため許容。レイテンシが実測で問題になったら専用クエリ + 複合
 	// インデックス（terraform 同時追加）を別 Issue で検討する
 	const { items } = await getVideosList({
 		page: 1,
@@ -110,7 +110,7 @@ export default async function CapturePage({ searchParams }: CapturePageProps) {
 	const { v } = await searchParams;
 
 	return (
-		<ProtectedRoute callbackPath={v ? `/capture?v=${encodeURIComponent(v)}` : "/capture"}>
+		<ProtectedRoute callbackPath={v ? `/watch?v=${encodeURIComponent(v)}` : "/watch"}>
 			<CaptureContent manualVideoId={v} />
 		</ProtectedRoute>
 	);

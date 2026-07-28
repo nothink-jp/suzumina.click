@@ -97,7 +97,7 @@ export default function UserMenu({ user }: UserMenuProps) {
 				{/* 配信終了後も下書きの仕上げに戻れるよう常設する（動画カード側の導線は live/upcoming 時のみ） */}
 				<DropdownMenuItem
 					render={
-						<Link href="/capture" className="flex items-center gap-2 cursor-pointer">
+						<Link href="/watch" className="flex items-center gap-2 cursor-pointer">
 							<Bookmark className="h-4 w-4" />
 							<span>マーキング</span>
 						</Link>

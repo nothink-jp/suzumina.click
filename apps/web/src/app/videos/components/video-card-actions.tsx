@@ -19,7 +19,7 @@ type ButtonGate =
 	| { canCreate: false; reason: string };
 
 function evaluateButtonGate(video: VideoPlainObject): ButtonGate {
-	// 配信中/配信予定は「作成不可」ではなく配信中マーキング（/capture）への導線に切り替える（SPR-146）。
+	// 配信中/配信予定は「作成不可」ではなく配信中マーキング（/watch）への導線に切り替える（SPR-146）。
 	// この時間帯の正しい作成手段はマーク→アーカイブ後の仕上げのため。
 	// 判定の正本はバッジ（video-badge.ts）と同じ _computed.videoType。raw の liveBroadcastContent は
 	// stale がありうる（アーカイブ済みでも live のまま残る）。operations の isLive や _computed.isLive は
@@ -50,7 +50,7 @@ function evaluateButtonGate(video: VideoPlainObject): ButtonGate {
 
 /**
  * VideoCard のアクション領域。
- * ログイン状態は見ない（session 非依存）: 認証は各目的地（/capture・/buttons/create）の
+ * ログイン状態は見ない（session 非依存）: 認証は各目的地（/watch・/buttons/create）の
  * ProtectedRoute（callbackPath 付き）が正本で、カードはポインタに徹する。
  * これにより per-user 状態を SSR に焼かず、セッション解決待ちのラベルちらつきも起きない。
  */
@@ -108,7 +108,7 @@ export default function VideoCardActions({ video, variant }: VideoCardActionsPro
 		);
 	} else if ("liveMarking" in gate) {
 		// バッジと同色ペアで時制を明示する: live = destructive 赤（「配信中」バッジと同色・赤は live 専用）、
-		// upcoming = info 青（「配信予告」バッジと同色）。待機ファンは配信前から /capture で M キーを構えられる
+		// upcoming = info 青（「配信予告」バッジと同色）。待機ファンは配信前から /watch で M キーを構えられる
 		const isLiveNow = gate.liveMarking === "live";
 		createAction = (
 			<Button
@@ -121,7 +121,7 @@ export default function VideoCardActions({ video, variant }: VideoCardActionsPro
 				}
 				render={
 					<Link
-						href={`/capture?v=${video.videoId}`}
+						href={`/watch?v=${video.videoId}`}
 						aria-label={
 							isLiveNow
 								? `${video.title}の配信中マーキングを開く`
