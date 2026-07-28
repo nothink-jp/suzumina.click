@@ -1,0 +1,29 @@
+{
+  "collection": "users",
+  "docs": [
+    {
+      "id": "000000000000000001",
+      "data": {
+        "discordId": "000000000000000001",
+        "username": "dev-user",
+        "globalName": "ローカル開発ユーザー",
+        "avatar": null,
+        "guildMembership": {
+          "guildId": "959095494456537158",
+          "userId": "000000000000000001",
+          "isMember": true
+        },
+        "displayName": "ローカル開発ユーザー",
+        "isActive": true,
+        "flags": {
+          "isFamilyMember": true
+        },
+        "createdAt": "2026-01-01T00:00:00.000Z",
+        "updatedAt": "2026-01-01T00:00:00.000Z",
+        "lastLoginAt": "2026-01-01T00:00:00.000Z",
+        "isPublicProfile": true,
+        "showStatistics": true
+      }
+    }
+  ]
+}
