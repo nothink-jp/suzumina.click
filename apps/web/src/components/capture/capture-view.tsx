@@ -10,6 +10,7 @@ import { matchShortcutKey } from "@/lib/keyboard-shortcut";
 import { CaptureTarget } from "./capture-target";
 import { groupDraftsByVideo } from "./draft-groups";
 import { DraftQueue } from "./draft-queue";
+import { resolveCaptureVideoMode } from "./video-mode";
 import { VideoPicker } from "./video-picker";
 
 interface CaptureViewProps {
@@ -17,6 +18,11 @@ interface CaptureViewProps {
 	/** ?v= で指定されたが videos に無かった動画ID（選択状態で理由を出すためだけに使う） */
 	notFoundVideoId?: string;
 	initialDrafts: AudioButtonDraft[];
+	/**
+	 * 下書きを持つ動画のうち、配信中・配信予定でまだ仕上げられないもの（page 側で現在状態から算出）。
+	 * 省略可にすると渡し忘れが「全部仕上げ可能」に化けるため必須にしている。
+	 */
+	awaitingArchiveVideoIds: string[];
 }
 
 const VIDEO_ID_PATTERN = /(?:v=|youtu\.be\/|\/live\/|\/embed\/|\/shorts\/)([A-Za-z0-9_-]{11})/;
@@ -40,7 +46,12 @@ function parseVideoIdInput(value: string): string | null {
  * 「仕上げてよいか」の実体は *マーク時に配信だったか* ではなく *今アーカイブになっているか* であり、
  * マーク時の状態を凍結すると配信終了後の遷移を表現できなくなるため。
  */
-export function CaptureView({ video, notFoundVideoId, initialDrafts }: CaptureViewProps) {
+export function CaptureView({
+	video,
+	notFoundVideoId,
+	initialDrafts,
+	awaitingArchiveVideoIds,
+}: CaptureViewProps) {
 	const router = useRouter();
 	const [drafts, setDrafts] = useState<AudioButtonDraft[]>(initialDrafts);
 	// 動画単位のキュー表示（SPR-266 第2段）。直近の配信グループが先頭
@@ -50,10 +61,10 @@ export function CaptureView({ video, notFoundVideoId, initialDrafts }: CaptureVi
 	const [justMarked, setJustMarked] = useState(false);
 	const playerRef = useRef<YTPlayer | null>(null);
 
-	// 判定の正本は _computed.videoType（video-card-actions / video-badge と同一。raw は stale がありうる）
-	const videoType = video?._computed.videoType;
-	const isLiveNow = videoType === "live" || videoType === "possibly_live";
-	const isUpcoming = videoType === "upcoming";
+	// モード導出の正本は resolveCaptureVideoMode（page 側の仕上げ可否判定と同じ関数を使う）
+	const mode = video ? resolveCaptureVideoMode(video) : null;
+	const isLiveNow = mode === "live";
+	const isUpcoming = mode === "upcoming";
 	// 埋め込み不可の動画はプレイヤーが動かず playerTime が取れない＝壁時計のみの使えない下書きしか
 	// 残らないため、マーク自体を止める（配信限定だった頃は起こらなかったが、任意の動画を選べる今は起こる）
 	const isEmbeddable = video?.status?.embeddable !== false;
@@ -174,7 +185,7 @@ export function CaptureView({ video, notFoundVideoId, initialDrafts }: CaptureVi
 				groups={draftGroups}
 				totalCount={drafts.length}
 				currentVideoId={video?.videoId}
-				isCurrentVideoLive={isLiveNow || isUpcoming}
+				awaitingArchiveVideoIds={awaitingArchiveVideoIds}
 				onDelete={(draftId) => void handleDelete(draftId)}
 			/>
 		</div>

@@ -496,3 +496,34 @@ export async function getVideoById(videoId: string) {
 		return null;
 	}
 }
+
+/**
+ * 複数の動画をIDで一括取得する（videos のドキュメントIDは videoId）。
+ *
+ * 既知の少数IDをまとめて引く用途（マーキングの下書きキューが、動画ごとの現在状態＝
+ * 仕上げてよいかを知るために使う）。存在しないIDは結果から落ちるだけで例外にしない。
+ * getAll は index を要求しないため firestore_indexes.tf の追加は不要。
+ */
+export async function getVideosByIds(videoIds: string[]): Promise<VideoPlainObject[]> {
+	const uniqueIds = [...new Set(videoIds)];
+	if (uniqueIds.length === 0) {
+		return [];
+	}
+
+	try {
+		const firestore = getFirestore();
+		const refs = uniqueIds.map((id) => firestore.collection("videos").doc(id));
+		const docs = await firestore.getAll(...refs);
+		return docs
+			.filter((doc) => doc.exists)
+			.map((doc) => convertToVideo(doc))
+			.filter((video): video is VideoPlainObject => video !== null);
+	} catch (error) {
+		logger.error("動画の一括取得でエラーが発生", {
+			action: "getVideosByIds",
+			対象総数: uniqueIds.length,
+			error: error instanceof Error ? error.message : String(error),
+		});
+		return [];
+	}
+}

@@ -12,8 +12,8 @@ interface DraftQueueProps {
 	totalCount: number;
 	/** マーキング中の動画（そのグループには復帰導線を出さない） */
 	currentVideoId?: string;
-	/** 表示中の動画が配信中/配信予定か（＝そのグループはまだ仕上げられない） */
-	isCurrentVideoLive: boolean;
+	/** 配信中・配信予定でまだ仕上げられない動画ID（表示中かどうかとは無関係に効く） */
+	awaitingArchiveVideoIds: string[];
 	onDelete: (draftId: string) => void;
 }
 
@@ -141,9 +141,10 @@ export function DraftQueue({
 	groups,
 	totalCount,
 	currentVideoId,
-	isCurrentVideoLive,
+	awaitingArchiveVideoIds,
 	onDelete,
 }: DraftQueueProps) {
+	const awaitingArchive = new Set(awaitingArchiveVideoIds);
 	return (
 		<div className="space-y-3">
 			<h2 className="text-lg font-semibold">
@@ -160,7 +161,7 @@ export function DraftQueue({
 			) : (
 				<div className="space-y-4">
 					{groups.map((group) => {
-						const isLocked = group.videoId === currentVideoId && isCurrentVideoLive;
+						const isLocked = awaitingArchive.has(group.videoId);
 						return (
 							<div key={group.videoId} className="border rounded-lg overflow-hidden">
 								<GroupHeader group={group} currentVideoId={currentVideoId} isLocked={isLocked} />

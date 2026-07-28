@@ -52,7 +52,7 @@ describe("CaptureView の下書きキュー表示（SPR-266 第2段）", () => {
 			makeDraft("a1", "video-aaaaaaa", "アーカイブ配信A", 100, "2026-07-15T12:05:00.000Z"),
 			makeDraft("b1", "video-bbbbbbb", "アーカイブ配信B", 50, "2026-07-10T10:00:00.000Z"),
 		];
-		render(<CaptureView video={null} initialDrafts={drafts} />);
+		render(<CaptureView video={null} initialDrafts={drafts} awaitingArchiveVideoIds={[]} />);
 
 		// グループヘッダ（動画タイトル + 件数）
 		expect(screen.getByText("アーカイブ配信A")).toBeInTheDocument();
@@ -78,15 +78,46 @@ describe("CaptureView の下書きキュー表示（SPR-266 第2段）", () => {
 		const drafts = [
 			makeDraft("l1", "video-live11", "配信中の動画", 100, "2026-07-18T12:00:00.000Z"),
 		];
-		render(<CaptureView video={liveVideo} initialDrafts={drafts} />);
+		render(
+			<CaptureView
+				video={liveVideo}
+				initialDrafts={drafts}
+				awaitingArchiveVideoIds={["video-live11"]}
+			/>,
+		);
 
 		expect(screen.getByText("アーカイブ公開後に仕上げ")).toBeInTheDocument();
 		expect(screen.queryByRole("link", { name: /まとめて仕上げる/ })).not.toBeInTheDocument();
 		expect(screen.queryByRole("link", { name: /仕上げる/ })).not.toBeInTheDocument();
 	});
 
+	it("表示していない動画でも配信中なら仕上げ導線を出さない", () => {
+		// 表示中の動画との一致で判定していた頃は、この配信中グループが仕上げ可能に見えて
+		// 遷移先の canCreateAudioButton で弾かれていた
+		const drafts = [
+			makeDraft("l1", "video-live11", "別配信（配信中）", 100, "2026-07-18T12:00:00.000Z"),
+			makeDraft("a1", "video-arch11", "アーカイブ", 50, "2026-07-17T12:00:00.000Z"),
+		];
+		render(
+			<CaptureView
+				video={null}
+				initialDrafts={drafts}
+				awaitingArchiveVideoIds={["video-live11"]}
+			/>,
+		);
+
+		expect(screen.getByText("アーカイブ公開後に仕上げ")).toBeInTheDocument();
+		// 仕上げ導線が出るのはアーカイブ側のグループだけ
+		const bulkLinks = screen.getAllByRole("link", { name: /まとめて仕上げる/ });
+		expect(bulkLinks).toHaveLength(1);
+		expect(bulkLinks[0]).toHaveAttribute(
+			"href",
+			"/buttons/create?video_id=video-arch11&start_time=50&draft_id=a1",
+		);
+	});
+
 	it("下書きゼロなら空状態の案内を出す", () => {
-		render(<CaptureView video={null} initialDrafts={[]} />);
+		render(<CaptureView video={null} initialDrafts={[]} awaitingArchiveVideoIds={[]} />);
 
 		expect(screen.getByText(/まだ下書きがありません/)).toBeInTheDocument();
 	});
@@ -107,7 +138,13 @@ describe("CaptureView の対象動画（配信・アーカイブ動画の両対�
 	});
 
 	it("アーカイブ動画でもプレイヤーとマークボタンを出す", () => {
-		render(<CaptureView video={makeVideo("video-arch11", "archived")} initialDrafts={[]} />);
+		render(
+			<CaptureView
+				video={makeVideo("video-arch11", "archived")}
+				initialDrafts={[]}
+				awaitingArchiveVideoIds={[]}
+			/>,
+		);
 
 		expect(screen.getByTestId("youtube-player")).toHaveAttribute("data-video-id", "video-arch11");
 		expect(screen.getByRole("button", { name: /ここをマーク/ })).toBeInTheDocument();
@@ -116,7 +153,13 @@ describe("CaptureView の対象動画（配信・アーカイブ動画の両対�
 	});
 
 	it("埋め込み不可の動画ではプレイヤーもマークボタンも出さない", () => {
-		render(<CaptureView video={makeVideo("video-noemb1", "archived", false)} initialDrafts={[]} />);
+		render(
+			<CaptureView
+				video={makeVideo("video-noemb1", "archived", false)}
+				initialDrafts={[]}
+				awaitingArchiveVideoIds={[]}
+			/>,
+		);
 
 		expect(screen.queryByTestId("youtube-player")).not.toBeInTheDocument();
 		expect(screen.queryByRole("button", { name: /ここをマーク/ })).not.toBeInTheDocument();
@@ -124,7 +167,7 @@ describe("CaptureView の対象動画（配信・アーカイブ動画の両対�
 	});
 
 	it("動画未選択は選択状態として表示する（配信が無いことをエラー扱いしない）", () => {
-		render(<CaptureView video={null} initialDrafts={[]} />);
+		render(<CaptureView video={null} initialDrafts={[]} awaitingArchiveVideoIds={[]} />);
 
 		expect(screen.getByText("マーキングする動画を選ぶ")).toBeInTheDocument();
 		expect(screen.getByRole("link", { name: /動画一覧から選ぶ/ })).toHaveAttribute(
@@ -134,7 +177,14 @@ describe("CaptureView の対象動画（配信・アーカイブ動画の両対�
 	});
 
 	it("指定した動画が見つからないときは理由を出す", () => {
-		render(<CaptureView video={null} notFoundVideoId="video-miss11" initialDrafts={[]} />);
+		render(
+			<CaptureView
+				video={null}
+				notFoundVideoId="video-miss11"
+				initialDrafts={[]}
+				awaitingArchiveVideoIds={[]}
+			/>,
+		);
 
 		expect(screen.getByText(/video-miss11.*見つかりません/)).toBeInTheDocument();
 	});
@@ -144,7 +194,13 @@ describe("CaptureView の対象動画（配信・アーカイブ動画の両対�
 			makeDraft("a1", "video-aaaaaaa", "別の動画", 100, "2026-07-15T12:05:00.000Z"),
 			makeDraft("c1", "video-curr111", "表示中の動画", 50, "2026-07-16T12:00:00.000Z"),
 		];
-		render(<CaptureView video={makeVideo("video-curr111", "archived")} initialDrafts={drafts} />);
+		render(
+			<CaptureView
+				video={makeVideo("video-curr111", "archived")}
+				initialDrafts={drafts}
+				awaitingArchiveVideoIds={[]}
+			/>,
+		);
 
 		const resumeLinks = screen.getAllByRole("link", { name: /マークを続ける/ });
 		expect(resumeLinks).toHaveLength(1);
