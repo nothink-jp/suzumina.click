@@ -3,13 +3,12 @@
 import type { AudioButtonDraft, VideoPlainObject } from "@suzumina.click/shared-types";
 import type { YTPlayer } from "@suzumina.click/ui/components/custom/youtube-types";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createButtonDraft, deleteButtonDraft } from "@/actions/button-drafts";
-import { trackMarkDraft } from "@/lib/analytics/events";
+import { useCallback, useEffect, useRef } from "react";
+import { useCaptureDrafts } from "@/hooks/use-capture-drafts";
 import { matchShortcutKey } from "@/lib/keyboard-shortcut";
 import { CaptureTarget } from "./capture-target";
-import { groupDraftsByVideo } from "./draft-groups";
 import { DraftQueue } from "./draft-queue";
+import { MarkAdjuster } from "./mark-adjuster";
 import { resolveCaptureVideoMode } from "./video-mode";
 import { VideoPicker } from "./video-picker";
 
@@ -53,12 +52,6 @@ export function CaptureView({
 	awaitingArchiveVideoIds,
 }: CaptureViewProps) {
 	const router = useRouter();
-	const [drafts, setDrafts] = useState<AudioButtonDraft[]>(initialDrafts);
-	// 動画単位のキュー表示（SPR-266 第2段）。直近の配信グループが先頭
-	const draftGroups = useMemo(() => groupDraftsByVideo(drafts), [drafts]);
-	const [isMarking, setIsMarking] = useState(false);
-	const [error, setError] = useState("");
-	const [justMarked, setJustMarked] = useState(false);
 	const playerRef = useRef<YTPlayer | null>(null);
 
 	// モード導出の正本は resolveCaptureVideoMode（page 側の仕上げ可否判定と同じ関数を使う）
@@ -69,48 +62,20 @@ export function CaptureView({
 	// 残らないため、マーク自体を止める（配信限定だった頃は起こらなかったが、任意の動画を選べる今は起こる）
 	const isEmbeddable = video?.status?.embeddable !== false;
 
-	const handleMark = useCallback(async () => {
-		// isMarking ガードは M キーの素早い2連打による二重作成防止（ボタンの disabled では keydown を防げない）
-		// isEmbeddable も同様にキー経路を塞ぐ（ボタン自体は描画されない）
-		if (!video || isMarking || !isEmbeddable) {
-			return;
-		}
-		setIsMarking(true);
-		setError("");
-
-		// 主信号 = プレイヤー再生位置。取得失敗時は null（壁時計のみモード）で保存を続行する
-		let playerTime: number | null = null;
-		try {
-			const t = playerRef.current?.getCurrentTime?.();
-			if (typeof t === "number" && Number.isFinite(t) && t >= 0) {
-				playerTime = Math.round(t * 1000) / 1000;
-			}
-		} catch {
-			// noop: 劣化モードへ
-		}
-
-		try {
-			const result = await createButtonDraft({
-				videoId: video.videoId,
-				videoTitle: video.title,
-				playerTime,
-				markedAtMs: Date.now(),
-			});
-
-			if (result.success) {
-				setDrafts((prev) => [result.data, ...prev]);
-				trackMarkDraft(video.videoId, playerTime != null);
-				setJustMarked(true);
-				setTimeout(() => setJustMarked(false), 600);
-			} else {
-				setError(result.error);
-			}
-		} catch {
-			setError("下書きの保存に失敗しました");
-		} finally {
-			setIsMarking(false);
-		}
-	}, [video, isMarking, isEmbeddable]);
+	const {
+		drafts,
+		draftGroups,
+		lastDraft,
+		isMarking,
+		isAdjusting,
+		justMarked,
+		error,
+		notice,
+		setError,
+		mark,
+		adjust,
+		remove,
+	} = useCaptureDrafts({ video, isEmbeddable, initialDrafts, playerRef });
 
 	// M キーでマーク。ガードの正本は matchShortcutKey（create/edit の I/O キーと共通・SPR-266）
 	useEffect(() => {
@@ -119,20 +84,11 @@ export function CaptureView({
 				return;
 			}
 			event.preventDefault();
-			void handleMark();
+			void mark();
 		};
 		document.addEventListener("keydown", onKeyDown);
 		return () => document.removeEventListener("keydown", onKeyDown);
-	}, [handleMark]);
-
-	const handleDelete = useCallback(async (draftId: string) => {
-		const result = await deleteButtonDraft(draftId);
-		if (result.success) {
-			setDrafts((prev) => prev.filter((d) => d.id !== draftId));
-		} else {
-			setError(result.error ?? "下書きの削除に失敗しました");
-		}
-	}, []);
+	}, [mark]);
 
 	const handleManualSubmit = useCallback(
 		(rawInput: string) => {
@@ -144,7 +100,7 @@ export function CaptureView({
 			setError("");
 			router.push(`/capture?v=${videoId}`);
 		},
-		[router],
+		[router, setError],
 	);
 
 	return (
@@ -164,19 +120,35 @@ export function CaptureView({
 				</div>
 			)}
 
+			{notice && (
+				<div className="p-3 bg-warning/10 border border-warning/20 rounded-lg">
+					{/* warning-foreground は bg-warning 上の白文字用。薄い背景では text-warning を使う */}
+					<p className="text-sm text-warning">{notice}</p>
+				</div>
+			)}
+
 			{video ? (
-				<CaptureTarget
-					video={video}
-					isLiveNow={isLiveNow}
-					isUpcoming={isUpcoming}
-					isEmbeddable={isEmbeddable}
-					isMarking={isMarking}
-					justMarked={justMarked}
-					onMark={() => void handleMark()}
-					onPlayerReady={(player) => {
-						playerRef.current = player;
-					}}
-				/>
+				<div className="space-y-3">
+					<CaptureTarget
+						video={video}
+						isLiveNow={isLiveNow}
+						isUpcoming={isUpcoming}
+						isEmbeddable={isEmbeddable}
+						isMarking={isMarking}
+						justMarked={justMarked}
+						onMark={() => void mark()}
+						onPlayerReady={(player) => {
+							playerRef.current = player;
+						}}
+					/>
+					{isEmbeddable && lastDraft && (
+						<MarkAdjuster
+							draft={lastDraft}
+							isAdjusting={isAdjusting}
+							onAdjust={(delta) => void adjust(delta)}
+						/>
+					)}
+				</div>
 			) : (
 				<VideoPicker notFoundVideoId={notFoundVideoId} onSubmit={handleManualSubmit} />
 			)}
@@ -186,7 +158,7 @@ export function CaptureView({
 				totalCount={drafts.length}
 				currentVideoId={video?.videoId}
 				awaitingArchiveVideoIds={awaitingArchiveVideoIds}
-				onDelete={(draftId) => void handleDelete(draftId)}
+				onDelete={(draftId) => void remove(draftId)}
 			/>
 		</div>
 	);

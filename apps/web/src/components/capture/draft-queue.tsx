@@ -100,7 +100,7 @@ function DraftRow({
 				<p className="text-sm font-medium">
 					{formatSeconds(draft.suggestedStartTime)} から
 					{draft.playerTime == null && (
-						<span className="ml-2 text-xs text-amber-600">壁時計のみ・要頭出し</span>
+						<span className="ml-2 text-xs text-warning">壁時計のみ・要頭出し</span>
 					)}
 				</p>
 				<p className="text-xs text-muted-foreground">{formatMarkedAt(draft.markedAt)}</p>

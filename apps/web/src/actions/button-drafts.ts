@@ -154,6 +154,51 @@ export async function getMyButtonDrafts(limit = 100): Promise<ListButtonDraftsRe
 }
 
 /**
+ * 下書きの再生位置を修正する（マーク直後の微調整）。
+ *
+ * 配信中は未来の秒に飛べないため意味が無かったが、アーカイブ動画を見ながらのマーキングでは
+ * 「少し早い/遅い」がその場で分かるため、生信号 playerTime を直接ずらせるようにする。
+ * 推奨開始秒は従来どおり保存せず playerTime から導出する（正本は生信号のまま）。
+ *
+ * 壁時計のみモード（playerTime=null）の下書きは対象外: 位置を持たないものをずらす操作は定義できない。
+ */
+export async function updateButtonDraftPlayerTime(
+	draftId: string,
+	playerTime: number,
+): Promise<CreateButtonDraftResult> {
+	try {
+		const user = await getCurrentUser();
+		if (!user?.discordId || !user.isActive) {
+			return { success: false, error: "ログインが必要です" };
+		}
+		if (typeof draftId !== "string" || draftId === "" || draftId.includes("/")) {
+			return { success: false, error: "下書きIDが不正です" };
+		}
+		if (!Number.isFinite(playerTime) || playerTime < 0 || playerTime > 172_800) {
+			return { success: false, error: "再生位置が不正です" };
+		}
+
+		const rounded = Math.round(playerTime * 1000) / 1000;
+		const ref = draftsRef(user.discordId).doc(draftId);
+		const snapshot = await ref.get();
+		if (!snapshot.exists) {
+			return { success: false, error: "下書きが見つかりません" };
+		}
+
+		await ref.update({ playerTime: rounded });
+
+		const updated = { ...(snapshot.data() as AudioButtonDraftDocument), playerTime: rounded };
+		return { success: true, data: audioButtonDraftTransformers.fromFirestore(draftId, updated) };
+	} catch (error) {
+		logger.error("音声ボタン下書きの再生位置更新でエラーが発生", {
+			draftId,
+			error: error instanceof Error ? error.message : String(error),
+		});
+		return { success: false, error: "下書きの更新に失敗しました" };
+	}
+}
+
+/**
  * 下書きを削除する（仕上げ完了後の消化・手動削除の両方から使う）。
  * 自分のサブコレクション配下しか触れないため所有チェックはパスで担保される。
  */

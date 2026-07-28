@@ -1,11 +1,14 @@
 import type { AudioButtonDraft, VideoPlainObject } from "@suzumina.click/shared-types";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CaptureView } from "../capture-view";
 
+const mockUpdatePlayerTime = vi.fn();
 vi.mock("@/actions/button-drafts", () => ({
 	createButtonDraft: vi.fn().mockResolvedValue({ success: true, data: {} }),
 	deleteButtonDraft: vi.fn().mockResolvedValue({ success: true }),
+	updateButtonDraftPlayerTime: (...args: unknown[]) => mockUpdatePlayerTime(...args),
 }));
 
 vi.mock("@/lib/analytics/events", () => ({
@@ -187,6 +190,45 @@ describe("CaptureView の対象動画（配信・アーカイブ動画の両対�
 		);
 
 		expect(screen.getByText(/video-miss11.*見つかりません/)).toBeInTheDocument();
+	});
+
+	it("直前のマークを ±5 秒でずらせる（生信号 playerTime を更新する）", async () => {
+		const user = userEvent.setup();
+		const drafts = [
+			makeDraft("d1", "video-curr111", "表示中の動画", 100, "2026-07-16T12:00:00.000Z"),
+		];
+		mockUpdatePlayerTime.mockResolvedValue({
+			success: true,
+			data: { ...drafts[0], playerTime: 110, suggestedStartTime: 95 },
+		});
+		render(
+			<CaptureView
+				video={makeVideo("video-curr111", "archived")}
+				initialDrafts={drafts}
+				awaitingArchiveVideoIds={[]}
+			/>,
+		);
+
+		// makeDraft は playerTime = suggestedStartTime + 15 = 115
+		await user.click(screen.getByRole("button", { name: /開始位置を5秒後にする/ }));
+
+		await waitFor(() => expect(mockUpdatePlayerTime).toHaveBeenCalledWith("d1", 120));
+	});
+
+	it("壁時計のみの下書きしかなければ微調整を出さない（位置を持たないため）", () => {
+		const wallClockOnly: AudioButtonDraft = {
+			...makeDraft("w1", "video-curr111", "表示中の動画", 0, "2026-07-16T12:00:00.000Z"),
+			playerTime: null,
+		};
+		render(
+			<CaptureView
+				video={makeVideo("video-curr111", "archived")}
+				initialDrafts={[wallClockOnly]}
+				awaitingArchiveVideoIds={[]}
+			/>,
+		);
+
+		expect(screen.queryByText("直前のマーク")).not.toBeInTheDocument();
 	});
 
 	it("表示中でない動画のグループには「マークを続ける」を出す", () => {
