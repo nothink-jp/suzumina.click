@@ -1,6 +1,7 @@
-import type { VideoPlainObject } from "@suzumina.click/shared-types";
+import { parseDurationToSeconds, type VideoPlainObject } from "@suzumina.click/shared-types";
 import type { Metadata } from "next";
 import { getMyButtonDrafts } from "@/actions/button-drafts";
+import { getAudioButtonsList } from "@/app/buttons/actions";
 import { getVideoById, getVideosList } from "@/app/videos/actions";
 import { CaptureView } from "@/components/capture/capture-view";
 import ProtectedRoute from "@/components/system/protected-route";
@@ -79,6 +80,19 @@ async function CaptureContent({ manualVideoId }: { manualVideoId?: string }) {
 		allDrafts.filter((d) => d.videoId !== video?.videoId).map((d) => d.videoId),
 	).size;
 
+	// マーク位置レーンの目印用に、この動画の作成済みボタンの開始秒を取る（/buttons/create の探索レーンと同じ判断）
+	let madeMarks: number[] = [];
+	if (video) {
+		const buttonsResult = await getAudioButtonsList({
+			videoId: video.videoId,
+			onlyPublic: true,
+			limit: 1000,
+		});
+		madeMarks = buttonsResult.success
+			? buttonsResult.data.audioButtons.map((button) => button.startTime)
+			: [];
+	}
+
 	return (
 		<CaptureView
 			video={video}
@@ -87,6 +101,8 @@ async function CaptureContent({ manualVideoId }: { manualVideoId?: string }) {
 			notFoundVideoId={manualVideoId && !video ? manualVideoId : undefined}
 			initialDrafts={currentDrafts}
 			otherDraftsSummary={otherDrafts > 0 ? { videos: otherVideos, drafts: otherDrafts } : null}
+			madeMarks={madeMarks}
+			videoDurationSeconds={video ? parseDurationToSeconds(video.duration) : 0}
 		/>
 	);
 }

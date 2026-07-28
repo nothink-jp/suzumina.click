@@ -2,13 +2,12 @@
 
 import type { AudioButtonDraft, VideoPlainObject } from "@suzumina.click/shared-types";
 import type { YTPlayer } from "@suzumina.click/ui/components/custom/youtube-types";
-import { type RefObject, useCallback, useMemo, useState } from "react";
+import { type RefObject, useCallback, useState } from "react";
 import {
 	createButtonDraft,
 	deleteButtonDraft,
 	updateButtonDraftPlayerTime,
 } from "@/actions/button-drafts";
-import { groupDraftsByVideo } from "@/components/capture/draft-groups";
 import { findNearbyDraft } from "@/components/capture/mark-proximity";
 import { trackMarkDraft } from "@/lib/analytics/events";
 import { formatSeconds } from "@/utils/format-seconds";
@@ -17,6 +16,7 @@ interface UseCaptureDraftsParams {
 	video: VideoPlainObject | null;
 	/** 埋め込み不可ならプレイヤーが動かないためマーク自体を止める */
 	isEmbeddable: boolean;
+	/** 表示中の動画の下書きのみ・新しい順（「今回のマーク」） */
 	initialDrafts: AudioButtonDraft[];
 	playerRef: RefObject<YTPlayer | null>;
 }
@@ -26,6 +26,7 @@ interface UseCaptureDraftsParams {
  *
  * 保存するのは生の捕捉信号だけ（playerTime = 主信号 / markedAt = 壁時計フォールバック・SPR-145）。
  * 推奨開始秒は保存せず playerTime から導出する。
+ * drafts は新しい順を維持する（マークで先頭に積む＝キューの即時フィードバック）。
  */
 export function useCaptureDrafts({
 	video,
@@ -34,19 +35,20 @@ export function useCaptureDrafts({
 	playerRef,
 }: UseCaptureDraftsParams) {
 	const [drafts, setDrafts] = useState<AudioButtonDraft[]>(initialDrafts);
-	// 動画単位のキュー表示（SPR-266 第2段）。直近の配信グループが先頭
-	const draftGroups = useMemo(() => groupDraftsByVideo(drafts), [drafts]);
 	const [isMarking, setIsMarking] = useState(false);
 	const [isAdjusting, setIsAdjusting] = useState(false);
 	const [justMarked, setJustMarked] = useState(false);
 	const [error, setError] = useState("");
 	// error と分けるのは、近接マークが「保存はできたが確認してほしい」情報であるため
 	const [notice, setNotice] = useState("");
+	// このセッションでマークした ID（NEW バッジ・マーク直後チップの表示条件）
+	const [sessionMarkedIds, setSessionMarkedIds] = useState<ReadonlySet<string>>(new Set());
+	const [lastMarkedId, setLastMarkedId] = useState<string | null>(null);
 
-	/** 直前のマーク（表示中の動画の最新下書き）。壁時計のみモードは位置を持たず微調整できない */
-	const lastDraft = drafts.find(
-		(draft) => draft.videoId === video?.videoId && draft.playerTime != null,
-	);
+	/** 直前にこのセッションでマークした下書き（調整による更新を追う。チップの表示対象） */
+	const lastMarkedDraft = lastMarkedId
+		? (drafts.find((draft) => draft.id === lastMarkedId) ?? null)
+		: null;
 
 	const readPlayerTime = useCallback((): number | null => {
 		try {
@@ -88,6 +90,8 @@ export function useCaptureDrafts({
 			}
 
 			setDrafts((prev) => [result.data, ...prev]);
+			setSessionMarkedIds((prev) => new Set(prev).add(result.data.id));
+			setLastMarkedId(result.data.id);
 			trackMarkDraft(video.videoId, playerTime != null);
 			setJustMarked(true);
 			setTimeout(() => setJustMarked(false), 600);
@@ -105,14 +109,14 @@ export function useCaptureDrafts({
 
 	const adjust = useCallback(
 		async (deltaSeconds: number) => {
-			const current = lastDraft?.playerTime;
-			if (!lastDraft || current == null || isAdjusting) {
+			const current = lastMarkedDraft?.playerTime;
+			if (!lastMarkedDraft || current == null || isAdjusting) {
 				return;
 			}
 			setIsAdjusting(true);
 			setError("");
 			const result = await updateButtonDraftPlayerTime(
-				lastDraft.id,
+				lastMarkedDraft.id,
 				Math.max(0, current + deltaSeconds),
 			);
 			if (result.success) {
@@ -122,22 +126,28 @@ export function useCaptureDrafts({
 			}
 			setIsAdjusting(false);
 		},
-		[lastDraft, isAdjusting],
+		[lastMarkedDraft, isAdjusting],
 	);
 
-	const remove = useCallback(async (draftId: string) => {
-		const result = await deleteButtonDraft(draftId);
-		if (result.success) {
-			setDrafts((prev) => prev.filter((d) => d.id !== draftId));
-		} else {
-			setError(result.error ?? "下書きの削除に失敗しました");
-		}
-	}, []);
+	const remove = useCallback(
+		async (draftId: string) => {
+			const result = await deleteButtonDraft(draftId);
+			if (result.success) {
+				setDrafts((prev) => prev.filter((d) => d.id !== draftId));
+				if (lastMarkedId === draftId) {
+					setLastMarkedId(null);
+				}
+			} else {
+				setError(result.error ?? "下書きの削除に失敗しました");
+			}
+		},
+		[lastMarkedId],
+	);
 
 	return {
 		drafts,
-		draftGroups,
-		lastDraft,
+		lastMarkedDraft,
+		sessionMarkedIds,
 		isMarking,
 		isAdjusting,
 		justMarked,

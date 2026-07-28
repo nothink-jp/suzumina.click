@@ -7,9 +7,12 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef } from "react";
 import { useCaptureDrafts } from "@/hooks/use-capture-drafts";
 import { matchShortcutKey } from "@/lib/keyboard-shortcut";
+import { CaptureActionBar } from "./capture-action-bar";
+import { CaptureHeader } from "./capture-header";
 import { CaptureTarget } from "./capture-target";
 import { DraftQueue } from "./draft-queue";
-import { MarkAdjuster } from "./mark-adjuster";
+import { MarkChip } from "./mark-chip";
+import { MarkLane } from "./mark-lane";
 import { resolveCaptureVideoMode } from "./video-mode";
 import { VideoPicker } from "./video-picker";
 
@@ -21,6 +24,10 @@ interface CaptureViewProps {
 	initialDrafts: AudioButtonDraft[];
 	/** 他の配信に残っている下書きの件数案内（null なら案内を出さない） */
 	otherDraftsSummary: { videos: number; drafts: number } | null;
+	/** この動画から作成済みの音声ボタンの開始秒（マーク位置レーンの目印） */
+	madeMarks: number[];
+	/** 動画の長さ（秒）。取得できない場合は 0 = レーン非表示 */
+	videoDurationSeconds: number;
 }
 
 const VIDEO_ID_PATTERN = /(?:v=|youtu\.be\/|\/live\/|\/embed\/|\/shorts\/)([A-Za-z0-9_-]{11})/;
@@ -34,37 +41,54 @@ function parseVideoIdInput(value: string): string | null {
 	return /^[A-Za-z0-9_-]{11}$/.test(trimmed) ? trimmed : null;
 }
 
+/** まとめて仕上げるの行き先（先頭 = 推奨開始秒が最小の下書き。連続仕上げ SPR-266 の入口） */
+function buildBulkHref(drafts: AudioButtonDraft[]): string | null {
+	if (drafts.length === 0) {
+		return null;
+	}
+	const first = drafts.reduce((min, draft) =>
+		draft.suggestedStartTime < min.suggestedStartTime ? draft : min,
+	);
+	return `/buttons/create?video_id=${first.videoId}&start_time=${first.suggestedStartTime}&draft_id=${first.id}`;
+}
+
 /**
- * マーキング画面（SPR-146 第1段。配信・アーカイブ動画の両方が対象）。
+ * マーキング画面（SPR-146。配信・アーカイブ動画の両対象・集中モード）。
  *
  * SPR-145 の計測ハーネスの製品版: マーク時に playerTime（主信号）と壁時計（フォールバック）を
  * 下書きとして保存する。プレイヤーが使えない場合も壁時計のみで保存を継続する（劣化モード）。
  *
+ * 構成は〈細いヘッダー〉〈プレイヤー＋マーク位置レーン〉〈今回のマーク〉〈固定マークバー〉の4面
+ * （導線再設計 段2）。報酬の遅延は3段で埋める:
+ * 即時=レーンとキュー先頭 / 4秒だけ=マーク直後チップ / 視聴後=固定バーのまとめて仕上げる。
+ *
  * 配信/アーカイブのモードは下書きに保存せず、表示のたびに動画から導出する。
- * 「仕上げてよいか」の実体は *マーク時に配信だったか* ではなく *今アーカイブになっているか* であり、
- * マーク時の状態を凍結すると配信終了後の遷移を表現できなくなるため。
+ * 「仕上げてよいか」の実体は *マーク時に配信だったか* ではなく *今アーカイブになっているか* のため。
  */
 export function CaptureView({
 	video,
 	notFoundVideoId,
 	initialDrafts,
 	otherDraftsSummary,
+	madeMarks,
+	videoDurationSeconds,
 }: CaptureViewProps) {
 	const router = useRouter();
 	const playerRef = useRef<YTPlayer | null>(null);
 
-	// モード導出の正本は resolveCaptureVideoMode（page 側の仕上げ可否判定と同じ関数を使う）
+	// モード導出の正本は resolveCaptureVideoMode（/drafts 側の仕上げ可否判定と同じ関数を使う）
 	const mode = video ? resolveCaptureVideoMode(video) : null;
 	const isLiveNow = mode === "live";
 	const isUpcoming = mode === "upcoming";
 	// 埋め込み不可の動画はプレイヤーが動かず playerTime が取れない＝壁時計のみの使えない下書きしか
-	// 残らないため、マーク自体を止める（配信限定だった頃は起こらなかったが、任意の動画を選べる今は起こる）
+	// 残らないため、マーク自体を止める（任意の動画を選べるようになって初めて起こるケース）
 	const isEmbeddable = video?.status?.embeddable !== false;
+	const isLocked = isLiveNow || isUpcoming;
 
 	const {
 		drafts,
-		draftGroups,
-		lastDraft,
+		lastMarkedDraft,
+		sessionMarkedIds,
 		isMarking,
 		isAdjusting,
 		justMarked,
@@ -102,75 +126,119 @@ export function CaptureView({
 		[router, setError],
 	);
 
+	const handleSeek = useCallback((seconds: number) => {
+		playerRef.current?.seekTo?.(seconds, true);
+	}, []);
+
+	// 動画未選択 = 選択状態（Stage D で「拾える配信」に置き換わる面）
+	if (!video) {
+		return (
+			<div className="container mx-auto px-4 py-6 max-w-4xl space-y-6">
+				<div>
+					<h1 className="text-2xl font-bold mb-1">マーキング</h1>
+					<p className="text-sm text-muted-foreground">
+						見ながら「ここ！」をマーク（M
+						キー）。下書きはあとからまとめて音声ボタンに仕上げられます。
+					</p>
+				</div>
+				{error && (
+					<div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+						<p className="text-sm text-destructive">{error}</p>
+					</div>
+				)}
+				<VideoPicker notFoundVideoId={notFoundVideoId} onSubmit={handleManualSubmit} />
+				{otherDraftsSummary && <OtherDraftsNote summary={otherDraftsSummary} />}
+			</div>
+		);
+	}
+
 	return (
-		<div className="container mx-auto px-4 py-6 max-w-4xl space-y-6">
-			<div>
-				<h1 className="text-2xl font-bold mb-1">マーキング</h1>
-				<p className="text-sm text-muted-foreground">
-					{isLiveNow || isUpcoming
-						? "「ここ！」と思った瞬間にマーク（M キー）。アーカイブ公開後、下書きから音声ボタンに仕上げられます。"
-						: "見ながら「ここ！」をマーク（M キー）。下書きはあとからまとめて音声ボタンに仕上げられます。"}
-				</p>
+		<>
+			<div className="container mx-auto px-4 py-4 max-w-6xl space-y-4 pb-32">
+				<CaptureHeader
+					video={video}
+					isLiveNow={isLiveNow}
+					isUpcoming={isUpcoming}
+					durationSeconds={videoDurationSeconds}
+					markCount={drafts.length}
+				/>
+
+				{error && (
+					<div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+						<p className="text-sm text-destructive">{error}</p>
+					</div>
+				)}
+
+				{notice && (
+					<div className="p-3 bg-warning/10 border border-warning/20 rounded-lg">
+						{/* warning-foreground は bg-warning 上の白文字用。薄い背景では text-warning を使う */}
+						<p className="text-sm text-warning">{notice}</p>
+					</div>
+				)}
+
+				{/* デスクトップは〈プレイヤー＋レーン | キュー〉の2カラム。モバイルは縦積み */}
+				<div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+					<div className="space-y-3">
+						<CaptureTarget
+							video={video}
+							isUpcoming={isUpcoming}
+							isEmbeddable={isEmbeddable}
+							onPlayerReady={(player) => {
+								playerRef.current = player;
+							}}
+						/>
+						{isEmbeddable && (
+							<MarkLane
+								durationSeconds={videoDurationSeconds}
+								madeMarks={madeMarks}
+								draftMarks={drafts.map((draft) => draft.suggestedStartTime)}
+								onSeek={handleSeek}
+							/>
+						)}
+					</div>
+					<div className="space-y-4">
+						<DraftQueue
+							drafts={drafts}
+							sessionMarkedIds={sessionMarkedIds}
+							isLocked={isLocked}
+							onDelete={(draftId) => void remove(draftId)}
+						/>
+						{otherDraftsSummary && <OtherDraftsNote summary={otherDraftsSummary} />}
+					</div>
+				</div>
 			</div>
 
-			{error && (
-				<div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-					<p className="text-sm text-destructive">{error}</p>
-				</div>
-			)}
-
-			{notice && (
-				<div className="p-3 bg-warning/10 border border-warning/20 rounded-lg">
-					{/* warning-foreground は bg-warning 上の白文字用。薄い背景では text-warning を使う */}
-					<p className="text-sm text-warning">{notice}</p>
-				</div>
-			)}
-
-			{video ? (
-				<div className="space-y-3">
-					<CaptureTarget
-						video={video}
-						isLiveNow={isLiveNow}
-						isUpcoming={isUpcoming}
-						isEmbeddable={isEmbeddable}
-						isMarking={isMarking}
-						justMarked={justMarked}
-						onMark={() => void mark()}
-						onPlayerReady={(player) => {
-							playerRef.current = player;
-						}}
-					/>
-					{isEmbeddable && lastDraft && (
-						<MarkAdjuster
-							draft={lastDraft}
-							isAdjusting={isAdjusting}
-							onAdjust={(delta) => void adjust(delta)}
-						/>
-					)}
-				</div>
-			) : (
-				<VideoPicker notFoundVideoId={notFoundVideoId} onSubmit={handleManualSubmit} />
-			)}
-
-			{/* 今回のマークだけを置く（他の配信の下書きは棚 /drafts の仕事・導線再設計 段2） */}
-			{video && (
-				<DraftQueue
-					groups={draftGroups}
-					totalCount={drafts.length}
-					isLocked={isLiveNow || isUpcoming}
-					onDelete={(draftId) => void remove(draftId)}
+			{/* マーク直後の4秒チップ（プレイヤーを覆わず・再生を止めず・自動で消える） */}
+			{lastMarkedDraft && (
+				<MarkChip
+					draft={lastMarkedDraft}
+					showFinishNow={!isLocked}
+					isAdjusting={isAdjusting}
+					onAdjust={(delta) => void adjust(delta)}
 				/>
 			)}
 
-			{otherDraftsSummary && (
-				<p className="text-sm text-muted-foreground">
-					他の配信の下書き（{otherDraftsSummary.videos}配信・{otherDraftsSummary.drafts}件）は
-					<Link href="/drafts" className="mx-1 underline underline-offset-4 hover:text-foreground">
-						マーク棚
-					</Link>
-					から仕上げられます。
-				</p>
+			{isEmbeddable && (
+				<CaptureActionBar
+					isMarking={isMarking}
+					justMarked={justMarked}
+					onMark={() => void mark()}
+					bulkHref={isLocked ? null : buildBulkHref(drafts)}
+					bulkCount={drafts.length}
+				/>
 			)}
-		</div>
+		</>
+	);
+}
+
+function OtherDraftsNote({ summary }: { summary: { videos: number; drafts: number } }) {
+	return (
+		<p className="text-sm text-muted-foreground">
+			他の配信の下書き（{summary.videos}配信・{summary.drafts}件）は
+			<Link href="/drafts" className="mx-1 underline underline-offset-4 hover:text-foreground">
+				マーク棚
+			</Link>
+			から仕上げられます。
+		</p>
 	);
 }
