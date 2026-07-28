@@ -126,7 +126,7 @@ describe("getVideoTranscriptChunk (SPR-292)", () => {
 		expect(call.endOffsetSeconds).toBe(1215);
 		expect(call.options).toEqual({
 			timeoutMs: 120_000,
-			maxOutputTokens: 16_384,
+			maxOutputTokens: 32_768,
 			thinkingBudget: 1_024,
 		});
 		expect(mockSet).toHaveBeenCalledOnce();
