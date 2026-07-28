@@ -5,6 +5,7 @@
 	"scripts": {
 		"dev": "next dev",
 		"dev:local": "FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 next dev",
+		"dev:local:auth": "DEV_AUTH_BYPASS=1 FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 next dev",
 		"build": "next build",
 		"start": "next start",
 		"lint": "biome check src/ e2e/ *.ts *.mjs --files-ignore-unknown=true",
