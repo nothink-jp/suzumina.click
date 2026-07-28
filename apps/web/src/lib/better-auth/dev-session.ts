@@ -10,7 +10,8 @@
  * 触れるコードの置き場が SPR-168 の抽象境界でここに限られているため（guild-sync 等と同じ扱い）。
  * 環境ゲートは provider 非依存なので `lib/dev-auth/guard.ts` 側に分けてある。
  *
- * 呼び出し前に `isDevAuthEnabled()` が真であることは呼び出し側（`/api/dev/signin`）が保証する。
+ * 呼び出し側（`/api/dev/signin`）もゲートするが、この関数自身も入口で `isDevAuthEnabled()` を検証する。
+ * 実セッションを発行する以上、呼び出し側の規律だけに依存させない（呼び出し元が増えたときの取りこぼし防止）。
  */
 import { makeSignature } from "better-auth/crypto";
 import {
@@ -18,6 +19,7 @@ import {
 	DEV_AUTH_DISCORD_ID,
 	DEV_AUTH_EMAIL,
 	DEV_AUTH_NAME,
+	isDevAuthEnabled,
 } from "@/lib/dev-auth/guard";
 import { warn } from "@/lib/logger";
 import { auth } from "./auth";
@@ -74,8 +76,15 @@ async function ensureDevAuthUser(): Promise<void> {
  * 開発用ユーザーの better-auth セッションを作成し、ブラウザへ載せる cookie を返す。
  * `account` 行は作らない（＝ account.create フックを踏まない）。dev ではアクセストークンが無く
  * guild 同期は best-effort で素通りするため、セッション成立には user 行だけで足りる。
+ *
+ * @throws ローカル開発ログインが無効な環境（本番を含む）で呼ばれた場合
  */
 export async function issueDevSessionCookie(): Promise<DevSessionCookie> {
+	// 呼び出し側のゲートと二重になるが、認証バイパスを発行する関数自体が最後の砦を持つ。
+	if (!isDevAuthEnabled()) {
+		throw new Error("dev-auth: ローカル開発ログインが無効な環境では呼び出せません");
+	}
+
 	await ensureDevAuthUser();
 
 	const ctx = await auth.$context;

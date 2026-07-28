@@ -30,7 +30,12 @@
 			}
 		},
 		{
-			"includes": ["src/lib/auth/**", "src/lib/better-auth/**", "src/app/api/auth/**"],
+			"includes": [
+				"src/lib/auth/**",
+				"src/lib/better-auth/**",
+				"src/app/api/auth/**",
+				"src/app/api/dev/**"
+			],
 			"linter": {
 				"rules": {
 					"style": {
@@ -52,10 +57,14 @@
 							"better-auth/client/plugins": "認証プロバイダの直接 import は禁止。@/lib/auth/* 経由で使うこと（SPR-168 抽象境界）。",
 							"better-auth/plugins": "認証プロバイダの直接 import は禁止。@/lib/auth/* 経由で使うこと（SPR-168 抽象境界）。",
 							"better-auth/next-js": "認証プロバイダの直接 import は禁止。@/lib/auth/* 経由で使うこと（SPR-168 抽象境界）。",
-							"better-auth/adapters": "認証プロバイダの直接 import は禁止。@/lib/auth/* 経由で使うこと（SPR-168 抽象境界）。",
-							"@/lib/better-auth/auth": "better-auth 実装の直接 import は禁止。@/lib/auth/* 経由で使うこと（SPR-168 抽象境界）。",
-							"@/lib/better-auth/firestore-adapter": "better-auth 実装の直接 import は禁止。@/lib/auth/* 経由で使うこと（SPR-168 抽象境界）。"
-						}
+							"better-auth/adapters": "認証プロバイダの直接 import は禁止。@/lib/auth/* 経由で使うこと（SPR-168 抽象境界）。"
+						},
+						"patterns": [
+							{
+								"group": ["@/lib/better-auth/*"],
+								"message": "better-auth 実装の直接 import は禁止。@/lib/auth/* 経由で使うこと（SPR-168 抽象境界）。個別列挙ではなくディレクトリ全体を対象にする＝新しいファイルを足したときに自動で境界の内側に入る。"
+							}
+						]
 					}
 				}
 			}
