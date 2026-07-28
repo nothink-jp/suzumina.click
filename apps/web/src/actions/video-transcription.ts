@@ -16,8 +16,11 @@ import * as logger from "@/lib/logger";
 const VIDEO_ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
 /** 文字起こしは10分窓＝約30秒かかる（SPR-291 実測）。既定30秒では足りない */
 const TRANSCRIPTION_TIMEOUT_MS = 120_000;
-/** SPR-291 実測で確定した生成パラメータ（思考上限なしは JSON 切断・レイテンシ数倍） */
-const TRANSCRIPTION_MAX_OUTPUT_TOKENS = 16_384;
+/**
+ * SPR-291 実測で確定した生成パラメータ（思考上限なしは JSON 切断・レイテンシ数倍）。
+ * 出力上限は SPR-294 の分割プロンプトで発話数が増えたため 32768（16384 は密なチャンクで MAX_TOKENS 切断・実測 2/81）
+ */
+const TRANSCRIPTION_MAX_OUTPUT_TOKENS = 32_768;
 const TRANSCRIPTION_THINKING_BUDGET = 1_024;
 
 /** Firestore 保存形（videos/{videoId}/transcriptChunks/{chunkIndex}）。派生データ＝再生成可能 */
