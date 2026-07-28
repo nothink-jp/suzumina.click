@@ -6,8 +6,8 @@ import { CaptureView } from "@/components/capture/capture-view";
 import ProtectedRoute from "@/components/system/protected-route";
 
 export const metadata: Metadata = {
-	title: "配信中マーキング",
-	description: "配信視聴中に「ここ！」をマークして、音声ボタンの下書きを残せます",
+	title: "マーキング",
+	description: "配信・動画を見ながら「ここ！」をマークして、音声ボタンの下書きを残せます",
 	// ログイン前提の作業用ページのためインデックス不要
 	robots: { index: false, follow: false },
 };
@@ -18,7 +18,9 @@ interface CapturePageProps {
 
 /**
  * マーキング対象の動画を選ぶ。
- * 手動指定（?v=）が最優先。なければ配信中 → 直近の配信予定の順。
+ * 手動指定（?v=）が最優先で、配信・アーカイブを問わない（動画視聴マーキングはここを通る）。
+ * 無指定時のみ配信中 → 直近の配信予定の順に自動選択する（配信時の即応性のための便宜であって、
+ * 対象の決定手段の正本ではない）。どちらも当たらなければ null = 選択状態。
  * liveBroadcastContent の鮮度は fetchYouTubeVideos の更新頻度に依存するため、
  * 拾えないときの逃げ道として手動指定を残している（SPR-230 の stale 対策と同じ理由）。
  */
@@ -67,7 +69,13 @@ async function CaptureContent({ manualVideoId }: { manualVideoId?: string }) {
 	]);
 
 	return (
-		<CaptureView video={video} initialDrafts={draftsResult.success ? draftsResult.data : []} />
+		<CaptureView
+			video={video}
+			// 手動指定したのに引けなかった＝未取得の動画。選択状態に戻すだけだと
+			// 「入力したのに何も起きない」ように見えるため、理由を伝える
+			notFoundVideoId={manualVideoId && !video ? manualVideoId : undefined}
+			initialDrafts={draftsResult.success ? draftsResult.data : []}
+		/>
 	);
 }
 

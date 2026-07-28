@@ -99,14 +99,14 @@ describe("UserMenu", () => {
 		expect(myPageLink).toHaveAttribute("href", "/users/me");
 	});
 
-	it("配信中マーキングリンクが常設されている（配信終了後の下書き仕上げ導線）", async () => {
+	it("マーキングリンクが常設されている（配信終了後の下書き仕上げ導線）", async () => {
 		const user = userEvent.setup();
 		render(<UserMenu user={mockUser} />);
 
 		const triggerButton = screen.getByRole("button", { name: "ユーザーメニューを開く" });
 		await user.click(triggerButton);
 
-		const liveLink = screen.getByRole("link", { name: /配信中マーキング/i });
+		const liveLink = screen.getByRole("link", { name: /マーキング/i });
 		expect(liveLink).toHaveAttribute("href", "/capture");
 	});
 

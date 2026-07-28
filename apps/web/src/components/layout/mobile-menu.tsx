@@ -72,7 +72,7 @@ export default function MobileMenu({ user }: MobileMenuProps) {
 								href="/capture"
 								className="text-lg font-medium text-foreground hover:text-foreground/80 hover:bg-accent min-h-[48px] px-4 py-3 rounded-lg transition-colors flex items-center"
 							>
-								🔖 配信中マーキング
+								🔖 マーキング
 							</Link>
 							<Link
 								href="/settings"

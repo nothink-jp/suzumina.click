@@ -99,7 +99,7 @@ export default function UserMenu({ user }: UserMenuProps) {
 					render={
 						<Link href="/capture" className="flex items-center gap-2 cursor-pointer">
 							<Bookmark className="h-4 w-4" />
-							<span>配信中マーキング</span>
+							<span>マーキング</span>
 						</Link>
 					}
 				/>

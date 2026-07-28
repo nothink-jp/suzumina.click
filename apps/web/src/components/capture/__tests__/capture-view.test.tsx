@@ -91,3 +91,63 @@ describe("CaptureView の下書きキュー表示（SPR-266 第2段）", () => {
 		expect(screen.getByText(/まだ下書きがありません/)).toBeInTheDocument();
 	});
 });
+
+function makeVideo(videoId: string, videoType: string, embeddable = true): VideoPlainObject {
+	return {
+		videoId,
+		title: `動画 ${videoId}`,
+		status: { embeddable },
+		_computed: { videoType },
+	} as unknown as VideoPlainObject;
+}
+
+describe("CaptureView の対象動画（配信・アーカイブ動画の両対応）", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	it("アーカイブ動画でもプレイヤーとマークボタンを出す", () => {
+		render(<CaptureView video={makeVideo("video-arch11", "archived")} initialDrafts={[]} />);
+
+		expect(screen.getByTestId("youtube-player")).toHaveAttribute("data-video-id", "video-arch11");
+		expect(screen.getByRole("button", { name: /ここをマーク/ })).toBeInTheDocument();
+		// 配信専用の文言ではなく、あとからまとめて仕上げる案内になる
+		expect(screen.getByText(/あとからまとめて音声ボタンに仕上げられます/)).toBeInTheDocument();
+	});
+
+	it("埋め込み不可の動画ではプレイヤーもマークボタンも出さない", () => {
+		render(<CaptureView video={makeVideo("video-noemb1", "archived", false)} initialDrafts={[]} />);
+
+		expect(screen.queryByTestId("youtube-player")).not.toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: /ここをマーク/ })).not.toBeInTheDocument();
+		expect(screen.getByText(/埋め込みが制限されている/)).toBeInTheDocument();
+	});
+
+	it("動画未選択は選択状態として表示する（配信が無いことをエラー扱いしない）", () => {
+		render(<CaptureView video={null} initialDrafts={[]} />);
+
+		expect(screen.getByText("マーキングする動画を選ぶ")).toBeInTheDocument();
+		expect(screen.getByRole("link", { name: /動画一覧から選ぶ/ })).toHaveAttribute(
+			"href",
+			"/videos",
+		);
+	});
+
+	it("指定した動画が見つからないときは理由を出す", () => {
+		render(<CaptureView video={null} notFoundVideoId="video-miss11" initialDrafts={[]} />);
+
+		expect(screen.getByText(/video-miss11.*見つかりません/)).toBeInTheDocument();
+	});
+
+	it("表示中でない動画のグループには「マークを続ける」を出す", () => {
+		const drafts = [
+			makeDraft("a1", "video-aaaaaaa", "別の動画", 100, "2026-07-15T12:05:00.000Z"),
+			makeDraft("c1", "video-curr111", "表示中の動画", 50, "2026-07-16T12:00:00.000Z"),
+		];
+		render(<CaptureView video={makeVideo("video-curr111", "archived")} initialDrafts={drafts} />);
+
+		const resumeLinks = screen.getAllByRole("link", { name: /マークを続ける/ });
+		expect(resumeLinks).toHaveLength(1);
+		expect(resumeLinks[0]).toHaveAttribute("href", "/capture?v=video-aaaaaaa");
+	});
+});

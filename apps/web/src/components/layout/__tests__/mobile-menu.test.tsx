@@ -58,7 +58,7 @@ describe("MobileMenu", () => {
 			// ログイン時セクションは非表示
 			expect(screen.queryByRole("link", { name: /お気に入り/ })).not.toBeInTheDocument();
 			expect(screen.queryByRole("link", { name: /マイページ/ })).not.toBeInTheDocument();
-			expect(screen.queryByRole("link", { name: /配信中マーキング/ })).not.toBeInTheDocument();
+			expect(screen.queryByRole("link", { name: /マーキング/ })).not.toBeInTheDocument();
 			expect(screen.queryByRole("link", { name: /設定/ })).not.toBeInTheDocument();
 
 			// 認証ボタンは常設
@@ -79,7 +79,7 @@ describe("MobileMenu", () => {
 			// ログイン時セクション（/capture は配信終了後も下書き仕上げに戻れる常設導線）
 			expectLink(/お気に入り/, "/favorites");
 			expectLink(/マイページ/, "/users/me");
-			expectLink(/配信中マーキング/, "/capture");
+			expectLink(/マーキング/, "/capture");
 			expectLink(/設定/, "/settings");
 
 			expect(screen.getByTestId("auth-button")).toHaveTextContent("ログイン中");
