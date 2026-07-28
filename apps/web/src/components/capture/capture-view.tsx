@@ -15,7 +15,7 @@ import { matchShortcutKey } from "@/lib/keyboard-shortcut";
 import { formatSeconds } from "@/utils/format-seconds";
 import { groupDraftsByVideo } from "./draft-groups";
 
-interface LiveCaptureViewProps {
+interface CaptureViewProps {
 	video: VideoPlainObject | null;
 	initialDrafts: AudioButtonDraft[];
 }
@@ -50,7 +50,7 @@ function formatMarkedAt(iso: string): string {
  * SPR-145 の計測ハーネスの製品版: マーク時に playerTime（主信号）と壁時計（フォールバック）を
  * 下書きとして保存する。プレイヤーが使えない場合も壁時計のみで保存を継続する（劣化モード）。
  */
-export function LiveCaptureView({ video, initialDrafts }: LiveCaptureViewProps) {
+export function CaptureView({ video, initialDrafts }: CaptureViewProps) {
 	const router = useRouter();
 	const [drafts, setDrafts] = useState<AudioButtonDraft[]>(initialDrafts);
 	// 動画単位のキュー表示（SPR-266 第2段）。直近の配信グループが先頭
@@ -137,7 +137,7 @@ export function LiveCaptureView({ video, initialDrafts }: LiveCaptureViewProps) 
 			return;
 		}
 		setError("");
-		router.push(`/live?v=${videoId}`);
+		router.push(`/capture?v=${videoId}`);
 	}, [manualInput, router]);
 
 	return (

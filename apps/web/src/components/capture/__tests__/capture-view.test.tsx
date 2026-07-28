@@ -1,7 +1,7 @@
 import type { AudioButtonDraft, VideoPlainObject } from "@suzumina.click/shared-types";
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { LiveCaptureView } from "../live-capture-view";
+import { CaptureView } from "../capture-view";
 
 vi.mock("@/actions/button-drafts", () => ({
 	createButtonDraft: vi.fn().mockResolvedValue({ success: true, data: {} }),
@@ -41,7 +41,7 @@ function makeDraft(
 	};
 }
 
-describe("LiveCaptureView の下書きキュー表示（SPR-266 第2段）", () => {
+describe("CaptureView の下書きキュー表示（SPR-266 第2段）", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 	});
@@ -52,7 +52,7 @@ describe("LiveCaptureView の下書きキュー表示（SPR-266 第2段）", () 
 			makeDraft("a1", "video-aaaaaaa", "アーカイブ配信A", 100, "2026-07-15T12:05:00.000Z"),
 			makeDraft("b1", "video-bbbbbbb", "アーカイブ配信B", 50, "2026-07-10T10:00:00.000Z"),
 		];
-		render(<LiveCaptureView video={null} initialDrafts={drafts} />);
+		render(<CaptureView video={null} initialDrafts={drafts} />);
 
 		// グループヘッダ（動画タイトル + 件数）
 		expect(screen.getByText("アーカイブ配信A")).toBeInTheDocument();
@@ -78,7 +78,7 @@ describe("LiveCaptureView の下書きキュー表示（SPR-266 第2段）", () 
 		const drafts = [
 			makeDraft("l1", "video-live11", "配信中の動画", 100, "2026-07-18T12:00:00.000Z"),
 		];
-		render(<LiveCaptureView video={liveVideo} initialDrafts={drafts} />);
+		render(<CaptureView video={liveVideo} initialDrafts={drafts} />);
 
 		expect(screen.getByText("アーカイブ公開後に仕上げ")).toBeInTheDocument();
 		expect(screen.queryByRole("link", { name: /まとめて仕上げる/ })).not.toBeInTheDocument();
@@ -86,7 +86,7 @@ describe("LiveCaptureView の下書きキュー表示（SPR-266 第2段）", () 
 	});
 
 	it("下書きゼロなら空状態の案内を出す", () => {
-		render(<LiveCaptureView video={null} initialDrafts={[]} />);
+		render(<CaptureView video={null} initialDrafts={[]} />);
 
 		expect(screen.getByText(/まだ下書きがありません/)).toBeInTheDocument();
 	});

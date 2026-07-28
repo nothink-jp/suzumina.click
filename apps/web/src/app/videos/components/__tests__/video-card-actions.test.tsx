@@ -51,11 +51,11 @@ describe("VideoCardActions", () => {
 		const createLink = screen.getByText("ボタン作成").closest("a");
 		expect(createLink).toHaveAttribute("href", "/buttons/create?video_id=video123");
 		expect(screen.getByText("詳細を見る")).toBeInTheDocument();
-		// ログイン分岐は撤去済み（/live 導線と同じく目的地の ProtectedRoute が認証の正本）
+		// ログイン分岐は撤去済み（/capture 導線と同じく目的地の ProtectedRoute が認証の正本）
 		expect(screen.queryByText("ログイン")).not.toBeInTheDocument();
 	});
 
-	it("配信中の動画は『配信中マーク』リンク（/live?v=）を表示する（SPR-146）", () => {
+	it("配信中の動画は『配信中マーク』リンク（/capture?v=）を表示する（SPR-146）", () => {
 		const video = createMockVideo({
 			liveBroadcastContent: "live",
 			_computed: {
@@ -69,11 +69,11 @@ describe("VideoCardActions", () => {
 		render(<VideoCardActions video={video} variant="grid" />);
 
 		const markLink = screen.getByText("配信中マーク").closest("a");
-		expect(markLink).toHaveAttribute("href", "/live?v=abc123");
+		expect(markLink).toHaveAttribute("href", "/capture?v=abc123");
 		// live は destructive 赤（「配信中」バッジと同色ペア・赤は live 専用）
 		expect(markLink?.className).toContain("bg-destructive");
 		expect(screen.queryByText("ボタン作成")).not.toBeInTheDocument();
-		// 認証は /live 側の ProtectedRoute に委譲（カードは session 非依存でログイン導線を出さない）
+		// 認証は /capture 側の ProtectedRoute に委譲（カードは session 非依存でログイン導線を出さない）
 		expect(screen.queryByText("ログイン")).not.toBeInTheDocument();
 	});
 
@@ -91,7 +91,7 @@ describe("VideoCardActions", () => {
 		render(<VideoCardActions video={video} variant="grid" />);
 
 		const waitLink = screen.getByText("配信待機").closest("a");
-		expect(waitLink).toHaveAttribute("href", "/live?v=abc123");
+		expect(waitLink).toHaveAttribute("href", "/capture?v=abc123");
 		// upcoming は info 青（「配信予告」バッジと同色ペア）
 		expect(waitLink?.className).toContain("bg-info");
 	});

@@ -2,7 +2,7 @@ import type { VideoPlainObject } from "@suzumina.click/shared-types";
 import type { Metadata } from "next";
 import { getMyButtonDrafts } from "@/actions/button-drafts";
 import { getVideoById, getVideosList } from "@/app/videos/actions";
-import { LiveCaptureView } from "@/components/live/live-capture-view";
+import { CaptureView } from "@/components/capture/capture-view";
 import ProtectedRoute from "@/components/system/protected-route";
 
 export const metadata: Metadata = {
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 	robots: { index: false, follow: false },
 };
 
-interface LivePageProps {
+interface CapturePageProps {
 	searchParams: Promise<{ v?: string }>;
 }
 
@@ -28,7 +28,7 @@ async function findTargetVideo(manualVideoId?: string): Promise<VideoPlainObject
 	}
 
 	// getVideosList はリポジトリ既定の「全件取得 + in-memory フィルタ」（SPR-213）。videos は数百件規模かつ
-	// /live はログイン者専用の低頻度ページのため許容。レイテンシが実測で問題になったら専用クエリ + 複合
+	// /capture はログイン者専用の低頻度ページのため許容。レイテンシが実測で問題になったら専用クエリ + 複合
 	// インデックス（terraform 同時追加）を別 Issue で検討する
 	const { items } = await getVideosList({
 		page: 1,
@@ -58,7 +58,7 @@ async function findTargetVideo(manualVideoId?: string): Promise<VideoPlainObject
 /**
  * データ取得は ProtectedRoute の内側で行う（未認証時はリダイレクトされ、ここは実行されない）。
  */
-async function LiveCaptureContent({ manualVideoId }: { manualVideoId?: string }) {
+async function CaptureContent({ manualVideoId }: { manualVideoId?: string }) {
 	const [video, draftsResult] = await Promise.all([
 		findTargetVideo(manualVideoId),
 		// 既定 limit=100 だと下書き多数のユーザーで一覧が黙って欠けるため、保持上限の500で全件取る
@@ -67,16 +67,16 @@ async function LiveCaptureContent({ manualVideoId }: { manualVideoId?: string })
 	]);
 
 	return (
-		<LiveCaptureView video={video} initialDrafts={draftsResult.success ? draftsResult.data : []} />
+		<CaptureView video={video} initialDrafts={draftsResult.success ? draftsResult.data : []} />
 	);
 }
 
-export default async function LivePage({ searchParams }: LivePageProps) {
+export default async function CapturePage({ searchParams }: CapturePageProps) {
 	const { v } = await searchParams;
 
 	return (
-		<ProtectedRoute callbackPath={v ? `/live?v=${encodeURIComponent(v)}` : "/live"}>
-			<LiveCaptureContent manualVideoId={v} />
+		<ProtectedRoute callbackPath={v ? `/capture?v=${encodeURIComponent(v)}` : "/capture"}>
+			<CaptureContent manualVideoId={v} />
 		</ProtectedRoute>
 	);
 }
