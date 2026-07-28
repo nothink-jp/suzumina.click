@@ -125,6 +125,27 @@ export async function createButtonDraft(
 }
 
 /**
+ * 自分の未仕上げ下書きの件数を返す（ナビ「マーク N」バッジ用）。
+ * count() 集約のみ（ドキュメント本体は読まない）。未ログイン・失敗時は 0
+ * （バッジは再訪の動機づけであって正確性の契約ではないため、エラーで UI を汚さない）。
+ */
+export async function countMyButtonDrafts(): Promise<number> {
+	try {
+		const user = await getCurrentUser();
+		if (!user?.discordId) {
+			return 0;
+		}
+		const snapshot = await draftsRef(user.discordId).count().get();
+		return snapshot.data().count;
+	} catch (error) {
+		logger.error("音声ボタン下書き件数の取得でエラーが発生", {
+			error: error instanceof Error ? error.message : String(error),
+		});
+		return 0;
+	}
+}
+
+/**
  * 自分の下書き一覧を新しい順で取得する。
  */
 export async function getMyButtonDrafts(limit = 100): Promise<ListButtonDraftsResult> {

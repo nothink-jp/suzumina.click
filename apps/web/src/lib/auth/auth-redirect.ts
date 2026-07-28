@@ -24,6 +24,7 @@ export function isAuthGatedPath(pathname: string): boolean {
 		pathname.startsWith("/users/me/") ||
 		pathname === "/buttons/create" ||
 		pathname === "/watch" ||
+		pathname === "/drafts" ||
 		/^\/buttons\/[^/]+\/edit$/.test(pathname)
 	);
 }

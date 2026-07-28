@@ -1,9 +1,8 @@
-import type { AudioButtonDraft, VideoPlainObject } from "@suzumina.click/shared-types";
+import type { VideoPlainObject } from "@suzumina.click/shared-types";
 import type { Metadata } from "next";
 import { getMyButtonDrafts } from "@/actions/button-drafts";
-import { getVideoById, getVideosByIds, getVideosList } from "@/app/videos/actions";
+import { getVideoById, getVideosList } from "@/app/videos/actions";
 import { CaptureView } from "@/components/capture/capture-view";
-import { isAwaitingArchive } from "@/components/capture/video-mode";
 import ProtectedRoute from "@/components/system/protected-route";
 
 export const metadata: Metadata = {
@@ -59,29 +58,11 @@ async function findTargetVideo(manualVideoId?: string): Promise<VideoPlainObject
 }
 
 /**
- * 下書きを持つ動画のうち、まだ仕上げられない（配信中・配信予定）ものを列挙する。
- *
- * 判定はグループ自身の動画の**現在**状態で行う。表示中の動画と一致するかで判定していた頃は、
- * 表示していない配信中の動画のグループが仕上げ可能に見え、遷移先の canCreateAudioButton で
- * 弾かれていた（対象が配信1本に限られていた頃は表面化しなかった）。
- */
-async function findAwaitingArchiveVideoIds(
-	drafts: AudioButtonDraft[],
-	currentVideo: VideoPlainObject | null,
-): Promise<string[]> {
-	// 表示中の動画は取得済みなので再取得しない
-	const idsToFetch = [...new Set(drafts.map((draft) => draft.videoId))].filter(
-		(videoId) => videoId !== currentVideo?.videoId,
-	);
-	const videos = await getVideosByIds(idsToFetch);
-	if (currentVideo) {
-		videos.push(currentVideo);
-	}
-	return videos.filter(isAwaitingArchive).map((video) => video.videoId);
-}
-
-/**
  * データ取得は ProtectedRoute の内側で行う（未認証時はリダイレクトされ、ここは実行されない）。
+ *
+ * この画面に置くのは「今回のマーク」（表示中の動画の下書き）だけ（導線再設計 段2）。
+ * 他の配信の下書きは棚（/drafts）の仕事なので件数の案内だけ渡す。
+ * 複数グループの仕上げ可否判定（getVideosByIds）も /drafts 側に移った。
  */
 async function CaptureContent({ manualVideoId }: { manualVideoId?: string }) {
 	const [video, draftsResult] = await Promise.all([
@@ -91,8 +72,12 @@ async function CaptureContent({ manualVideoId }: { manualVideoId?: string }) {
 		getMyButtonDrafts(500),
 	]);
 
-	const drafts = draftsResult.success ? draftsResult.data : [];
-	const awaitingArchiveVideoIds = await findAwaitingArchiveVideoIds(drafts, video);
+	const allDrafts = draftsResult.success ? draftsResult.data : [];
+	const currentDrafts = video ? allDrafts.filter((d) => d.videoId === video.videoId) : [];
+	const otherDrafts = allDrafts.length - currentDrafts.length;
+	const otherVideos = new Set(
+		allDrafts.filter((d) => d.videoId !== video?.videoId).map((d) => d.videoId),
+	).size;
 
 	return (
 		<CaptureView
@@ -100,8 +85,8 @@ async function CaptureContent({ manualVideoId }: { manualVideoId?: string }) {
 			// 手動指定したのに引けなかった＝未取得の動画。選択状態に戻すだけだと
 			// 「入力したのに何も起きない」ように見えるため、理由を伝える
 			notFoundVideoId={manualVideoId && !video ? manualVideoId : undefined}
-			initialDrafts={drafts}
-			awaitingArchiveVideoIds={awaitingArchiveVideoIds}
+			initialDrafts={currentDrafts}
+			otherDraftsSummary={otherDrafts > 0 ? { videos: otherVideos, drafts: otherDrafts } : null}
 		/>
 	);
 }

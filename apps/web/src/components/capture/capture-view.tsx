@@ -2,6 +2,7 @@
 
 import type { AudioButtonDraft, VideoPlainObject } from "@suzumina.click/shared-types";
 import type { YTPlayer } from "@suzumina.click/ui/components/custom/youtube-types";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef } from "react";
 import { useCaptureDrafts } from "@/hooks/use-capture-drafts";
@@ -16,12 +17,10 @@ interface CaptureViewProps {
 	video: VideoPlainObject | null;
 	/** ?v= で指定されたが videos に無かった動画ID（選択状態で理由を出すためだけに使う） */
 	notFoundVideoId?: string;
+	/** 表示中の動画の下書きのみ（「今回のマーク」。他の配信の下書きは棚 /drafts の仕事） */
 	initialDrafts: AudioButtonDraft[];
-	/**
-	 * 下書きを持つ動画のうち、配信中・配信予定でまだ仕上げられないもの（page 側で現在状態から算出）。
-	 * 省略可にすると渡し忘れが「全部仕上げ可能」に化けるため必須にしている。
-	 */
-	awaitingArchiveVideoIds: string[];
+	/** 他の配信に残っている下書きの件数案内（null なら案内を出さない） */
+	otherDraftsSummary: { videos: number; drafts: number } | null;
 }
 
 const VIDEO_ID_PATTERN = /(?:v=|youtu\.be\/|\/live\/|\/embed\/|\/shorts\/)([A-Za-z0-9_-]{11})/;
@@ -49,7 +48,7 @@ export function CaptureView({
 	video,
 	notFoundVideoId,
 	initialDrafts,
-	awaitingArchiveVideoIds,
+	otherDraftsSummary,
 }: CaptureViewProps) {
 	const router = useRouter();
 	const playerRef = useRef<YTPlayer | null>(null);
@@ -153,13 +152,25 @@ export function CaptureView({
 				<VideoPicker notFoundVideoId={notFoundVideoId} onSubmit={handleManualSubmit} />
 			)}
 
-			<DraftQueue
-				groups={draftGroups}
-				totalCount={drafts.length}
-				currentVideoId={video?.videoId}
-				awaitingArchiveVideoIds={awaitingArchiveVideoIds}
-				onDelete={(draftId) => void remove(draftId)}
-			/>
+			{/* 今回のマークだけを置く（他の配信の下書きは棚 /drafts の仕事・導線再設計 段2） */}
+			{video && (
+				<DraftQueue
+					groups={draftGroups}
+					totalCount={drafts.length}
+					isLocked={isLiveNow || isUpcoming}
+					onDelete={(draftId) => void remove(draftId)}
+				/>
+			)}
+
+			{otherDraftsSummary && (
+				<p className="text-sm text-muted-foreground">
+					他の配信の下書き（{otherDraftsSummary.videos}配信・{otherDraftsSummary.drafts}件）は
+					<Link href="/drafts" className="mx-1 underline underline-offset-4 hover:text-foreground">
+						マーク棚
+					</Link>
+					から仕上げられます。
+				</p>
+			)}
 		</div>
 	);
 }

@@ -44,88 +44,6 @@ function makeDraft(
 	};
 }
 
-describe("CaptureView の下書きキュー表示（SPR-266 第2段）", () => {
-	beforeEach(() => {
-		vi.clearAllMocks();
-	});
-
-	it("下書きが動画単位にグルーピングされ、件数と「まとめて仕上げる」が表示される", () => {
-		const drafts = [
-			makeDraft("a2", "video-aaaaaaa", "アーカイブ配信A", 300, "2026-07-15T12:10:00.000Z"),
-			makeDraft("a1", "video-aaaaaaa", "アーカイブ配信A", 100, "2026-07-15T12:05:00.000Z"),
-			makeDraft("b1", "video-bbbbbbb", "アーカイブ配信B", 50, "2026-07-10T10:00:00.000Z"),
-		];
-		render(<CaptureView video={null} initialDrafts={drafts} awaitingArchiveVideoIds={[]} />);
-
-		// グループヘッダ（動画タイトル + 件数）
-		expect(screen.getByText("アーカイブ配信A")).toBeInTheDocument();
-		expect(screen.getByText("2件の下書き")).toBeInTheDocument();
-		expect(screen.getByText("アーカイブ配信B")).toBeInTheDocument();
-		expect(screen.getByText("1件の下書き")).toBeInTheDocument();
-
-		// まとめて仕上げる = グループ先頭（推奨開始秒が最小）の下書きから開く
-		const bulkLinks = screen.getAllByRole("link", { name: /まとめて仕上げる/ });
-		expect(bulkLinks).toHaveLength(2);
-		expect(bulkLinks[0]).toHaveAttribute(
-			"href",
-			"/buttons/create?video_id=video-aaaaaaa&start_time=100&draft_id=a1",
-		);
-	});
-
-	it("配信中の動画グループは仕上げ導線を出さない（アーカイブ公開後に仕上げ）", () => {
-		const liveVideo = {
-			videoId: "video-live11",
-			title: "配信中の動画",
-			_computed: { videoType: "live" },
-		} as unknown as VideoPlainObject;
-		const drafts = [
-			makeDraft("l1", "video-live11", "配信中の動画", 100, "2026-07-18T12:00:00.000Z"),
-		];
-		render(
-			<CaptureView
-				video={liveVideo}
-				initialDrafts={drafts}
-				awaitingArchiveVideoIds={["video-live11"]}
-			/>,
-		);
-
-		expect(screen.getByText("アーカイブ公開後に仕上げ")).toBeInTheDocument();
-		expect(screen.queryByRole("link", { name: /まとめて仕上げる/ })).not.toBeInTheDocument();
-		expect(screen.queryByRole("link", { name: /仕上げる/ })).not.toBeInTheDocument();
-	});
-
-	it("表示していない動画でも配信中なら仕上げ導線を出さない", () => {
-		// 表示中の動画との一致で判定していた頃は、この配信中グループが仕上げ可能に見えて
-		// 遷移先の canCreateAudioButton で弾かれていた
-		const drafts = [
-			makeDraft("l1", "video-live11", "別配信（配信中）", 100, "2026-07-18T12:00:00.000Z"),
-			makeDraft("a1", "video-arch11", "アーカイブ", 50, "2026-07-17T12:00:00.000Z"),
-		];
-		render(
-			<CaptureView
-				video={null}
-				initialDrafts={drafts}
-				awaitingArchiveVideoIds={["video-live11"]}
-			/>,
-		);
-
-		expect(screen.getByText("アーカイブ公開後に仕上げ")).toBeInTheDocument();
-		// 仕上げ導線が出るのはアーカイブ側のグループだけ
-		const bulkLinks = screen.getAllByRole("link", { name: /まとめて仕上げる/ });
-		expect(bulkLinks).toHaveLength(1);
-		expect(bulkLinks[0]).toHaveAttribute(
-			"href",
-			"/buttons/create?video_id=video-arch11&start_time=50&draft_id=a1",
-		);
-	});
-
-	it("下書きゼロなら空状態の案内を出す", () => {
-		render(<CaptureView video={null} initialDrafts={[]} awaitingArchiveVideoIds={[]} />);
-
-		expect(screen.getByText(/まだ下書きがありません/)).toBeInTheDocument();
-	});
-});
-
 function makeVideo(videoId: string, videoType: string, embeddable = true): VideoPlainObject {
 	return {
 		videoId,
@@ -134,6 +52,87 @@ function makeVideo(videoId: string, videoType: string, embeddable = true): Video
 		_computed: { videoType },
 	} as unknown as VideoPlainObject;
 }
+
+describe("CaptureView の今回のマーク（導線再設計 段2: 表示中の動画の下書きだけを置く）", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	it("表示中の動画の下書きに件数と「まとめて仕上げる」が表示される", () => {
+		const drafts = [
+			makeDraft("a2", "video-curr111", "表示中の動画", 300, "2026-07-15T12:10:00.000Z"),
+			makeDraft("a1", "video-curr111", "表示中の動画", 100, "2026-07-15T12:05:00.000Z"),
+		];
+		render(
+			<CaptureView
+				video={makeVideo("video-curr111", "archived")}
+				initialDrafts={drafts}
+				otherDraftsSummary={null}
+			/>,
+		);
+
+		expect(screen.getByText("今回のマーク")).toBeInTheDocument();
+		expect(screen.getByText("2件の下書き")).toBeInTheDocument();
+		// まとめて仕上げる = グループ先頭（推奨開始秒が最小）の下書きから開く
+		const bulkLink = screen.getByRole("link", { name: /まとめて仕上げる/ });
+		expect(bulkLink).toHaveAttribute(
+			"href",
+			"/buttons/create?video_id=video-curr111&start_time=100&draft_id=a1",
+		);
+	});
+
+	it("配信中はまだ仕上げられない（アーカイブ公開後に仕上げ）", () => {
+		const drafts = [
+			makeDraft("l1", "video-live11", "配信中の動画", 100, "2026-07-18T12:00:00.000Z"),
+		];
+		render(
+			<CaptureView
+				video={makeVideo("video-live11", "live")}
+				initialDrafts={drafts}
+				otherDraftsSummary={null}
+			/>,
+		);
+
+		expect(screen.getByText("アーカイブ公開後に仕上げ")).toBeInTheDocument();
+		expect(screen.queryByRole("link", { name: /まとめて仕上げる/ })).not.toBeInTheDocument();
+		expect(screen.queryByRole("link", { name: /仕上げる/ })).not.toBeInTheDocument();
+	});
+
+	it("マークゼロなら M キーの案内を出す", () => {
+		render(
+			<CaptureView
+				video={makeVideo("video-curr111", "archived")}
+				initialDrafts={[]}
+				otherDraftsSummary={null}
+			/>,
+		);
+
+		expect(screen.getByText(/まだマークがありません/)).toBeInTheDocument();
+	});
+
+	it("他の配信の下書きは一覧せず、件数つきでマーク棚（/drafts）へ誘導する", () => {
+		render(
+			<CaptureView
+				video={makeVideo("video-curr111", "archived")}
+				initialDrafts={[]}
+				otherDraftsSummary={{ videos: 2, drafts: 11 }}
+			/>,
+		);
+
+		expect(screen.getByText(/他の配信の下書き（2配信・11件）は/)).toBeInTheDocument();
+		expect(screen.getByRole("link", { name: "マーク棚" })).toHaveAttribute("href", "/drafts");
+	});
+
+	it("動画未選択では今回のマーク欄自体を出さない（選択状態と棚への誘導だけ）", () => {
+		render(
+			<CaptureView video={null} initialDrafts={[]} otherDraftsSummary={{ videos: 1, drafts: 3 }} />,
+		);
+
+		expect(screen.getByText("マーキングする動画を選ぶ")).toBeInTheDocument();
+		expect(screen.queryByText("今回のマーク")).not.toBeInTheDocument();
+		expect(screen.getByRole("link", { name: "マーク棚" })).toHaveAttribute("href", "/drafts");
+	});
+});
 
 describe("CaptureView の対象動画（配信・アーカイブ動画の両対応）", () => {
 	beforeEach(() => {
@@ -145,7 +144,7 @@ describe("CaptureView の対象動画（配信・アーカイブ動画の両対�
 			<CaptureView
 				video={makeVideo("video-arch11", "archived")}
 				initialDrafts={[]}
-				awaitingArchiveVideoIds={[]}
+				otherDraftsSummary={null}
 			/>,
 		);
 
@@ -160,7 +159,7 @@ describe("CaptureView の対象動画（配信・アーカイブ動画の両対�
 			<CaptureView
 				video={makeVideo("video-noemb1", "archived", false)}
 				initialDrafts={[]}
-				awaitingArchiveVideoIds={[]}
+				otherDraftsSummary={null}
 			/>,
 		);
 
@@ -170,7 +169,7 @@ describe("CaptureView の対象動画（配信・アーカイブ動画の両対�
 	});
 
 	it("動画未選択は選択状態として表示する（配信が無いことをエラー扱いしない）", () => {
-		render(<CaptureView video={null} initialDrafts={[]} awaitingArchiveVideoIds={[]} />);
+		render(<CaptureView video={null} initialDrafts={[]} otherDraftsSummary={null} />);
 
 		expect(screen.getByText("マーキングする動画を選ぶ")).toBeInTheDocument();
 		expect(screen.getByRole("link", { name: /動画一覧から選ぶ/ })).toHaveAttribute(
@@ -185,7 +184,7 @@ describe("CaptureView の対象動画（配信・アーカイブ動画の両対�
 				video={null}
 				notFoundVideoId="video-miss11"
 				initialDrafts={[]}
-				awaitingArchiveVideoIds={[]}
+				otherDraftsSummary={null}
 			/>,
 		);
 
@@ -205,7 +204,7 @@ describe("CaptureView の対象動画（配信・アーカイブ動画の両対�
 			<CaptureView
 				video={makeVideo("video-curr111", "archived")}
 				initialDrafts={drafts}
-				awaitingArchiveVideoIds={[]}
+				otherDraftsSummary={null}
 			/>,
 		);
 
@@ -224,28 +223,10 @@ describe("CaptureView の対象動画（配信・アーカイブ動画の両対�
 			<CaptureView
 				video={makeVideo("video-curr111", "archived")}
 				initialDrafts={[wallClockOnly]}
-				awaitingArchiveVideoIds={[]}
+				otherDraftsSummary={null}
 			/>,
 		);
 
 		expect(screen.queryByText("直前のマーク")).not.toBeInTheDocument();
-	});
-
-	it("表示中でない動画のグループには「マークを続ける」を出す", () => {
-		const drafts = [
-			makeDraft("a1", "video-aaaaaaa", "別の動画", 100, "2026-07-15T12:05:00.000Z"),
-			makeDraft("c1", "video-curr111", "表示中の動画", 50, "2026-07-16T12:00:00.000Z"),
-		];
-		render(
-			<CaptureView
-				video={makeVideo("video-curr111", "archived")}
-				initialDrafts={drafts}
-				awaitingArchiveVideoIds={[]}
-			/>,
-		);
-
-		const resumeLinks = screen.getAllByRole("link", { name: /マークを続ける/ });
-		expect(resumeLinks).toHaveLength(1);
-		expect(resumeLinks[0]).toHaveAttribute("href", "/watch?v=video-aaaaaaa");
 	});
 });

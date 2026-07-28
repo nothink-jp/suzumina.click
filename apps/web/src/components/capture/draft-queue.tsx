@@ -2,18 +2,16 @@
 
 import type { AudioButtonDraft } from "@suzumina.click/shared-types";
 import { Button } from "@suzumina.click/ui/components/ui/button";
-import { Bookmark, ExternalLink, Trash2 } from "lucide-react";
-import Link from "next/link";
+import { ExternalLink, Trash2 } from "lucide-react";
 import { formatSeconds } from "@/utils/format-seconds";
 import type { DraftVideoGroup } from "./draft-groups";
 
 interface DraftQueueProps {
+	/** 表示中の動画のグループのみ（0 or 1 グループ。「今回のマーク」・導線再設計 段2） */
 	groups: DraftVideoGroup[];
 	totalCount: number;
-	/** マーキング中の動画（そのグループには復帰導線を出さない） */
-	currentVideoId?: string;
-	/** 配信中・配信予定でまだ仕上げられない動画ID（表示中かどうかとは無関係に効く） */
-	awaitingArchiveVideoIds: string[];
+	/** 表示中の動画が配信中/配信予定＝まだ仕上げられない */
+	isLocked: boolean;
 	onDelete: (draftId: string) => void;
 }
 
@@ -28,61 +26,6 @@ function formatMarkedAt(iso: string): string {
 		hour: "2-digit",
 		minute: "2-digit",
 	});
-}
-
-function GroupHeader({
-	group,
-	currentVideoId,
-	isLocked,
-}: {
-	group: DraftVideoGroup;
-	currentVideoId?: string;
-	isLocked: boolean;
-}) {
-	const firstDraft = group.drafts[0];
-	return (
-		<div className="flex items-center gap-3 p-3 bg-muted/40 border-b">
-			<div className="min-w-0 flex-1">
-				<p className="text-sm font-medium truncate">{group.videoTitle}</p>
-				<p className="text-xs text-muted-foreground">{group.drafts.length}件の下書き</p>
-			</div>
-			{group.videoId !== currentVideoId && (
-				// 中断→再開が常態の動画視聴マーキング向けの復帰導線。同一ツリー内なので soft nav でよい
-				<Button
-					size="sm"
-					variant="outline"
-					render={
-						<Link href={`/watch?v=${group.videoId}`}>
-							<Bookmark className="h-3.5 w-3.5 mr-1" />
-							マークを続ける
-						</Link>
-					}
-				/>
-			)}
-			{isLocked ? (
-				<span className="text-xs text-muted-foreground whitespace-nowrap">
-					アーカイブ公開後に仕上げ
-				</span>
-			) : (
-				firstDraft && (
-					<Button
-						size="sm"
-						render={
-							// /buttons ツリーへの遷移はフルロード（intercepting route 回避・SPR-252）。
-							// 先頭の下書きから開けば同一動画のキューは create 側が読み込み、
-							// 連続仕上げ（SPR-266 第2段）につながる
-							<a
-								href={`/buttons/create?video_id=${group.videoId}&start_time=${firstDraft.suggestedStartTime}&draft_id=${firstDraft.id}`}
-							>
-								<ExternalLink className="h-3.5 w-3.5 mr-1" />
-								まとめて仕上げる
-							</a>
-						}
-					/>
-				)
-			)}
-		</div>
-	);
 }
 
 function DraftRow({
@@ -133,22 +76,15 @@ function DraftRow({
 }
 
 /**
- * 動画単位の下書きキュー（SPR-266 第2段）。
- * 仕上げ可否は「マーク時に配信だったか」ではなく「今アーカイブか」で決まるため、
- * 下書き自身ではなく動画の現在状態から判定する。
+ * 今回のマーク（表示中の動画の下書きキュー）。
+ * 溜める・棚卸しは /drafts（マーク棚）の仕事で、ここは視聴中のマークの確認と
+ * 視聴後の「まとめて仕上げる」だけを担う。
  */
-export function DraftQueue({
-	groups,
-	totalCount,
-	currentVideoId,
-	awaitingArchiveVideoIds,
-	onDelete,
-}: DraftQueueProps) {
-	const awaitingArchive = new Set(awaitingArchiveVideoIds);
+export function DraftQueue({ groups, totalCount, isLocked, onDelete }: DraftQueueProps) {
 	return (
 		<div className="space-y-3">
 			<h2 className="text-lg font-semibold">
-				下書き
+				今回のマーク
 				{totalCount > 0 && (
 					<span className="ml-2 text-sm font-normal text-muted-foreground">{totalCount}件</span>
 				)}
@@ -156,15 +92,41 @@ export function DraftQueue({
 
 			{totalCount === 0 ? (
 				<p className="text-sm text-muted-foreground">
-					まだ下書きがありません。配信や動画を見ながらマークするとここに溜まります。
+					まだマークがありません。「ここ！」と思った瞬間に M キーを押してください。
 				</p>
 			) : (
 				<div className="space-y-4">
 					{groups.map((group) => {
-						const isLocked = awaitingArchive.has(group.videoId);
+						const firstDraft = group.drafts[0];
 						return (
 							<div key={group.videoId} className="border rounded-lg overflow-hidden">
-								<GroupHeader group={group} currentVideoId={currentVideoId} isLocked={isLocked} />
+								<div className="flex items-center gap-3 p-3 bg-muted/40 border-b">
+									<p className="text-xs text-muted-foreground min-w-0 flex-1">
+										{group.drafts.length}件の下書き
+									</p>
+									{isLocked ? (
+										<span className="text-xs text-muted-foreground whitespace-nowrap">
+											アーカイブ公開後に仕上げ
+										</span>
+									) : (
+										firstDraft && (
+											<Button
+												size="sm"
+												render={
+													// /buttons ツリーへの遷移はフルロード（intercepting route 回避・SPR-252）。
+													// 先頭の下書きから開けば同一動画のキューは create 側が読み込み、
+													// 連続仕上げ（SPR-266 第2段）につながる
+													<a
+														href={`/buttons/create?video_id=${group.videoId}&start_time=${firstDraft.suggestedStartTime}&draft_id=${firstDraft.id}`}
+													>
+														<ExternalLink className="h-3.5 w-3.5 mr-1" />
+														まとめて仕上げる（{group.drafts.length}）
+													</a>
+												}
+											/>
+										)
+									)}
+								</div>
 								<ul className="divide-y">
 									{group.drafts.map((draft) => (
 										<DraftRow
