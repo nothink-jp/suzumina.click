@@ -41,6 +41,10 @@ export default defineConfig({
 				"src/lib/better-auth/enrich-session.ts",
 				"src/lib/better-auth/on-first-signup.ts",
 				"src/app/api/auth/**",
+				// ローカル開発ログイン（dev 専用・本番では 404）。better-auth の実セッション発行 glue と
+				// ルートハンドラで、判断ロジックは dev-auth/guard.ts 側に寄せてある（そちらはテスト対象）。
+				"src/lib/better-auth/dev-session.ts",
+				"src/app/api/dev/**",
 				// 認証プロバイダ切替の glue（動的 import / better-auth client / hooks 分岐で単体テスト困難）(SPR-157)
 				"src/lib/auth/server.ts",
 				"src/lib/auth/client.ts",

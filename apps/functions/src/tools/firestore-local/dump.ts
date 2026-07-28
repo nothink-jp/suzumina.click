@@ -17,6 +17,8 @@ import { Firestore } from "@google-cloud/firestore";
 import { type CollectionFixture, encodeValue } from "./serialize";
 
 // 公開（サイト上で既に閲覧可能）なカタログ系のみ。ユーザー紐付けコレクションは除外。
+// fixtures/users.json はここに含めない＝本番 dump 由来ではなく**手書きの合成データ**（ローカル開発ログイン用）。
+// dump はこの一覧のファイルだけを書き出すため、seed:dump で上書き・削除されることはない。
 const PUBLIC_COLLECTIONS = ["works", "circles", "videos", "audioButtons", "creators", "top10"];
 
 // 公開コレクション内でも伏せるフィールド（Discord ID 等の生の識別子）。

@@ -5,6 +5,10 @@
  *
  * 接続先は必ず Emulator。安全のため FIRESTORE_EMULATOR_HOST を強制設定し、
  * 本番 Firestore へ書き込む経路を塞ぐ。
+ *
+ * fixtures の大半は seed:dump が本番から取得したものだが、`users.json` だけは**手書きの合成データ**で、
+ * ローカル開発ログイン（`pnpm dev:local:auth` → /api/dev/signin）が使う開発用ユーザー 1 件を持つ。
+ * doc ID は `apps/web/src/lib/dev-auth/guard.ts` の DEV_AUTH_DISCORD_ID と一致させること。
  */
 
 import { readdir, readFile } from "node:fs/promises";

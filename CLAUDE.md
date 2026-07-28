@@ -154,6 +154,7 @@ PR は「やり直しが効くか」で自己マージ可否を分ける。AI �
 ### 開発コマンド
 ```bash
 pnpm dev:local                          # 推奨: Firestore Emulator 起動 + シード投入 + web dev（ADC 不要・本番に触れない）
+pnpm dev:local:auth                     # 上記 + ローカル開発ログイン有効（認証必須ページの確認時のみ）
 pnpm --filter @suzumina.click/web dev   # 本番 Firestore 直結（ADC 必須。データ確認や本番調査時のみ）
 pnpm verify                             # lint + typecheck + test（CI と同一判定）
 pnpm build                              # ビルド
@@ -166,7 +167,8 @@ pnpm build                              # ビルド
   コマンドは使わない＝§1 の禁止を順守）を起動し、シード投入後に web dev を立ち上げる。
   `@google-cloud/firestore` は `FIRESTORE_EMULATOR_HOST` を見て自動接続する（ダミー認証＝**ADC 不要**）。
   データは**ハイブリッド方式**：`apps/functions/src/tools/firestore-local/fixtures/*.json`（公開系のみ・コミット対象）を
-  `pnpm seed` で投入し、鮮度更新は `pnpm seed:dump`（ADC 1 回で本番から再取得）。ユーザー機微系は dump 対象外。
+  `pnpm seed` で投入し、鮮度更新は `pnpm seed:dump`（ADC 1 回で本番から再取得）。ユーザー機微系は dump 対象外
+  （例外は `users.json` の開発用ユーザー 1 件で、これは本番由来ではなく**手書きの合成データ**＝下記ログイン用）。
   個別操作: `pnpm emulator`（Emulator のみ） / `pnpm seed`（投入のみ） / `pnpm seed:dump`（本番→fixtures 更新）。
   安全弁: 本番 (`NODE_ENV=production`) で `FIRESTORE_EMULATOR_HOST` が設定されていたら接続を拒否する（両 `firestore.ts`）。
 - **`pnpm --filter @suzumina.click/web dev`（ADC 直結 / 本番 Firestore）**：ADC 必須。本番に直接読み書きする。
@@ -177,8 +179,21 @@ pnpm build                              # ビルド
   1. **本番データ起因バグの調査**（TZ パース・merge の sticky フィールド等、実データが無いと再現しない類）
   2. **新規クエリのインデックス検証**（Emulator は複合インデックスを強制しないため、ローカルで通っても本番で
      `FAILED_PRECONDITION` になる。新しい `where + orderBy` 追加時は ADC 直結か本番で要確認）
-  3. **ユーザー系・サブコレクションを含む網羅確認**（Emulator には users/favorites/evaluations や
-     `works/{id}/priceHistory` を投入しない。ログインは可だが role は既定 `member`、価格チャートは空）
+  3. **ユーザー系・サブコレクションを含む網羅確認**（Emulator の `users` は開発用ユーザー 1 件のみで、
+     favorites/evaluations や `works/{id}/priceHistory` は投入しない＝お気に入り・評価は空、価格チャートも空）
+
+**ローカル開発ログイン（`pnpm dev:local:auth`）**
+`/live`・`/buttons/create`・`/favorites`・`/settings`・`/users/me` など `ProtectedRoute` / `getCurrentUser()` で
+守られたページをブラウザ確認するときだけ使う。起動後 `http://localhost:3000/api/dev/signin` を開くと
+開発用ユーザーでログイン済みになる（`?callbackUrl=/buttons/create` で戻り先指定可。ログアウトは通常のヘッダーから）。
+
+- **認証コードには分岐を入れていない**。発行されるのは better-auth の**実セッション**で、
+  `getCurrentUser()` / `ProtectedRoute` / クライアントの `useSession()` はすべて Discord ログインと同じ経路を通る
+- **本番では構造的に無効**。`NODE_ENV !== "production"`（例外なし）＋ `DEV_AUTH_BYPASS=1` の明示 opt-in ＋
+  `FIRESTORE_EMULATOR_HOST` 設定済（＝ ADC 直結では有効化できない）の 3 条件 AND。
+  1 つでも欠ければ `/api/dev/signin` は 404。正本は [guard.ts](apps/web/src/lib/dev-auth/guard.ts)
+- 開発用ユーザーの doc ID は `guard.ts` の `DEV_AUTH_DISCORD_ID` と `fixtures/users.json` で**一致させる**
+  （ずれると「ログインしたのに未認証」になる。テストで突き合わせ済み）
 
 **いつ Emulator を立ち上げるか（毎セッションの判断・能動ルール）**
 原則は **lazy start**：セッション開始時に先回りで起動しない。**ブラウザ preview での確認が必要だと判断した直前**にだけ
