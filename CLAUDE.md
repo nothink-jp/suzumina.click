@@ -183,7 +183,7 @@ pnpm build                              # ビルド
      favorites/evaluations や `works/{id}/priceHistory` は投入しない＝お気に入り・評価は空、価格チャートも空）
 
 **ローカル開発ログイン（`pnpm dev:local:auth`）**
-`/live`・`/buttons/create`・`/favorites`・`/settings`・`/users/me` など `ProtectedRoute` / `getCurrentUser()` で
+`/watch`・`/drafts`・`/buttons/create`・`/favorites`・`/settings`・`/users/me` など `ProtectedRoute` / `getCurrentUser()` で
 守られたページをブラウザ確認するときだけ使う。起動後 `http://localhost:3000/api/dev/signin` を開くと
 開発用ユーザーでログイン済みになる（`?callbackUrl=/buttons/create` で戻り先指定可。ログアウトは通常のヘッダーから）。
 
