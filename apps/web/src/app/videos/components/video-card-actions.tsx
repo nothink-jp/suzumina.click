@@ -7,6 +7,7 @@ import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Bookmark, Clock, ExternalLink, Eye } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { resolveCaptureVideoMode } from "@/components/capture/video-mode";
 
 interface VideoCardActionsProps {
 	video: VideoPlainObject;
@@ -21,23 +22,21 @@ type MarkGate = { mode: "archived" | "live" | "upcoming" } | { mode: "disabled";
  * 無効化を残すのは事実の通知だけ: 埋め込み不可（プレイヤーが動かない）と、
  * 配信アーカイブでない動画（マークしてもボタンに仕上げられない）。
  *
- * 判定の正本はバッジ（video-badge.ts）と同じ _computed.videoType。raw の liveBroadcastContent は
- * stale がありうる（アーカイブ済みでも live のまま残る）。operations の isLive や _computed.isLive は
- * raw を OR しているため使わない — actualEndTime を見て archived を優先する videoType が唯一 stale に強い
+ * モード判定の正本は resolveCaptureVideoMode（video-detail / /watch / /drafts と同一関数）。
+ * その内部で使う _computed.videoType が唯一 stale に強い（raw の liveBroadcastContent や
+ * raw を OR する _computed.isLive は、アーカイブ済みでも live のまま残ることがある）。
  */
 function evaluateMarkGate(video: VideoPlainObject): MarkGate {
+	// 埋め込み不可はモードより先（プレイヤーが動かない事実は行為の選択に優先する）
 	if (video.status?.embeddable === false) {
 		return {
 			mode: "disabled",
 			reason: "この動画は埋め込みが制限されているため、マーキングできません",
 		};
 	}
-	const { videoType } = video._computed;
-	if (videoType === "live" || videoType === "possibly_live") {
-		return { mode: "live" };
-	}
-	if (videoType === "upcoming") {
-		return { mode: "upcoming" };
+	const mode = resolveCaptureVideoMode(video);
+	if (mode !== "archived") {
+		return { mode };
 	}
 	if (!canCreateAudioButton(video)) {
 		return {

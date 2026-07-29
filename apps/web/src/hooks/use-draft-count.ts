@@ -10,6 +10,12 @@ import { countMyButtonDrafts } from "@/actions/button-drafts";
  */
 let cache: Promise<number> | null = null;
 
+/**
+ * 表示中のバッジの購読者。SiteHeader はレイアウト常駐でソフトナビでは再マウントされないため、
+ * キャッシュを捨てるだけでは再取得が走らない＝購読して能動的に押し込む必要がある。
+ */
+const subscribers = new Set<(count: number) => void>();
+
 function fetchDraftCount(): Promise<number> {
 	if (!cache) {
 		cache = countMyButtonDrafts().catch(() => 0);
@@ -17,9 +23,20 @@ function fetchDraftCount(): Promise<number> {
 	return cache;
 }
 
-/** マーク（下書き）作成・削除後にバッジを最新化したい画面遷移で呼ぶ（次回マウントで再取得） */
-export function invalidateDraftCount(): void {
+/**
+ * 下書きを作成・削除・消化したあとに呼ぶ。件数を取り直して表示中のバッジへ反映する。
+ * 誰も表示していなければ次のマウントで取り直せば足りるので、無駄な集約は投げない。
+ */
+export function refreshDraftCount(): void {
 	cache = null;
+	if (subscribers.size === 0) {
+		return;
+	}
+	void fetchDraftCount().then((value) => {
+		for (const notify of subscribers) {
+			notify(value);
+		}
+	});
 }
 
 /**
@@ -34,13 +51,16 @@ export function useDraftCount(enabled: boolean): number | null {
 			return;
 		}
 		let cancelled = false;
-		void fetchDraftCount().then((value) => {
+		const notify = (value: number) => {
 			if (!cancelled) {
 				setCount(value);
 			}
-		});
+		};
+		subscribers.add(notify);
+		void fetchDraftCount().then(notify);
 		return () => {
 			cancelled = true;
+			subscribers.delete(notify);
 		};
 	}, [enabled]);
 

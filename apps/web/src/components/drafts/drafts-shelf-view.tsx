@@ -9,6 +9,7 @@ import { useCallback, useMemo, useState } from "react";
 import { deleteButtonDraft, updateButtonDraftPlayerTime } from "@/actions/button-drafts";
 import { type DraftVideoGroup, groupDraftsByVideo } from "@/components/capture/draft-groups";
 import { MARK_ADJUST_STEP_SECONDS } from "@/components/capture/mark-chip";
+import { refreshDraftCount } from "@/hooks/use-draft-count";
 import { formatSeconds } from "@/utils/format-seconds";
 
 /** グループ表示に使う動画の現在状態（page 側で videos から算出して渡す） */
@@ -261,6 +262,8 @@ export function DraftsShelfView({ initialDrafts, videoInfos }: DraftsShelfViewPr
 		const result = await deleteButtonDraft(draftId);
 		if (result.success) {
 			setDrafts((prev) => prev.filter((d) => d.id !== draftId));
+			// ナビ「マーク N」バッジはレイアウト常駐で再マウントされない＝能動的に取り直す
+			refreshDraftCount();
 		} else {
 			setError(result.error ?? "下書きの削除に失敗しました");
 		}

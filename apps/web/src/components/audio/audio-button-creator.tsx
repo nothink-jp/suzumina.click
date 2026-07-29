@@ -8,6 +8,7 @@ import { useCallback, useState } from "react";
 import { deleteButtonDraft } from "@/actions/button-drafts";
 import { createAudioButton } from "@/app/buttons/actions";
 import { useAudioButtonEditor } from "@/hooks/use-audio-button-editor";
+import { refreshDraftCount } from "@/hooks/use-draft-count";
 import { useVideoTranscript } from "@/hooks/use-video-transcript";
 import { trackCreateError, trackCreateStart, trackCreateSuccess } from "@/lib/analytics/events";
 import { useSession } from "@/lib/auth/client";
@@ -141,6 +142,8 @@ export function AudioButtonCreator({
 	const consumeActiveDraft = useCallback(async () => {
 		if (!activeDraftId) return;
 		await deleteButtonDraft(activeDraftId).catch(() => undefined);
+		// ナビ「マーク N」バッジはレイアウト常駐で再マウントされない＝能動的に取り直す
+		refreshDraftCount();
 		const consumed = videoDrafts?.find((draft) => draft.id === activeDraftId);
 		if (consumed) {
 			setDraftMarkList((prev) => removeOneOccurrence(prev, consumed.suggestedStartTime));

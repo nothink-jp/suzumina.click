@@ -9,6 +9,7 @@ import {
 	updateButtonDraftPlayerTime,
 } from "@/actions/button-drafts";
 import { findNearbyDraft } from "@/components/capture/mark-proximity";
+import { refreshDraftCount } from "@/hooks/use-draft-count";
 import { trackMarkDraft } from "@/lib/analytics/events";
 import { formatSeconds } from "@/utils/format-seconds";
 
@@ -90,6 +91,8 @@ export function useCaptureDrafts({
 			}
 
 			setDrafts((prev) => [result.data, ...prev]);
+			// ナビ「マーク N」バッジはレイアウト常駐で再マウントされない＝能動的に取り直す
+			refreshDraftCount();
 			setSessionMarkedIds((prev) => new Set(prev).add(result.data.id));
 			setLastMarkedId(result.data.id);
 			trackMarkDraft(video.videoId, playerTime != null);
@@ -134,6 +137,7 @@ export function useCaptureDrafts({
 			const result = await deleteButtonDraft(draftId);
 			if (result.success) {
 				setDrafts((prev) => prev.filter((d) => d.id !== draftId));
+				refreshDraftCount();
 				if (lastMarkedId === draftId) {
 					setLastMarkedId(null);
 				}
