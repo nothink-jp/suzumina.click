@@ -124,6 +124,30 @@ describe("VideoCard", () => {
 		expect(badgeLink).toHaveAttribute("href", "/buttons?videoId=video123");
 	});
 
+	it("ボタン0本の配信アーカイブには「まだ0本」バッジを出す（拾える配信・段3）", () => {
+		const video = createMockVideo({
+			audioButtonCount: 0,
+			_computed: {
+				...createMockVideo()._computed,
+				videoType: "archived",
+				isArchived: true,
+			},
+		});
+		render(<VideoCard video={video} />);
+
+		expect(screen.getByText("まだ0本")).toBeInTheDocument();
+	});
+
+	it("配信アーカイブでない動画には「まだ0本」を出さない（拾えないため）", () => {
+		const video = createMockVideo({
+			audioButtonCount: 0,
+			_computed: { ...createMockVideo()._computed, videoType: "normal", isArchived: false },
+		});
+		render(<VideoCard video={video} />);
+
+		expect(screen.queryByText("まだ0本")).not.toBeInTheDocument();
+	});
+
 	it("タグが表示される", () => {
 		const video = createMockVideo({
 			tags: {

@@ -8,9 +8,8 @@ vi.mock("@/lib/firestore", () => ({ getFirestore: mockGetFirestore }));
 
 vi.mock("@/lib/logger", () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() }));
 
-const { createButtonDraft, deleteButtonDraft, getMyButtonDrafts } = await import(
-	"../button-drafts"
-);
+const { createButtonDraft, deleteButtonDraft, getMyButtonDrafts, updateButtonDraftPlayerTime } =
+	await import("../button-drafts");
 
 const VALID_INPUT = {
 	videoId: "9kMBmEvhwUk",
@@ -19,9 +18,20 @@ const VALID_INPUT = {
 	markedAtMs: Date.now(),
 };
 
-function setupFirestore({ draftCount = 0 }: { draftCount?: number } = {}) {
+function setupFirestore({
+	draftCount = 0,
+	existingDoc,
+}: {
+	draftCount?: number;
+	existingDoc?: Record<string, unknown> | null;
+} = {}) {
 	const mockAdd = vi.fn(async (_doc: Record<string, unknown>) => ({ id: "draft-1" }));
 	const mockDelete = vi.fn(async () => undefined);
+	const mockUpdate = vi.fn(async (_patch: Record<string, unknown>) => undefined);
+	const mockDocGet = vi.fn(async () => ({
+		exists: existingDoc != null,
+		data: () => existingDoc,
+	}));
 	const mockOrderedGet = vi.fn(async () => ({ docs: [] as unknown[] }));
 	const mockLimit = vi.fn(() => ({ get: mockOrderedGet }));
 	const mockOrderBy = vi.fn(() => ({ limit: mockLimit }));
@@ -29,13 +39,13 @@ function setupFirestore({ draftCount = 0 }: { draftCount?: number } = {}) {
 		add: mockAdd,
 		count: () => ({ get: async () => ({ data: () => ({ count: draftCount }) }) }),
 		orderBy: mockOrderBy,
-		doc: vi.fn(() => ({ delete: mockDelete })),
+		doc: vi.fn(() => ({ delete: mockDelete, get: mockDocGet, update: mockUpdate })),
 	};
 	const userDoc = vi.fn();
 	mockGetFirestore.mockReturnValue({
 		collection: () => ({ doc: userDoc.mockReturnValue({ collection: () => subcollection }) }),
 	});
-	return { mockAdd, mockDelete, mockOrderBy, mockLimit, mockOrderedGet, userDoc };
+	return { mockAdd, mockDelete, mockUpdate, mockOrderBy, mockLimit, mockOrderedGet, userDoc };
 }
 
 describe("createButtonDraft (SPR-146)", () => {
@@ -162,5 +172,58 @@ describe("deleteButtonDraft", () => {
 		const result = await deleteButtonDraft("../users/other");
 		expect(result.success).toBe(false);
 		expect(mockDelete).not.toHaveBeenCalled();
+	});
+});
+
+describe("updateButtonDraftPlayerTime", () => {
+	const EXISTING = {
+		videoId: "9kMBmEvhwUk",
+		videoTitle: "テスト配信",
+		playerTime: 881.037,
+		markedAt: new Date("2026-07-18T12:00:00.000Z"),
+		createdAt: new Date("2026-07-18T12:00:00.000Z"),
+	};
+
+	beforeEach(() => {
+		vi.clearAllMocks();
+		mockGetCurrentUser.mockResolvedValue({ discordId: "u1", isActive: true });
+	});
+
+	it("playerTime だけを更新し、推奨開始秒は導出し直したプレーンを返す", async () => {
+		const { mockUpdate } = setupFirestore({ existingDoc: EXISTING });
+		const result = await updateButtonDraftPlayerTime("d1", 876.0374);
+
+		expect(mockUpdate).toHaveBeenCalledWith({ playerTime: 876.037 });
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data.playerTime).toBe(876.037);
+			// プリロール15秒ぶん巻き戻した値が導出される（保存はしない）
+			expect(result.data.suggestedStartTime).toBe(861);
+		}
+	});
+
+	it("存在しない下書きは更新しない", async () => {
+		const { mockUpdate } = setupFirestore({ existingDoc: null });
+		const result = await updateButtonDraftPlayerTime("d1", 100);
+
+		expect(result.success).toBe(false);
+		expect(mockUpdate).not.toHaveBeenCalled();
+	});
+
+	it("範囲外の再生位置は拒否する", async () => {
+		const { mockUpdate } = setupFirestore({ existingDoc: EXISTING });
+		const result = await updateButtonDraftPlayerTime("d1", -1);
+
+		expect(result.success).toBe(false);
+		expect(mockUpdate).not.toHaveBeenCalled();
+	});
+
+	it("無効ユーザー（isActive=false）はブロックする", async () => {
+		mockGetCurrentUser.mockResolvedValue({ discordId: "u1", isActive: false });
+		const { mockUpdate } = setupFirestore({ existingDoc: EXISTING });
+		const result = await updateButtonDraftPlayerTime("d1", 100);
+
+		expect(result.success).toBe(false);
+		expect(mockUpdate).not.toHaveBeenCalled();
 	});
 });

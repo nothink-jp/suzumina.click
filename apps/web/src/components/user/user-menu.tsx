@@ -14,6 +14,7 @@ import {
 import { Bookmark, Heart, LogOut, Settings, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useDraftCount } from "@/hooks/use-draft-count";
 import { isAuthGatedPath } from "@/lib/auth/auth-redirect";
 import { signOut } from "@/lib/auth/client";
 import * as logger from "@/lib/logger";
@@ -26,6 +27,8 @@ interface UserMenuProps {
 export default function UserMenu({ user }: UserMenuProps) {
 	const router = useRouter();
 	const pathname = usePathname();
+	// 未仕上げの下書き件数 = 再訪の理由（導線再設計 段2）。取得完了まで・0件は非表示
+	const draftCount = useDraftCount(true);
 
 	// client 側 signOut で session ストアを反応的にクリアし、ヘッダー表示をリロード無しで更新する。
 	// 遷移先: 認証必須ページに居たらログアウト後は留まれないのでトップへ。公開ページならその場に留まる
@@ -94,12 +97,17 @@ export default function UserMenu({ user }: UserMenuProps) {
 						</Link>
 					}
 				/>
-				{/* 配信終了後も下書きの仕上げに戻れるよう常設する（動画カード側の導線は live/upcoming 時のみ） */}
+				{/* ナビが指すのは作業台（/watch）ではなく未完の荷物がある棚（/drafts）。件数バッジが再訪の理由になる */}
 				<DropdownMenuItem
 					render={
-						<Link href="/live" className="flex items-center gap-2 cursor-pointer">
+						<Link href="/drafts" className="flex items-center gap-2 cursor-pointer">
 							<Bookmark className="h-4 w-4" />
-							<span>配信中マーキング</span>
+							<span>マーク</span>
+							{draftCount != null && draftCount > 0 && (
+								<span className="ml-auto rounded-full bg-heart text-heart-foreground text-xs px-2 py-0.5 min-w-[1.5rem] text-center">
+									{draftCount}
+								</span>
+							)}
 						</Link>
 					}
 				/>

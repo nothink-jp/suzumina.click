@@ -13,10 +13,10 @@ interface CreationActionBarProps {
 	disabledReason: string | null;
 	isCreating: boolean;
 	/**
-	 * 「作成して次を切り抜く」を出すか。下書きキュー進行中（SPR-266）は
-	 * 「作成」自体が次へ進むため出さない
+	 * 副アクション（残留して続ける）のラベル。ボタンは増やさず文字だけモードで変える（段4）:
+	 * 下書きキュー進行中は「作成して次の下書きへ（残り N）」、通常は「作成して次を切り抜く」
 	 */
-	showContinue: boolean;
+	continueLabel: string;
 	onCancel: () => void;
 	onCreate: () => void;
 	onCreateAndContinue: () => void;
@@ -32,7 +32,7 @@ export function CreationActionBar({
 	endTime,
 	disabledReason,
 	isCreating,
-	showContinue,
+	continueLabel,
 	onCancel,
 	onCreate,
 	onCreateAndContinue,
@@ -63,16 +63,15 @@ export function CreationActionBar({
 					<Button variant="ghost" onClick={onCancel} disabled={isCreating} className="min-h-[44px]">
 						キャンセル
 					</Button>
-					{showContinue && (
-						<Button
-							variant="outline"
-							onClick={onCreateAndContinue}
-							disabled={!canCreate || isCreating}
-							className="hidden min-h-[44px] whitespace-nowrap sm:inline-flex"
-						>
-							作成して次を切り抜く
-						</Button>
-					)}
+					{/* 連続作成はデスクトップの語彙（モバイルは1件を仕上げるだけに絞る） */}
+					<Button
+						variant="outline"
+						onClick={onCreateAndContinue}
+						disabled={!canCreate || isCreating}
+						className="hidden min-h-[44px] whitespace-nowrap sm:inline-flex"
+					>
+						{continueLabel}
+					</Button>
 					<Button
 						onClick={onCreate}
 						disabled={!canCreate || isCreating}

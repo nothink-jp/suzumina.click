@@ -275,13 +275,16 @@ async function getVideosWithFiltering(
 
 	// 年代フィルタがある場合、全データを取得する必要がある
 	// （フィルタリング後のページネーションを正確に行うため）
+	// least_buttons（拾える配信・導線再設計 段3）は audioButtonCount の in-memory ソートが
+	// 必要なため全件取得側に倒す（複合インデックスは足さない＝SPR-213 の既定に従う）
 	if (
 		params.year ||
 		params.search ||
 		params.playlistTags?.length ||
 		params.userTags?.length ||
 		params.categoryNames?.length ||
-		params.videoType
+		params.videoType ||
+		sort === "least_buttons"
 	) {
 		// フィルタがある場合は全件取得
 		const snapshot = await query.get();
@@ -294,6 +297,15 @@ async function getVideosWithFiltering(
 
 		// フィルタリング処理
 		const filteredVideos = filterVideos(allVideos, params);
+
+		// 拾える配信順: ボタンが少ない順 → 同数なら新しい順（まだ誰も拾っていない配信を先頭へ）
+		if (sort === "least_buttons") {
+			filteredVideos.sort(
+				(a, b) =>
+					(a.audioButtonCount ?? 0) - (b.audioButtonCount ?? 0) ||
+					b.publishedAt.localeCompare(a.publishedAt),
+			);
+		}
 
 		// ページネーション
 		const startOffset = (page - 1) * limit;
@@ -494,5 +506,36 @@ export async function getVideoById(videoId: string) {
 			stack: error instanceof Error ? error.stack : undefined,
 		});
 		return null;
+	}
+}
+
+/**
+ * 複数の動画をIDで一括取得する（videos のドキュメントIDは videoId）。
+ *
+ * 既知の少数IDをまとめて引く用途（マーキングの下書きキューが、動画ごとの現在状態＝
+ * 仕上げてよいかを知るために使う）。存在しないIDは結果から落ちるだけで例外にしない。
+ * getAll は index を要求しないため firestore_indexes.tf の追加は不要。
+ */
+export async function getVideosByIds(videoIds: string[]): Promise<VideoPlainObject[]> {
+	const uniqueIds = [...new Set(videoIds)];
+	if (uniqueIds.length === 0) {
+		return [];
+	}
+
+	try {
+		const firestore = getFirestore();
+		const refs = uniqueIds.map((id) => firestore.collection("videos").doc(id));
+		const docs = await firestore.getAll(...refs);
+		return docs
+			.filter((doc) => doc.exists)
+			.map((doc) => convertToVideo(doc))
+			.filter((video): video is VideoPlainObject => video !== null);
+	} catch (error) {
+		logger.error("動画の一括取得でエラーが発生", {
+			action: "getVideosByIds",
+			対象総数: uniqueIds.length,
+			error: error instanceof Error ? error.message : String(error),
+		});
+		return [];
 	}
 }

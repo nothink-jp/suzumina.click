@@ -268,6 +268,10 @@ vi.mock("lucide-react", () => {
 		// Icons for AudioButtonCreator microadjustment
 		MousePointer: createMockIcon("MousePointer"),
 		ChevronLeft: createMockIcon("ChevronLeft"),
+		// Icons for マーキングの微調整
+		Minus: createMockIcon("Minus"),
+		// Icons for 動画詳細の「ここを切り抜く」（導線再設計）
+		Scissors: createMockIcon("Scissors"),
 		// Icons for tag editing
 		Save: createMockIcon("Save"),
 		Hash: createMockIcon("Hash"),

@@ -2,7 +2,7 @@
  * グローバルなキーボードショートカットとして処理すべきキー入力か判定し、
  * 該当キー（小文字）を返す。対象外なら null。
  *
- * ガードの正本（SPR-266）: /live の M キーと create/edit の I/O キーの両方がこれを使う。
+ * ガードの正本（SPR-266）: /watch の M キーと create/edit の I/O キーの両方がこれを使う。
  * - 入力欄（input/textarea/select/contentEditable）フォーカス中は無視
  * - キーリピートは無視（押しっぱなしの連発防止）
  * - 修飾キー付き（Ctrl/Meta/Alt）はブラウザ・OS のショートカットに譲る

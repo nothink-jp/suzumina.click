@@ -113,6 +113,19 @@ function VideoCard({ video, variant = "grid", priority = false, searchQuery }: V
 							/>
 						</div>
 					)}
+					{/* まだ誰も拾っていない配信アーカイブ＝貢献の余地を heart で示す（拾える配信・導線再設計 段3） */}
+					{actualButtonCount === 0 &&
+						video._computed.videoType === "archived" &&
+						video.status?.embeddable !== false && (
+							<div className="absolute top-2 left-2">
+								<Badge
+									className="bg-heart text-heart-foreground"
+									aria-label="この配信のボタンはまだありません"
+								>
+									まだ0本
+								</Badge>
+							</div>
+						)}
 					{video.status?.embeddable === false && (
 						<div className="absolute top-2 right-2">
 							<Badge

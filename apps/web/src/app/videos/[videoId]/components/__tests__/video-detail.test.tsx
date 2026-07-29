@@ -375,36 +375,76 @@ describe("VideoDetail", () => {
 		});
 	});
 
-	describe("音声ボタン作成可否（getCanCreateButtonData）", () => {
-		it("未ログインは作成ボタンが無効でログイン理由が title に出る", () => {
-			mockUseSession(null);
-			render(<VideoDetail video={createMockVideo()} />);
+	describe("アクション行（主=マークして見る／副=ここを切り抜く・導線再設計）", () => {
+		const archivedVideo = () =>
+			createMockVideo({
+				_computed: { videoType: "archived", isArchived: true, canCreateButton: true },
+			});
 
-			const createButton = screen.getByText("ボタンを作成").closest("button");
-			expect(createButton).toBeDisabled();
-			expect(createButton).toHaveAttribute("title", expect.stringMatching(/ログインが必要/));
+		it("アーカイブは主が /watch・副が /buttons/create の1組になる", () => {
+			render(<VideoDetail video={archivedVideo()} />);
+
+			const markLink = screen.getByText("マークして見る").closest("a");
+			expect(markLink).toHaveAttribute("href", "/watch?v=abc123");
+			const clipLink = screen.getByText("ここを切り抜く").closest("a");
+			expect(clipLink).toHaveAttribute("href", "/buttons/create?video_id=abc123");
+			// 意図の分岐点の1行説明
+			expect(screen.getByText(/見ながら複数拾うなら/)).toBeInTheDocument();
+			// サイドバーの「新規作成」は削除済み（作成導線は本文の1組に集約）
+			expect(screen.queryByRole("link", { name: "新規作成" })).not.toBeInTheDocument();
 		});
 
-		it("埋め込み制限（embeddable=false）は作成不可で理由が title に出る", () => {
-			mockUseSession({ discordId: "1" });
-			// embeddable=false は canCreateAudioButton より先に判定されるため _computed は不要
+		it("未ログインでも同じ見た目で出る（ポインタに徹し認証は行き先に委譲）", () => {
+			mockUseSession(null);
+			render(<VideoDetail video={archivedVideo()} />);
+
+			expect(screen.getByText("マークして見る").closest("a")).toHaveAttribute(
+				"href",
+				"/watch?v=abc123",
+			);
+			expect(screen.getByText("ここを切り抜く").closest("a")).toBeInTheDocument();
+			expect(screen.queryByText(/ログインが必要/)).not.toBeInTheDocument();
+		});
+
+		it("配信中は主が『配信中マーク』になり副は非表示（disabled もツールチップも置かない）", () => {
+			render(
+				<VideoDetail video={createMockVideo({ _computed: { videoType: "live", isLive: true } })} />,
+			);
+
+			expect(screen.getByText("配信中マーク").closest("a")).toHaveAttribute(
+				"href",
+				"/watch?v=abc123",
+			);
+			expect(screen.queryByText("ここを切り抜く")).not.toBeInTheDocument();
+			expect(screen.getByText(/切り抜きはアーカイブ公開後に/)).toBeInTheDocument();
+		});
+
+		it("配信予定は主が『配信待機』になる", () => {
+			render(
+				<VideoDetail
+					video={createMockVideo({ _computed: { videoType: "upcoming", isUpcoming: true } })}
+				/>,
+			);
+
+			expect(screen.getByText("配信待機").closest("a")).toHaveAttribute("href", "/watch?v=abc123");
+			expect(screen.queryByText("ここを切り抜く")).not.toBeInTheDocument();
+		});
+
+		it("埋め込み制限（embeddable=false）は唯一の無効化として理由が title に出る", () => {
 			render(<VideoDetail video={createMockVideo({ status: { embeddable: false } })} />);
 
-			const createButton = screen.getByText("ボタンを作成").closest("button");
-			expect(createButton).toBeDisabled();
-			expect(createButton).toHaveAttribute("title", expect.stringMatching(/埋め込みが制限/));
+			const markButton = screen.getByText("マークして見る").closest("button");
+			// カードと同じ aria-disabled パターン（native disabled は tooltip が出ない）
+			expect(markButton).toHaveAttribute("aria-disabled", "true");
+			expect(markButton).toHaveAttribute("title", expect.stringMatching(/埋め込みが制限/));
 		});
 
-		it("作成可能な動画はボタンが Link になり、サイドバーに新規作成リンクが出る", () => {
-			mockUseSession({ discordId: "1" });
-			render(<VideoDetail video={createMockVideo({ _computed: { canCreateButton: true } })} />);
+		it("配信アーカイブでない動画は理由つきで無効化する（マークしても仕上げられない）", () => {
+			render(<VideoDetail video={createMockVideo()} />);
 
-			const createLink = screen.getByText("ボタンを作成").closest("a");
-			expect(createLink).toHaveAttribute("href", "/buttons/create?video_id=abc123");
-			expect(screen.getByRole("link", { name: "新規作成" })).toHaveAttribute(
-				"href",
-				"/buttons/create?video_id=abc123",
-			);
+			const markButton = screen.getByText("マークして見る").closest("button");
+			expect(markButton).toHaveAttribute("aria-disabled", "true");
+			expect(markButton).toHaveAttribute("title", expect.stringMatching(/配信アーカイブのみ/));
 		});
 	});
 

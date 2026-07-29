@@ -691,7 +691,7 @@ describe("AudioButtonCreator - Refactored Architecture", () => {
 			await user.click(createButton);
 		}
 
-		it("キューに残りがあれば遷移せず次の下書きへ進む（フォームリセット＋プレイヤー維持）", async () => {
+		it("「作成して次の下書きへ」で遷移せず次の下書きへ進む（フォームリセット＋プレイヤー維持）", async () => {
 			const user = userEvent.setup();
 			render(
 				<AudioButtonCreator
@@ -702,11 +702,16 @@ describe("AudioButtonCreator - Refactored Architecture", () => {
 				/>,
 			);
 
-			// キューパネルに次の下書きが見えている
-			expect(screen.getByText("仕上げキュー")).toBeInTheDocument();
-			expect(screen.getByText(/次: 02:00 付近/)).toBeInTheDocument();
+			// キュー帯（0の帯）に位置と時刻チップが見えている
+			expect(screen.getByText("マーク棚から 2件")).toBeInTheDocument();
+			expect(screen.getByText(/1件目 \/ 2/)).toBeInTheDocument();
 
-			await createWithTitle(user, "1個目のボタン");
+			await user.type(screen.getByPlaceholderText("例: おはようございます"), "1個目のボタン");
+			const continueButton = screen.getByRole("button", {
+				name: "作成して次の下書きへ（残り1）",
+			});
+			await waitFor(() => expect(continueButton).toBeEnabled());
+			await user.click(continueButton);
 
 			// 消化（削除）される
 			await waitFor(() => {
@@ -727,6 +732,27 @@ describe("AudioButtonCreator - Refactored Architecture", () => {
 				"href",
 				"/buttons/new-audio-button-id",
 			);
+		});
+
+		it("主ボタン「音声ボタンを作成」はキューが残っていても詳細ページへフルロード遷移する（続行は毎回選ぶ・段4）", async () => {
+			const user = userEvent.setup();
+			render(
+				<AudioButtonCreator
+					{...defaultProps}
+					initialStartTime={30}
+					draftId="draft-1"
+					videoDrafts={[makeDraft("draft-1", 30), makeDraft("draft-2", 120)]}
+				/>,
+			);
+
+			await createWithTitle(user, "抜けるボタン");
+
+			await waitFor(() => {
+				expect(mockDeleteButtonDraft).toHaveBeenCalledWith("draft-1");
+			});
+			await waitFor(() => {
+				expect(window.location.href).toContain("/buttons/new-audio-button-id");
+			});
 		});
 
 		it("最後の下書きなら従来どおり詳細ページへフルロード遷移する", async () => {
@@ -768,14 +794,16 @@ describe("AudioButtonCreator - Refactored Architecture", () => {
 			await waitFor(() => {
 				expect(screen.getByDisplayValue("2:00.0")).toBeInTheDocument();
 			});
-			// キューが尽きたら「最後の下書き」の案内に変わる
-			expect(screen.getByText(/これが最後の下書きです/)).toBeInTheDocument();
+			// キューが尽きたら「最後の下書き」の案内に変わり、位置表示も進む
+			expect(screen.getByText("最後の下書きです")).toBeInTheDocument();
+			expect(screen.getByText(/2件目 \/ 2/)).toBeInTheDocument();
 		});
 
-		it("下書きキューなし（通常作成）ではキューパネルを出さない", () => {
+		it("下書きキューなし（通常作成）ではキュー帯を出さず、副アクションは従来の文言", () => {
 			render(<AudioButtonCreator {...defaultProps} />);
 
-			expect(screen.queryByText("仕上げキュー")).not.toBeInTheDocument();
+			expect(screen.queryByText(/マーク棚から/)).not.toBeInTheDocument();
+			expect(screen.getByRole("button", { name: "作成して次を切り抜く" })).toBeInTheDocument();
 		});
 
 		it("作成成功で消化した下書きのマークが探索レーンから消える（SPR-289 レビュー対応）", async () => {
@@ -794,7 +822,12 @@ describe("AudioButtonCreator - Refactored Architecture", () => {
 			expect(screen.getAllByTestId("explore-draft-mark")).toHaveLength(2);
 			expect(screen.getByText(/作成済み 1個 ・ 下書き 2個/)).toBeInTheDocument();
 
-			await createWithTitle(user, "1個目のボタン");
+			await user.type(screen.getByPlaceholderText("例: おはようございます"), "1個目のボタン");
+			const continueButton = screen.getByRole("button", {
+				name: "作成して次の下書きへ（残り1）",
+			});
+			await waitFor(() => expect(continueButton).toBeEnabled());
+			await user.click(continueButton);
 
 			await waitFor(() => {
 				expect(mockDeleteButtonDraft).toHaveBeenCalledWith("draft-1");

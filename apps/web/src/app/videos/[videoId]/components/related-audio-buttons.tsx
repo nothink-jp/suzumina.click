@@ -4,12 +4,12 @@ import type { AudioButton, VideoPlainObject } from "@suzumina.click/shared-types
 import { canCreateAudioButton } from "@suzumina.click/shared-types";
 import { EmptyState } from "@suzumina.click/ui/components/custom";
 import { Button } from "@suzumina.click/ui/components/ui/button";
-import { ArrowRight, Plus, Volume2 } from "lucide-react";
+import { ArrowRight, Bookmark, Volume2 } from "lucide-react";
 import Link from "next/link";
 import { useMemo } from "react";
 import { AudioButtonWithPlayCount } from "@/components/audio/audio-button-with-play-count";
+import { resolveCaptureVideoMode } from "@/components/capture/video-mode";
 import { useAudioButtonStatuses } from "@/hooks/use-audio-button-statuses";
-import { useSession } from "@/lib/auth/client";
 
 interface RelatedAudioButtonsProps {
 	audioButtons: AudioButton[];
@@ -24,27 +24,31 @@ export function RelatedAudioButtons({
 	videoId,
 	video,
 }: RelatedAudioButtonsProps) {
-	const user = useSession();
 	// per-user 状態（お気に入り/高低評価）は SSR に焼かず client で一括取得する（純公開 shell・SPR-226）。
 	// 公開リスト（/buttons）と同じ pattern。これにより /videos/[id] を public キャッシュへ戻せる。
 	const audioButtonIds = useMemo(() => audioButtons.map((button) => button.id), [audioButtons]);
 	const { likeDislikeStatuses, favoriteStatuses } = useAudioButtonStatuses(audioButtonIds);
-	const canCreateButton = user && canCreateAudioButton(video) && video.status?.embeddable !== false;
+	// 空状態の導線は本文の主アクションと同じ /watch 行き（「ここにもある」ではなく「ここから始める」）。
+	// ログインは見ない＝ポインタに徹し、認証は /watch の ProtectedRoute に委ねる
+	const mode = resolveCaptureVideoMode(video);
+	const canMark =
+		video.status?.embeddable !== false && (canCreateAudioButton(video) || mode !== "archived");
 
 	if (audioButtons.length === 0) {
 		return (
 			<EmptyState
 				icon={<Volume2 className="h-6 w-6" />}
 				title="この動画の音声ボタンはまだありません"
+				description={canMark ? "通し見ながら拾うのがいちばん早いです" : undefined}
 				action={
-					canCreateButton ? (
+					canMark ? (
 						<Button
 							size="sm"
 							variant="outline"
 							render={
-								<Link href={`/buttons/create?video_id=${videoId}`}>
-									<Plus className="h-4 w-4 mr-2" />
-									最初の音声ボタンを作る
+								<Link href={`/watch?v=${videoId}`}>
+									<Bookmark className="h-4 w-4 mr-2" />
+									マークして見る
 								</Link>
 							}
 						/>

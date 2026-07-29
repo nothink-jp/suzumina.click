@@ -20,6 +20,11 @@ vi.mock("../../user/auth-button", () => ({
 	),
 }));
 
+// ナビ「マーク N」バッジの件数フック（count() 集約はテスト対象外なので固定値）
+vi.mock("@/hooks/use-draft-count", () => ({
+	useDraftCount: (enabled: boolean) => (enabled ? 7 : null),
+}));
+
 const mockUser: UserSession = {
 	discordId: "123456789",
 	username: "testuser",
@@ -58,7 +63,7 @@ describe("MobileMenu", () => {
 			// ログイン時セクションは非表示
 			expect(screen.queryByRole("link", { name: /お気に入り/ })).not.toBeInTheDocument();
 			expect(screen.queryByRole("link", { name: /マイページ/ })).not.toBeInTheDocument();
-			expect(screen.queryByRole("link", { name: /配信中マーキング/ })).not.toBeInTheDocument();
+			expect(screen.queryByRole("link", { name: /マーク/ })).not.toBeInTheDocument();
 			expect(screen.queryByRole("link", { name: /設定/ })).not.toBeInTheDocument();
 
 			// 認証ボタンは常設
@@ -76,11 +81,12 @@ describe("MobileMenu", () => {
 			expectLink(/ボタン検索/, "/buttons");
 			expectLink(/作品一覧/, "/works");
 
-			// ログイン時セクション（/live は配信終了後も下書き仕上げに戻れる常設導線）
+			// ログイン時セクション（ナビが指すのは棚 /drafts。件数バッジが再訪の理由）
 			expectLink(/お気に入り/, "/favorites");
 			expectLink(/マイページ/, "/users/me");
-			expectLink(/配信中マーキング/, "/live");
+			expectLink(/マーク/, "/drafts");
 			expectLink(/設定/, "/settings");
+			expect(screen.getByRole("link", { name: /マーク/ })).toHaveTextContent("7");
 
 			expect(screen.getByTestId("auth-button")).toHaveTextContent("ログイン中");
 		});

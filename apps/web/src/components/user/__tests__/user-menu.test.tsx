@@ -37,6 +37,12 @@ vi.mock("next/navigation", () => ({
 // logger のモック（エラーパス検証用）
 vi.mock("@/lib/logger", () => ({ error: vi.fn(), info: vi.fn(), warn: vi.fn() }));
 
+// ナビ「マーク N」バッジの件数フック（count() 集約はテスト対象外なので固定値）
+let mockDraftCount: number | null = 7;
+vi.mock("@/hooks/use-draft-count", () => ({
+	useDraftCount: () => mockDraftCount,
+}));
+
 // Next.js Linkコンポーネントのモック
 vi.mock("next/link", () => ({
 	default: ({ children, href }: { children: React.ReactNode; href: string }) => (
@@ -99,15 +105,29 @@ describe("UserMenu", () => {
 		expect(myPageLink).toHaveAttribute("href", "/users/me");
 	});
 
-	it("配信中マーキングリンクが常設されている（配信終了後の下書き仕上げ導線）", async () => {
+	it("マークリンクは棚（/drafts）を指し、未仕上げ件数バッジが出る", async () => {
+		mockDraftCount = 7;
 		const user = userEvent.setup();
 		render(<UserMenu user={mockUser} />);
 
 		const triggerButton = screen.getByRole("button", { name: "ユーザーメニューを開く" });
 		await user.click(triggerButton);
 
-		const liveLink = screen.getByRole("link", { name: /配信中マーキング/i });
-		expect(liveLink).toHaveAttribute("href", "/live");
+		const draftsLink = screen.getByRole("link", { name: /マーク/i });
+		expect(draftsLink).toHaveAttribute("href", "/drafts");
+		expect(draftsLink).toHaveTextContent("7");
+	});
+
+	it("下書きゼロならバッジは出さない", async () => {
+		mockDraftCount = 0;
+		const user = userEvent.setup();
+		render(<UserMenu user={mockUser} />);
+
+		await user.click(screen.getByRole("button", { name: "ユーザーメニューを開く" }));
+
+		const draftsLink = screen.getByRole("link", { name: /マーク/i });
+		expect(draftsLink).toHaveAttribute("href", "/drafts");
+		expect(draftsLink).not.toHaveTextContent("0");
 	});
 
 	async function clickLogout() {

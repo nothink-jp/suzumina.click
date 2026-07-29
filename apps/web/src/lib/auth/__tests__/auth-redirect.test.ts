@@ -10,7 +10,8 @@ describe("isAuthGatedPath", () => {
 		"/users/me/edit",
 		"/buttons/create",
 		"/buttons/RJ123456/edit",
-		"/live",
+		"/watch",
+		"/drafts",
 	])("認証必須ページ %s は true", (path) => {
 		expect(isAuthGatedPath(path)).toBe(true);
 	});

@@ -1,7 +1,7 @@
 import type { AudioButtonDraft } from "@suzumina.click/shared-types";
 
 /**
- * /live 下書きキューの動画単位グループ（SPR-266 第2段のキュー画面）。
+ * /watch 下書きキューの動画単位グループ（SPR-266 第2段のキュー画面）。
  * 「仕上げ済み」の区別は不要（仕上げ＝下書き消化で一覧から消えるため、表示されるのは常に未処理）。
  */
 export interface DraftVideoGroup {

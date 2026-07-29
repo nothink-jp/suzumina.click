@@ -4,53 +4,81 @@ import {
 	getAudioButtonCreationErrorMessage,
 } from "@suzumina.click/shared-types";
 import { Button } from "@suzumina.click/ui/components/ui/button";
-import { Bookmark, Clock, ExternalLink, Eye, Plus } from "lucide-react";
+import { Bookmark, Clock, ExternalLink, Eye } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { resolveCaptureVideoMode } from "@/components/capture/video-mode";
 
 interface VideoCardActionsProps {
 	video: VideoPlainObject;
 	variant: "grid" | "sidebar";
 }
 
-type ButtonGate =
-	| { canCreate: true }
-	| { canCreate: false; liveMarking: "live" | "upcoming" }
-	| { canCreate: false; reason: string };
+type MarkGate = { mode: "archived" | "live" | "upcoming" } | { mode: "disabled"; reason: string };
 
-function evaluateButtonGate(video: VideoPlainObject): ButtonGate {
-	// 配信中/配信予定は「作成不可」ではなく配信中マーキング（/live）への導線に切り替える（SPR-146）。
-	// この時間帯の正しい作成手段はマーク→アーカイブ後の仕上げのため。
-	// 判定の正本はバッジ（video-badge.ts）と同じ _computed.videoType。raw の liveBroadcastContent は
-	// stale がありうる（アーカイブ済みでも live のまま残る）。operations の isLive や _computed.isLive は
-	// raw を OR しているため使わない — actualEndTime を見て archived を優先する videoType が唯一 stale に強い
-	const { videoType } = video._computed;
-	if (videoType === "live" || videoType === "possibly_live") {
-		return { canCreate: false, liveMarking: "live" };
-	}
-	if (videoType === "upcoming") {
-		return { canCreate: false, liveMarking: "upcoming" };
-	}
+/**
+ * カードの主アクションの状態を決める。行き先は全状態で /watch（マーキング）に固定し、
+ * 変わるのはラベルと色だけ（導線再設計＝統一案）。「行為の選択」を動画の状態にさせない。
+ * 無効化を残すのは事実の通知だけ: 埋め込み不可（プレイヤーが動かない）と、
+ * 配信アーカイブでない動画（マークしてもボタンに仕上げられない）。
+ *
+ * モード判定の正本は resolveCaptureVideoMode（video-detail / /watch / /drafts と同一関数）。
+ * その内部で使う _computed.videoType が唯一 stale に強い（raw の liveBroadcastContent や
+ * raw を OR する _computed.isLive は、アーカイブ済みでも live のまま残ることがある）。
+ */
+function evaluateMarkGate(video: VideoPlainObject): MarkGate {
+	// 埋め込み不可はモードより先（プレイヤーが動かない事実は行為の選択に優先する）
 	if (video.status?.embeddable === false) {
 		return {
-			canCreate: false,
-			reason: "この動画は埋め込みが制限されているため、音声ボタンを作成できません",
+			mode: "disabled",
+			reason: "この動画は埋め込みが制限されているため、マーキングできません",
 		};
+	}
+	const mode = resolveCaptureVideoMode(video);
+	if (mode !== "archived") {
+		return { mode };
 	}
 	if (!canCreateAudioButton(video)) {
 		return {
-			canCreate: false,
+			mode: "disabled",
 			reason:
 				getAudioButtonCreationErrorMessage(video) ||
 				"音声ボタンを作成できるのは配信アーカイブのみです",
 		};
 	}
-	return { canCreate: true };
+	return { mode: "archived" };
 }
+
+/** モード別の見た目（色はバッジと同色ペア: 配信中=destructive 赤 / 配信予告=info 青） */
+const MARK_VARIANTS = {
+	archived: {
+		label: "マークして見る",
+		ariaSuffix: "のマーキングを開く",
+		className: "flex-1 min-h-[44px] text-sm",
+		variant: "default" as const,
+		icon: Bookmark,
+	},
+	live: {
+		label: "配信中マーク",
+		ariaSuffix: "の配信中マーキングを開く",
+		className: "flex-1 min-h-[44px] text-sm",
+		variant: "destructive" as const,
+		icon: Bookmark,
+	},
+	upcoming: {
+		label: "配信待機",
+		ariaSuffix: "の配信待機（マーキング）を開く",
+		className: "flex-1 min-h-[44px] text-sm bg-info text-info-foreground hover:bg-info/90",
+		variant: "default" as const,
+		icon: Clock,
+	},
+};
 
 /**
  * VideoCard のアクション領域。
- * ログイン状態は見ない（session 非依存）: 認証は各目的地（/live・/buttons/create）の
+ * 主アクションは「マークして見る」（/watch）＝カードの主は体験の開始に統一。
+ * 「ボタン作成」（狙い撃ち）は動画詳細ページの副アクションが正式な入口。
+ * ログイン状態は見ない（session 非依存）: 認証は目的地（/watch）の
  * ProtectedRoute（callbackPath 付き）が正本で、カードはポインタに徹する。
  * これにより per-user 状態を SSR に焼かず、セッション解決待ちのラベルちらつきも起きない。
  */
@@ -85,65 +113,14 @@ export default function VideoCardActions({ video, variant }: VideoCardActionsPro
 		);
 	}
 
-	const gate = evaluateButtonGate(video);
+	const gate = evaluateMarkGate(video);
 
-	let createAction: ReactNode;
-	if (gate.canCreate) {
-		createAction = (
-			<Button
-				size="sm"
-				variant="default"
-				className="flex-1 min-h-[44px] text-sm"
-				render={
-					<Link
-						href={`/buttons/create?video_id=${video.id}`}
-						aria-label={`${video.title}の音声ボタンを作成`}
-						className="flex items-center whitespace-nowrap"
-					>
-						<Plus className="h-4 w-4 mr-1" aria-hidden="true" />
-						ボタン作成
-					</Link>
-				}
-			/>
-		);
-	} else if ("liveMarking" in gate) {
-		// バッジと同色ペアで時制を明示する: live = destructive 赤（「配信中」バッジと同色・赤は live 専用）、
-		// upcoming = info 青（「配信予告」バッジと同色）。待機ファンは配信前から /live で M キーを構えられる
-		const isLiveNow = gate.liveMarking === "live";
-		createAction = (
-			<Button
-				size="sm"
-				variant={isLiveNow ? "destructive" : "default"}
-				className={
-					isLiveNow
-						? "flex-1 min-h-[44px] text-sm"
-						: "flex-1 min-h-[44px] text-sm bg-info text-info-foreground hover:bg-info/90"
-				}
-				render={
-					<Link
-						href={`/live?v=${video.videoId}`}
-						aria-label={
-							isLiveNow
-								? `${video.title}の配信中マーキングを開く`
-								: `${video.title}の配信待機（マーキング）を開く`
-						}
-						className="flex items-center whitespace-nowrap"
-					>
-						{isLiveNow ? (
-							<Bookmark className="h-4 w-4 mr-1" aria-hidden="true" />
-						) : (
-							<Clock className="h-4 w-4 mr-1" aria-hidden="true" />
-						)}
-						{isLiveNow ? "配信中マーク" : "配信待機"}
-					</Link>
-				}
-			/>
-		);
-	} else {
-		// 作成不可（理由あり）: aria-disabled で理由を提示。
+	let markAction: ReactNode;
+	if (gate.mode === "disabled") {
+		// 事実の通知としての無効化: aria-disabled で理由を提示。
 		// native disabled は pointer-events-none で title ツールチップが出ず、
 		// フォーカスもできないため、aria-disabled でホバー/フォーカス両方に理由を届かせる。
-		createAction = (
+		markAction = (
 			<Button
 				type="button"
 				size="sm"
@@ -151,18 +128,38 @@ export default function VideoCardActions({ video, variant }: VideoCardActionsPro
 				className="flex-1 min-h-[44px] text-sm opacity-50 cursor-not-allowed hover:bg-primary"
 				aria-disabled="true"
 				title={gate.reason}
-				aria-label={`音声ボタンを作成できません: ${gate.reason}`}
+				aria-label={`マーキングできません: ${gate.reason}`}
 			>
-				<Plus className="h-4 w-4 mr-1" aria-hidden="true" />
-				ボタン作成
+				<Bookmark className="h-4 w-4 mr-1" aria-hidden="true" />
+				マークして見る
 			</Button>
+		);
+	} else {
+		const spec = MARK_VARIANTS[gate.mode];
+		const Icon = spec.icon;
+		markAction = (
+			<Button
+				size="sm"
+				variant={spec.variant}
+				className={spec.className}
+				render={
+					<Link
+						href={`/watch?v=${video.videoId}`}
+						aria-label={`${video.title}${spec.ariaSuffix}`}
+						className="flex items-center whitespace-nowrap"
+					>
+						<Icon className="h-4 w-4 mr-1" aria-hidden="true" />
+						{spec.label}
+					</Link>
+				}
+			/>
 		);
 	}
 
 	return (
 		<fieldset className="flex gap-2" aria-label="動画アクション">
 			{detailLink}
-			{createAction}
+			{markAction}
 		</fieldset>
 	);
 }

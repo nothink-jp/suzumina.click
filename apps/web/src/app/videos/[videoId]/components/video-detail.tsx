@@ -1,17 +1,30 @@
 "use client";
 
-import type { UserSession, VideoPlainObject } from "@suzumina.click/shared-types";
-import { canCreateAudioButton, getVideoAllTags } from "@suzumina.click/shared-types";
+import type { VideoPlainObject } from "@suzumina.click/shared-types";
+import {
+	canCreateAudioButton,
+	getAudioButtonCreationErrorMessage,
+	getVideoAllTags,
+} from "@suzumina.click/shared-types";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card } from "@suzumina.click/ui/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@suzumina.click/ui/components/ui/tabs";
-import { Calendar, ExternalLink, Eye, PlayCircle, Plus, Timer } from "lucide-react";
+import {
+	Bookmark,
+	Calendar,
+	Clock,
+	ExternalLink,
+	Eye,
+	PlayCircle,
+	Scissors,
+	Timer,
+} from "lucide-react";
 import Link from "next/link";
 import React, { type ReactNode, useMemo } from "react";
+import { resolveCaptureVideoMode } from "@/components/capture/video-mode";
 import { ThumbnailImage } from "@/components/ui";
 import { getVideoBadgeInfo } from "@/components/video/video-badge";
-import { useSession } from "@/lib/auth/client";
 import { formatDescriptionText } from "@/lib/text-utils";
 import { VideoUserTagEditor } from "./video-user-tag-editor";
 
@@ -90,38 +103,52 @@ const formatDuration = (duration?: string) => {
 	return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 };
 
-// 音声ボタン作成可能判定
-function getCanCreateButtonData(video: VideoPlainObject, user: UserSession | null) {
-	// ログインしていない場合
-	if (!user) {
-		return {
-			canCreate: false,
-			reason: "音声ボタンを作成するにはすずみなふぁみりーメンバーとしてログインが必要です",
-		};
-	}
+/**
+ * アクション行の状態。主アクションは全状態で /watch（マーキング）行きで、
+ * 変わるのはラベル・色と副アクション（ここを切り抜く）の有無だけ（導線再設計＝統一案）。
+ * ログイン判定はしない: 公開・SEO ページなので主・副はポインタに徹し、
+ * 認証は行き先（/watch・/buttons/create）の ProtectedRoute に委ねる
+ * （per-user 状態を焼かず、未ログインでも同じ見た目＝ラベルのちらつきなし）。
+ */
+type DetailActionState =
+	| { kind: "archived" }
+	| { kind: "live" }
+	| { kind: "upcoming" }
+	| { kind: "disabled"; reason: string };
 
-	// 埋め込み制限チェック
+function getDetailActionState(video: VideoPlainObject): DetailActionState {
+	// 埋め込み不可はプレイヤーが動かない＝行為の選択ではなく事実の通知として唯一無効化を残す
 	if (video.status?.embeddable === false) {
 		return {
-			canCreate: false,
-			reason: "この動画は埋め込みが制限されているため、音声ボタンを作成できません",
+			kind: "disabled",
+			reason: "この動画は埋め込みが制限されているため、マーキングできません",
 		};
 	}
-
-	// 動画の条件をチェック
-	const videoCanCreate = canCreateAudioButton(video);
-	if (!videoCanCreate) {
+	const mode = resolveCaptureVideoMode(video);
+	if (mode === "live") {
+		return { kind: "live" };
+	}
+	if (mode === "upcoming") {
+		return { kind: "upcoming" };
+	}
+	if (!canCreateAudioButton(video)) {
 		return {
-			canCreate: false,
-			reason: "許諾により音声ボタンを作成できるのは配信アーカイブのみです",
+			kind: "disabled",
+			reason:
+				getAudioButtonCreationErrorMessage(video) ||
+				"許諾により音声ボタンを作成できるのは配信アーカイブのみです",
 		};
 	}
-
-	return {
-		canCreate: true,
-		reason: null,
-	};
+	return { kind: "archived" };
 }
+
+/** アクション行の下に置く1行の説明（意図の分岐点はここだけで説明する） */
+const ACTION_HINTS: Record<DetailActionState["kind"], string | null> = {
+	archived: "見ながら複数拾うなら「マークして見る」、1本だけ狙うなら「ここを切り抜く」。",
+	live: "切り抜きはアーカイブ公開後に。いまはマークだけ残せます。",
+	upcoming: "配信開始後にマークできます。開始前から待機できます。",
+	disabled: null,
+};
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: 動画詳細の複雑な表示ロジックのため許容
 export default function VideoDetail({
@@ -129,18 +156,13 @@ export default function VideoDetail({
 	initialTotalAudioCount = 0,
 	relatedAudioButtonsSlot,
 }: VideoDetailProps) {
-	const user = useSession();
-
 	// YouTube動画URLを生成
 	const youtubeUrl = `https://youtube.com/watch?v=${video.videoId}`;
 
 	// メモ化: 動画タイプバッジの情報
 	const videoBadgeInfo = useMemo(() => getVideoBadgeInfo(video), [video]);
 
-	// メモ化: 音声ボタン作成可能判定（認証状態も考慮）
-	const canCreateButtonData = useMemo(() => getCanCreateButtonData(video, user), [video, user]);
-
-	const canCreateButton = canCreateButtonData.canCreate;
+	const actionState = useMemo(() => getDetailActionState(video), [video]);
 
 	const _handleShare = () => {
 		if (navigator.share) {
@@ -290,40 +312,79 @@ export default function VideoDetail({
 								)}
 							</div>
 
-							{/* アクションボタン */}
-							<div className="flex flex-wrap gap-2 mb-6">
-								<Button
-									size="lg"
-									className="bg-primary hover:bg-primary/90 text-primary-foreground"
-									disabled={!canCreateButton}
-									title={canCreateButton ? undefined : canCreateButtonData.reason || undefined}
-									render={
-										canCreateButton ? (
-											<Link
-												href={`/buttons/create?video_id=${video.videoId}`}
-												className="flex items-center whitespace-nowrap"
-											>
-												<Plus className="h-4 w-4 mr-2" />
-												ボタンを作成
-											</Link>
-										) : undefined
-									}
-								>
-									<span className="flex items-center whitespace-nowrap">
-										<Plus className="h-4 w-4 mr-2" />
-										ボタンを作成
-									</span>
-								</Button>
-								<Button
-									size="lg"
-									variant="outline"
-									render={
-										<a href={youtubeUrl} target="_blank" rel="noopener noreferrer">
-											<PlayCircle className="h-4 w-4 mr-2" />
-											YouTubeで見る
-										</a>
-									}
-								/>
+							{/* アクション: 主「マークして見る」＋副「ここを切り抜く」の1組（旧3箇所重複を集約）。
+							    ここが意図の分岐点＝S3（狙い撃ち）の正式な入口 */}
+							<div className="mb-6 space-y-2">
+								<div className="flex flex-wrap items-center gap-2">
+									{actionState.kind === "disabled" ? (
+										// 事実の通知としての無効化（カードと同じ aria-disabled パターン）
+										<Button
+											type="button"
+											size="lg"
+											className="opacity-50 cursor-not-allowed hover:bg-primary"
+											aria-disabled="true"
+											title={actionState.reason}
+											aria-label={`マーキングできません: ${actionState.reason}`}
+										>
+											<Bookmark className="h-4 w-4 mr-2" />
+											マークして見る
+										</Button>
+									) : (
+										<Button
+											size="lg"
+											variant={actionState.kind === "live" ? "destructive" : "default"}
+											className={
+												actionState.kind === "upcoming"
+													? "bg-info text-info-foreground hover:bg-info/90"
+													: undefined
+											}
+											render={
+												<Link
+													href={`/watch?v=${video.videoId}`}
+													className="flex items-center whitespace-nowrap"
+												>
+													{actionState.kind === "upcoming" ? (
+														<Clock className="h-4 w-4 mr-2" />
+													) : (
+														<Bookmark className="h-4 w-4 mr-2" />
+													)}
+													{actionState.kind === "live" && "配信中マーク"}
+													{actionState.kind === "upcoming" && "配信待機"}
+													{actionState.kind === "archived" && "マークして見る"}
+												</Link>
+											}
+										/>
+									)}
+									{/* 副: 配信中・配信予定は非表示（disabled＋ツールチップは置かない。説明は下の1行） */}
+									{actionState.kind === "archived" && (
+										<Button
+											size="lg"
+											variant="outline"
+											render={
+												<Link
+													href={`/buttons/create?video_id=${video.videoId}`}
+													className="flex items-center whitespace-nowrap"
+												>
+													<Scissors className="h-4 w-4 mr-2" />
+													ここを切り抜く
+												</Link>
+											}
+										/>
+									)}
+									{/* 目立たせない第3導線はテキストリンクに落とす */}
+									<a
+										href={youtubeUrl}
+										target="_blank"
+										rel="noopener noreferrer"
+										className="flex items-center text-sm text-muted-foreground hover:text-foreground underline-offset-4 hover:underline px-2 min-h-[44px]"
+									>
+										<PlayCircle className="h-4 w-4 mr-1" />
+										YouTubeで見る
+									</a>
+								</div>
+								{ACTION_HINTS[actionState.kind] && (
+									<p className="text-xs text-muted-foreground">{ACTION_HINTS[actionState.kind]}</p>
+								)}
 							</div>
 
 							{/* タブナビゲーション */}
@@ -800,18 +861,11 @@ export default function VideoDetail({
 				<div className="space-y-6">
 					{/* この動画のボタン */}
 					<Card className="p-6 bg-muted/50 border-border">
-						<div className="flex items-center justify-between mb-4">
+						{/* 見出し隣の「新規作成」は削除（作成導線は本文の主＋副の1組に集約・同じ行き先が3つあると主が消える） */}
+						<div className="mb-4">
 							<h3 className="text-lg font-semibold text-foreground">
 								🔊 この動画のボタン ({initialTotalAudioCount})
 							</h3>
-							{canCreateButton && (
-								<Button
-									size="sm"
-									variant="outline"
-									className="text-primary border-border hover:bg-accent"
-									render={<Link href={`/buttons/create?video_id=${video.videoId}`}>新規作成</Link>}
-								/>
-							)}
 						</div>
 
 						{/* 音声ボタンのSlot */}

@@ -5,7 +5,9 @@ import {
 } from "@suzumina.click/ui/components/custom";
 import { Suspense } from "react";
 import { getVideosList } from "./actions";
+import { OpenByVideoId } from "./components/open-by-video-id";
 import VideoList from "./components/video-list";
+import { resolveVideoViewTab, VideoViewTabs } from "./components/video-view-tabs";
 
 interface VideosPageProps {
 	searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -29,6 +31,11 @@ export default async function VideosPage({ searchParams }: VideosPageProps) {
 		},
 	});
 
+	const activeTab = resolveVideoViewTab({
+		videoType: params.videoType as string | undefined,
+		sort: params.sort as string | undefined,
+	});
+
 	return (
 		<ListPageLayout>
 			<ListPageHeader
@@ -37,6 +44,19 @@ export default async function VideosPage({ searchParams }: VideosPageProps) {
 			/>
 
 			<ListPageContent>
+				<div className="space-y-3 mb-6">
+					<VideoViewTabs active={activeTab} />
+					{/* 拾える配信 = S4「どの配信を拾うか決める」の家（導線再設計 段3）。
+					    説明と URL 直接指定（旧 /watch 未選択状態の移設先）はこのビューだけに置く */}
+					{activeTab === "pickable" && (
+						<div className="space-y-2">
+							<p className="text-sm text-muted-foreground">
+								ボタンが少ない配信を、新しさで並べています。「まだ0本」はまだ誰も拾っていない配信です。
+							</p>
+							<OpenByVideoId />
+						</div>
+					)}
+				</div>
 				<Suspense
 					fallback={
 						<div className="text-center py-12">
@@ -45,7 +65,8 @@ export default async function VideosPage({ searchParams }: VideosPageProps) {
 						</div>
 					}
 				>
-					<VideoList initialData={initialData} />
+					{/* key: タブ切替（=URL プリセット変更）で ConfigurableList の内部状態を確実に作り直す */}
+					<VideoList key={activeTab} initialData={initialData} />
 				</Suspense>
 			</ListPageContent>
 		</ListPageLayout>
