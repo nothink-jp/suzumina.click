@@ -3,7 +3,8 @@ import type { VideoPlainObject } from "@suzumina.click/shared-types";
 /**
  * マーキング画面から見た動画のモード。
  *
- * 判定の正本は `_computed.videoType`（video-card-actions / video-badge と同一）。
+ * この関数がモード判定の正本で、video-card-actions / video-detail / /watch / /drafts は
+ * すべてここを経由する（video-badge も同じ `_computed.videoType` を見る）。
  * raw の liveBroadcastContent や `_computed.isLive` は raw を OR するため stale に弱く、
  * アーカイブ済みでも live のまま残ることがあるので使わない。
  *
