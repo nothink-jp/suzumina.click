@@ -120,7 +120,9 @@ async function parseAndValidateJson(response: Response): Promise<DLsiteAjaxRespo
  */
 function handleFetchError(error: unknown, page: number): never {
 	// タイムアウトエラーの特別処理
-	if (error instanceof Error && error.name === "AbortError") {
+	// fetch は AbortSignal.timeout() 由来だと "TimeoutError" を投げる（"AbortError" は
+	// AbortController.abort() 由来）。TimeoutError を見ないとこの分岐は到達不能になる。
+	if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")) {
 		logger.error(`DLsite AJAX リクエストがタイムアウトしました (${config.timeoutMs}ms)`, {
 			page,
 		});

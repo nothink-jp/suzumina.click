@@ -191,6 +191,26 @@ describe("DLsite AJAX Fetcher", () => {
 				"DLsite AJAX APIから不正なレスポンス構造が返されました",
 			);
 		});
+
+		// AbortSignal.timeout() が投げるのは "TimeoutError"。"AbortError" だけを見ていた頃は
+		// タイムアウト分岐が到達不能で、汎用エラー扱いに落ちていた（2026-07-30 のページ22打ち切り）。
+		it("タイムアウト（TimeoutError）を専用メッセージで処理する", async () => {
+			mockFetch.mockRejectedValueOnce(
+				new DOMException("The operation was aborted due to timeout", "TimeoutError"),
+			);
+
+			await expect(fetchDLsiteAjaxResult(22)).rejects.toThrow(
+				"DLsite AJAX リクエストがタイムアウトしました: ページ22",
+			);
+		});
+
+		it("AbortController 由来の中断（AbortError）も同じ分岐で処理する", async () => {
+			mockFetch.mockRejectedValueOnce(new DOMException("This operation was aborted", "AbortError"));
+
+			await expect(fetchDLsiteAjaxResult(3)).rejects.toThrow(
+				"DLsite AJAX リクエストがタイムアウトしました: ページ3",
+			);
+		});
 	});
 
 	describe("validateAjaxHtmlContent", () => {
