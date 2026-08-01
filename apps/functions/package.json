@@ -24,6 +24,7 @@
 		"tools:reset": "dotenv -e .env -- tsx src/tools/run-tools.ts reset",
 		"tools:backfill-creators": "dotenv -e .env -- tsx src/tools/run-tools.ts backfill-creators",
 		"tools:help": "dotenv -e .env -- tsx src/tools/run-tools.ts help",
+		"metrics": "dotenv -e .env -- tsx src/tools/success-metrics/report.ts",
 		"check:integrity": "dotenv -e .env -- tsx src/tools/core/run-data-integrity-check.ts",
 		"check:price-history": "dotenv -e .env -- tsx src/tools/check-price-history.ts",
 		"debug:price-history": "dotenv -e .env -- tsx src/tools/debug-price-history.ts",
