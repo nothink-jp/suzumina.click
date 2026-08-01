@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { warn } from "@/lib/logger";
 import { loadMPlusRoundedSubset } from "@/lib/og-font";
 
 /**
@@ -31,6 +32,36 @@ interface BuildOgImageResponseParams {
 	renderFull: () => React.ReactElement;
 }
 
+/**
+ * ブランドフォント取得の失敗を観測可能にしたうえで null に畳む。
+ *
+ * ここを無言で握りつぶすと「OG 画像がどのくらいの頻度で縮退しているか」が測れず、
+ * Google Fonts への runtime 依存を続けるか、フルフォント同梱（実測 6.59MB）に倒すかの
+ * 判断材料が永久に得られない。`error` には HTTP ステータス / シグネチャ不正 / タイムアウトの
+ * どれで落ちたかが入るため、原因別の切り分けもログだけで済む。
+ *
+ * `message` と `alert` は log-based メトリクスのフィルタ対象になる契約なので英語で固定する
+ * （CLAUDE.md §1）。options を必ず渡すのは、引数なし呼び出しだと jsonPayload に残らず
+ * textPayload へ昇格してしまい構造化フィールドで絞り込めなくなるため
+ */
+async function loadFontOrLogFallback(
+	weight: 400 | 700,
+	text: string,
+	degradation: "ascii_fallback" | "bold_only",
+): Promise<ArrayBuffer | null> {
+	try {
+		return await loadMPlusRoundedSubset(weight, text);
+	} catch (err) {
+		warn("OG image brand font unavailable", {
+			alert: "og_font_fallback",
+			font_weight: weight,
+			degradation,
+			error: err,
+		});
+		return null;
+	}
+}
+
 export async function buildOgImageResponse({
 	size,
 	boldText,
@@ -38,14 +69,15 @@ export async function buildOgImageResponse({
 	renderFallback,
 	renderFull,
 }: BuildOgImageResponseParams): Promise<InstanceType<typeof ImageResponse>> {
-	const fontBold = await loadMPlusRoundedSubset(700, boldText).catch(() => null);
+	// bold の失敗は全面 ASCII 縮退、regular の失敗は bold のみでの描画と影響範囲が違うため区別する
+	const fontBold = await loadFontOrLogFallback(700, boldText, "ascii_fallback");
 
 	if (!fontBold) {
 		return new ImageResponse(renderFallback(), { ...size });
 	}
 
 	const fontRegular = regularText
-		? await loadMPlusRoundedSubset(400, regularText).catch(() => null)
+		? await loadFontOrLogFallback(400, regularText, "bold_only")
 		: null;
 
 	return new ImageResponse(renderFull(), {

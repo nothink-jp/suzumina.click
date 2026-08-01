@@ -12,7 +12,9 @@ vi.mock("next/og", () => ({
 	},
 }));
 vi.mock("@/lib/og-font", () => ({ loadMPlusRoundedSubset: vi.fn() }));
+vi.mock("@/lib/logger", () => ({ warn: vi.fn() }));
 
+import { warn } from "@/lib/logger";
 import { loadMPlusRoundedSubset } from "@/lib/og-font";
 import { buildOgImageResponse } from "../og-response";
 
@@ -21,6 +23,7 @@ const size = { width: 1200, height: 630 };
 describe("buildOgImageResponse", () => {
 	beforeEach(() => {
 		vi.mocked(loadMPlusRoundedSubset).mockReset();
+		vi.mocked(warn).mockReset();
 	});
 
 	it("bold 取得成功時は renderFull を使い、bold フォントのみ付与する（regularText 省略時）", async () => {
@@ -94,5 +97,69 @@ describe("buildOgImageResponse", () => {
 		expect(response.options.fonts).toBeUndefined();
 		// bold が失敗した時点で regular は取得しに行かない（無駄な外部fetchを避ける）
 		expect(loadMPlusRoundedSubset).toHaveBeenCalledTimes(1);
+	});
+
+	// 縮退を無言で握りつぶすと縮退率が測れず、Google Fonts への runtime 依存を
+	// 続けるか同梱に倒すかを判断できない。message / alert は監視の契約なので値ごと固定する
+	describe("縮退の観測ログ", () => {
+		it("bold 失敗時は degradation=ascii_fallback で WARN を出す", async () => {
+			const err = new Error("bold font error");
+			vi.mocked(loadMPlusRoundedSubset).mockRejectedValueOnce(err);
+
+			await buildOgImageResponse({
+				size,
+				boldText: "title",
+				regularText: "subtitle",
+				renderFallback: () => <div>fallback</div>,
+				renderFull: () => <div>full</div>,
+			});
+
+			expect(warn).toHaveBeenCalledTimes(1);
+			expect(warn).toHaveBeenCalledWith("OG image brand font unavailable", {
+				alert: "og_font_fallback",
+				font_weight: 700,
+				degradation: "ascii_fallback",
+				error: err,
+			});
+		});
+
+		it("regular 失敗時は degradation=bold_only で WARN を出す", async () => {
+			const err = new Error("regular font error");
+			vi.mocked(loadMPlusRoundedSubset)
+				.mockResolvedValueOnce(new ArrayBuffer(8))
+				.mockRejectedValueOnce(err);
+
+			await buildOgImageResponse({
+				size,
+				boldText: "title",
+				regularText: "subtitle",
+				renderFallback: () => <div>fallback</div>,
+				renderFull: () => <div>full</div>,
+			});
+
+			expect(warn).toHaveBeenCalledTimes(1);
+			expect(warn).toHaveBeenCalledWith("OG image brand font unavailable", {
+				alert: "og_font_fallback",
+				font_weight: 400,
+				degradation: "bold_only",
+				error: err,
+			});
+		});
+
+		it("両方成功した通常時はログを出さない（正常系をノイズにしない）", async () => {
+			vi.mocked(loadMPlusRoundedSubset)
+				.mockResolvedValueOnce(new ArrayBuffer(8))
+				.mockResolvedValueOnce(new ArrayBuffer(4));
+
+			await buildOgImageResponse({
+				size,
+				boldText: "title",
+				regularText: "subtitle",
+				renderFallback: () => <div>fallback</div>,
+				renderFull: () => <div>full</div>,
+			});
+
+			expect(warn).not.toHaveBeenCalled();
+		});
 	});
 });
