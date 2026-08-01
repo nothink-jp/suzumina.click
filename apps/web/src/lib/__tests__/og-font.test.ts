@@ -43,6 +43,23 @@ describe("loadMPlusRoundedSubset", () => {
 		expect(fetchMock.mock.calls[1]?.[0]).toBe("https://fonts.gstatic.com/s/mplus.ttf");
 	});
 
+	// fetch ごとに独立したタイムアウトを張ると待ち上限が 2 倍になるため、
+	// 2 fetch が同一の deadline を共有していることを固定する
+	it("css2 とフォントバイナリの fetch が同一の AbortSignal を共有する", async () => {
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce({ ok: true, status: 200, text: async () => TTF_CSS })
+			.mockResolvedValueOnce({ ok: true, status: 200, arrayBuffer: async () => sfntBinary() });
+		vi.stubGlobal("fetch", fetchMock);
+
+		await loadMPlusRoundedSubset(700, "あ");
+
+		const first = fetchMock.mock.calls[0]?.[1]?.signal;
+		const second = fetchMock.mock.calls[1]?.[1]?.signal;
+		expect(first).toBeInstanceOf(AbortSignal);
+		expect(second).toBe(first);
+	});
+
 	it("css に TTF/OTF の src が無ければ例外を投げる（呼び出し側で縮退させる）", async () => {
 		vi.stubGlobal(
 			"fetch",
