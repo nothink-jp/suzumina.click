@@ -11,6 +11,7 @@ import {
 	summarizeMonthlyActiveUsers,
 	summarizePlayback,
 	summarizeUserActivity,
+	toButtonRecord,
 	toJstDateKey,
 	toJstMonthKey,
 } from "../aggregate";
@@ -58,6 +59,86 @@ describe("parseTimestamp", () => {
 		expect(parseTimestamp(new Date("invalid"))).toBeNull();
 		expect(parseTimestamp({})).toBeNull();
 		expect(parseTimestamp(123)).toBeNull();
+	});
+});
+
+describe("toButtonRecord", () => {
+	const current = {
+		creatorId: "u1",
+		creatorName: "みなせ",
+		createdAt: "2026-07-31T11:09:04.384Z",
+		stats: { playCount: 10, likeCount: 2, favoriteCount: 1 },
+		videoId: "vid",
+	};
+
+	it("現行形式をそのまま読む", () => {
+		const result = toButtonRecord("b1", current);
+		expect(result.ok).toBe(true);
+		if (!result.ok) return;
+		expect(result.record).toMatchObject({
+			id: "b1",
+			creatorId: "u1",
+			creatorName: "みなせ",
+			playCount: 10,
+			likeCount: 2,
+			favoriteCount: 1,
+			videoId: "vid",
+		});
+	});
+
+	it("旧形式の createdBy / createdByName / フラット stats を吸収する", () => {
+		const result = toButtonRecord("b2", {
+			createdBy: "old-user",
+			createdByName: "旧名",
+			createdAt: "2025-07-01T00:00:00.000Z",
+			playCount: 7,
+			likeCount: 3,
+			favoriteCount: 2,
+			sourceVideoId: "old-vid",
+		});
+		expect(result.ok).toBe(true);
+		if (!result.ok) return;
+		expect(result.record).toMatchObject({
+			creatorId: "old-user",
+			creatorName: "旧名",
+			playCount: 7,
+			likeCount: 3,
+			favoriteCount: 2,
+			videoId: "old-vid",
+		});
+	});
+
+	it("新形式が空文字なら旧形式へフォールバックする", () => {
+		const result = toButtonRecord("b3", { ...current, creatorId: "", createdBy: "fallback" });
+		expect(result.ok && result.record.creatorId).toBe("fallback");
+	});
+
+	it("creator を決められない場合は既定値へ丸めず落とす（別人が1人に集約されるのを防ぐ）", () => {
+		const result = toButtonRecord("b4", { ...current, creatorId: undefined });
+		expect(result).toEqual({ ok: false, reason: "creatorId" });
+	});
+
+	it("createdAt が読めない場合も落とす", () => {
+		const result = toButtonRecord("b5", { ...current, createdAt: undefined });
+		expect(result).toEqual({ ok: false, reason: "createdAt" });
+	});
+
+	it("createdAt と creatorId が両方欠けたら createdAt を理由に返す", () => {
+		const result = toButtonRecord("b6", {});
+		expect(result).toEqual({ ok: false, reason: "createdAt" });
+	});
+
+	it("stats が欠けていても 0 で埋める（落とさない）", () => {
+		const result = toButtonRecord("b7", { creatorId: "u1", createdAt: current.createdAt });
+		expect(result.ok).toBe(true);
+		if (!result.ok) return;
+		expect(result.record).toMatchObject({
+			playCount: 0,
+			likeCount: 0,
+			favoriteCount: 0,
+			videoId: "",
+		});
+		expect(result.record.creatorName).toBe("(不明)");
 	});
 });
 

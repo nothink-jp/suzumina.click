@@ -124,6 +124,60 @@ export function parseTimestamp(value: unknown): Date | null {
 	return null;
 }
 
+/** audioButtons ドキュメントの正規化結果。失敗は理由つきで返し、レポートに件数を出す */
+export type ButtonRecordResult =
+	| { ok: true; record: ButtonRecord }
+	| { ok: false; reason: "createdAt" | "creatorId" };
+
+function firstNonEmptyString(...values: unknown[]): string | null {
+	for (const value of values) {
+		if (typeof value === "string" && value !== "") return value;
+	}
+	return null;
+}
+
+function firstNumber(...values: unknown[]): number {
+	for (const value of values) {
+		if (typeof value === "number" && Number.isFinite(value)) return value;
+	}
+	return 0;
+}
+
+/**
+ * Firestore の audioButtons ドキュメントを ButtonRecord に正規化する。
+ *
+ * 旧形式のフィールド揺れ（`createdBy` / `createdByName` / フラットな `playCount`）を吸収する。
+ * 正本の変換は `@suzumina.click/shared-types` の `audioButtonTransformers.fromFirestore` だが、
+ * **ここでは意図的に流用しない**。あちらは creator を決められないとき `"unknown"` に丸めるため、
+ * 作成者不明のドキュメントが複数あると全部 1 人の偽クリエイターに集約され、
+ * セッション分割と作成者数が歪む（このレポートの主目的そのものが壊れる）。
+ * 表示用には妥当な既定値でも、集計用には**丸めずに落として件数を報告する**のが正しい。
+ *
+ * 実測（2026-08-02・本番132件）では旧形式は0件だが、静かに壊れる経路を残さないために防御する。
+ */
+export function toButtonRecord(id: string, data: Record<string, unknown>): ButtonRecordResult {
+	const createdAt = parseTimestamp(data.createdAt);
+	if (!createdAt) return { ok: false, reason: "createdAt" };
+
+	const creatorId = firstNonEmptyString(data.creatorId, data.createdBy);
+	if (!creatorId) return { ok: false, reason: "creatorId" };
+
+	const stats = (data.stats ?? {}) as Record<string, unknown>;
+	return {
+		ok: true,
+		record: {
+			id,
+			creatorId,
+			creatorName: firstNonEmptyString(data.creatorName, data.createdByName) ?? "(不明)",
+			createdAt,
+			playCount: firstNumber(stats.playCount, data.playCount),
+			likeCount: firstNumber(stats.likeCount, data.likeCount),
+			favoriteCount: firstNumber(stats.favoriteCount, data.favoriteCount),
+			videoId: firstNonEmptyString(data.videoId, data.sourceVideoId) ?? "",
+		},
+	};
+}
+
 /** JST の日付キー（YYYY-MM-DD） */
 export function toJstDateKey(date: Date): string {
 	return new Intl.DateTimeFormat("en-CA", {

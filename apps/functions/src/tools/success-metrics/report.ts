@@ -26,6 +26,7 @@ import {
 	summarizeMonthlyActiveUsers,
 	summarizePlayback,
 	summarizeUserActivity,
+	toButtonRecord,
 	toJstDateKey,
 } from "./aggregate";
 
@@ -44,22 +45,13 @@ async function loadButtons(skipped: SkipCounter): Promise<ButtonRecord[]> {
 	const snapshot = await firestore.collection("audioButtons").get();
 	const records: ButtonRecord[] = [];
 	for (const doc of snapshot.docs) {
-		const data = doc.data();
-		const createdAt = parseTimestamp(data.createdAt);
-		if (!createdAt) {
-			noteSkip(skipped, `audioButtons/${doc.id}`);
+		const result = toButtonRecord(doc.id, doc.data());
+		if (!result.ok) {
+			// creator 不明を既定値へ丸めると別人が 1 人に集約されて集計が歪むため、落として報告する
+			noteSkip(skipped, `audioButtons/${doc.id}（${result.reason} 不明）`);
 			continue;
 		}
-		records.push({
-			id: doc.id,
-			creatorId: String(data.creatorId ?? ""),
-			creatorName: String(data.creatorName ?? "(不明)"),
-			createdAt,
-			playCount: Number(data.stats?.playCount ?? 0),
-			likeCount: Number(data.stats?.likeCount ?? 0),
-			favoriteCount: Number(data.stats?.favoriteCount ?? 0),
-			videoId: String(data.videoId ?? ""),
-		});
+		records.push(result.record);
 	}
 	return records;
 }
