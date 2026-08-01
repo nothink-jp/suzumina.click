@@ -82,3 +82,41 @@ export function summarizePriceHistory(history: PriceHistoryDocument[]): PriceHis
 		isCurrentlyLowest: last.price === lowest.price,
 	};
 }
+
+export function formatPrice(value: number): string {
+	return `¥${value.toLocaleString("ja-JP")}`;
+}
+
+/** YYYY-MM-DD を「2026年7月2日」にする。想定外の形式はそのまま返す（表示を壊さない） */
+export function formatSummaryDate(date: string): string {
+	const [year, month, day] = date.split("-");
+	if (!year || !month || !day) return date;
+	const monthNumber = Number(month);
+	const dayNumber = Number(day);
+	if (!Number.isInteger(monthNumber) || !Number.isInteger(dayNumber)) return date;
+	return `${year}年${monthNumber}月${dayNumber}日`;
+}
+
+/**
+ * サマリーを人が読む文章にする。
+ *
+ * 表示文言をコンポーネントではなくここに置くのは、**ユーザーに見える文章こそテストしたい**ため
+ * （Server Component 側は JSX の組み立てだけにして、分岐は純関数に寄せる・SPR-302 レビュー指摘）。
+ */
+export function describePriceSummary(summary: PriceHistorySummary): string {
+	const trend =
+		summary.saleDays > 0
+			? `最も安かったのは${formatSummaryDate(summary.lowestDate)}の${formatPrice(summary.lowestPrice)}で、最大${summary.maxDiscountRate}%OFFでした。${summary.observedDays}日間のうち${summary.saleDays}日がセール価格です。`
+			: `観測した${summary.observedDays}日間はセールがなく、${formatPrice(summary.currentPrice)}のまま推移しています。`;
+
+	const position = summary.isCurrentlyLowest
+		? "現在の価格は、この期間の最安値と同じです。"
+		: `現在の価格は最安値より${formatPrice(summary.currentPrice - summary.lowestPrice)}高い状態です。`;
+
+	return `${trend}${position}`;
+}
+
+/** 期間の説明文（見出し直下のリード） */
+export function describePriceSummaryPeriod(summary: PriceHistorySummary, title: string): string {
+	return `${formatSummaryDate(summary.startDate)}〜${formatSummaryDate(summary.endDate)}の${summary.observedDays}日間、当サイトが記録した「${title}」の価格です。`;
+}
