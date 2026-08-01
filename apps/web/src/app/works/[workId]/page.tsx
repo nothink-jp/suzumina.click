@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { getWorkById } from "../actions";
 import WorkDetail from "./components/work-detail";
+import WorkPriceSummary from "./components/work-price-summary";
 
 interface WorkDetailPageProps {
 	params: Promise<{
@@ -24,6 +26,11 @@ export default async function WorkDetailPage({ params }: WorkDetailPageProps) {
 		<div className="min-h-screen bg-muted">
 			<main className="max-w-7xl mx-auto px-4 py-8">
 				<WorkDetail work={work} />
+				{/* 価格推移は WorkDetail（client・タブ内）ではなくここで**サーバー描画**する。
+					タブ内の client fetch では初期 HTML に出ずクローラから見えないため（SPR-302） */}
+				<Suspense fallback={null}>
+					<WorkPriceSummary workId={work.productId} title={work.title} />
+				</Suspense>
 			</main>
 		</div>
 	);
