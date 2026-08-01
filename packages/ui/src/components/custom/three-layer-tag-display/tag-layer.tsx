@@ -12,7 +12,7 @@ interface TagLayerProps {
 	title: string;
 	icon: React.ComponentType<{ className?: string }>;
 	tags: string[];
-	layer: "playlist" | "user" | "category";
+	layer: "playlist" | "category";
 	badgeClassName: string;
 	displayData: { displayed: string[]; hasMore: boolean; moreCount: number };
 	sizeClasses: {
@@ -22,9 +22,9 @@ interface TagLayerProps {
 		layerContainer: string;
 	};
 	showEmptyLayers: boolean;
-	onTagClick?: (tag: string, layer: "playlist" | "user" | "category") => void;
+	onTagClick?: (tag: string, layer: "playlist" | "category") => void;
 	/** タグの遷移先 href ビルダー。指定時は onTagClick より優先し <Link> を描画する */
-	tagHref?: (tag: string, layer: "playlist" | "user" | "category") => string;
+	tagHref?: (tag: string, layer: "playlist" | "category") => string;
 	searchQuery?: string;
 	highlightClassName?: string;
 }
@@ -49,7 +49,7 @@ export function TagLayer({
 
 	const handleTagClick = (
 		tag: string,
-		layerType: "playlist" | "user" | "category",
+		layerType: "playlist" | "category",
 		event: MouseEvent<HTMLElement>,
 	) => {
 		if (onTagClick) {
@@ -73,9 +73,6 @@ export function TagLayer({
 	const getLayerDescription = () => {
 		if (layer === "playlist") {
 			return "(録画時間による自動分類)";
-		}
-		if (layer === "user") {
-			return "(ユーザーが自由に追加)";
 		}
 		return null;
 	};

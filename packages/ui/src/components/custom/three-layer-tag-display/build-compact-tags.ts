@@ -4,7 +4,7 @@
 
 export interface TagData {
 	text: string;
-	type: "category" | "playlist" | "user";
+	type: "category" | "playlist";
 	className: string;
 }
 
@@ -13,7 +13,6 @@ interface BuildCompactTagsOptions {
 	categoryId?: string;
 	categoryName?: string;
 	playlistTags: string[];
-	userTags: string[];
 	maxTagsPerLayer: number;
 }
 
@@ -22,7 +21,6 @@ export function buildCompactTags({
 	categoryId,
 	categoryName,
 	playlistTags,
-	userTags,
 	maxTagsPerLayer,
 }: BuildCompactTagsOptions): TagData[] {
 	const allTags: TagData[] = [];
@@ -45,19 +43,6 @@ export function buildCompactTags({
 			text: tag,
 			type: "playlist",
 			className: "bg-primary text-primary-foreground border-primary hover:bg-primary/90",
-		});
-	}
-
-	// 3. みんなのタグ（優先度3）
-	const remainingSpace =
-		maxTagsPerLayer > 0 ? Math.max(0, maxTagsPerLayer - allTags.length) : userTags.length;
-	const displayUserTags = userTags.slice(0, remainingSpace);
-
-	for (const tag of displayUserTags) {
-		allTags.push({
-			text: tag,
-			type: "user",
-			className: "bg-muted text-foreground border-border hover:bg-accent",
 		});
 	}
 

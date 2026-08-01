@@ -7,14 +7,7 @@ describe("buildTagSearchHref", () => {
 	it("playlist 層は playlistTags フィルターを付与する", () => {
 		const params = parse(buildTagSearchHref("配信", "playlist"));
 		expect(params.get("playlistTags")).toBe("配信");
-		expect(params.get("userTags")).toBeNull();
 		expect(params.get("categoryNames")).toBeNull();
-	});
-
-	it("user 層は userTags フィルターを付与する", () => {
-		const params = parse(buildTagSearchHref("可愛い", "user"));
-		expect(params.get("userTags")).toBe("可愛い");
-		expect(params.get("playlistTags")).toBeNull();
 	});
 
 	it("category 層は categoryNames フィルターを付与する", () => {

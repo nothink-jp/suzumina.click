@@ -6,7 +6,6 @@ import { buildTagSearchHref } from "@/lib/tag-search";
 
 interface VideoCardTagsProps {
 	playlistTags: string[];
-	userTags: string[];
 	categoryId?: string;
 	searchQuery?: string;
 }
@@ -18,17 +17,11 @@ interface VideoCardTagsProps {
  * "Functions cannot be passed directly to Client Components" になるため、ここに隔離する。
  * categoryName も純関数 getYouTubeCategoryName で算出できるため island 内で完結させ、prop を増やさない。
  */
-export function VideoCardTags({
-	playlistTags,
-	userTags,
-	categoryId,
-	searchQuery,
-}: VideoCardTagsProps) {
+export function VideoCardTags({ playlistTags, categoryId, searchQuery }: VideoCardTagsProps) {
 	const categoryName = getYouTubeCategoryName(categoryId) || undefined;
 	return (
 		<VideoTagDisplay
 			playlistTags={playlistTags}
-			userTags={userTags}
 			categoryId={categoryId}
 			categoryName={categoryName}
 			size="sm"
