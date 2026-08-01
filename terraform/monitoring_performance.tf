@@ -16,15 +16,31 @@ resource "google_monitoring_alert_policy" "high_latency" {
       comparison      = "COMPARISON_GT"
       threshold_value = 10000 # 10秒（コールドスタート許容）
 
+      # ALIGN_DELTA で distribution のまま整列し、REDUCE_PERCENTILE_95 で全系列を
+      # マージしてから P95 を取る＝サービス全体の実 P95。単一系列に畳むのが要点で、
+      # cross_series_reducer が無いと response_code / revision ラベルごとに別系列となり、
+      # 503 のような疎な系列が数リクエストで発火する（実測: 2026-08-01 は 503 が 48h で
+      # 2 件しか無く、その 2 点だけの P95 = 22,328ms が閾値を超えて発火）。
+      # さらに疎な系列はデータが途切れると評価不能になり、インシデントが 7 日の
+      # auto_close までクローズされず OPEN 固着する（履歴に openTime→closeTime が
+      # ちょうど 7 日の incident が複数ある）。系列を連続化することで duration の
+      # 5 分継続判定が実際に効くようになる（背景は SPR / Run Absent 偽陽性と同型）
       aggregations {
-        alignment_period   = "60s"
-        per_series_aligner = "ALIGN_PERCENTILE_95"
+        alignment_period     = "60s"
+        per_series_aligner   = "ALIGN_DELTA"
+        cross_series_reducer = "REDUCE_PERCENTILE_95"
       }
 
       trigger {
         count = 1
       }
     }
+  }
+
+  # 夜間など無トラフィック帯では統合後の系列にも欠測が出るため、
+  # 既定の 7 日ではなく 30 分で自動クローズし OPEN 固着を構造的に断つ
+  alert_strategy {
+    auto_close = "1800s"
   }
 
   notification_channels = [
@@ -34,10 +50,12 @@ resource "google_monitoring_alert_policy" "high_latency" {
   documentation {
     content   = <<-EOT
     # 高レイテンシ検知アラート（個人開発版・P95）
-    
+
     Next.jsアプリケーションのP95レスポンス時間が10秒を超えました。
     コールドスタートを考慮した閾値に調整済み。
-    
+    全リクエストをマージしたサービス全体のP95が5分間継続で超過した場合のみ発火する
+    （response_code / revision 単位では評価しない）。
+
     ## 対応アクション
     1. Cloud Loggingで遅いクエリを特定
     2. Firestoreインデックスの最適化確認
