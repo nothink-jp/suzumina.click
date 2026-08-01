@@ -90,3 +90,13 @@ resource "google_project_service" "eventarc" {
   service            = "eventarc.googleapis.com"
   disable_on_destroy = false # イベント処理基盤を維持するためAPIを無効化しない
 }
+
+# Google Search Console API を有効化 (検索流入の実測。SPR-301 / SPR-137 §6-4 の集客判断に使う)
+# GA4 と同じく **プロパティ側のアクセス権は API では付与できず Search Console 管理画面のみ**。
+# ここで有効化するのは GCP 側の API だけで、search-console-reader@ をプロパティの
+# ユーザーとして追加する作業は手動（terraform の管轄外・analytics_search_console.tf を参照）。
+resource "google_project_service" "searchconsole" {
+  project            = var.gcp_project_id
+  service            = "searchconsole.googleapis.com"
+  disable_on_destroy = false # 無効化すると検索流入の観測経路が失われるため
+}

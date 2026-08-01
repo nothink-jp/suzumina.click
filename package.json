@@ -16,6 +16,7 @@
 		"lint:ga4": "node scripts/lint-ga4-params.mjs",
 		"check:index-drift": "node scripts/check-firestore-index-drift.mjs",
 		"check:ga4-drift": "node scripts/check-ga4-drift.mjs",
+		"report:search-console": "node scripts/search-console-report.mjs",
 		"format": "pnpm -r format",
 		"check": "pnpm -r check",
 		"secretlint": "secretlint \"**/*\"",
