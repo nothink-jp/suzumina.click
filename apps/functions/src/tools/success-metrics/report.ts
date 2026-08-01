@@ -30,7 +30,10 @@ import {
 	toJstDateKey,
 } from "./aggregate";
 
-/** 日時が読めなかったドキュメントの件数。黙って捨てず末尾で報告する */
+/**
+ * 集計に載せられなかったドキュメントの件数（日時が読めない / 作成者を特定できない）。
+ * 黙って捨てず末尾で報告する。サンプルは `パス（理由）` の形で理由を自己記述させる。
+ */
 interface SkipCounter {
 	count: number;
 	samples: string[];
@@ -74,7 +77,7 @@ async function loadUserSubcollection(
 		for (const doc of snapshot.docs) {
 			const at = parseTimestamp(doc.data()[timestampField]);
 			if (!at) {
-				noteSkip(skipped, `users/${userId}/${subcollection}/${doc.id}`);
+				noteSkip(skipped, `users/${userId}/${subcollection}/${doc.id}（${timestampField} 不明）`);
 				continue;
 			}
 			records.push({ userId, at, kind });
@@ -90,7 +93,7 @@ async function loadEvaluations(skipped: SkipCounter): Promise<ActivityRecord[]> 
 		const data = doc.data();
 		const at = parseTimestamp(data.createdAt);
 		if (!at) {
-			noteSkip(skipped, `evaluations/${doc.id}`);
+			noteSkip(skipped, `evaluations/${doc.id}（createdAt 不明）`);
 			continue;
 		}
 		records.push({ userId: String(data.userId ?? ""), at, kind: "evaluation" });
@@ -199,7 +202,7 @@ function renderReport(input: {
 		lines.push("## 除外");
 		lines.push("");
 		lines.push(
-			`日時が解釈できず集計から除外: ${skipped.count}件（例: ${skipped.samples.join(", ")}）`,
+			`日時または作成者を特定できず集計から除外: ${skipped.count}件（括弧内が理由。例: ${skipped.samples.join(", ")}）`,
 		);
 		lines.push("");
 	}
