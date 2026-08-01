@@ -7,7 +7,7 @@
 "use client";
 
 import { cn } from "@suzumina.click/ui/lib/utils";
-import { Play, Users } from "lucide-react";
+import { Play } from "lucide-react";
 import { buildCompactTags } from "./three-layer-tag-display/build-compact-tags";
 import { CategoryDisplay } from "./three-layer-tag-display/category-display";
 import { CompactTagDisplay } from "./three-layer-tag-display/compact-tag-display";
