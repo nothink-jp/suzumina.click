@@ -5,20 +5,32 @@ vi.mock("next/cache", () => ({ cacheLife: vi.fn() }));
 
 import { loadMPlusRoundedSubset } from "../og-font";
 
+const TTF_CSS =
+	"@font-face { src: url(https://fonts.gstatic.com/s/mplus.ttf) format('truetype'); }";
+
+/** 先頭4バイトが sfnt シグネチャ（TrueType outlines）の、フォントとして受理されるバイナリ */
+function sfntBinary(): ArrayBuffer {
+	const buffer = new ArrayBuffer(8);
+	new DataView(buffer).setUint32(0, 0x00010000, false);
+	return buffer;
+}
+
+/** Google Fonts がエラー時に返す HTML。satori はこれを Unsupported OpenType signature で弾く */
+function htmlBinary(): ArrayBuffer {
+	return new TextEncoder().encode("<!DOCTYPE html><html><body>error</body></html>").buffer;
+}
+
 describe("loadMPlusRoundedSubset", () => {
 	afterEach(() => {
 		vi.unstubAllGlobals();
 	});
 
 	it("css2 の @font-face から TTF URL を抜き出してフォントバイナリを返す", async () => {
-		const fontData = new ArrayBuffer(8);
+		const fontData = sfntBinary();
 		const fetchMock = vi
 			.fn()
-			.mockResolvedValueOnce({
-				text: async () =>
-					"@font-face { src: url(https://fonts.gstatic.com/s/mplus.ttf) format('truetype'); }",
-			})
-			.mockResolvedValueOnce({ arrayBuffer: async () => fontData });
+			.mockResolvedValueOnce({ ok: true, status: 200, text: async () => TTF_CSS })
+			.mockResolvedValueOnce({ ok: true, status: 200, arrayBuffer: async () => fontData });
 		vi.stubGlobal("fetch", fetchMock);
 
 		await expect(loadMPlusRoundedSubset(700, "ああAB")).resolves.toBe(fontData);
@@ -35,6 +47,8 @@ describe("loadMPlusRoundedSubset", () => {
 		vi.stubGlobal(
 			"fetch",
 			vi.fn().mockResolvedValue({
+				ok: true,
+				status: 200,
 				text: async () =>
 					"@font-face { src: url(https://fonts.gstatic.com/s/mplus.woff2) format('woff2'); }",
 			}),
@@ -43,5 +57,74 @@ describe("loadMPlusRoundedSubset", () => {
 		await expect(loadMPlusRoundedSubset(400, "あ")).rejects.toThrow(
 			"OG画像用フォントのサブセット取得に失敗しました",
 		);
+	});
+
+	it("css2 が 2xx 以外なら例外を投げる", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn().mockResolvedValue({ ok: false, status: 429, text: async () => "<!DOCTYPE html>" }),
+		);
+
+		await expect(loadMPlusRoundedSubset(700, "あ")).rejects.toThrow("HTTP 429");
+	});
+
+	it("フォントバイナリの取得が 2xx 以外なら例外を投げる", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi
+				.fn()
+				.mockResolvedValueOnce({ ok: true, status: 200, text: async () => TTF_CSS })
+				.mockResolvedValueOnce({ ok: false, status: 500, arrayBuffer: async () => htmlBinary() }),
+		);
+
+		await expect(loadMPlusRoundedSubset(700, "あ")).rejects.toThrow("HTTP 500");
+	});
+
+	// 本番 503 の再発防止: 200 で HTML が返るケースは arrayBuffer() が成功してしまうため、
+	// シグネチャ検査が無いと非 null が cacheLife("max") で恒久キャッシュされ satori が描画中に落ちる
+	it("フォント URL が 200 で HTML を返しても、フォントとして返さず例外を投げる", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi
+				.fn()
+				.mockResolvedValueOnce({ ok: true, status: 200, text: async () => TTF_CSS })
+				.mockResolvedValueOnce({ ok: true, status: 200, arrayBuffer: async () => htmlBinary() }),
+		);
+
+		await expect(loadMPlusRoundedSubset(700, "あ")).rejects.toThrow(
+			"OG画像用フォントの取得結果がフォントバイナリではありません",
+		);
+	});
+
+	it("空レスポンスもフォントとして受理しない", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi
+				.fn()
+				.mockResolvedValueOnce({ ok: true, status: 200, text: async () => TTF_CSS })
+				.mockResolvedValueOnce({
+					ok: true,
+					status: 200,
+					arrayBuffer: async () => new ArrayBuffer(0),
+				}),
+		);
+
+		await expect(loadMPlusRoundedSubset(700, "あ")).rejects.toThrow(
+			"OG画像用フォントの取得結果がフォントバイナリではありません",
+		);
+	});
+
+	it("OTTO（CFF outlines）シグネチャのフォントも受理する", async () => {
+		const otto = new ArrayBuffer(8);
+		new DataView(otto).setUint32(0, 0x4f54544f, false);
+		vi.stubGlobal(
+			"fetch",
+			vi
+				.fn()
+				.mockResolvedValueOnce({ ok: true, status: 200, text: async () => TTF_CSS })
+				.mockResolvedValueOnce({ ok: true, status: 200, arrayBuffer: async () => otto }),
+		);
+
+		await expect(loadMPlusRoundedSubset(400, "あ")).resolves.toBe(otto);
 	});
 });
