@@ -123,12 +123,20 @@ async function main() {
 	const endDate = process.argv[3] ?? daysAgo(3);
 	const token = accessToken();
 
+	// 権限が無い SA でも sites.list は 403 ではなく 200 + 空リストを返す。
+	// そのため「まだプロパティに追加していない」と「URL の形式違い」は別々に案内する
+	// （同じ文言にすると、最も起きやすい前者に対して誤った対処法を出してしまう）。
 	const sites = await callApi("sites", token);
-	const entry = (sites.siteEntry ?? []).find((s) => s.siteUrl === SITE_URL);
-	if (!entry) {
-		const available = (sites.siteEntry ?? []).map((s) => s.siteUrl).join(", ") || "(なし)";
+	const siteEntries = sites.siteEntry ?? [];
+	if (siteEntries.length === 0) {
 		abort(
-			`${SITE_URL} にアクセスできません。SEARCH_CONSOLE_SITE_URL で指定し直してください。${TARGET_SA} に見えているプロパティ: ${available}`,
+			`${TARGET_SA} はまだどの Search Console プロパティにも追加されていません。Search Console 管理画面の「設定 → ユーザーと権限」で追加してください（制限付きユーザーで足ります。API では付与できません）`,
+		);
+	}
+	const entry = siteEntries.find((s) => s.siteUrl === SITE_URL);
+	if (!entry) {
+		abort(
+			`${SITE_URL} が見つかりません。SEARCH_CONSOLE_SITE_URL で指定し直してください。${TARGET_SA} に見えているプロパティ: ${siteEntries.map((s) => s.siteUrl).join(", ")}`,
 		);
 	}
 
