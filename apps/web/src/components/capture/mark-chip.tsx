@@ -4,6 +4,7 @@ import type { AudioButtonDraft } from "@suzumina.click/shared-types";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { ExternalLink, Minus, Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { CREATE_ENTRY, CREATE_ENTRY_PARAM } from "@/lib/analytics/create-entry";
 import { formatSeconds } from "@/utils/format-seconds";
 
 /** 微調整の1回あたりの秒数（/drafts の行調整と共通） */
@@ -96,7 +97,7 @@ export function MarkChip({ draft, showFinishNow, isAdjusting, onAdjust }: MarkCh
 					render={
 						// フルロード遷移（intercepting route 回避・SPR-252）
 						<a
-							href={`/buttons/create?video_id=${draft.videoId}&start_time=${draft.suggestedStartTime}&draft_id=${draft.id}`}
+							href={`/buttons/create?video_id=${draft.videoId}&start_time=${draft.suggestedStartTime}&draft_id=${draft.id}&${CREATE_ENTRY_PARAM}=${CREATE_ENTRY.chipNow}`}
 						>
 							<ExternalLink className="h-3.5 w-3.5 mr-1" />
 							すぐ仕上げる

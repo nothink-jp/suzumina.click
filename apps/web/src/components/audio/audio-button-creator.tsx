@@ -10,6 +10,7 @@ import { createAudioButton } from "@/app/buttons/actions";
 import { useAudioButtonEditor } from "@/hooks/use-audio-button-editor";
 import { refreshDraftCount } from "@/hooks/use-draft-count";
 import { useVideoTranscript } from "@/hooks/use-video-transcript";
+import { CREATE_ENTRY, type CreateEntry } from "@/lib/analytics/create-entry";
 import { trackCreateError, trackCreateStart, trackCreateSuccess } from "@/lib/analytics/events";
 import { useSession } from "@/lib/auth/client";
 import { snapRangeForUtterance, type TranscriptUtterance } from "@/lib/gemini/transcription-core";
@@ -39,6 +40,8 @@ interface AudioButtonCreatorProps {
 	madeMarks?: number[];
 	/** 自分の下書きの開始時刻（探索レーンの目印・SPR-289）。キューとは独立に常時渡る */
 	draftMarks?: number[];
+	/** この画面へ来た導線。GA4 の create_entry として送る（SPR-296） */
+	entry: CreateEntry;
 }
 
 /** 同値が複数あっても1件分だけ取り除く（下書きマークは同時刻が並存しうる） */
@@ -66,6 +69,7 @@ export function AudioButtonCreator({
 	videoDrafts,
 	madeMarks: initialMadeMarks,
 	draftMarks,
+	entry,
 }: AudioButtonCreatorProps) {
 	const router = useRouter();
 	const user = useSession();
@@ -97,6 +101,11 @@ export function AudioButtonCreator({
 		(videoDrafts ?? []).filter((draft) => draft.id !== draftId),
 	);
 	const [lastCreated, setLastCreated] = useState<{ id: string; buttonText: string } | null>(null);
+
+	// 2本目以降は遷移せず URL も変わらないため、入口は prop ではなくここで queue_continue に切り替える
+	// （SPR-296。連続して作られたかどうかが「1回で5〜20本」仮説の検証そのもの）
+	const [hasContinued, setHasContinued] = useState(false);
+	const createEntry = hasContinued ? CREATE_ENTRY.queueContinue : entry;
 
 	// 探索レーンのマーク。作成成功時にその場で加減する（再取得はしない・SPR-289）。
 	// 下書きマークも state 化しないと、連続仕上げ（遷移なし）で消化した下書きが残って見える
@@ -198,6 +207,8 @@ export function AudioButtonCreator({
 	const finishAfterCreate = useCallback(
 		(createdId: string, createdText: string, continueAfter: boolean) => {
 			if (continueAfter) {
+				// 以降の作成はキュー内の2本目以降として記録する（SPR-296）
+				setHasContinued(true);
 				const [next, ...rest] = remainingDrafts;
 				if (next) {
 					setLastCreated({ id: createdId, buttonText: createdText });
@@ -230,7 +241,7 @@ export function AudioButtonCreator({
 
 			setIsCreating(true);
 			setError("");
-			trackCreateStart(videoId, Boolean(activeDraftId));
+			trackCreateStart({ videoId, fromDraft: Boolean(activeDraftId), entry: createEntry });
 
 			try {
 				const input: CreateAudioButtonInput = {
@@ -250,6 +261,7 @@ export function AudioButtonCreator({
 						audioButtonId: result.data.id,
 						videoId,
 						fromDraft: Boolean(activeDraftId),
+						entry: createEntry,
 					});
 					// 探索レーンへ即時反映（連続作成時に同じ箇所の二重作成を防ぐ）
 					setMadeMarks((prev) => [...prev, input.startTime]);
@@ -279,6 +291,7 @@ export function AudioButtonCreator({
 			setError,
 			videoTitle,
 			activeDraftId,
+			createEntry,
 			consumeActiveDraft,
 			finishAfterCreate,
 		],

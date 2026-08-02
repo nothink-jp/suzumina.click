@@ -11,6 +11,7 @@
  */
 
 import { sendGoogleAnalyticsEvent } from "@/lib/consent/google-consent-mode";
+import type { CreateEntry } from "./create-entry";
 
 /** GA4 のイベントパラメータ値上限（100文字）に収める */
 const MAX_PARAM_LENGTH = 100;
@@ -24,20 +25,33 @@ export function trackPlayButton(audioButtonId: string): void {
 }
 
 /** 作成ファネル: 送信開始（バリデーション通過後） */
-export function trackCreateStart(videoId: string, fromDraft: boolean): void {
-	sendGoogleAnalyticsEvent("create_start", { video_id: videoId, from_draft: fromDraft });
+export function trackCreateStart(input: {
+	videoId: string;
+	fromDraft: boolean;
+	entry: CreateEntry;
+}): void {
+	sendGoogleAnalyticsEvent("create_start", {
+		video_id: input.videoId,
+		from_draft: input.fromDraft,
+		create_entry: input.entry,
+	});
 }
 
-/** 作成ファネル: 成功。from_draft は SPR-146 下書きフローの効果測定に使う */
+/**
+ * 作成ファネル: 成功。from_draft は SPR-146 下書きフローの効果測定に、
+ * create_entry は視聴起点への導線転換（PR #892）の当否判定に使う（SPR-296）
+ */
 export function trackCreateSuccess(input: {
 	audioButtonId: string;
 	videoId: string;
 	fromDraft: boolean;
+	entry: CreateEntry;
 }): void {
 	sendGoogleAnalyticsEvent("create_success", {
 		audio_button_id: input.audioButtonId,
 		video_id: input.videoId,
 		from_draft: input.fromDraft,
+		create_entry: input.entry,
 	});
 }
 

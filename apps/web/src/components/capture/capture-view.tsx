@@ -5,6 +5,7 @@ import type { YTPlayer } from "@suzumina.click/ui/components/custom/youtube-type
 import Link from "next/link";
 import { useCallback, useEffect, useRef } from "react";
 import { useCaptureDrafts } from "@/hooks/use-capture-drafts";
+import { CREATE_ENTRY, CREATE_ENTRY_PARAM } from "@/lib/analytics/create-entry";
 import { matchShortcutKey } from "@/lib/keyboard-shortcut";
 import { CaptureActionBar } from "./capture-action-bar";
 import { CaptureHeader } from "./capture-header";
@@ -37,7 +38,7 @@ function buildBulkHref(drafts: AudioButtonDraft[]): string | null {
 	const first = drafts.reduce((min, draft) =>
 		draft.suggestedStartTime < min.suggestedStartTime ? draft : min,
 	);
-	return `/buttons/create?video_id=${first.videoId}&start_time=${first.suggestedStartTime}&draft_id=${first.id}`;
+	return `/buttons/create?video_id=${first.videoId}&start_time=${first.suggestedStartTime}&draft_id=${first.id}&${CREATE_ENTRY_PARAM}=${CREATE_ENTRY.watchBulk}`;
 }
 
 /**

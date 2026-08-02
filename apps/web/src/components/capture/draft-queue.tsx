@@ -4,6 +4,7 @@ import type { AudioButtonDraft } from "@suzumina.click/shared-types";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { ExternalLink, Trash2 } from "lucide-react";
+import { CREATE_ENTRY, CREATE_ENTRY_PARAM } from "@/lib/analytics/create-entry";
 import { formatSeconds } from "@/utils/format-seconds";
 
 interface DraftQueueProps {
@@ -81,7 +82,7 @@ export function DraftQueue({ drafts, sessionMarkedIds, isLocked, onDelete }: Dra
 									render={
 										// この1件だけを仕上げたいときの個別導線（フルロード・SPR-252）
 										<a
-											href={`/buttons/create?video_id=${draft.videoId}&start_time=${draft.suggestedStartTime}&draft_id=${draft.id}`}
+											href={`/buttons/create?video_id=${draft.videoId}&start_time=${draft.suggestedStartTime}&draft_id=${draft.id}&${CREATE_ENTRY_PARAM}=${CREATE_ENTRY.watchSingle}`}
 										>
 											<ExternalLink className="h-3.5 w-3.5 mr-1" />
 											仕上げる

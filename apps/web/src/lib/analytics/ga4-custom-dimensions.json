@@ -6,6 +6,12 @@
 		"description": "create_start / create_success。配信中マーキングの下書き(SPR-146)からの作成かどうか"
 	},
 	{
+		"parameterName": "create_entry",
+		"displayName": "作成の入口",
+		"scope": "EVENT",
+		"description": "create_start / create_success。作成画面へ来た導線（watch_* / drafts_* / chip_now / detail_clip / queue_continue / unknown）。視聴起点への導線転換の当否判定に使う（SPR-296）"
+	},
+	{
 		"parameterName": "reason",
 		"displayName": "失敗理由",
 		"scope": "EVENT",

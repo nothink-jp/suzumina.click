@@ -2,6 +2,7 @@ import "@testing-library/jest-dom";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { CREATE_ENTRY } from "@/lib/analytics/create-entry";
 import { mockUseSession } from "@/test-utils/auth";
 import { AudioButtonCreator } from "../audio-button-creator";
 
@@ -17,6 +18,15 @@ vi.mock("@/app/buttons/actions", () => ({
 const mockDeleteButtonDraft = vi.fn().mockResolvedValue({ success: true });
 vi.mock("@/actions/button-drafts", () => ({
 	deleteButtonDraft: (draftId: string) => mockDeleteButtonDraft(draftId),
+}));
+
+// GA4 の作成ファネルだけ差し替える（AI候補パネルも同じモジュールを使うため他は実体のまま）
+const mockTrackCreateStart = vi.fn();
+const mockTrackCreateSuccess = vi.fn();
+vi.mock("@/lib/analytics/events", async (importOriginal) => ({
+	...(await importOriginal<typeof import("@/lib/analytics/events")>()),
+	trackCreateStart: (input: unknown) => mockTrackCreateStart(input),
+	trackCreateSuccess: (input: unknown) => mockTrackCreateSuccess(input),
 }));
 
 const mockGetVideoTranscriptChunk = vi.fn();
@@ -94,6 +104,7 @@ describe("AudioButtonCreator - Refactored Architecture", () => {
 		videoTitle: "テスト動画タイトル",
 		videoDuration: 300,
 		initialStartTime: 0,
+		entry: CREATE_ENTRY.detailClip,
 	};
 
 	beforeEach(() => {
@@ -732,6 +743,51 @@ describe("AudioButtonCreator - Refactored Architecture", () => {
 				"href",
 				"/buttons/new-audio-button-id",
 			);
+		});
+
+		it("create_entry は1本目が入口・2本目以降は queue_continue になる（SPR-296）", async () => {
+			const user = userEvent.setup();
+			render(
+				<AudioButtonCreator
+					{...defaultProps}
+					entry={CREATE_ENTRY.watchBulk}
+					initialStartTime={30}
+					draftId="draft-1"
+					videoDrafts={[makeDraft("draft-1", 30), makeDraft("draft-2", 120)]}
+				/>,
+			);
+
+			await user.type(screen.getByPlaceholderText("例: おはようございます"), "1個目のボタン");
+			const continueButton = screen.getByRole("button", {
+				name: "作成して次の下書きへ（残り1）",
+			});
+			await waitFor(() => expect(continueButton).toBeEnabled());
+			await user.click(continueButton);
+
+			// 1本目は URL 由来の入口のまま
+			expect(mockTrackCreateStart).toHaveBeenLastCalledWith({
+				videoId: "test-video-id",
+				fromDraft: true,
+				entry: "watch_bulk",
+			});
+			await waitFor(() => {
+				expect(mockTrackCreateSuccess).toHaveBeenLastCalledWith(
+					expect.objectContaining({ entry: "watch_bulk" }),
+				);
+			});
+
+			// 2本目は遷移していない＝URL は変わらないので、実行時に queue_continue へ切り替わる
+			await createWithTitle(user, "2個目のボタン");
+			expect(mockTrackCreateStart).toHaveBeenLastCalledWith({
+				videoId: "test-video-id",
+				fromDraft: true,
+				entry: "queue_continue",
+			});
+			await waitFor(() => {
+				expect(mockTrackCreateSuccess).toHaveBeenLastCalledWith(
+					expect.objectContaining({ entry: "queue_continue" }),
+				);
+			});
 		});
 
 		it("主ボタン「音声ボタンを作成」はキューが残っていても詳細ページへフルロード遷移する（続行は毎回選ぶ・段4）", async () => {

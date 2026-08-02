@@ -10,6 +10,7 @@ import { deleteButtonDraft, updateButtonDraftPlayerTime } from "@/actions/button
 import { type DraftVideoGroup, groupDraftsByVideo } from "@/components/capture/draft-groups";
 import { MARK_ADJUST_STEP_SECONDS } from "@/components/capture/mark-chip";
 import { refreshDraftCount } from "@/hooks/use-draft-count";
+import { CREATE_ENTRY, CREATE_ENTRY_PARAM } from "@/lib/analytics/create-entry";
 import { formatSeconds } from "@/utils/format-seconds";
 
 /** グループ表示に使う動画の現在状態（page 側で videos から算出して渡す） */
@@ -106,7 +107,7 @@ function DraftShelfRow({
 					render={
 						// /buttons ツリーへの遷移はフルロード（intercepting route 回避・SPR-252）
 						<a
-							href={`/buttons/create?video_id=${draft.videoId}&start_time=${draft.suggestedStartTime}&draft_id=${draft.id}`}
+							href={`/buttons/create?video_id=${draft.videoId}&start_time=${draft.suggestedStartTime}&draft_id=${draft.id}&${CREATE_ENTRY_PARAM}=${CREATE_ENTRY.draftsSingle}`}
 						>
 							<ExternalLink className="h-3.5 w-3.5 mr-1" />
 							この1件を仕上げる
@@ -187,7 +188,7 @@ function DraftShelfGroup({
 									// 先頭（推奨開始秒が最小）から開けば同一動画のキューは create 側が読み込み、
 									// 連続仕上げ（SPR-266 第2段）につながる。フルロード遷移（SPR-252）
 									<a
-										href={`/buttons/create?video_id=${group.videoId}&start_time=${firstDraft.suggestedStartTime}&draft_id=${firstDraft.id}`}
+										href={`/buttons/create?video_id=${group.videoId}&start_time=${firstDraft.suggestedStartTime}&draft_id=${firstDraft.id}&${CREATE_ENTRY_PARAM}=${CREATE_ENTRY.draftsBulk}`}
 									>
 										<ExternalLink className="h-3.5 w-3.5 mr-1" />
 										まとめて仕上げる（{group.drafts.length}）

@@ -13,6 +13,7 @@ import { getAudioButtonsList } from "@/app/buttons/actions";
 import { getVideoById } from "@/app/videos/actions";
 import { AudioButtonCreator } from "@/components/audio/audio-button-creator";
 import ProtectedRoute from "@/components/system/protected-route";
+import { CREATE_ENTRY, CREATE_ENTRY_PARAM, parseCreateEntry } from "@/lib/analytics/create-entry";
 
 interface CreateAudioButtonPageProps {
 	searchParams: Promise<{
@@ -20,6 +21,8 @@ interface CreateAudioButtonPageProps {
 		start_time?: string;
 		/** /watch の下書きから開いた場合に付与。作成成功時にその下書きを消化する（SPR-146） */
 		draft_id?: string;
+		/** どの導線から来たか。GA4 の create_entry として送る（SPR-296） */
+		entry?: string;
 	}>;
 }
 
@@ -187,12 +190,15 @@ export default async function CreateAudioButtonPage({ searchParams }: CreateAudi
 	// 常に渡すと通常作成でも成功時にキューへ進んでしまい遷移挙動が変わる（一般化は SPR-290）
 	const videoDrafts = resolvedSearchParams.draft_id ? myVideoDrafts : undefined;
 
+	// 入口はログイン往復（callbackPath）でも保つ。未知の値は unknown に畳まれるので運ばない
+	const createEntry = parseCreateEntry(resolvedSearchParams.entry);
 	const callbackQuery = new URLSearchParams(
 		Object.entries({
 			video_id: videoId,
 			start_time: resolvedSearchParams.start_time,
 			draft_id: resolvedSearchParams.draft_id,
-		}).filter((entry): entry is [string, string] => entry[1] !== undefined),
+			[CREATE_ENTRY_PARAM]: createEntry === CREATE_ENTRY.unknown ? undefined : createEntry,
+		}).filter((param): param is [string, string] => param[1] !== undefined),
 	).toString();
 	const callbackPath = `/buttons/create?${callbackQuery}`;
 
@@ -209,6 +215,7 @@ export default async function CreateAudioButtonPage({ searchParams }: CreateAudi
 				videoDuration={videoDuration}
 				initialStartTime={startTime}
 				draftId={resolvedSearchParams.draft_id}
+				entry={createEntry}
 				videoDrafts={videoDrafts}
 				madeMarks={madeMarks}
 				draftMarks={draftMarks}
