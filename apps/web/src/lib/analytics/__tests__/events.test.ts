@@ -30,10 +30,16 @@ afterEach(() => {
 });
 
 describe("GA4 カスタムイベント語彙 (SPR-149)", () => {
-	it("consent 未取得ならイベントを送らない（sendGoogleAnalyticsEvent のゲートを通る）", () => {
+	// SPR-299: consent ゲートは撤廃済み。同意の有無で送信可否は変わらず、
+	// Cookie/識別子の可否だけが GA4 の consent mode 側で切り替わる。
+	it("consent 未取得でもイベントを送る（ゲートは撤廃済み）", () => {
 		trackPlayButton("ab1");
 		trackCreateStart("vid00000001", false);
-		expect(gtag).not.toHaveBeenCalled();
+		expect(gtag).toHaveBeenCalledWith("event", "play_button", { audio_button_id: "ab1" });
+		expect(gtag).toHaveBeenCalledWith("event", "create_start", {
+			video_id: "vid00000001",
+			from_draft: false,
+		});
 	});
 
 	it("play_button: audio_button_id を送る", () => {
