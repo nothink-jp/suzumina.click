@@ -1273,31 +1273,6 @@ export async function fetchDLsiteWorks(page: number): Promise<WorkData[]> {
 - 破壊的変更は移行ガイドを作成
 - API変更はCHANGELOG.mdに記録
 
-## 🔄 Entity/Value Object移行完了に関する重要事項
-
-### 移行の成果
-- **全569テスト合格**: Entity/Value Object構造への完全移行
-- **レガシーフィールド削除**: 下位互換性のための冗長フィールドを完全削除
-- **統一インポートパス**: `@suzumina.click/shared-types`からの一元化
-
-### 移行後の型構造
-
-型名の一覧はここに転記しない（SPR-205: 転記は必ず drift する。旧記載は実在しない型名を含んでいた）。
-概念 → 型の対応の正本は [domain-model.md](../reference/domain-model.md)、
-実体は [packages/shared-types/src/](../../packages/shared-types/src/) を直接参照すること。
-
-### 削除されたレガシーフィールド
-以下のフィールドはコードベースから完全に削除されました：
-- `salesCount` - 販売数（2025年7月に廃止）
-- `reviewCount` - レビュー数（rating.countに統合）
-- `ratingAverage` - 平均評価（rating.valueに統合）
-- その他の重複フィールド
-
-### マッパーの統合
-- `work-mapper.ts`に全機能を統合（323行の薄いマッパー）
-- レガシーマッパーファイルは全て削除
-- エラー処理とフォールバック処理を含む堅牢な実装
-
 ## 🚀 デプロイメント原則
 
 ### 1. 環境分離
