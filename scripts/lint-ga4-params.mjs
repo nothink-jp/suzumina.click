@@ -204,6 +204,23 @@ const declared = new Map(
 	JSON.parse(readFileSync(MANIFEST, "utf8")).map((d) => [d.parameterName, d]),
 );
 
+// Admin API の description 上限。超えると登録が HTTP 400 で落ちるが、それが分かるのは
+// `pnpm check:ga4-drift --apply`（GA4 認証が要る＝verify に入っていない）を叩いた時点で、
+// PR が通った後になる。宣言と同じ場所で弾く（SPR-296 で実際に踏んだ）
+const DESCRIPTION_MAX_LENGTH = 150;
+const tooLongDescriptions = [...declared.values()].filter(
+	(d) => (d.description ?? "").length > DESCRIPTION_MAX_LENGTH,
+);
+if (tooLongDescriptions.length > 0) {
+	console.error(
+		`[lint-ga4-params] ✗ description が ${DESCRIPTION_MAX_LENGTH} 文字を超えている（Admin API が受け付けない）:`,
+	);
+	for (const d of tooLongDescriptions) {
+		console.error(`  ${d.parameterName}  (${d.description.length} 文字)`);
+	}
+	process.exit(1);
+}
+
 const used = new Map(); // param -> 最初に見つけた場所
 const unresolved = []; // { id, where }
 let callSites = 0;
