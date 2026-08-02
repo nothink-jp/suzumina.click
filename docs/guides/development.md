@@ -75,11 +75,11 @@ pnpm knip          # 未使用 export / ファイル / 依存を検出（設定:
 
 suzumina.clickプロジェクトの開発ガイドライン、設計原則、コーディング規約、品質基準を定義します。  
 
-**技術スタック**: Next.js 16 App Router + TypeScript + Tailwind CSS v4 + Biome 2.x（pnpm workspaces モノレポ）  
-**開発体制**: 個人開発・個人運用（本番環境のみ）  
-**バージョン**: v0.3.12  
-**テスト成果**: Entity/Value Objectアーキテクチャ移行・作品評価システム実装  
-**更新日**: 2026年5月30日
+**技術スタック**: Next.js App Router + TypeScript + Tailwind CSS + Biome（pnpm workspaces モノレポ）  
+**開発体制**: 個人開発・個人運用（本番環境のみ）
+
+> バージョン番号はこの doc に固定しない（正本は各 `package.json`）。版数を doc に書くと
+> 更新のたびに必ず腐り、読み手は「どちらが正しいか」を判断できなくなる（CLAUDE.md 軸1）。
 
 ## 🎯 核心設計原則 (優先度順)
 
@@ -295,7 +295,7 @@ components/<domain>/
 - 適切なコメントの追加
 - 複雑なロジックの分割
 
-#### **8. Next.js 16準拠設計**
+#### **8. Next.js App Router 準拠設計**
 **原則**: Server Component/Client Component を適切に分離する
 
 - **Server Components**: データ取得・表示ロジック
@@ -959,12 +959,17 @@ docs: update api documentation
 
 ### 3. 実装後チェックリスト
 
-**コミット前に実行（必須）**
+**完了前に実行（必須）**
 
-- [ ] 包括チェック: `pnpm check` (Biome: Lint + フォーマット)
-- [ ] 型チェック: `pnpm typecheck`
-- [ ] テスト実行: `pnpm test`
-- [ ] ビルド確認: `pnpm build`
+- [ ] **`pnpm verify`** — これが手元の完全版ゲート
+  （`lint:docs` + `lint:tokens` + `lint` + `typecheck` + `test`。各 `vitest.config.ts` の
+  カバレッジ閾値も強制される。正本は CLAUDE.md §1）
+
+pre-push hook（lefthook）は変更パッケージの `typecheck:fast` のみ、CI（`pr-check.yml`）は
+変更パッケージ単位の差分実行で、いずれも `pnpm verify` と scope が異なる＝同一判定ではない。
+最終確認は `pnpm verify` を正とする。
+
+個別に切り分けたいときは `pnpm lint` / `pnpm typecheck` / `pnpm test` / `pnpm build` を単体で実行する。
 
 **Git フック（Lefthook が自動実行）**
 
@@ -974,7 +979,7 @@ docs: update api documentation
 **品質状況**
 
 - ✅ **Lint状態**: 全パッケージ 0エラー・0警告達成
-- ✅ **依存関係**: Biome 2.4.x、React 19等最新版
+- ✅ **依存関係**: Dependabot で追随（実際の版は各 `package.json`）
 - ✅ **セキュリティ**: Firebase依存関係完全削除
 - ✅ **Git フック**: Lefthook による品質チェック自動化
 
@@ -1224,7 +1229,7 @@ packages/ui/src/components/design-tokens/
 
 **使用例**:
 ```typescript
-// ✅ 良い例: Tailwind CSS v4 + デザイントークン
+// ✅ 良い例: デザイントークン経由で色を指定する
 <Button className="bg-suzuka-500 hover:bg-suzuka-600 text-white">
   メインCTA
 </Button>
@@ -1468,5 +1473,6 @@ graph LR
 
 ---
 
-**最終更新**: 2026年5月30日 (スタック・コマンド情報の最新化: Next.js 16 / v0.3.12 / pnpm -r / Biome 2.x / secretlint)  
 **次回レビュー予定**: 2026年11月30日
+
+> 更新日・版数はここに書かない（git 履歴が正本）。手書きの日付は更新を忘れた瞬間に嘘になる。
