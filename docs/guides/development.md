@@ -731,12 +731,13 @@ src/components/
 │   ├── highlight-text.tsx
 │   ├── thumbnail-image.tsx
 │   └── index.ts
-├── 📚 content/                  # コンテンツ表示・評価
-│   ├── __tests__/               # テスト専用ディレクトリ
-│   │   └── featured-videos-carousel.test.tsx
+├── 📚 content/                  # 一覧・カルーセル等のコンテンツ表示
 │   ├── featured-videos-carousel.tsx
-│   ├── characteristic-evaluation.tsx
-│   └── index.ts
+│   ├── featured-works-carousel.tsx
+│   ├── list-page-shell.tsx
+│   ├── works-page-client.tsx
+│   ├── circles-page-client.tsx
+│   └── creators-page-client.tsx
 ├── ⚙️  system/                  # システム機能
 │   ├── __tests__/               # テスト専用ディレクトリ
 │   │   └── protected-route.test.tsx
