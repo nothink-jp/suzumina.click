@@ -5,7 +5,6 @@ import {
 	getWorkCategoryDisplayText,
 	getWorkLanguageDisplayName,
 } from "@suzumina.click/shared-types";
-import NotImplementedOverlay from "@suzumina.click/ui/components/custom/not-implemented-overlay";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import {
@@ -30,11 +29,9 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useMemo } from "react";
-import CharacteristicEvaluation from "@/components/content/characteristic-evaluation";
 import { PriceHistory } from "@/components/price-history/price-history";
 import ThumbnailImage from "@/components/ui/thumbnail-image";
 import { formatJSTDateTime } from "@/utils/date-format";
-import { generateMockCharacteristicData } from "@/utils/mock-evaluation-data";
 import { calculatePriceInfo } from "../../utils/price-info";
 import { AgeRatingBadge } from "./age-rating-badge";
 import SampleImageGallery from "./sample-image-gallery";
@@ -79,12 +76,6 @@ function handleShare(work: WorkPlainObject) {
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Complex UI component with multiple tabs and conditional rendering
 export default function WorkDetail({ work }: WorkDetailProps) {
-	// モック特性評価データを生成（作品IDに基づいて一意）
-	const characteristicData = useMemo(
-		() => generateMockCharacteristicData(work.productId),
-		[work.productId],
-	);
-
 	// 価格情報の計算
 	const { currentPrice, originalPrice, isOnSale, discountRate } = useMemo(
 		() => calculatePriceInfo(work.price),
@@ -303,7 +294,7 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 				{/* 左側: タブコンテンツ */}
 				<div className="lg:col-span-2">
 					<Tabs defaultValue="overview" className="w-full">
-						<TabsList className="grid w-full grid-cols-4">
+						<TabsList className="grid w-full grid-cols-3">
 							<TabsTrigger value="overview" className="flex items-center gap-2">
 								<FileText className="h-4 w-4" />
 								<span className="hidden sm:inline">詳細情報</span>
@@ -311,10 +302,6 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 							<TabsTrigger value="samples" className="flex items-center gap-2">
 								<Image className="h-4 w-4" />
 								<span className="hidden sm:inline">サンプル画像</span>
-							</TabsTrigger>
-							<TabsTrigger value="characteristics" className="flex items-center gap-2">
-								<Star className="h-4 w-4" />
-								<span className="hidden sm:inline">特性評価</span>
 							</TabsTrigger>
 							<TabsTrigger value="price-history" className="flex items-center gap-2">
 								<Tag className="h-4 w-4" />
@@ -505,28 +492,6 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 									height: img.height,
 								}))}
 								workTitle={work.title}
-							/>
-						</TabsContent>
-
-						{/* 特性評価タブ */}
-						<TabsContent value="characteristics" className="relative">
-							<div className="space-y-4">
-								<div className="text-center mb-6">
-									<h3 className="text-xl font-semibold text-foreground mb-2">
-										ユーザー特性評価 (4分類18軸)
-									</h3>
-									<p className="text-muted-foreground">
-										ユーザーによる声質・性格・行動・魅力の多角的評価システム
-									</p>
-								</div>
-								<CharacteristicEvaluation
-									characteristics={characteristicData}
-									showOverallStats={true}
-								/>
-							</div>
-							<NotImplementedOverlay
-								title="特性評価機能は準備中です"
-								description="現在、ユーザー特性評価システムを開発中です。表示されているデータはモックデータです。"
 							/>
 						</TabsContent>
 
