@@ -2,7 +2,10 @@
  * Web Vitals Reporter for Google Analytics 4
  *
  * Measures Core Web Vitals and sends them to GA4 as custom events.
- * Respects user consent via Google Consent Mode.
+ *
+ * SPR-299: 送信自体は同意でゲートしない（他のイベントと同じ扱い）。Cookie/識別子を
+ * 保存するかどうかだけが GA4 の consent mode 側で切り替わる。送る内容は metric 名・値・
+ * 評価・navigationType だけで、訪問者を識別する要素を含まない。
  *
  * Metrics:
  * - LCP (Largest Contentful Paint): Should be ≤2.5s
