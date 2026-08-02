@@ -277,13 +277,12 @@ function updateAndLog(data: any) {
 #### **6. コードコロケーション**
 **原則**: 関連するコードは近接して配置する
 
-```
-components/
-├── voice-button/
-│   ├── voice-button.tsx      # メインコンポーネント
-│   ├── voice-button.test.tsx # テスト
-│   ├── voice-button.types.ts # 型定義
-│   └── index.ts              # エクスポート
+```text
+components/<domain>/
+├── __tests__/                     # テストは同ディレクトリ直下の __tests__ に集約
+│   └── <component>.test.tsx
+├── <component>.tsx                # コンポーネント本体
+└── use-<component>-state.ts       # そのコンポーネント専用のフックは隣に置く
 ```
 
 ### 🥉 **第3優先: 実装品質原則**
@@ -689,153 +688,46 @@ src/components/auth.spec.ts    // E2E以外での.spec使用
 
 ### ディレクトリ構造・命名規則
 
-#### **コンポーネントディレクトリ構造**
-```text
-src/components/
-├── 🎵 audio/                    # 音声・音声ボタン関連
-│   ├── __tests__/               # テスト専用ディレクトリ
-│   │   ├── audio-button-creator.test.tsx
-│   │   └── favorite-button.test.tsx
-│   ├── audio-button-creator.tsx
-│   ├── favorite-button.tsx
-│   └── index.ts                 # バレルエクスポート
-├── 🔍 search/                   # 検索・フィルタ関連
-│   ├── __tests__/               # テスト専用ディレクトリ
-│   │   ├── search-form.test.tsx
-│   │   └── search-filters.test.tsx
-│   ├── search-form.tsx
-│   ├── search-filters.tsx
-│   ├── autocomplete-dropdown.tsx
-│   └── index.ts
-├── 👤 user/                     # ユーザー・認証関連
-│   ├── __tests__/               # テスト専用ディレクトリ
-│   │   ├── auth-button.test.tsx
-│   │   └── user-menu.test.tsx
-│   ├── auth-button.tsx
-│   ├── user-menu.tsx
-│   ├── user-avatar.tsx
-│   └── index.ts
-├── 🎨 layout/                   # レイアウト・ページ構造
-│   ├── __tests__/               # テスト専用ディレクトリ
-│   │   ├── site-header.test.tsx
-│   │   └── site-footer.test.tsx
-│   ├── site-header.tsx
-│   ├── site-footer.tsx
-│   ├── home-page.tsx
-│   └── index.ts
-├── 🎛️  ui/                      # 共通UIコンポーネント
-│   ├── __tests__/               # テスト専用ディレクトリ
-│   │   ├── pagination.test.tsx
-│   │   └── thumbnail-image.test.tsx
-│   ├── pagination.tsx
-│   ├── highlight-text.tsx
-│   ├── thumbnail-image.tsx
-│   └── index.ts
-├── 📚 content/                  # 一覧・カルーセル等のコンテンツ表示
-│   ├── featured-videos-carousel.tsx
-│   ├── featured-works-carousel.tsx
-│   ├── list-page-shell.tsx
-│   ├── works-page-client.tsx
-│   ├── circles-page-client.tsx
-│   └── creators-page-client.tsx
-├── ⚙️  system/                  # システム機能
-│   ├── __tests__/               # テスト専用ディレクトリ
-│   │   └── protected-route.test.tsx
-│   ├── performance-monitor.tsx
-│   ├── protected-route.tsx
-│   └── index.ts
-├── 📊 analytics/                # Google Analytics関連
-│   ├── __tests__/               # テスト専用ディレクトリ
-│   │   └── google-analytics-script.test.tsx
-│   ├── google-analytics-script.tsx
-│   └── google-tag-manager.tsx
-└── 🍪 consent/                  # Cookie・年齢認証
-    ├── __tests__/               # テスト専用ディレクトリ
-    │   └── cookie-consent-banner.test.tsx
-    ├── cookie-consent-banner.tsx
-    ├── age-verification-gate.tsx
-    └── cookie-settings-link.tsx
-```
+#### **コンポーネントの配置**
 
-#### **ドメイン分類基準**
+**ディレクトリ一覧・ファイル一覧はここに転記しない。** 正本は
+`apps/web/src/components/` と `apps/web/src/app/<route>/components/` そのもので、
+`ls` すれば分かるものを doc に写せば、追加・削除・リネームのたびに必ず drift する
+（reference doc の「型 shape 転記」と同じクラスの負債。`pnpm lint:docs` はリンク整合しか
+見ないためファイル一覧の腐敗は機械検出できない＝人が気づくのはレビュー時になる）。
+ここには**構成の意図と配置の判断基準**だけを書く。
 
-| ドメイン | 配置基準 | 例 |
-|---------|---------|----|
-| **audio/** | 音声ボタン・お気に入り・再生関連 | `audio-button-creator.tsx` |
-| **search/** | 検索・フィルタ・オートコンプリート | `search-filters.tsx` |
-| **user/** | 認証・ユーザープロフィール・セッション | `auth-button.tsx` |
-| **layout/** | ヘッダー・フッター・ページレイアウト | `site-header.tsx` |
-| **ui/** | 再利用可能なUIコンポーネント | `pagination.tsx` |
-| **content/** | コンテンツ表示・評価・カルーセル | `featured-videos-carousel.tsx` |
-| **system/** | パフォーマンス・ルート保護・システム機能 | `performance-monitor.tsx` |
-| **analytics/** | Google Analytics・タグマネージャー | `google-analytics-script.tsx` |
-| **consent/** | Cookie同意・年齢認証・プライバシー | `cookie-consent-banner.tsx` |
+**2 つの置き場所**
 
-#### **バレルエクスポート (index.ts)**
-```typescript
-// ✅ 各ドメインディレクトリにindex.tsを配置
-// audio/index.ts
-export { default as AudioButtonCreator } from './audio-button-creator';
-export { FavoriteButton } from './favorite-button';
-export { LikeButton } from './like-button';
+| 置き場所 | 使うとき |
+|---------|---------|
+| `src/components/<domain>/` | 複数のルートから使う、またはドメインの語彙で独立して説明できる |
+| `src/app/<route>/components/` | そのルート専用で他から import されない（route 同居） |
 
-// 使用例
-import { AudioButtonCreator, FavoriteButton } from '@/components/audio';
-```
+`src/components/` の分割軸は**機能ドメイン**（音声ボタン・作品・動画・レイアウト・同意 等）であり、
+`hooks/` `utils/` のような技術レイヤーでは切らない。新規ドメインディレクトリを作るのは、
+既存のどのドメインの語彙でも説明できず、かつ 2 ファイル以上になるときに限る。
+web アプリのドメイン知識を持たない汎用 UI は `packages/ui` に出す。
+
+**ディレクトリ内の規約**
+
+- ファイルは kebab-case で平置き（上記「ファイル命名の基本原則」）
+- テストは同ディレクトリ直下の `__tests__/`
+- **バレルエクスポート（`index.ts`）は新規に作らない**。import は
+  `@/components/<domain>/<file>` とファイルを直接指す（実態としても `index.ts` は少数の例外のみで、
+  バレル経由の import はほぼ使われていない）。バレルは「どのファイル由来か」を読み手から隠す
 
 ### モノレポ全体での命名一貫性
 
-#### **packages/ ディレクトリ**
-```text
-packages/
-├── shared-types/src/
-│   ├── entities/                # エンティティ（識別可能・状態変化）
-│   │   ├── work.ts             # DLsite作品エンティティ
-│   │   ├── user.ts             # ユーザーエンティティ
-│   │   ├── audio-button.ts     # 音声ボタンエンティティ
-│   │   ├── video.ts            # 動画エンティティ
-│   │   ├── circle-creator.ts   # サークル・クリエイターエンティティ
-│   │   ├── contact.ts          # お問い合わせエンティティ
-│   │   ├── favorite.ts         # お気に入りエンティティ
-│   │   ├── user-evaluation.ts  # ユーザー評価エンティティ
-│   │   └── work-evaluation.ts  # 作品評価エンティティ
-│   ├── value-objects/          # 値オブジェクト（不変・ビジネスロジック）
-│   │   ├── price.ts            # 価格（通貨・割引計算）
-│   │   ├── rating.ts           # 評価（星・信頼度）
-│   │   ├── date-range.ts       # 日付範囲
-│   │   └── creator-type.ts     # クリエイタータイプ
-│   ├── api-schemas/            # 外部APIスキーマ（薄い抽象化）
-│   │   └── dlsite-raw.ts       # DLsite Individual Info API
-│   ├── utilities/              # 共通ユーティリティ
-│   │   ├── common.ts           # 汎用関数
-│   │   ├── firestore-utils.ts  # Firestore変換
-│   │   ├── age-rating.ts       # 年齢制限ユーティリティ
-│   │   ├── price-history.ts    # 価格履歴ユーティリティ
-│   │   └── search-filters.ts   # 検索フィルタ
-│   └── index.ts                # 統一エクスポート（すべてをルートから）
-├── ui/src/components/
-│   ├── alert-dialog.tsx         # kebab-case統一
-│   └── dropdown-menu.tsx
-└── typescript-config/           # パッケージ名もkebab-case
-```
+kebab-case は monorepo 全体（ファイル名・ディレクトリ名・パッケージ名）に適用する。
+各パッケージの中身の一覧はコンポーネント同様に転記せず、ツリーを直接見る。
 
-#### **apps/ ディレクトリ**
-```text
-apps/
-├── web/src/
-│   ├── components/              # 上記ドメイン構造
-│   ├── app/                     # Next.js App Router
-│   └── lib/
-│       ├── firestore-utils.ts   # kebab-case統一
-│       └── auth-helpers.ts
-└── functions/src/
-    ├── endpoints/
-    │   ├── dlsite-data-fetcher.ts   # kebab-case統一
-    │   └── youtube-api-client.ts
-    └── services/
-        ├── dlsite/
-        └── youtube/
-```
+| パッケージ | 正本 | 分割軸 |
+|-----------|------|--------|
+| `packages/shared-types` | `packages/shared-types/src/` | 型の正本。構成の入口は [domain-model.md](../reference/domain-model.md) |
+| `packages/ui` | `packages/ui/src/components/` | 汎用 UI（`ui/` = shadcn ベース、`custom/` = 自作、`design-tokens/` = Storybook doc） |
+| `apps/web` | `apps/web/src/` | 上記「コンポーネントの配置」を参照 |
+| `apps/functions` | `apps/functions/src/` | `endpoints/`（Cloud Functions 入口）・`services/`（ドメインロジック）・`infrastructure/`・`shared/`・`tools/` |
 
 ### 命名規則チェックリスト
 
@@ -848,7 +740,7 @@ apps/
 #### **既存ファイル変更時**
 - [ ] import文が新しいパス構造に対応している
 - [ ] 相対import（./、../）が正しく更新されている
-- [ ] バレルエクスポートが必要に応じて更新されている
+- [ ] 既存の `index.ts`（少数の例外）を経由している import が壊れていない
 
 #### **レガシーファイル命名規約 (移行対象)**
 ```typescript
@@ -1248,36 +1140,25 @@ export class WorkMapper {
 **実装済みレイヤー構造**
 
 ```text
-apps/web/                     # 本番Webアプリ
-├── src/
-│   ├── app/                 # Next.js App Router (Server Components)
-│   ├── components/          # UIコンポーネント
-│   │   ├── VideoList.tsx    # Server Component (表示ロジック)
-│   │   └── Pagination.tsx   # Client Component (インタラクション)
-│   └── lib/                 # ユーティリティ
+apps/web/src/
+├── app/                     # Next.js App Router（ルート・route 同居の components/）
+├── components/              # 機能ドメイン単位の UI（配置基準は「コンポーネントの配置」）
+├── actions/                 # Server Actions の正本
+└── lib/                     # ドメイン非依存のユーティリティ・外部連携
 
-packages/ui/                  # 共有UIコンポーネント
-├── src/
-│   ├── components/          # Radix UIベースコンポーネント
-│   └── styles/              # Tailwind CSS v4設定
-└── .storybook/              # UI開発環境
+packages/ui/src/
+├── components/              # 共有 UI（ui/ = shadcn ベース・custom/ = 自作・design-tokens/ = Storybook doc）
+└── styles/                  # Tailwind CSS 設定・デザイントークン
 
-apps/functions/               # バックエンド (エンタープライズ構造)
-├── src/
-│   ├── endpoints/           # Cloud Functions エンドポイント
-│   │   ├── dlsite.ts       # DLsite作品取得
-│   │   ├── youtube.ts      # YouTube動画取得
-│   │   └── index.ts        # Functions Framework エントリーポイント
-│   ├── services/           # ビジネスロジック・サービス層
-│   │   ├── dlsite/        # DLsite関連サービス (パーサー・Firestore・マッパー)
-│   │   └── youtube/       # YouTube関連サービス (API・Firestore)
-│   ├── infrastructure/     # インフラ・外部システム管理
-│   │   ├── monitoring/    # 監視・ヘルスチェック
-│   │   ├── management/    # システム管理 (設定・エラーハンドリング・User-Agent)
-│   │   └── database/      # データベース基盤
-│   ├── development/        # 開発・デバッグツール
-│   └── shared/             # 共通ユーティリティ (ログ・リトライ・共通定数)
+apps/functions/src/
+├── endpoints/               # Cloud Functions エントリーポイント（ドメイン単位のディレクトリ）
+├── services/                # ビジネスロジック（dlsite / youtube 等）
+├── infrastructure/          # 外部システム基盤（monitoring / management / database）
+├── shared/                  # 共通ユーティリティ（ログ・リトライ・共通定数）
+└── tools/                   # 開発・運用ツール（ローカル Firestore シード等）
 ```
+
+※ 各ディレクトリの中身（ファイル一覧）は転記しない。正本はツリーそのもの。
 
 ### 2. 依存関係管理
 
