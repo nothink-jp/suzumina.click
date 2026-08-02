@@ -35,6 +35,38 @@ const API_BASE = "https://analyticsdata.googleapis.com/v1beta";
 /** 母数がこれ未満の期間は、内訳の比較に意味が無いと明示する */
 const MIN_SESSIONS_FOR_COMPARISON = 100;
 
+/**
+ * GA4 が自動収集するイベント（拡張計測を含む）。自作イベントの一覧はこれの補集合として出す。
+ *
+ * 自作イベント側を列挙しない理由: events.ts に新しいイベントを足したときに
+ * このリストの更新を忘れると、**操作は起きているのにレポートからも signal からも消える**。
+ * 「読むものが無い」と「読むべきものを落とした」が見分けられなくなり、
+ * 月次通知が沈黙したまま実測を取り逃す＝このスクリプトが防ごうとしている失敗そのものになる。
+ * 除外側だけを持てば、未知のイベントは**出る方向**に倒れる（#910 のレビュー所見）。
+ */
+const AUTO_EVENTS = new Set([
+	"session_start",
+	"first_visit",
+	"first_open",
+	"page_view",
+	"user_engagement",
+	"scroll",
+	"click",
+	"file_download",
+	"form_start",
+	"form_submit",
+	"view_search_results",
+	"video_start",
+	"video_progress",
+	"video_complete",
+]);
+
+/**
+ * 自作イベントのうち「操作ではない」もの。signal（読む価値の判定）から除く。
+ * ここも除外側で持つ＝新しい操作イベントは既定で signal に入り、通知が出る方向に倒れる
+ */
+const PASSIVE_EVENTS = new Set(["web_vitals", "consent_update"]);
+
 function abort(message) {
 	console.error(`✗ ${message}`);
 	process.exit(2);
@@ -144,32 +176,13 @@ async function main() {
 		metrics: [{ name: "eventCount" }],
 		limit: 200,
 	});
-	const CUSTOM_EVENTS = [
-		"play_button",
-		"create_start",
-		"create_success",
-		"create_error",
-		"add_to_favorite",
-		"remove_from_favorite",
-		"mark_draft",
-		"suggestion_generate",
-		"suggestion_apply",
-		"login_start",
-		"login_success",
-		"login_error",
-		"consent_update",
-		"web_vitals",
-		"video_tab_select",
-	];
 	const eventCounts = new Map(rows(byEvent).map(([name, count]) => [name, count]));
+	const customEvents = [...eventCounts.keys()].filter((name) => !AUTO_EVENTS.has(name));
 	printBreakdown(
-		CUSTOM_EVENTS.filter((name) => eventCounts.has(name)).map((name) => [
-			name,
-			eventCounts.get(name),
-		]),
+		customEvents.map((name) => [name, eventCounts.get(name)]),
 		{
 			empty: "（カスタムイベント 0件。送信経路の故障か、単に操作が起きていないかを切り分けること）",
-			note: "web_vitals だけが出ている＝送信経路は生きているが操作が起きていない",
+			note: "web_vitals / consent_update しか無い＝送信経路は生きているが操作が起きていない",
 		},
 	);
 
@@ -245,15 +258,9 @@ async function main() {
 	// Summary を grep させると表示を変えるたびに壊れるので、ここを契約にする（英語キー固定）。
 	// 母数ではなく**操作**の件数で判定する: 人が来ただけでは読む必要がない
 	section("signal");
-	const actionEvents = [
-		"create_start",
-		"create_success",
-		"video_tab_select",
-		"login_start",
-		"play_button",
-		"mark_draft",
-	];
-	const actionCount = actionEvents.reduce((sum, name) => sum + (eventCounts.get(name) ?? 0), 0);
+	const actionCount = customEvents
+		.filter((name) => !PASSIVE_EVENTS.has(name))
+		.reduce((sum, name) => sum + (eventCounts.get(name) ?? 0), 0);
 	console.log(`[signal] action_events=${actionCount} sessions=${sessions}`);
 	console.log(
 		actionCount > 0
