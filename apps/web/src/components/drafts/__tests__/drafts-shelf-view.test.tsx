@@ -51,7 +51,7 @@ describe("DraftsShelfView（マーク棚・導線再設計 段2）", () => {
 		const bulkLinks = screen.getAllByRole("link", { name: /まとめて仕上げる/ });
 		expect(bulkLinks[0]).toHaveAttribute(
 			"href",
-			"/buttons/create?video_id=video-older11&start_time=50&draft_id=old1",
+			"/buttons/create?video_id=video-older11&start_time=50&draft_id=old1&entry=drafts_bulk",
 		);
 		expect(bulkLinks[0]).toHaveTextContent("まとめて仕上げる（2）");
 

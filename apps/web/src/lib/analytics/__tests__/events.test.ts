@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { CREATE_ENTRY } from "../create-entry";
 import {
 	trackCreateError,
 	trackCreateStart,
@@ -34,11 +35,12 @@ describe("GA4 カスタムイベント語彙 (SPR-149)", () => {
 	// Cookie/識別子の可否だけが GA4 の consent mode 側で切り替わる。
 	it("consent 未取得でもイベントを送る（ゲートは撤廃済み）", () => {
 		trackPlayButton("ab1");
-		trackCreateStart("vid00000001", false);
+		trackCreateStart({ videoId: "vid00000001", fromDraft: false, entry: CREATE_ENTRY.detailClip });
 		expect(gtag).toHaveBeenCalledWith("event", "play_button", { audio_button_id: "ab1" });
 		expect(gtag).toHaveBeenCalledWith("event", "create_start", {
 			video_id: "vid00000001",
 			from_draft: false,
+			create_entry: "detail_clip",
 		});
 	});
 
@@ -48,20 +50,27 @@ describe("GA4 カスタムイベント語彙 (SPR-149)", () => {
 		expect(gtag).toHaveBeenCalledWith("event", "play_button", { audio_button_id: "ab1" });
 	});
 
-	it("create ファネル: start / success（from_draft 付き） / error を送る", () => {
+	it("create ファネル: start / success（from_draft・create_entry 付き） / error を送る", () => {
 		grantAnalyticsConsent();
-		trackCreateStart("vid00000001", true);
-		trackCreateSuccess({ audioButtonId: "ab1", videoId: "vid00000001", fromDraft: true });
+		trackCreateStart({ videoId: "vid00000001", fromDraft: true, entry: CREATE_ENTRY.watchBulk });
+		trackCreateSuccess({
+			audioButtonId: "ab1",
+			videoId: "vid00000001",
+			fromDraft: true,
+			entry: CREATE_ENTRY.watchBulk,
+		});
 		trackCreateError("vid00000001", "認証エラー");
 
 		expect(gtag).toHaveBeenCalledWith("event", "create_start", {
 			video_id: "vid00000001",
 			from_draft: true,
+			create_entry: "watch_bulk",
 		});
 		expect(gtag).toHaveBeenCalledWith("event", "create_success", {
 			audio_button_id: "ab1",
 			video_id: "vid00000001",
 			from_draft: true,
+			create_entry: "watch_bulk",
 		});
 		expect(gtag).toHaveBeenCalledWith("event", "create_error", {
 			video_id: "vid00000001",

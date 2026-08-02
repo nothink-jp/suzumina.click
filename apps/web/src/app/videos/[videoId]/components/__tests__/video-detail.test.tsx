@@ -386,7 +386,7 @@ describe("VideoDetail", () => {
 			const markLink = screen.getByText("マークして見る").closest("a");
 			expect(markLink).toHaveAttribute("href", "/watch?v=abc123");
 			const clipLink = screen.getByText("ここを切り抜く").closest("a");
-			expect(clipLink).toHaveAttribute("href", "/buttons/create?video_id=abc123");
+			expect(clipLink).toHaveAttribute("href", "/buttons/create?video_id=abc123&entry=detail_clip");
 			// 意図の分岐点の1行説明
 			expect(screen.getByText(/見ながら複数拾うなら/)).toBeInTheDocument();
 			// サイドバーの「新規作成」は削除済み（作成導線は本文の1組に集約）

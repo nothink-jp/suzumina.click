@@ -88,7 +88,7 @@ describe("CaptureView の今回のマーク（集中モード・導線再設計 
 		const bulkLink = screen.getByRole("link", { name: /まとめて仕上げる/ });
 		expect(bulkLink).toHaveAttribute(
 			"href",
-			"/buttons/create?video_id=video-curr111&start_time=100&draft_id=a1",
+			"/buttons/create?video_id=video-curr111&start_time=100&draft_id=a1&entry=watch_bulk",
 		);
 	});
 

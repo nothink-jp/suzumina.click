@@ -26,6 +26,7 @@ import React, { type ReactNode, useMemo } from "react";
 import { resolveCaptureVideoMode } from "@/components/capture/video-mode";
 import { ThumbnailImage } from "@/components/ui";
 import { getVideoBadgeInfo } from "@/components/video/video-badge";
+import { CREATE_ENTRY, CREATE_ENTRY_PARAM } from "@/lib/analytics/create-entry";
 import { formatDescriptionText } from "@/lib/text-utils";
 
 interface VideoDetailProps {
@@ -362,7 +363,7 @@ export default function VideoDetail({
 											variant="outline"
 											render={
 												<Link
-													href={`/buttons/create?video_id=${video.videoId}`}
+													href={`/buttons/create?video_id=${video.videoId}&${CREATE_ENTRY_PARAM}=${CREATE_ENTRY.detailClip}`}
 													className="flex items-center whitespace-nowrap"
 												>
 													<Scissors className="h-4 w-4 mr-2" />
