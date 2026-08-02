@@ -169,6 +169,11 @@ export function getFormattedViewCount(video: VideoPlainObject): string {
 
 /**
  * Gets all tags for a video (combined from all sources)
+ *
+ * SPR-276: ユーザータグ（`tags.userTags`）は集約しない。編集 UI・Server Action ともに撤去され、
+ * cron 側も SPR-273 以降このフィールドを書かない（undefined 伝播で既存値を温存するだけ）ため、
+ * **値を入れる経路が一つも残っていない**。フィールド自体は移行判断が別途あるので Firestore
+ * とスキーマには残すが、ここで読むと「編集できないのに概要タブにだけ再出現する」非対称を招く。
  */
 export function getAllTags(video: VideoPlainObject): string[] {
 	const tags = new Set<string>();
@@ -176,13 +181,6 @@ export function getAllTags(video: VideoPlainObject): string[] {
 	// Add playlist tags
 	if (video.tags?.playlistTags) {
 		video.tags.playlistTags.forEach((tag) => {
-			tags.add(tag);
-		});
-	}
-
-	// Add user tags
-	if (video.tags?.userTags) {
-		video.tags.userTags.forEach((tag) => {
 			tags.add(tag);
 		});
 	}
