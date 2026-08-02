@@ -2,6 +2,60 @@
   "collection": "audioButtons",
   "docs": [
     {
+      "id": "0wHX2PKQmUpHBBuCNEAd",
+      "data": {
+        "buttonText": "やっぱ一馬ってイケメンだね、こう見ると",
+        "videoId": "jBSYmvU8gCg",
+        "videoTitle": "錦、、、俺お前と仲直りしたいよ、、、；；第八章途中から…！！【龍が如く極 #6／この配信はゲームのネタバレを含みます】",
+        "startTime": 2532.2,
+        "endTime": 2535.4,
+        "duration": 3.200000000000273,
+        "tags": [
+          "返事・リアクション",
+          "龍が如く極"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "stats": {
+          "playCount": 0,
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0
+        },
+        "createdAt": "2026-07-31T11:09:04.384Z",
+        "updatedAt": "2026-07-31T11:09:04.384Z"
+      }
+    },
+    {
+      "id": "3HMkQIxPFvaohCheedJs",
+      "data": {
+        "buttonText": "なんだぁ？",
+        "videoId": "hHa69OJyXl0",
+        "videoTitle": "100億どうなったん…？第7章途中から！！【龍が如く極 #5／この配信はゲームのネタバレを含みます】",
+        "startTime": 1024.3,
+        "endTime": 1025.3,
+        "duration": 1,
+        "tags": [
+          "返事・リアクション",
+          "龍が如く極"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "stats": {
+          "playCount": 0,
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0
+        },
+        "createdAt": "2026-07-23T10:06:29.618Z",
+        "updatedAt": "2026-07-23T10:06:29.618Z"
+      }
+    },
+    {
       "id": "3TTkeWwxByhqtcggDe7i",
       "data": {
         "buttonText": "ベイリース、来い",
@@ -43,18 +97,126 @@
         "isPublic": true,
         "createdAt": "2026-06-26T08:11:57.605Z",
         "id": "3ZQGfMT0ufuoZPFIo3nf",
+        "tags": [
+          "龍が如く極",
+          "名言・迷言"
+        ],
         "stats": {
           "likeCount": 0,
           "dislikeCount": 0,
           "favoriteCount": 0,
           "engagementRate": 0,
-          "playCount": 11
+          "playCount": 12
         },
+        "updatedAt": "2026-07-23T09:59:48.467Z"
+      }
+    },
+    {
+      "id": "4t9XBuL4H4BKw1ISfeol",
+      "data": {
+        "buttonText": "そのチンキックで…すまん、なんか",
+        "videoId": "jBSYmvU8gCg",
+        "videoTitle": "錦、、、俺お前と仲直りしたいよ、、、；；第八章途中から…！！【龍が如く極 #6／この配信はゲームのネタバレを含みます】",
+        "startTime": 12785.2,
+        "endTime": 12790.2,
+        "duration": 5,
         "tags": [
-          "龍が如く極",
-          "名言・迷言"
+          "返事・リアクション",
+          "龍が如く極"
         ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2026-07-31T11:51:32.208Z",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 1
+        },
+        "updatedAt": "2026-07-31T22:05:33.200Z"
+      }
+    },
+    {
+      "id": "53aRiTlfhjLKFDiJUOaX",
+      "data": {
+        "buttonText": "めっちゃおっぱい見てる！",
+        "videoId": "jBSYmvU8gCg",
+        "videoTitle": "錦、、、俺お前と仲直りしたいよ、、、；；第八章途中から…！！【龍が如く極 #6／この配信はゲームのネタバレを含みます】",
+        "startTime": 10369.8,
+        "endTime": 10371.6,
+        "duration": 1.8000000000010914,
+        "tags": [
+          "返事・リアクション",
+          "龍が如く極"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2026-07-31T11:41:43.054Z",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 1
+        },
+        "updatedAt": "2026-07-31T22:05:58.218Z"
+      }
+    },
+    {
+      "id": "5MHPV5mKqDGP3aFuRP7T",
+      "data": {
+        "buttonText": "うっひょー",
+        "videoId": "hHa69OJyXl0",
+        "videoTitle": "100億どうなったん…？第7章途中から！！【龍が如く極 #5／この配信はゲームのネタバレを含みます】",
+        "startTime": 9287.3,
+        "endTime": 9288.3,
+        "duration": 1,
+        "tags": [
+          "擬音・音ネタ",
+          "龍が如く極"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2026-07-23T10:35:07.349Z",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 2
+        },
+        "updatedAt": "2026-07-26T16:11:58.693Z"
+      }
+    },
+    {
+      "id": "5upa0yx1AN0D2U1PpckM",
+      "data": {
+        "buttonText": "竜刺繍、竜刺繍のシャツ",
+        "videoId": "jBSYmvU8gCg",
+        "videoTitle": "錦、、、俺お前と仲直りしたいよ、、、；；第八章途中から…！！【龍が如く極 #6／この配信はゲームのネタバレを含みます】",
+        "startTime": 1377.9,
+        "endTime": 1382.2,
+        "duration": 4.2999999999999545,
+        "tags": [
+          "返事・リアクション",
+          "龍が如く極"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "stats": {
+          "playCount": 0,
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0
+        },
+        "createdAt": "2026-07-31T10:56:27.778Z",
+        "updatedAt": "2026-07-31T10:56:27.778Z"
       }
     },
     {
@@ -114,6 +276,33 @@
       }
     },
     {
+      "id": "6kkPUqX44nxcJTvcgczw",
+      "data": {
+        "buttonText": "いやー！痛えー！",
+        "videoId": "jBSYmvU8gCg",
+        "videoTitle": "錦、、、俺お前と仲直りしたいよ、、、；；第八章途中から…！！【龍が如く極 #6／この配信はゲームのネタバレを含みます】",
+        "startTime": 4810,
+        "endTime": 4815.1,
+        "duration": 5.100000000000364,
+        "tags": [
+          "返事・リアクション",
+          "龍が如く極"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "stats": {
+          "playCount": 0,
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0
+        },
+        "createdAt": "2026-07-31T11:22:58.938Z",
+        "updatedAt": "2026-07-31T11:22:58.938Z"
+      }
+    },
+    {
       "id": "7Jf6iiLUd25eu3NfhL9X",
       "data": {
         "buttonText": "一緒に手繋いで飛び降りよ？",
@@ -127,17 +316,44 @@
         "isPublic": true,
         "createdAt": "2026-06-20T16:15:57.059Z",
         "id": "7Jf6iiLUd25eu3NfhL9X",
+        "tags": [
+          "名言・迷言"
+        ],
         "stats": {
           "dislikeCount": 0,
           "favoriteCount": 0,
           "engagementRate": 0,
           "likeCount": 1,
-          "playCount": 9
+          "playCount": 10
         },
+        "updatedAt": "2026-07-20T14:11:32.839Z"
+      }
+    },
+    {
+      "id": "83c6tSoPW40QpviJvV9N",
+      "data": {
+        "buttonText": "がんばれー〇〇くんがんばれーやばーいみんな倒されてくんだけどーえーやばくなーいウチら逃げるー？",
+        "videoId": "jBSYmvU8gCg",
+        "videoTitle": "錦、、、俺お前と仲直りしたいよ、、、；；第八章途中から…！！【龍が如く極 #6／この配信はゲームのネタバレを含みます】",
+        "startTime": 3678.9,
+        "endTime": 3689.8,
+        "duration": 10.900000000000091,
         "tags": [
-          "名言・迷言"
+          "ツッコミ・煽り",
+          "龍が如く極"
         ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2026-07-31T11:17:37.843Z",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 1
+        },
+        "updatedAt": "2026-07-31T11:42:09.894Z"
       }
     },
     {
@@ -167,6 +383,83 @@
           "名言・迷言"
         ],
         "updatedAt": "2026-07-19T01:07:02.335Z"
+      }
+    },
+    {
+      "id": "9A8SUnZtb4ifnNk96j5y",
+      "data": {
+        "buttonText": "第十一章・仁義",
+        "videoId": "jBSYmvU8gCg",
+        "videoTitle": "錦、、、俺お前と仲直りしたいよ、、、；；第八章途中から…！！【龍が如く極 #6／この配信はゲームのネタバレを含みます】",
+        "startTime": 12921.2,
+        "endTime": 12924.4,
+        "duration": 3.1999999999989086,
+        "tags": [],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "stats": {
+          "playCount": 0,
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0
+        },
+        "createdAt": "2026-07-31T11:52:44.779Z",
+        "updatedAt": "2026-07-31T11:52:44.779Z"
+      }
+    },
+    {
+      "id": "Aukk80AjYSYYjRxDccTx",
+      "data": {
+        "buttonText": "あのチャンネーいいケツしてるわ、みたいな",
+        "videoId": "hHa69OJyXl0",
+        "videoTitle": "100億どうなったん…？第7章途中から！！【龍が如く極 #5／この配信はゲームのネタバレを含みます】",
+        "startTime": 668.2,
+        "endTime": 672.2,
+        "duration": 4,
+        "tags": [
+          "名言・迷言"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2026-07-23T10:03:31.374Z",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 1
+        },
+        "updatedAt": "2026-07-26T10:27:27.478Z"
+      }
+    },
+    {
+      "id": "B9pyzenvLcAaNrXsjQ24",
+      "data": {
+        "buttonText": "にゃんにゃん！にゃん！にゃんにゃんにゃんにゃん！",
+        "videoId": "jBSYmvU8gCg",
+        "videoTitle": "錦、、、俺お前と仲直りしたいよ、、、；；第八章途中から…！！【龍が如く極 #6／この配信はゲームのネタバレを含みます】",
+        "startTime": 7667.9,
+        "endTime": 7674.9,
+        "duration": 7,
+        "tags": [
+          "擬音・音ネタ",
+          "龍が如く極"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "stats": {
+          "playCount": 0,
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0
+        },
+        "createdAt": "2026-07-31T11:33:40.150Z",
+        "updatedAt": "2026-07-31T11:33:40.150Z"
       }
     },
     {
@@ -263,18 +556,18 @@
         "isPublic": true,
         "createdAt": "2025-11-19T10:47:18.068Z",
         "id": "Bx5JTdWBxffX61Nww6w4",
+        "tags": [
+          "ゲーム",
+          "応援・褒め"
+        ],
         "stats": {
           "likeCount": 0,
           "dislikeCount": 0,
           "engagementRate": 0,
           "favoriteCount": 0,
-          "playCount": 58
+          "playCount": 59
         },
-        "tags": [
-          "ゲーム",
-          "応援・褒め"
-        ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
+        "updatedAt": "2026-07-20T14:11:39.990Z"
       }
     },
     {
@@ -360,6 +653,33 @@
       }
     },
     {
+      "id": "Ckm6GRV1JabdVkHMz3vE",
+      "data": {
+        "buttonText": "コロっといっちゃう？",
+        "videoId": "hHa69OJyXl0",
+        "videoTitle": "100億どうなったん…？第7章途中から！！【龍が如く極 #5／この配信はゲームのネタバレを含みます】",
+        "startTime": 9245.3,
+        "endTime": 9247.1,
+        "duration": 1.8000000000010914,
+        "tags": [
+          "ツッコミ・煽り",
+          "龍が如く極"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "stats": {
+          "playCount": 0,
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0
+        },
+        "createdAt": "2026-07-23T10:33:51.326Z",
+        "updatedAt": "2026-07-23T10:33:51.326Z"
+      }
+    },
+    {
       "id": "D57byuHyRJnvUB3rLuFJ",
       "data": {
         "buttonText": "やべ、気まずい",
@@ -388,6 +708,60 @@
       }
     },
     {
+      "id": "DTPZNVuw7inVDWJ6MuKz",
+      "data": {
+        "buttonText": "いやコイツだろ絶対蜂使いこいつだろ絶対",
+        "videoId": "jBSYmvU8gCg",
+        "videoTitle": "錦、、、俺お前と仲直りしたいよ、、、；；第八章途中から…！！【龍が如く極 #6／この配信はゲームのネタバレを含みます】",
+        "startTime": 12499.2,
+        "endTime": 12507,
+        "duration": 7.799999999999272,
+        "tags": [
+          "返事・リアクション",
+          "龍が如く極"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2026-07-31T11:46:51.834Z",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 1
+        },
+        "updatedAt": "2026-07-31T22:05:43.080Z"
+      }
+    },
+    {
+      "id": "ENY2ONHn8LXVXaxAg61n",
+      "data": {
+        "buttonText": "みーたんにはわかる、この邪悪なオーラが",
+        "videoId": "jBSYmvU8gCg",
+        "videoTitle": "錦、、、俺お前と仲直りしたいよ、、、；；第八章途中から…！！【龍が如く極 #6／この配信はゲームのネタバレを含みます】",
+        "startTime": 5054.3,
+        "endTime": 5058,
+        "duration": 3.699999999999818,
+        "tags": [
+          "返事・リアクション",
+          "龍が如く極"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "stats": {
+          "playCount": 0,
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0
+        },
+        "createdAt": "2026-07-31T11:24:39.543Z",
+        "updatedAt": "2026-07-31T11:24:39.543Z"
+      }
+    },
+    {
       "id": "EVQnDbgb9redMu2WMp8D",
       "data": {
         "buttonText": "ち○ち○",
@@ -400,18 +774,18 @@
         "creatorName": "Siang*",
         "isPublic": true,
         "createdAt": "2025-08-01T18:07:49.106Z",
+        "tags": [
+          "ウーマンコミュニケーション",
+          "名言・迷言"
+        ],
         "stats": {
           "likeCount": 1,
           "dislikeCount": 0,
           "favoriteCount": 1,
           "engagementRate": 0.023809523809523808,
-          "playCount": 82
+          "playCount": 85
         },
-        "tags": [
-          "ウーマンコミュニケーション",
-          "名言・迷言"
-        ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
+        "updatedAt": "2026-07-20T14:11:59.644Z"
       }
     },
     {
@@ -427,19 +801,19 @@
         "creatorName": "がこんがこん",
         "isPublic": true,
         "createdAt": "2025-07-23T23:50:05.422Z",
-        "stats": {
-          "likeCount": 0,
-          "dislikeCount": 0,
-          "favoriteCount": 0,
-          "engagementRate": 0,
-          "playCount": 119
-        },
         "tags": [
           "ゲーム",
           "ファンタジーライフ",
           "名言・迷言"
         ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 120
+        },
+        "updatedAt": "2026-07-19T11:21:09.237Z"
       }
     },
     {
@@ -455,19 +829,19 @@
         "creatorName": "がこんがこん",
         "isPublic": true,
         "createdAt": "2025-07-24T03:42:19.410Z",
-        "stats": {
-          "likeCount": 0,
-          "dislikeCount": 0,
-          "favoriteCount": 0,
-          "engagementRate": 0,
-          "playCount": 156
-        },
         "tags": [
           "ゲーム",
           "ファンタジーライフ",
           "返事・リアクション"
         ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 159
+        },
+        "updatedAt": "2026-07-23T15:01:06.664Z"
       }
     },
     {
@@ -509,17 +883,17 @@
         "creatorName": "がこんがこん",
         "isPublic": true,
         "createdAt": "2025-06-30T23:30:08.066Z",
+        "tags": [
+          "名言・迷言"
+        ],
         "stats": {
           "likeCount": 0,
           "dislikeCount": 0,
           "favoriteCount": 0,
           "engagementRate": 0,
-          "playCount": 34
+          "playCount": 35
         },
-        "tags": [
-          "名言・迷言"
-        ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
+        "updatedAt": "2026-07-23T17:42:41.140Z"
       }
     },
     {
@@ -546,6 +920,33 @@
           "名言・迷言"
         ],
         "updatedAt": "2026-07-19T01:07:02.335Z"
+      }
+    },
+    {
+      "id": "G8OQt3JMJEdHWrMBIxQY",
+      "data": {
+        "buttonText": "今日は調子がいいみたい",
+        "videoId": "hHa69OJyXl0",
+        "videoTitle": "100億どうなったん…？第7章途中から！！【龍が如く極 #5／この配信はゲームのネタバレを含みます】",
+        "startTime": 4146.7,
+        "endTime": 4150,
+        "duration": 3.300000000000182,
+        "tags": [
+          "返事・リアクション",
+          "龍が如く極"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2026-07-23T10:22:57.823Z",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 1
+        },
+        "updatedAt": "2026-07-23T22:36:07.112Z"
       }
     },
     {
@@ -603,6 +1004,59 @@
       }
     },
     {
+      "id": "GuRt4swCjSrtqaczzT9k",
+      "data": {
+        "buttonText": "ブルーユ？　違うこれブルーZか！",
+        "videoId": "jBSYmvU8gCg",
+        "videoTitle": "錦、、、俺お前と仲直りしたいよ、、、；；第八章途中から…！！【龍が如く極 #6／この配信はゲームのネタバレを含みます】",
+        "startTime": 2223.6,
+        "endTime": 2228.5,
+        "duration": 4.900000000000091,
+        "tags": [
+          "龍が如く極"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "stats": {
+          "playCount": 0,
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0
+        },
+        "createdAt": "2026-07-31T11:07:06.122Z",
+        "updatedAt": "2026-07-31T11:07:06.122Z"
+      }
+    },
+    {
+      "id": "HHySSo1g88DKulOdScAK",
+      "data": {
+        "buttonText": "なんかこんなお父さんみたいな世代でもやっぱそういうのあんだねー",
+        "videoId": "hHa69OJyXl0",
+        "videoTitle": "100億どうなったん…？第7章途中から！！【龍が如く極 #5／この配信はゲームのネタバレを含みます】",
+        "startTime": 9985.8,
+        "endTime": 9989.4,
+        "duration": 3.600000000000364,
+        "tags": [
+          "返事・リアクション",
+          "龍が如く極"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2026-07-23T10:38:13.243Z",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 2
+        },
+        "updatedAt": "2026-07-26T11:31:54.844Z"
+      }
+    },
+    {
       "id": "HWZW2xzrHNzIlKk0kBD6",
       "data": {
         "buttonText": "どうも、ぴぃですよ",
@@ -615,19 +1069,73 @@
         "creatorName": "がこんがこん",
         "isPublic": true,
         "createdAt": "2025-07-25T13:11:10.883Z",
-        "stats": {
-          "likeCount": 0,
-          "dislikeCount": 0,
-          "favoriteCount": 0,
-          "engagementRate": 0,
-          "playCount": 145
-        },
         "tags": [
           "ゲーム",
           "ファンタジーライフ",
           "あいさつ"
         ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 146
+        },
+        "updatedAt": "2026-07-20T14:12:20.873Z"
+      }
+    },
+    {
+      "id": "HYTphe6vtdEyEf8N6oOb",
+      "data": {
+        "buttonText": "ち○こ…失礼",
+        "videoId": "jBSYmvU8gCg",
+        "videoTitle": "錦、、、俺お前と仲直りしたいよ、、、；；第八章途中から…！！【龍が如く極 #6／この配信はゲームのネタバレを含みます】",
+        "startTime": 694.9,
+        "endTime": 699.8,
+        "duration": 4.899999999999977,
+        "tags": [
+          "龍が如く極",
+          "返事・リアクション"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "stats": {
+          "playCount": 0,
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0
+        },
+        "createdAt": "2026-07-31T10:45:19.989Z",
+        "updatedAt": "2026-07-31T10:45:19.989Z"
+      }
+    },
+    {
+      "id": "IM8BI2oCjyl9XJxU03NA",
+      "data": {
+        "buttonText": "また俺の足の匂いを！",
+        "videoId": "hHa69OJyXl0",
+        "videoTitle": "100億どうなったん…？第7章途中から！！【龍が如く極 #5／この配信はゲームのネタバレを含みます】",
+        "startTime": 1556.7,
+        "endTime": 1560.5,
+        "duration": 3.7999999999999545,
+        "tags": [
+          "返事・リアクション",
+          "龍が如く極"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "stats": {
+          "playCount": 0,
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0
+        },
+        "createdAt": "2026-07-23T10:09:48.777Z",
+        "updatedAt": "2026-07-23T10:09:48.777Z"
       }
     },
     {
@@ -798,6 +1306,33 @@
       }
     },
     {
+      "id": "MwD1pbE8vQznamtDh4kZ",
+      "data": {
+        "buttonText": "ホストで流血だぞ！",
+        "videoId": "hHa69OJyXl0",
+        "videoTitle": "100億どうなったん…？第7章途中から！！【龍が如く極 #5／この配信はゲームのネタバレを含みます】",
+        "startTime": 2515.4,
+        "endTime": 2517.4,
+        "duration": 2,
+        "tags": [
+          "ツッコミ・煽り",
+          "龍が如く極"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2026-07-23T10:18:00.369Z",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 4
+        },
+        "updatedAt": "2026-07-23T17:32:26.949Z"
+      }
+    },
+    {
       "id": "NAzoPoPMXT465hWKOtpB",
       "data": {
         "buttonText": "友達じゃないってこと？オレたち",
@@ -810,19 +1345,19 @@
         "creatorName": "がこんがこん",
         "isPublic": true,
         "createdAt": "2025-07-18T08:03:55.139Z",
-        "stats": {
-          "likeCount": 0,
-          "dislikeCount": 0,
-          "favoriteCount": 0,
-          "engagementRate": 0,
-          "playCount": 16
-        },
         "tags": [
           "ゲーム",
           "COFFEE TALK",
           "名言・迷言"
         ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 17
+        },
+        "updatedAt": "2026-07-20T14:12:35.921Z"
       }
     },
     {
@@ -891,18 +1426,18 @@
         "isPublic": true,
         "createdAt": "2026-06-26T07:59:14.864Z",
         "id": "NadVf6t5ruaf4GQCctpP",
+        "tags": [
+          "龍が如く極",
+          "名言・迷言"
+        ],
         "stats": {
           "likeCount": 0,
           "dislikeCount": 0,
           "favoriteCount": 0,
           "engagementRate": 0,
-          "playCount": 10
+          "playCount": 11
         },
-        "tags": [
-          "龍が如く極",
-          "名言・迷言"
-        ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
+        "updatedAt": "2026-07-20T14:11:01.972Z"
       }
     },
     {
@@ -919,18 +1454,72 @@
         "isPublic": true,
         "createdAt": "2026-06-26T08:05:59.437Z",
         "id": "OhoTxRzPfFiG5pOKgYsy",
+        "tags": [
+          "龍が如く極",
+          "ツッコミ・煽り"
+        ],
         "stats": {
           "likeCount": 0,
           "dislikeCount": 0,
           "favoriteCount": 0,
           "engagementRate": 0,
-          "playCount": 10
+          "playCount": 13
         },
+        "updatedAt": "2026-07-23T15:00:43.267Z"
+      }
+    },
+    {
+      "id": "Oz3mO8amo0UAOd4d6fD1",
+      "data": {
+        "buttonText": "釘バット",
+        "videoId": "hHa69OJyXl0",
+        "videoTitle": "100億どうなったん…？第7章途中から！！【龍が如く極 #5／この配信はゲームのネタバレを含みます】",
+        "startTime": 1712,
+        "endTime": 1713.6,
+        "duration": 1.599999999999909,
         "tags": [
-          "龍が如く極",
-          "ツッコミ・煽り"
+          "返事・リアクション",
+          "龍が如く極"
         ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "stats": {
+          "playCount": 0,
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0
+        },
+        "createdAt": "2026-07-23T10:11:26.685Z",
+        "updatedAt": "2026-07-23T10:11:26.685Z"
+      }
+    },
+    {
+      "id": "PN8mNOPgl4uW8wWxGDrC",
+      "data": {
+        "buttonText": "腹いせパンチ！",
+        "videoId": "hHa69OJyXl0",
+        "videoTitle": "100億どうなったん…？第7章途中から！！【龍が如く極 #5／この配信はゲームのネタバレを含みます】",
+        "startTime": 1841.8,
+        "endTime": 1843.4,
+        "duration": 1.6000000000001364,
+        "tags": [
+          "返事・リアクション",
+          "龍が如く極"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "stats": {
+          "playCount": 0,
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0
+        },
+        "createdAt": "2026-07-23T10:12:49.497Z",
+        "updatedAt": "2026-07-23T10:12:49.497Z"
       }
     },
     {
@@ -946,19 +1535,19 @@
         "creatorName": "がこんがこん",
         "isPublic": true,
         "createdAt": "2025-08-12T12:01:21.406Z",
-        "stats": {
-          "likeCount": 1,
-          "dislikeCount": 0,
-          "favoriteCount": 0,
-          "engagementRate": 0.1,
-          "playCount": 43
-        },
         "tags": [
           "ゲーム",
           "COFFEE TALK",
           "あまあま"
         ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
+        "stats": {
+          "likeCount": 1,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0.1,
+          "playCount": 44
+        },
+        "updatedAt": "2026-07-20T14:11:21.139Z"
       }
     },
     {
@@ -974,18 +1563,18 @@
         "creatorName": "Siang*",
         "isPublic": true,
         "createdAt": "2025-08-01T18:03:04.002Z",
+        "tags": [
+          "クリスマス",
+          "うた"
+        ],
         "stats": {
           "likeCount": 1,
           "dislikeCount": 0,
           "favoriteCount": 1,
           "engagementRate": 0.047619047619047616,
-          "playCount": 33
+          "playCount": 34
         },
-        "tags": [
-          "クリスマス",
-          "うた"
-        ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
+        "updatedAt": "2026-07-20T14:12:05.331Z"
       }
     },
     {
@@ -1027,17 +1616,17 @@
         "creatorName": "がこんがこん",
         "isPublic": true,
         "createdAt": "2026-07-18T14:04:04.727Z",
+        "tags": [
+          "返事・リアクション"
+        ],
         "stats": {
           "likeCount": 0,
           "dislikeCount": 0,
           "favoriteCount": 0,
           "engagementRate": 0,
-          "playCount": 2
+          "playCount": 6
         },
-        "tags": [
-          "返事・リアクション"
-        ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
+        "updatedAt": "2026-07-20T10:16:38.718Z"
       }
     },
     {
@@ -1080,17 +1669,71 @@
         "creatorName": "がこんがこん",
         "isPublic": true,
         "createdAt": "2025-06-30T12:46:34.571Z",
+        "tags": [
+          "応援・褒め"
+        ],
         "stats": {
           "likeCount": 0,
           "dislikeCount": 0,
           "favoriteCount": 0,
           "engagementRate": 0,
-          "playCount": 22
+          "playCount": 23
         },
+        "updatedAt": "2026-07-23T17:42:54.772Z"
+      }
+    },
+    {
+      "id": "SLB6iN4NKDgqvw4jvjCh",
+      "data": {
+        "buttonText": "トー横じゃん",
+        "videoId": "jBSYmvU8gCg",
+        "videoTitle": "錦、、、俺お前と仲直りしたいよ、、、；；第八章途中から…！！【龍が如く極 #6／この配信はゲームのネタバレを含みます】",
+        "startTime": 3707.4,
+        "endTime": 3708.7,
+        "duration": 1.2999999999997272,
         "tags": [
-          "応援・褒め"
+          "返事・リアクション",
+          "龍が如く極"
         ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "stats": {
+          "playCount": 0,
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0
+        },
+        "createdAt": "2026-07-31T11:19:19.205Z",
+        "updatedAt": "2026-07-31T11:19:19.205Z"
+      }
+    },
+    {
+      "id": "SaYztZGMNVwCj6gbcq2c",
+      "data": {
+        "buttonText": "伝家の宝刀の傘",
+        "videoId": "jBSYmvU8gCg",
+        "videoTitle": "錦、、、俺お前と仲直りしたいよ、、、；；第八章途中から…！！【龍が如く極 #6／この配信はゲームのネタバレを含みます】",
+        "startTime": 4346.6,
+        "endTime": 4349.5,
+        "duration": 2.899999999999636,
+        "tags": [
+          "返事・リアクション",
+          "龍が如く極"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "stats": {
+          "playCount": 0,
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0
+        },
+        "createdAt": "2026-07-31T11:21:47.087Z",
+        "updatedAt": "2026-07-31T11:21:47.087Z"
       }
     },
     {
@@ -1106,17 +1749,41 @@
         "creatorName": "がこんがこん",
         "isPublic": true,
         "createdAt": "2026-07-18T01:21:36.180Z",
+        "tags": [
+          "名言・迷言"
+        ],
         "stats": {
           "likeCount": 0,
           "dislikeCount": 0,
           "favoriteCount": 0,
           "engagementRate": 0,
-          "playCount": 2
+          "playCount": 6
         },
-        "tags": [
-          "名言・迷言"
-        ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
+        "updatedAt": "2026-07-20T14:10:34.593Z"
+      }
+    },
+    {
+      "id": "TDxQNiOafYEx3Ls8RTlv",
+      "data": {
+        "buttonText": "俺にとってはBB弾だあれは",
+        "videoId": "jBSYmvU8gCg",
+        "videoTitle": "錦、、、俺お前と仲直りしたいよ、、、；；第八章途中から…！！【龍が如く極 #6／この配信はゲームのネタバレを含みます】",
+        "startTime": 12679.6,
+        "endTime": 12685,
+        "duration": 5.399999999999636,
+        "tags": [],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "stats": {
+          "playCount": 0,
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0
+        },
+        "createdAt": "2026-07-31T11:48:44.492Z",
+        "updatedAt": "2026-07-31T11:48:44.492Z"
       }
     },
     {
@@ -1145,6 +1812,114 @@
           "名言・迷言"
         ],
         "updatedAt": "2026-07-19T01:07:02.335Z"
+      }
+    },
+    {
+      "id": "UV8viAFiO3eDHYmBh5YW",
+      "data": {
+        "buttonText": "ちょっとちょっとちょっと！？",
+        "videoId": "hHa69OJyXl0",
+        "videoTitle": "100億どうなったん…？第7章途中から！！【龍が如く極 #5／この配信はゲームのネタバレを含みます】",
+        "startTime": 1160.7,
+        "endTime": 1162.4,
+        "duration": 1.7000000000000455,
+        "tags": [
+          "返事・リアクション",
+          "龍が如く極"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "stats": {
+          "playCount": 0,
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0
+        },
+        "createdAt": "2026-07-23T10:08:32.816Z",
+        "updatedAt": "2026-07-23T10:08:32.816Z"
+      }
+    },
+    {
+      "id": "VD0Ku5m4yaA5BNUHNASH",
+      "data": {
+        "buttonText": "普通じゃねえかよ！",
+        "videoId": "jBSYmvU8gCg",
+        "videoTitle": "錦、、、俺お前と仲直りしたいよ、、、；；第八章途中から…！！【龍が如く極 #6／この配信はゲームのネタバレを含みます】",
+        "startTime": 1477.5,
+        "endTime": 1480.7,
+        "duration": 3.2000000000000455,
+        "tags": [
+          "返事・リアクション",
+          "龍が如く極"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "stats": {
+          "playCount": 0,
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0
+        },
+        "createdAt": "2026-07-31T10:59:58.017Z",
+        "updatedAt": "2026-07-31T10:59:58.017Z"
+      }
+    },
+    {
+      "id": "VQrLMDmxbDvIr2ZSW94i",
+      "data": {
+        "buttonText": "ごわみー",
+        "videoId": "hHa69OJyXl0",
+        "videoTitle": "100億どうなったん…？第7章途中から！！【龍が如く極 #5／この配信はゲームのネタバレを含みます】",
+        "startTime": 12435.3,
+        "endTime": 12438.4,
+        "duration": 3.100000000000364,
+        "tags": [
+          "擬音・音ネタ",
+          "龍が如く極"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2026-07-23T10:40:22.388Z",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 5
+        },
+        "updatedAt": "2026-07-26T11:31:49.944Z"
+      }
+    },
+    {
+      "id": "VRWo3r4LunS2MyjS7cJk",
+      "data": {
+        "buttonText": "お\"お\"っ…ハハハ",
+        "videoId": "jBSYmvU8gCg",
+        "videoTitle": "錦、、、俺お前と仲直りしたいよ、、、；；第八章途中から…！！【龍が如く極 #6／この配信はゲームのネタバレを含みます】",
+        "startTime": 1385.3,
+        "endTime": 1389.7,
+        "duration": 4.400000000000091,
+        "tags": [
+          "笑い",
+          "龍が如く極"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "stats": {
+          "playCount": 0,
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0
+        },
+        "createdAt": "2026-07-31T10:58:27.605Z",
+        "updatedAt": "2026-07-31T10:58:27.605Z"
       }
     },
     {
@@ -1187,17 +1962,17 @@
         "creatorName": "がこんがこん",
         "isPublic": true,
         "createdAt": "2025-06-30T12:54:41.215Z",
+        "tags": [
+          "返事・リアクション"
+        ],
         "stats": {
           "likeCount": 0,
           "dislikeCount": 0,
           "favoriteCount": 0,
           "engagementRate": 0,
-          "playCount": 38
+          "playCount": 39
         },
-        "tags": [
-          "返事・リアクション"
-        ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
+        "updatedAt": "2026-07-23T17:42:49.359Z"
       }
     },
     {
@@ -1224,6 +1999,33 @@
           "名言・迷言"
         ],
         "updatedAt": "2026-07-19T01:07:02.335Z"
+      }
+    },
+    {
+      "id": "ZUFIZIg4eXjnMVkw5Ck7",
+      "data": {
+        "buttonText": "あの女のお姉さんのパンツこんな匂いなんだ",
+        "videoId": "jBSYmvU8gCg",
+        "videoTitle": "錦、、、俺お前と仲直りしたいよ、、、；；第八章途中から…！！【龍が如く極 #6／この配信はゲームのネタバレを含みます】",
+        "startTime": 5194.2,
+        "endTime": 5205.9,
+        "duration": 11.699999999999818,
+        "tags": [
+          "ツッコミ・煽り",
+          "龍が如く極"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2026-07-31T11:26:45.501Z",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 1
+        },
+        "updatedAt": "2026-07-31T22:06:02.179Z"
       }
     },
     {
@@ -1282,6 +2084,33 @@
       }
     },
     {
+      "id": "c2OQKqgNMceVsLJQcGdy",
+      "data": {
+        "buttonText": "ホワイトホワイトちいかわゾンビ",
+        "videoId": "jBSYmvU8gCg",
+        "videoTitle": "錦、、、俺お前と仲直りしたいよ、、、；；第八章途中から…！！【龍が如く極 #6／この配信はゲームのネタバレを含みます】",
+        "startTime": 1129.4,
+        "endTime": 1133.8,
+        "duration": 4.399999999999864,
+        "tags": [
+          "ツッコミ・煽り",
+          "龍が如く極"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "stats": {
+          "playCount": 0,
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0
+        },
+        "createdAt": "2026-07-31T10:50:22.014Z",
+        "updatedAt": "2026-07-31T10:50:22.014Z"
+      }
+    },
+    {
       "id": "cdr2QzdF5gmkuqAXyyoL",
       "data": {
         "buttonText": "うふふ(笑)",
@@ -1305,6 +2134,33 @@
           "笑い"
         ],
         "updatedAt": "2026-07-19T01:07:02.335Z"
+      }
+    },
+    {
+      "id": "d2Zmk9xFGkE5FeTXGbgK",
+      "data": {
+        "buttonText": "俺だよ！俺だ！みこしーじゃねえ！",
+        "videoId": "2ztGtmc_6bI",
+        "videoTitle": "小人窃盗団参上～！！人間の家から盗みまくるゲーム😎【どろぼうノーム／浅木式・雲八はち・御子柴泉】",
+        "startTime": 3644.2,
+        "endTime": 3650.5,
+        "duration": 6.300000000000182,
+        "tags": [
+          "返事・リアクション",
+          "どろぼうノーム"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2026-07-26T11:27:04.808Z",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 11
+        },
+        "updatedAt": "2026-07-30T11:29:59.857Z"
       }
     },
     {
@@ -1346,6 +2202,36 @@
         "creatorName": "がこんがこん",
         "isPublic": true,
         "createdAt": "2026-07-18T01:28:07.658Z",
+        "tags": [
+          "名言・迷言"
+        ],
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 10
+        },
+        "updatedAt": "2026-07-23T10:11:33.826Z"
+      }
+    },
+    {
+      "id": "eZxdUfYv2moqYvxL4kAW",
+      "data": {
+        "buttonText": "ウインウインウインウインウインウインウインウインってやつ？",
+        "videoId": "hHa69OJyXl0",
+        "videoTitle": "100億どうなったん…？第7章途中から！！【龍が如く極 #5／この配信はゲームのネタバレを含みます】",
+        "startTime": 5991.6,
+        "endTime": 5996.1,
+        "duration": 4.5,
+        "tags": [
+          "擬音・音ネタ",
+          "龍が如く極"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2026-07-23T10:26:09.754Z",
         "stats": {
           "likeCount": 0,
           "dislikeCount": 0,
@@ -1353,10 +2239,7 @@
           "engagementRate": 0,
           "playCount": 5
         },
-        "tags": [
-          "名言・迷言"
-        ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
+        "updatedAt": "2026-07-26T11:32:09.741Z"
       }
     },
     {
@@ -1400,17 +2283,44 @@
         "creatorName": "がこんがこん",
         "isPublic": true,
         "createdAt": "2026-07-18T01:25:34.194Z",
+        "tags": [
+          "名言・迷言"
+        ],
         "stats": {
           "likeCount": 0,
           "dislikeCount": 0,
           "favoriteCount": 0,
           "engagementRate": 0,
-          "playCount": 1
+          "playCount": 7
         },
+        "updatedAt": "2026-07-23T10:11:48.541Z"
+      }
+    },
+    {
+      "id": "fJg1IXphqQJN4glwlmaG",
+      "data": {
+        "buttonText": "また攻略サイト疑惑でちゃうやん、ねえ、これ",
+        "videoId": "jBSYmvU8gCg",
+        "videoTitle": "錦、、、俺お前と仲直りしたいよ、、、；；第八章途中から…！！【龍が如く極 #6／この配信はゲームのネタバレを含みます】",
+        "startTime": 3411.5,
+        "endTime": 3418.4,
+        "duration": 6.900000000000091,
         "tags": [
-          "名言・迷言"
+          "返事・リアクション",
+          "龍が如く極"
         ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2026-07-31T11:13:31.555Z",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 2
+        },
+        "updatedAt": "2026-07-31T11:58:30.559Z"
       }
     },
     {
@@ -1426,18 +2336,45 @@
         "creatorName": "gagacrow",
         "isPublic": true,
         "createdAt": "2025-07-27T04:41:27.924Z",
+        "tags": [
+          "ファンタジーライフ",
+          "笑い"
+        ],
         "stats": {
           "likeCount": 1,
           "dislikeCount": 0,
           "favoriteCount": 0,
           "engagementRate": 0.006896551724137931,
-          "playCount": 151
+          "playCount": 154
         },
+        "updatedAt": "2026-07-26T11:33:06.078Z"
+      }
+    },
+    {
+      "id": "gEgGtEQqRZMg88GFenWC",
+      "data": {
+        "buttonText": "痛ぁい！？",
+        "videoId": "hHa69OJyXl0",
+        "videoTitle": "100億どうなったん…？第7章途中から！！【龍が如く極 #5／この配信はゲームのネタバレを含みます】",
+        "startTime": 7940.4,
+        "endTime": 7941.8,
+        "duration": 1.4000000000005457,
         "tags": [
-          "ファンタジーライフ",
-          "笑い"
+          "返事・リアクション",
+          "龍が如く極"
         ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2026-07-23T10:29:29.196Z",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 2
+        },
+        "updatedAt": "2026-07-30T11:30:09.106Z"
       }
     },
     {
@@ -1453,19 +2390,19 @@
         "creatorName": "がこんがこん",
         "isPublic": true,
         "createdAt": "2025-07-26T14:48:20.586Z",
-        "stats": {
-          "likeCount": 1,
-          "dislikeCount": 0,
-          "favoriteCount": 1,
-          "engagementRate": 0.005319148936170213,
-          "playCount": 197
-        },
         "tags": [
           "ゲーム",
           "ファンタジーライフ",
           "名言・迷言"
         ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
+        "stats": {
+          "likeCount": 1,
+          "dislikeCount": 0,
+          "favoriteCount": 1,
+          "engagementRate": 0.005319148936170213,
+          "playCount": 201
+        },
+        "updatedAt": "2026-07-26T11:31:14.182Z"
       }
     },
     {
@@ -1497,6 +2434,60 @@
       }
     },
     {
+      "id": "hW0H2AxRclYoTaT4quMV",
+      "data": {
+        "buttonText": "オッサンって言うな！オッサンじゃないよ！",
+        "videoId": "jBSYmvU8gCg",
+        "videoTitle": "錦、、、俺お前と仲直りしたいよ、、、；；第八章途中から…！！【龍が如く極 #6／この配信はゲームのネタバレを含みます】",
+        "startTime": 2217.5,
+        "endTime": 2222.6,
+        "duration": 5.099999999999909,
+        "tags": [
+          "返事・リアクション",
+          "龍が如く極"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "stats": {
+          "playCount": 0,
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0
+        },
+        "createdAt": "2026-07-31T11:04:43.309Z",
+        "updatedAt": "2026-07-31T11:04:43.309Z"
+      }
+    },
+    {
+      "id": "imC8RYl0kmmBbO7zGRgq",
+      "data": {
+        "buttonText": "オトメタール",
+        "videoId": "hHa69OJyXl0",
+        "videoTitle": "100億どうなったん…？第7章途中から！！【龍が如く極 #5／この配信はゲームのネタバレを含みます】",
+        "startTime": 4117.3,
+        "endTime": 4119.1,
+        "duration": 1.800000000000182,
+        "tags": [
+          "擬音・音ネタ",
+          "龍が如く極"
+        ],
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2026-07-23T10:21:21.651Z",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 2
+        },
+        "updatedAt": "2026-07-26T10:27:19.231Z"
+      }
+    },
+    {
       "id": "jKasN6FfALO922utZz19",
       "data": {
         "buttonText": "がんばるよーフィーバーフィーバー",
@@ -1509,19 +2500,19 @@
         "creatorName": "がこんがこん",
         "isPublic": true,
         "createdAt": "2025-07-26T13:47:33.476Z",
-        "stats": {
-          "likeCount": 0,
-          "dislikeCount": 0,
-          "favoriteCount": 0,
-          "engagementRate": 0,
-          "playCount": 144
-        },
         "tags": [
           "ゲーム",
           "ファンタジーライフ",
           "名言・迷言"
         ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 148
+        },
+        "updatedAt": "2026-07-23T15:01:22.601Z"
       }
     },
     {
@@ -1538,18 +2529,45 @@
         "isPublic": true,
         "createdAt": "2026-06-26T07:43:27.650Z",
         "id": "kCeaYC2sVulAD9hqg2Xi",
+        "tags": [
+          "龍が如く極",
+          "名言・迷言"
+        ],
         "stats": {
           "likeCount": 0,
           "dislikeCount": 0,
           "favoriteCount": 0,
           "engagementRate": 0,
-          "playCount": 4
+          "playCount": 8
         },
+        "updatedAt": "2026-07-26T11:32:47.266Z"
+      }
+    },
+    {
+      "id": "kV8w7DT5mvLW7dzsNTmx",
+      "data": {
+        "buttonText": "策謀",
+        "videoId": "hHa69OJyXl0",
+        "videoTitle": "100億どうなったん…？第7章途中から！！【龍が如く極 #5／この配信はゲームのネタバレを含みます】",
+        "startTime": 8512.6,
+        "endTime": 8516.8,
+        "duration": 4.199999999998909,
         "tags": [
-          "龍が如く極",
-          "名言・迷言"
+          "返事・リアクション",
+          "龍が如く極"
         ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "createdAt": "2026-07-23T10:31:01.844Z",
+        "stats": {
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0,
+          "playCount": 1
+        },
+        "updatedAt": "2026-07-23T13:55:14.219Z"
       }
     },
     {
@@ -1592,17 +2610,44 @@
         "creatorName": "がこんがこん",
         "isPublic": true,
         "createdAt": "2025-06-30T12:48:38.369Z",
+        "tags": [
+          "あまあま"
+        ],
         "stats": {
           "likeCount": 0,
           "dislikeCount": 0,
           "favoriteCount": 0,
           "engagementRate": 0,
-          "playCount": 29
+          "playCount": 30
         },
+        "updatedAt": "2026-07-23T17:42:11.144Z"
+      }
+    },
+    {
+      "id": "ktYJRiiRL03P7BvwcvU1",
+      "data": {
+        "buttonText": "そうそうセカストよ、セカストなんかウチよく行ったぞ、昔、高校生の時とか",
+        "videoId": "jBSYmvU8gCg",
+        "videoTitle": "錦、、、俺お前と仲直りしたいよ、、、；；第八章途中から…！！【龍が如く極 #6／この配信はゲームのネタバレを含みます】",
+        "startTime": 1271.6,
+        "endTime": 1283.3,
+        "duration": 11.700000000000045,
         "tags": [
-          "あまあま"
+          "返事・リアクション",
+          "龍が如く極"
         ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
+        "creatorId": "REDACTED",
+        "creatorName": "がこんがこん",
+        "isPublic": true,
+        "stats": {
+          "playCount": 0,
+          "likeCount": 0,
+          "dislikeCount": 0,
+          "favoriteCount": 0,
+          "engagementRate": 0
+        },
+        "createdAt": "2026-07-31T10:53:50.949Z",
+        "updatedAt": "2026-07-31T10:53:50.949Z"
       }
     },
     {
@@ -1632,552 +2677,30 @@
       }
     },
     {
-      "id": "lplSH14aSgptgueC687X",
+      "id": "l9AO51ZlxZtJjZ8nmNEg",
       "data": {
-        "buttonText": "Open",
-        "videoId": "aoWkEzZD8zA",
-        "videoTitle": "錦、、、俺のこと錦山組に、入れてくれるんだよね😎？【龍が如く極 #2／この配信はゲームのネタバレを含みます】",
-        "startTime": 13575.1,
-        "endTime": 13576.7,
-        "duration": 1.6000000000003638,
+        "buttonText": "え？あたしってもしかして、ほんとに顔しかみてない女ってこと？",
+        "videoId": "jBSYmvU8gCg",
+        "videoTitle": "錦、、、俺お前と仲直りしたいよ、、、；；第八章途中から…！！【龍が如く極 #6／この配信はゲームのネタバレを含みます】",
+        "startTime": 5427.6,
+        "endTime": 5432.9,
+        "duration": 5.299999999999272,
+        "tags": [
+          "返事・リアクション",
+          "龍が如く極"
+        ],
         "creatorId": "REDACTED",
         "creatorName": "がこんがこん",
         "isPublic": true,
-        "createdAt": "2026-06-27T01:31:03.983Z",
-        "id": "lplSH14aSgptgueC687X",
         "stats": {
+          "playCount": 0,
           "likeCount": 0,
           "dislikeCount": 0,
           "favoriteCount": 0,
-          "engagementRate": 0,
-          "playCount": 16
+          "engagementRate": 0
         },
-        "tags": [
-          "龍が如く極",
-          "名言・迷言"
-        ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
-      }
-    },
-    {
-      "id": "m7cApOwwbj6tkJT9B6lp",
-      "data": {
-        "buttonText": "泣いてるよ",
-        "videoId": "ds8nkv4LW_8",
-        "videoTitle": "ちるいコーヒーショップの店長さんになる。【COFFEE TALK／物語のネタバレを含みます】",
-        "startTime": 2309,
-        "endTime": 2311.3,
-        "duration": 2.300000000000182,
-        "creatorId": "REDACTED",
-        "creatorName": "がこんがこん",
-        "isPublic": true,
-        "createdAt": "2025-07-18T05:14:57.365Z",
-        "stats": {
-          "likeCount": 0,
-          "dislikeCount": 0,
-          "favoriteCount": 0,
-          "engagementRate": 0,
-          "playCount": 16
-        },
-        "tags": [
-          "ゲーム",
-          "COFFEE TALK",
-          "返事・リアクション"
-        ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
-      }
-    },
-    {
-      "id": "mJtBdtQweZSeixjPgA76",
-      "data": {
-        "buttonText": "あんたいいやつじゃん…すりすり",
-        "videoId": "S534eutWhUY",
-        "videoTitle": "今日はどんなお客さんが来るかな…☕？【COFFEE TALK #6／物語のネタバレを含みます】",
-        "startTime": 5924.4,
-        "endTime": 5927.6,
-        "duration": 3.2000000000007276,
-        "creatorId": "REDACTED",
-        "creatorName": "ivan",
-        "isPublic": true,
-        "createdAt": "2025-08-21T01:02:51.250Z",
-        "id": "mJtBdtQweZSeixjPgA76",
-        "stats": {
-          "dislikeCount": 0,
-          "favoriteCount": 0,
-          "engagementRate": 0,
-          "likeCount": 2,
-          "playCount": 71
-        },
-        "tags": [
-          "ゲーム",
-          "COFFEE TALK",
-          "あまあま"
-        ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
-      }
-    },
-    {
-      "id": "qJxXRSS7Cek5HMQhR6bZ",
-      "data": {
-        "buttonText": "改めまして涼花みなせです",
-        "videoId": "GJZQPvOYXyY",
-        "videoTitle": "【みやぢ×みなせ】怖がり2人で初見協力プレイ。【BIOHAZARD 5】",
-        "startTime": 1131,
-        "endTime": 1134,
-        "duration": 3,
-        "creatorId": "REDACTED",
-        "creatorName": "がこんがこん",
-        "isPublic": true,
-        "createdAt": "2025-07-12T03:41:37.916Z",
-        "stats": {
-          "likeCount": 0,
-          "dislikeCount": 0,
-          "favoriteCount": -1,
-          "engagementRate": 0,
-          "playCount": 50
-        },
-        "tags": [
-          "ゲーム",
-          "バイオハザード5",
-          "あいさつ"
-        ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
-      }
-    },
-    {
-      "id": "rPAGgplNWYbhKC9gHAyG",
-      "data": {
-        "buttonText": "このキャバクラで誕生日迎えることになる！",
-        "videoId": "aoWkEzZD8zA",
-        "videoTitle": "錦、、、俺のこと錦山組に、入れてくれるんだよね😎？【龍が如く極 #2／この配信はゲームのネタバレを含みます】",
-        "startTime": 2797.4,
-        "endTime": 2802.8,
-        "duration": 5.400000000000091,
-        "creatorId": "REDACTED",
-        "creatorName": "がこんがこん",
-        "isPublic": true,
-        "createdAt": "2026-06-21T11:15:15.702Z",
-        "id": "rPAGgplNWYbhKC9gHAyG",
-        "stats": {
-          "likeCount": 0,
-          "dislikeCount": 0,
-          "favoriteCount": 0,
-          "engagementRate": 0,
-          "playCount": 7
-        },
-        "tags": [
-          "龍が如く極",
-          "名言・迷言"
-        ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
-      }
-    },
-    {
-      "id": "s016OX6i1gtylTFr0qe9",
-      "data": {
-        "buttonText": "あらあら〜　歯医者のこと聞きたいんだ〜　そうかそうか〜",
-        "videoId": "FeZ3F5dr6H8",
-        "videoTitle": "ざつだん🌟",
-        "startTime": 971,
-        "endTime": 980,
-        "duration": 9,
-        "creatorId": "REDACTED",
-        "creatorName": "がこんがこん",
-        "isPublic": true,
-        "createdAt": "2025-06-30T12:34:41.082Z",
-        "stats": {
-          "likeCount": 0,
-          "dislikeCount": 0,
-          "favoriteCount": 1,
-          "engagementRate": 0,
-          "playCount": 30
-        },
-        "tags": [
-          "あまあま"
-        ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
-      }
-    },
-    {
-      "id": "sFCVeD8ywqYsJPitFADk",
-      "data": {
-        "buttonText": "こんばんはー",
-        "videoId": "ds8nkv4LW_8",
-        "videoTitle": "ちるいコーヒーショップの店長さんになる。【COFFEE TALK／物語のネタバレを含みます】",
-        "startTime": 20.1,
-        "endTime": 22.7,
-        "duration": 2.599999999999998,
-        "creatorId": "REDACTED",
-        "creatorName": "がこんがこん",
-        "isPublic": true,
-        "createdAt": "2025-07-18T07:20:02.049Z",
-        "stats": {
-          "likeCount": 0,
-          "dislikeCount": 0,
-          "favoriteCount": 0,
-          "engagementRate": 0,
-          "playCount": 16
-        },
-        "tags": [
-          "ゲーム",
-          "あいさつ",
-          "COFFEE TALK"
-        ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
-      }
-    },
-    {
-      "id": "sMqrHeNEuOOUHflC0AzB",
-      "data": {
-        "buttonText": "カンニングするなってこと！？",
-        "videoId": "S534eutWhUY",
-        "videoTitle": "今日はどんなお客さんが来るかな…☕？【COFFEE TALK #6／物語のネタバレを含みます】",
-        "startTime": 4078.8,
-        "endTime": 4081.2,
-        "duration": 2.399999999999636,
-        "creatorId": "REDACTED",
-        "creatorName": "がこんがこん",
-        "isPublic": true,
-        "createdAt": "2025-08-19T23:31:02.139Z",
-        "stats": {
-          "likeCount": 0,
-          "dislikeCount": 0,
-          "favoriteCount": 0,
-          "engagementRate": 0,
-          "playCount": 25
-        },
-        "tags": [
-          "ゲーム",
-          "COFFEE TALK",
-          "ツッコミ・煽り"
-        ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
-      }
-    },
-    {
-      "id": "sNgTr6YLSFOsMXx19NL0",
-      "data": {
-        "buttonText": "やべえ！",
-        "videoId": "4puiyit3sp0",
-        "videoTitle": "世界を滅亡から救うか寄り道するのか...自由だぁ～！！！【ファンタジーライフｉ グルグルの竜と時をぬすむ少女#8】",
-        "startTime": 3195,
-        "endTime": 3197,
-        "duration": 2,
-        "creatorId": "REDACTED",
-        "creatorName": "がこんがこん",
-        "isPublic": true,
-        "createdAt": "2025-07-08T12:48:57.115Z",
-        "stats": {
-          "likeCount": 0,
-          "dislikeCount": 0,
-          "favoriteCount": 0,
-          "engagementRate": 0,
-          "playCount": 17
-        },
-        "tags": [
-          "返事・リアクション"
-        ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
-      }
-    },
-    {
-      "id": "t7iLQ2POVXdg8yGuHxCJ",
-      "data": {
-        "buttonText": "そんでさあ…え、あ、な、なに？",
-        "videoId": "B20PhTUzSrQ",
-        "videoTitle": "ストーリーすすめる！！世界救うぞ～～！！！【ファンタジーライフｉ グルグルの竜と時をぬすむ少女#10】",
-        "startTime": 284.4,
-        "endTime": 288.3,
-        "duration": 3.900000000000034,
-        "creatorId": "REDACTED",
-        "creatorName": "がこんがこん",
-        "isPublic": true,
-        "createdAt": "2025-07-24T03:51:45.649Z",
-        "stats": {
-          "likeCount": 0,
-          "dislikeCount": 0,
-          "favoriteCount": 0,
-          "engagementRate": 0,
-          "playCount": 135
-        },
-        "tags": [
-          "ゲーム",
-          "ファンタジーライフ",
-          "返事・リアクション"
-        ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
-      }
-    },
-    {
-      "id": "tD2Vh18xqywurfUzuKmz",
-      "data": {
-        "buttonText": "腹減ったー",
-        "videoId": "iCZxh1oyLKg",
-        "videoTitle": "お喋りと歌のリハビリ😎🌸",
-        "startTime": 4782,
-        "endTime": 4784,
-        "duration": 2,
-        "creatorId": "REDACTED",
-        "creatorName": "ivan",
-        "isPublic": true,
-        "createdAt": "2025-07-07T02:47:20.828Z",
-        "stats": {
-          "likeCount": 1,
-          "dislikeCount": 0,
-          "favoriteCount": 0,
-          "engagementRate": 0.05555555555555555,
-          "playCount": 20
-        },
-        "tags": [
-          "返事・リアクション"
-        ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
-      }
-    },
-    {
-      "id": "uKVVbvmKgJnvAG8QHrLY",
-      "data": {
-        "buttonText": "あたまいてぇ",
-        "videoId": "rUKrc8czZj0",
-        "videoTitle": "お誕生日だあ！！今年もみんなでケーキ食べよ🍰♡",
-        "startTime": 2235,
-        "endTime": 2238,
-        "duration": 3,
-        "creatorId": "REDACTED",
-        "creatorName": "がこんがこん",
-        "isPublic": true,
-        "createdAt": "2025-06-29T13:35:37.825Z",
-        "stats": {
-          "likeCount": 0,
-          "dislikeCount": 0,
-          "favoriteCount": 0,
-          "engagementRate": 0,
-          "playCount": 18
-        },
-        "tags": [
-          "返事・リアクション"
-        ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
-      }
-    },
-    {
-      "id": "v9ZvWQ6DHmaga31OBaJr",
-      "data": {
-        "buttonText": "闇のあるストーリー、読ませて欲しい、あたしに",
-        "videoId": "ds8nkv4LW_8",
-        "videoTitle": "ちるいコーヒーショップの店長さんになる。【COFFEE TALK／物語のネタバレを含みます】",
-        "startTime": 5010.4,
-        "endTime": 5013.9,
-        "duration": 3.5,
-        "creatorId": "REDACTED",
-        "creatorName": "がこんがこん",
-        "isPublic": true,
-        "createdAt": "2025-07-18T10:55:58.279Z",
-        "stats": {
-          "likeCount": 1,
-          "dislikeCount": 0,
-          "favoriteCount": 1,
-          "engagementRate": 0.02127659574468085,
-          "playCount": 54
-        },
-        "tags": [
-          "ゲーム",
-          "COFFEE TALK",
-          "名言・迷言"
-        ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
-      }
-    },
-    {
-      "id": "vA49RzYP9CUqrg5la4bx",
-      "data": {
-        "buttonText": "なぁ～～～～～～～～～～",
-        "videoId": "B20PhTUzSrQ",
-        "videoTitle": "ストーリーすすめる！！世界救うぞ～～！！！【ファンタジーライフｉ グルグルの竜と時をぬすむ少女#10】",
-        "startTime": 7747.5,
-        "endTime": 7751.6,
-        "duration": 4.100000000000364,
-        "creatorId": "REDACTED",
-        "creatorName": "Siang*",
-        "isPublic": true,
-        "createdAt": "2025-07-24T17:45:59.144Z",
-        "stats": {
-          "likeCount": 0,
-          "dislikeCount": 0,
-          "favoriteCount": 1,
-          "engagementRate": 0,
-          "playCount": 142
-        },
-        "tags": [
-          "ファンタジーライフ",
-          "擬音・音ネタ"
-        ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
-      }
-    },
-    {
-      "id": "xLOcSm24HACc1u1CQ4Tf",
-      "data": {
-        "buttonText": "ちゅ、ちゅぱ？",
-        "videoId": "aoWkEzZD8zA",
-        "videoTitle": "錦、、、俺のこと錦山組に、入れてくれるんだよね😎？【龍が如く極 #2／この配信はゲームのネタバレを含みます】",
-        "startTime": 2048,
-        "endTime": 2050.1,
-        "duration": 2.099999999999909,
-        "creatorId": "REDACTED",
-        "creatorName": "がこんがこん",
-        "isPublic": true,
-        "createdAt": "2026-06-21T10:54:45.322Z",
-        "id": "xLOcSm24HACc1u1CQ4Tf",
-        "stats": {
-          "likeCount": 0,
-          "dislikeCount": 0,
-          "favoriteCount": 0,
-          "engagementRate": 0,
-          "playCount": 8
-        },
-        "tags": [
-          "龍が如く極",
-          "擬音・音ネタ"
-        ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
-      }
-    },
-    {
-      "id": "xP98sGmfFvZXqeBZKAUr",
-      "data": {
-        "buttonText": "斜にかまえてさぁ",
-        "videoId": "rUKrc8czZj0",
-        "videoTitle": "お誕生日だあ！！今年もみんなでケーキ食べよ🍰♡",
-        "startTime": 1136,
-        "endTime": 1138,
-        "duration": 2,
-        "creatorId": "REDACTED",
-        "creatorName": "がこんがこん",
-        "isPublic": true,
-        "createdAt": "2025-06-29T01:40:17.967Z",
-        "stats": {
-          "likeCount": 0,
-          "dislikeCount": 0,
-          "favoriteCount": 0,
-          "engagementRate": 0,
-          "playCount": 22
-        },
-        "tags": [
-          "名言・迷言"
-        ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
-      }
-    },
-    {
-      "id": "xwx7ItC3hCXIpbdEJTsU",
-      "data": {
-        "buttonText": "開店前待機ありがとう",
-        "videoId": "S534eutWhUY",
-        "videoTitle": "今日はどんなお客さんが来るかな…☕？【COFFEE TALK #6／物語のネタバレを含みます】",
-        "startTime": 32,
-        "endTime": 38.7,
-        "duration": 6.700000000000003,
-        "creatorId": "REDACTED",
-        "creatorName": "がこんがこん",
-        "isPublic": true,
-        "createdAt": "2025-08-20T03:57:52.305Z",
-        "id": "xwx7ItC3hCXIpbdEJTsU",
-        "stats": {
-          "likeCount": 0,
-          "dislikeCount": 0,
-          "favoriteCount": 0,
-          "engagementRate": 0,
-          "playCount": 23
-        },
-        "tags": [
-          "ゲーム",
-          "COFFEE TALK",
-          "あいさつ"
-        ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
-      }
-    },
-    {
-      "id": "xxOUWJnipXcQ7k1TJbO9",
-      "data": {
-        "buttonText": "いらっしゃい",
-        "videoId": "ds8nkv4LW_8",
-        "videoTitle": "ちるいコーヒーショップの店長さんになる。【COFFEE TALK／物語のネタバレを含みます】",
-        "startTime": 4289.6,
-        "endTime": 4291.7,
-        "duration": 2.0999999999994543,
-        "creatorId": "REDACTED",
-        "creatorName": "がこんがこん",
-        "isPublic": true,
-        "createdAt": "2025-07-16T13:14:15.795Z",
-        "stats": {
-          "likeCount": 0,
-          "dislikeCount": 0,
-          "favoriteCount": 0,
-          "engagementRate": 0,
-          "playCount": 15
-        },
-        "tags": [
-          "ゲーム",
-          "COFFEE TALK",
-          "あいさつ"
-        ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
-      }
-    },
-    {
-      "id": "you1gqnpbSNsjqfcHaFv",
-      "data": {
-        "buttonText": "あーたたちー",
-        "videoId": "owvN0dZ1w6s",
-        "videoTitle": "お話しよ♡あーたたちとしゃべりたい！！",
-        "startTime": 36,
-        "endTime": 41,
-        "duration": 5,
-        "creatorId": "REDACTED",
-        "creatorName": "がこんがこん",
-        "isPublic": true,
-        "createdAt": "2026-07-17T23:28:02.977Z",
-        "stats": {
-          "likeCount": 0,
-          "dislikeCount": 0,
-          "favoriteCount": 0,
-          "engagementRate": 0,
-          "playCount": 4
-        },
-        "tags": [
-          "あいさつ"
-        ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
-      }
-    },
-    {
-      "id": "zps859BKdOqSq22ONtGo",
-      "data": {
-        "buttonText": "ナマをカタカナをやめなさい！",
-        "videoId": "aoWkEzZD8zA",
-        "videoTitle": "錦、、、俺のこと錦山組に、入れてくれるんだよね😎？【龍が如く極 #2／この配信はゲームのネタバレを含みます】",
-        "startTime": 2426,
-        "endTime": 2429.4,
-        "duration": 3.400000000000091,
-        "creatorId": "REDACTED",
-        "creatorName": "がこんがこん",
-        "isPublic": true,
-        "createdAt": "2026-06-21T11:03:18.090Z",
-        "id": "zps859BKdOqSq22ONtGo",
-        "stats": {
-          "likeCount": 0,
-          "dislikeCount": 0,
-          "favoriteCount": 0,
-          "engagementRate": 0,
-          "playCount": 9
-        },
-        "tags": [
-          "龍が如く極",
-          "ツッコミ・煽り"
-        ],
-        "updatedAt": "2026-07-19T01:07:02.335Z"
+        "createdAt": "2026-07-31T11:29:18.997Z",
+        "updatedAt": "2026-07-31T11:29:18.997Z"
       }
     }
   ]

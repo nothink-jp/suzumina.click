@@ -23,7 +23,6 @@ import {
 	Share2,
 	Shield,
 	ShoppingCart,
-	Star,
 	Tag,
 	Users,
 } from "lucide-react";
@@ -35,28 +34,13 @@ import { formatJSTDateTime } from "@/utils/date-format";
 import { calculatePriceInfo } from "../../utils/price-info";
 import { AgeRatingBadge } from "./age-rating-badge";
 import SampleImageGallery from "./sample-image-gallery";
+import { StarRating } from "./star-rating";
 import { CreatorBadges, CreatorList } from "./work-creators";
 import WorkDescription from "./work-description";
 import { WorkEvaluation } from "./work-evaluation";
 
 interface WorkDetailProps {
 	work: WorkPlainObject;
-}
-
-// スターレーティングコンポーネント
-function StarRating({ rating }: { rating: number }) {
-	// Convert 0-50 scale to 0-5 scale for display
-	const displayRating = Math.round(rating / 10);
-	return (
-		<div className="flex items-center">
-			{[1, 2, 3, 4, 5].map((star) => (
-				<Star
-					key={star}
-					className={`h-5 w-5 ${star <= displayRating ? "text-foreground fill-current" : "text-muted-foreground"}`}
-				/>
-			))}
-		</div>
-	);
 }
 
 // シェア処理
@@ -186,7 +170,7 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 							<div className="flex items-center gap-3">
 								<StarRating rating={work.rating.stars} />
 								<span className="text-xl font-semibold text-foreground">
-									{(work.rating.stars / 10).toFixed(1)}
+									{work.rating.stars.toFixed(1)}
 								</span>
 								<span className="text-base text-muted-foreground">
 									({work.rating.count}件の評価)
