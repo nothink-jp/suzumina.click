@@ -25,7 +25,8 @@ export const CREATE_ENTRY = {
 	/** 動画詳細の「ここを切り抜く」＝狙い撃ち（S3）。導線転換で +1 クリックになった側 */
 	detailClip: "detail_clip",
 	/**
-	 * 作成画面に留まったままの2本目以降。遷移を伴わないため URL には現れず、実行時に立てる。
+	 * 作成画面に留まったままの2本目以降。遷移を伴わないため URL には現れず、実行時に立てる
+	 * （URL から受け付けないことは URL_ENTRIES で担保する）。
 	 * 下書きキューを進む場合と素の連続作成の区別は from_draft が持つ
 	 * （後者は下書きを消化済みで from_draft=false になる）
 	 */
@@ -39,11 +40,16 @@ export type CreateEntry = (typeof CREATE_ENTRY)[keyof typeof CREATE_ENTRY];
 /** 入口を作成画面へ運ぶクエリキー */
 export const CREATE_ENTRY_PARAM = "entry";
 
-const KNOWN_ENTRIES: readonly string[] = Object.values(CREATE_ENTRY);
+// URL クエリで受け付ける入口。queue_continue だけは実行時にしか立たない値なので除く。
+// 通してしまうと `?entry=queue_continue` を手で付けた1本目が連続作成として記録され、
+// 「1回で5〜20本」仮説の検証そのものを汚す（GA4 に入った値は後から消せない）
+const URL_ENTRIES: readonly string[] = Object.values(CREATE_ENTRY).filter(
+	(entry) => entry !== CREATE_ENTRY.queueContinue,
+);
 
-/** クエリ由来の入口を既知の値へ畳む（未知・未指定は unknown） */
+/** クエリ由来の入口を既知の値へ畳む（未知・未指定・queue_continue は unknown） */
 export function parseCreateEntry(value: string | undefined): CreateEntry {
-	return value !== undefined && KNOWN_ENTRIES.includes(value)
+	return value !== undefined && URL_ENTRIES.includes(value)
 		? (value as CreateEntry)
 		: CREATE_ENTRY.unknown;
 }

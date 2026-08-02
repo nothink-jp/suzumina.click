@@ -14,6 +14,11 @@ describe("作成の入口（SPR-296）", () => {
 		expect(parseCreateEntry(undefined)).toBe(CREATE_ENTRY.unknown);
 	});
 
+	it("queue_continue は URL から受け付けない（実行時にのみ立つ値）", () => {
+		// 通すと手書き URL の1本目が連続作成として記録され、連続性の検証そのものが汚れる
+		expect(parseCreateEntry("queue_continue")).toBe(CREATE_ENTRY.unknown);
+	});
+
 	it("create_entry が GA4 カスタムディメンションに宣言されている", () => {
 		// 宣言漏れは lint:ga4 でも弾かれるが、遡及適用されない＝取り返せないので二重に守る
 		expect(dimensions.map((dimension) => dimension.parameterName)).toContain("create_entry");
