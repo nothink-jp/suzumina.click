@@ -12,6 +12,12 @@
 		"description": "create_start / create_success。作成画面へ来た導線（watch_* / drafts_* / chip_now / detail_clip / queue_continue / unknown）。視聴起点への導線転換の当否判定に使う（SPR-296）"
 	},
 	{
+		"parameterName": "video_tab",
+		"displayName": "動画一覧のビュー",
+		"scope": "EVENT",
+		"description": "video_tab_select。切り替え先のビュー（newest / pickable / live_upcoming）。pickable が S4 の入口として機能しているかを見る（SPR-305）"
+	},
+	{
 		"parameterName": "reason",
 		"displayName": "失敗理由",
 		"scope": "EVENT",

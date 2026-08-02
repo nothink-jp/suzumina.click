@@ -94,6 +94,18 @@ export function trackSuggestionGenerate(input: {
 	});
 }
 
+/**
+ * 動画一覧のビュー切替タブのクリック（SPR-305）。
+ * 「拾える配信」(pickable) が S4「どの配信を拾うか決める」の入口として機能しているかを見る。
+ * tab の語彙の正本は app/videos/components/video-view-tabs.tsx の VideoViewTab
+ * （provider と同じく、語彙を持つ層が別にあるため型はここで縛らない）。
+ * クリックのみを数える＝リロードや戻るでは増えない（consent_update をクリック数と
+ * 読み違えた SPR-149 の反省）。アクティブなタブの再クリックは数に入る
+ */
+export function trackVideoTabSelect(tab: string): void {
+	sendGoogleAnalyticsEvent("video_tab_select", { video_tab: tab });
+}
+
 /** AI候補の採用（タイトルクリック or タグクリック）。target で内訳を分ける */
 export function trackSuggestionApply(videoId: string, target: "title" | "tag"): void {
 	sendGoogleAnalyticsEvent("suggestion_apply", { video_id: videoId, target });
