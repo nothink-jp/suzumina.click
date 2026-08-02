@@ -2,6 +2,11 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { StarRating } from "../star-rating";
 
+/** 読み上げ用ラベルを取り出す */
+function labelOf(container: HTMLElement): string | null | undefined {
+	return container.querySelector('[role="img"]')?.getAttribute("aria-label");
+}
+
 /** 星ごとの塗り幅クラス（w-0 / w-1/2 / w-full）を左から順に取り出す */
 function fillWidths(container: HTMLElement): string[] {
 	return Array.from(container.querySelectorAll(".absolute")).map((el) => {
@@ -45,11 +50,13 @@ describe("StarRating", () => {
 		expect(fillWidths(container)).toEqual(["none", "none", "none", "none", "none"]);
 	});
 
-	it("範囲外の値は 0-5 にクランプする", () => {
+	it("範囲外の値でも塗りは頭打ちにする（読み上げは値を歪めない）", () => {
 		const { container: over } = render(<StarRating rating={50} />);
 		expect(fillWidths(over)).toEqual(["full", "full", "full", "full", "full"]);
+		expect(labelOf(over)).toBe("5段階評価で50.0");
 
 		const { container: under } = render(<StarRating rating={-1} />);
 		expect(fillWidths(under)).toEqual(["none", "none", "none", "none", "none"]);
+		expect(labelOf(under)).toBe("5段階評価で-1.0");
 	});
 });

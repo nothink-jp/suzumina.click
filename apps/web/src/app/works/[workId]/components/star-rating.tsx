@@ -22,12 +22,13 @@ function starFillWidth(rating: number, star: number): string {
  * 表示は 0.5 刻みに丸め、半端な値は半分だけ塗った星で表す。
  */
 export function StarRating({ rating }: { rating: number }) {
-	const value = Math.min(Math.max(rating, 0), 5);
-	// 塗り分けだけ 0.5 刻みに丸める（4.3 → 4.5 / 4.1 → 4.0）。読み上げは丸めない実値を使う
-	const rounded = Math.round(value * 2) / 2;
+	// 塗り分けだけ 0.5 刻みに丸める（4.3 → 4.5 / 4.1 → 4.0）。
+	// 星ごとの塗り幅は starFillWidth 側でクランプするため、ここで値を歪めない。
+	// 読み上げも生値のまま渡し、隣に並ぶ数値表示と必ず一致させる。
+	const rounded = Math.round(rating * 2) / 2;
 
 	return (
-		<div className="flex items-center" role="img" aria-label={`5段階評価で${value.toFixed(1)}`}>
+		<div className="flex items-center" role="img" aria-label={`5段階評価で${rating.toFixed(1)}`}>
 			{[1, 2, 3, 4, 5].map((star) => (
 				<div key={star} className="relative h-5 w-5">
 					<Star className="h-5 w-5 text-muted-foreground" />
