@@ -25,7 +25,7 @@ export function PageViewTracker() {
 	/** 送信済みの URL。同意トグルの往復や設定パネルからの再同意で二重計上しないための印 */
 	const sentUrl = useRef<string | null>(null);
 
-	// 送信できたときだけ印を付ける（同意前の no-op を「送信済み」にすると再送の機会を失う）
+	// 送信できたときだけ印を付ける（gtag 未ロード時の no-op を「送信済み」にすると再送の機会を失う）
 	const sendOnce = useCallback((target: string): boolean => {
 		if (sentUrl.current === target) return true;
 		const sent = sendGoogleAnalyticsPageView(target);
@@ -37,7 +37,7 @@ export function PageViewTracker() {
 		if (!url) return;
 		if (sendOnce(url)) return;
 
-		// 未同意。同意が反映された時点で、その時開いているページを送る
+		// gtag が未ロードだった。同意操作は gtag が動いている証拠になるので再送の契機に使う
 		const handleConsentUpdate = () => {
 			sendOnce(url);
 		};
