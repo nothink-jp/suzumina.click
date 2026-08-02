@@ -1,6 +1,12 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import userEvent from "@testing-library/user-event";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { resolveVideoViewTab, VideoViewTabs } from "../video-view-tabs";
+
+const mockTrackVideoTabSelect = vi.fn();
+vi.mock("@/lib/analytics/events", () => ({
+	trackVideoTabSelect: (tab: string) => mockTrackVideoTabSelect(tab),
+}));
 
 describe("resolveVideoViewTab（URL が状態の正本）", () => {
 	it("既定は新着", () => {
@@ -21,6 +27,10 @@ describe("resolveVideoViewTab（URL が状態の正本）", () => {
 });
 
 describe("VideoViewTabs", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
 	it("3タブがプリセット URL への Link で、アクティブに aria-current が付く", () => {
 		render(<VideoViewTabs active="pickable" />);
 
@@ -32,5 +42,18 @@ describe("VideoViewTabs", () => {
 			"href",
 			"/videos?videoType=live_upcoming",
 		);
+	});
+
+	it("タブのクリックで video_tab_select を送る（SPR-305）", async () => {
+		const user = userEvent.setup();
+		render(<VideoViewTabs active="newest" />);
+
+		await user.click(screen.getByRole("link", { name: "拾える配信" }));
+		expect(mockTrackVideoTabSelect).toHaveBeenCalledWith("pickable");
+	});
+
+	it("表示しただけでは送らない（リロード・戻るで増えない）", () => {
+		render(<VideoViewTabs active="pickable" />);
+		expect(mockTrackVideoTabSelect).not.toHaveBeenCalled();
 	});
 });

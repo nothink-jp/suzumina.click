@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { VideoViewTabLink } from "./video-view-tab-link";
 
 export type VideoViewTab = "newest" | "pickable" | "live_upcoming";
 
@@ -28,23 +28,19 @@ const TABS: Array<{ key: VideoViewTab; label: string; href: string }> = [
  * 動画一覧のビュー切り替えタブ（導線再設計 段3）。
  * 実体はフィルタ＋ソートのプリセットへの Link で、状態は URL に持たせる
  * （ConfigurableList も URL を正本にしているため二重管理にならない）。
+ * リンク自体は計測のため client（VideoViewTabLink）に切り出している（SPR-305）。
  */
 export function VideoViewTabs({ active }: { active: VideoViewTab }) {
 	return (
 		<nav aria-label="動画の見方" className="flex flex-wrap gap-2">
 			{TABS.map((tab) => (
-				<Link
+				<VideoViewTabLink
 					key={tab.key}
 					href={tab.href}
-					aria-current={active === tab.key ? "page" : undefined}
-					className={
-						active === tab.key
-							? "rounded-full bg-primary text-primary-foreground text-sm px-4 py-1.5 font-medium"
-							: "rounded-full border text-sm px-4 py-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
-					}
-				>
-					{tab.label}
-				</Link>
+					label={tab.label}
+					tab={tab.key}
+					isActive={active === tab.key}
+				/>
 			))}
 		</nav>
 	);
