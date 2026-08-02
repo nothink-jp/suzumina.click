@@ -971,15 +971,22 @@ pre-push hook（lefthook）は変更パッケージの `typecheck:fast` のみ�
 
 **層の分割軸は「何に対して責務を負うか」**:
 
-| 層 | 責務 | 参照してよい層 |
-|---|---|---|
-| `api-schemas/` | 外部 API レスポンスの薄い写し取り。変換ロジックを持たない | — |
-| `entities/` | 永続データ（Firestore Document）の Zod スキーマと型 | `core` / `utilities` |
-| `plain-objects/` | RSC 境界を越えるデータ形。整形済みの値と派生値（`_computed`）を含む | `entities`（型参照のみ） |
-| `transformers/` | Firestore Document ⇄ PlainObject の純関数変換 | `entities` / `plain-objects` |
-| `operations/` | PlainObject に対する判定・表示の純関数 | `plain-objects` |
-| `utilities/` | ドメイン非依存の検証・整形（ID 検証・日付正規化・フォーマッタ） | `core` |
-| `core/` | 型システム基盤（branded types・`Result`） | — |
+| 層 | 責務 |
+|---|---|
+| `api-schemas/` | 外部 API レスポンスの薄い写し取り。変換ロジックを持たない |
+| `entities/` | 永続データ（Firestore Document）の Zod スキーマと、そこから導く型・定数 |
+| `types/` | Zod を持たない概念の型定義と型ガード（Firestore Document 形を含む） |
+| `plain-objects/` | RSC 境界を越えるデータ形。整形済みの値と派生値（`_computed`）を含む |
+| `transformers/` | Firestore Document ⇄ PlainObject の純関数変換 |
+| `operations/` | PlainObject に対する判定・表示の純関数 |
+| `utilities/` | 検証・整形（ID 検証・日付正規化・フォーマッタ・Document ⇄ Plain の個別変換） |
+| `core/` | 型システム基盤（branded types・`Result`） |
+
+層をまたぐ import に**一方向の制約は課していない**（`utilities/` が `entities/` の型を参照する、
+`transformers/` が `operations/` を呼ぶ等は実在する）。Document ⇄ PlainObject の変換も
+`transformers/` に集約しきれてはおらず、Circle だけ
+[circle-conversions.ts](../../packages/shared-types/src/utilities/circle-conversions.ts) にある。
+新しい変換を書く前に、対象ドメインの既存の変換がどこにあるかを確認すること。
 
 **クラス Entity もクラス値オブジェクトも存在しない**（ADR-006 / SPR-181 で撤去済み）。「値オブジェクト」は
 PlainObject のネストしたプロパティ群を指す概念表記であって、メソッドを持つオブジェクトではない。
@@ -1013,9 +1020,10 @@ work.price.formattedPrice;                          // 整形は変換時に済�
 canCreateAudioButton(video);                        // 判定は operations の純関数
 ```
 
-**書き込み方向**（収集パイプライン）は shared-types の外にある。DLsite raw API → `WorkDocument` の写し替えは
-functions 側の薄い mapper が担い（[work-mapper.ts](../../apps/functions/src/services/mappers/work-mapper.ts)）、
-ドメイン判定を mapper に持ち込まない。
+**書き込み方向は Work だけ非対称**。Video / AudioButton は `transformers/` に `toFirestore` を持つが、
+Work は持たず、DLsite raw API → `WorkDocument` の写し替えは functions 側の薄い mapper が担う
+（[work-mapper.ts](../../apps/functions/src/services/mappers/work-mapper.ts)）。mapper が行うのは
+フィールドの写し替えと正規化までで、ドメイン判定は持ち込まない。
 
 ### 2. 責任分離
 
