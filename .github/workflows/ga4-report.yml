@@ -1,0 +1,99 @@
+name: GA4 Report
+
+# GA4 に入れた計器の**値そのもの**を月次で読む（SPR-306）。
+# ga4-dimension-drift.yml（宣言と live の一致を見る drift 検出）とは別物で、
+# こちらは作成の入口・ビュー選択・ログインファネルの実測値を出す。
+#
+# 月次にしている理由: 2026-08 時点で母数が 1日数セッションしかなく（SPR-137）、
+# 週次で回してもほぼ同じゼロが並ぶだけで、通知が「いつもの沈黙」になる。
+#
+# 読ませ方: 毎回 Summary を見に行くのは続かないので、スクリプトが出す
+# `[signal] action_events=N` を見て **操作が記録された月だけ** warning を出す。
+# 沈黙＝まだ何も起きていない、と読める設計にしてある（人が来ただけでは通知しない）。
+#
+# 認証: ga4-dimension-drift.yml と同じ。WIF で terraform-plan-sa を assume し、
+# スクリプトが GA4 閲覧者の ga4-ci-reader を impersonate する。
+# GA4 編集者の ga4-reader は CI からは使わない（実体は terraform/analytics_ga4.tf）。
+
+on:
+  schedule:
+    - cron: '0 1 1 * *' # 毎月1日 01:00 UTC（10:00 JST）。週次 drift 系とは別枠
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'scripts/report-ga4.mjs'
+      - '.github/workflows/ga4-report.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  report:
+    name: GA4 report
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      # スクリプトの既定は GA4 編集者の ga4-reader。CI では読み取り専用の SA に差し替える
+      GA4_READER_SA: ga4-ci-reader@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+          service_account: 'terraform-plan-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com'
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24.18.0'
+
+      # スクリプトは npm 依存ゼロなので install 不要。
+      # continue-on-error は使わない（conclusion まで success に塗られ「緑だが壊れている」を作る＝SPR-282）。
+      - name: Run GA4 report (capture exit code)
+        id: report
+        run: |
+          set +e
+          node scripts/report-ga4.mjs 31 2>&1 | tee /tmp/ga4-report.txt
+          code=${PIPESTATUS[0]}
+          {
+            echo "### GA4 Report (exit ${code})"
+            echo '```'
+            cat /tmp/ga4-report.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "exit_code=${code}" >> "$GITHUB_OUTPUT"
+          # 表示ではなく機械可読行を契約にする（Summary の文言を変えても壊れない）
+          actions=$(grep -o '\[signal\] action_events=[0-9]*' /tmp/ga4-report.txt | grep -o '[0-9]*$')
+          echo "action_events=${actions:-0}" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      # 実測が動いた月だけ warning を出す＝沈黙は「まだ何も起きていない」を意味する。
+      # 取得そのものが失敗した場合は run を赤にする（気づかないまま計測が止まるのを防ぐ・SPR-282）。
+      - name: Report result
+        env:
+          REPORT_EXIT: ${{ steps.report.outputs.exit_code }}
+          ACTION_EVENTS: ${{ steps.report.outputs.action_events }}
+        run: |
+          if [ "$REPORT_EXIT" != "0" ]; then
+            echo "::error::GA4 レポートを取得できませんでした（exit ${REPORT_EXIT}）。計測の読み取りが停止しています"
+            exit 1
+          fi
+          if [ "${ACTION_EVENTS:-0}" -gt 0 ]; then
+            echo "::warning::操作イベントが ${ACTION_EVENTS} 件記録されています。Summary を読んで判断してください（SPR-306）"
+          else
+            echo "::notice::操作イベントは0件。まだ読むものはありません（計器ではなく母数の問題）"
+          fi
