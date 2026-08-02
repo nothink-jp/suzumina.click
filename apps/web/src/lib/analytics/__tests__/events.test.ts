@@ -12,6 +12,7 @@ import {
 	trackPlayButton,
 	trackSuggestionApply,
 	trackSuggestionGenerate,
+	trackVideoTabSelect,
 } from "../events";
 
 const gtag = vi.fn();
@@ -162,5 +163,12 @@ describe("GA4 カスタムイベント語彙 (SPR-149)", () => {
 			video_id: "vid00000001",
 			target: "tag",
 		});
+	});
+
+	it("video_tab_select (SPR-305): 切り替え先のビューを video_tab で送る", () => {
+		grantAnalyticsConsent();
+		trackVideoTabSelect("pickable");
+
+		expect(gtag).toHaveBeenCalledWith("event", "video_tab_select", { video_tab: "pickable" });
 	});
 });
