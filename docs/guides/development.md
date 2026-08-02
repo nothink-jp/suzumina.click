@@ -174,50 +174,26 @@ export function isValidVideoId(id: string): boolean {
 }
 ```
 
-#### **4. DDD (Domain-Driven Design) 原則**
-**原則**: ドメインモデルを中心に設計し、エンティティと値オブジェクトを明確に分離する
+#### **4. ドメインモデルの扱い**
+**原則**: ドメイン概念は「型 + Zod スキーマ + 純関数」で表す。クラスは使わない
 
-**Entity（エンティティ）**: 識別可能でライフサイクルを持つオブジェクト
-- IDによって一意に識別される
-- 時間の経過とともに状態が変化する
-- 例: Work, User, AudioButton, Video, Contact
-
-**Value Object（値オブジェクト）**: 不変で識別子を持たないオブジェクト
-- 値によってのみ識別される
-- 一度作成されたら変更されない
-- ビジネスロジックをカプセル化
-- 例: Price, Rating, DateRange, CreatorType
+`Work` / `Video` / `AudioButton` のような概念は、永続形（Firestore Document + Zod スキーマ）と
+RSC 境界を越える表示形（PlainObject）の 2 つの姿を持ち、その間を `transformers/` の純関数がつなぐ。
+メソッドを持つクラス Entity・クラス値オブジェクトは撤去済み（ADR-006 / SPR-181）。
+層の意図は後述の「アーキテクチャ原則 / データ表現とレイヤ構成」、概念ごとの正本の在処は
+[domain-model.md](../reference/domain-model.md) を参照。
 
 ```typescript
-// ✅ 良い例: Value Object with ビジネスロジック
-import { Price, Rating } from '@suzumina.click/shared-types';
+// ✅ 良い例: PlainObject が持つ整形済みの値・判定フラグをそのまま読む
+import type { WorkPlainObject } from '@suzumina.click/shared-types';
 
-// Priceの使用例
-const price: Price = {
-  amount: 1980,
-  currency: 'JPY'
-};
-
-console.log(price.format()); // ¥1,980
-console.log(price.isFree()); // false
-
-// ✅ 良い例: Entity
-import { Work } from '@suzumina.click/shared-types';
-
-const work: Work = {
-  id: 'RJ01234567',
-  title: 'サンプル作品',
-  price: { amount: 1980, currency: 'JPY' },
-  rating: { value: 4.5, count: 100 },
-  // その他のプロパティ
-};
-
-// ❌ 悪い例: ビジネスロジックが散在
-function formatPrice(work: Work) {
-  return `${work.price.toLocaleString()}円`; // Priceオブジェクトのformat()を使うべき
+function renderPrice(work: WorkPlainObject) {
+  return work.price.formattedPrice;       // 整形は transformer が済ませている
 }
-function isDiscounted(work: Work) {
-  return work.originalPrice > work.price; // Priceオブジェクトのメソッドを使うべき
+
+// ❌ 悪い例: 既にフィールドで提供されている判定を各所で書き直す
+function isFree(work: WorkPlainObject) {
+  return work.price.current === 0;        // price.isFree がある
 }
 ```
 
@@ -255,16 +231,12 @@ function processData(data: any) { ... }
 - **単一責任原則**: 明確で理解しやすい関数名
 
 ```typescript
-// ✅ 良い例: 純粋関数（Value Objectの活用）
-import { Price } from '@suzumina.click/shared-types';
+// ✅ 良い例: PlainObject を受け取り値だけを返す純粋関数
+import { type VideoPlainObject, canCreateAudioButton } from '@suzumina.click/shared-types';
 
-export function createPrice(amount: number, currency = 'JPY'): Price {
-  return { amount, currency };
+export function getCreateButtonLabel(video: VideoPlainObject): string {
+  return canCreateAudioButton(video) ? '音声ボタンを作成' : '作成できません';
 }
-
-// Value Objectメソッドの活用
-const price = createPrice(1980);
-console.log(price.format()); // ¥1,980（純粋関数）
 
 // ❌ 悪い例: 副作用のある関数
 function updateAndLog(data: any) {
@@ -991,156 +963,61 @@ pre-push hook（lefthook）は変更パッケージの `typecheck:fast` のみ�
 
 ## 🏗️ アーキテクチャ原則
 
-### 1. Entity/Value Object アーキテクチャ
+### 1. データ表現とレイヤ構成（shared-types）
 
-**ドメインモデル設計原則**
+**正本は [packages/shared-types/src/](../../packages/shared-types/src/) のツリーそのもの**で、概念ごとの
+正本の在処は [domain-model.md](../reference/domain-model.md) が索引になっている。ここには層の**意図**だけを
+書き、ファイル一覧・型 shape は転記しない（転記した瞬間からリネームで drift するため）。
 
-```text
-packages/shared-types/src/
-├── entities/                    # エンティティ層
-│   ├── work.ts                 # ID管理・状態変化
-│   ├── user.ts                 # ライフサイクル管理
-│   ├── audio-button.ts         # 永続化対象
-│   ├── video.ts                # 動画エンティティ
-│   ├── circle-creator.ts       # サークル・クリエイター
-│   └── ...(その他のエンティティ)
-├── value-objects/              # 値オブジェクト層
-│   ├── price.ts               # 不変・ビジネスロジック
-│   ├── rating.ts              # 計算・検証ロジック
-│   ├── date-range.ts          # ドメイン固有処理
-│   └── creator-type.ts        # クリエイタータイプ
-├── api-schemas/               # API抽象化層
-│   └── dlsite-raw.ts         # 薄い型定義のみ
-└── utilities/                 # インフラ層
-    └── firestore-utils.ts    # 永続化変換
-```
+**層の分割軸は「何に対して責務を負うか」**:
 
-**設計原則**:
-- **Entity**: IDで識別、状態変化、永続化対象
-- **Value Object**: 不変、値で比較、ビジネスロジック内包
-- **API Schema**: 外部APIの薄い抽象化、変換ロジックなし
-- **Domain Service**: 複数エンティティにまたがるロジック
+| 層 | 責務 | 参照してよい層 |
+|---|---|---|
+| `api-schemas/` | 外部 API レスポンスの薄い写し取り。変換ロジックを持たない | — |
+| `entities/` | 永続データ（Firestore Document）の Zod スキーマと型 | `core` / `utilities` |
+| `plain-objects/` | RSC 境界を越えるデータ形。整形済みの値と派生値（`_computed`）を含む | `entities`（型参照のみ） |
+| `transformers/` | Firestore Document ⇄ PlainObject の純関数変換 | `entities` / `plain-objects` |
+| `operations/` | PlainObject に対する判定・表示の純関数 | `plain-objects` |
+| `utilities/` | ドメイン非依存の検証・整形（ID 検証・日付正規化・フォーマッタ） | `core` |
+| `core/` | 型システム基盤（branded types・`Result`） | — |
 
-**インポート方法**:
+**クラス Entity もクラス値オブジェクトも存在しない**（ADR-006 / SPR-181 で撤去済み）。「値オブジェクト」は
+PlainObject のネストしたプロパティ群を指す概念表記であって、メソッドを持つオブジェクトではない。
+整形済み文字列や判定フラグは **transformer が変換時に算出して PlainObject のフィールドに載せる**
+（`work.price.formattedPrice` のように読むだけ）。フィールドに載らない判定は `operations/` の純関数に置く。
+
+Document ⇄ PlainObject の変換層は RSC 境界に強制された冗長であり、**ここに新しい変換層・抽象を足さない**
+（CLAUDE.md 軸2）。新規ドメインを追加するときは CLAUDE.md「Entity 化のゲート」を先に通す。
+
+**インポートはルートバレルからのみ**（`package.json` の `exports` は `"."` だけで、サブパスは解決できない）:
+
 ```typescript
-// ✅ 推奨: ルートからの統一インポート
-import { 
-  Work, 
-  Price, 
-  Rating, 
-  AudioButton,
-  VideoSchema 
+// ✅ 唯一の入口
+import {
+  type WorkPlainObject,
+  type VideoPlainObject,
+  workTransformers,
+  canCreateAudioButton,
 } from '@suzumina.click/shared-types';
 
-// ❌ 非推奨: サブディレクトリからの直接インポート
-import { Work } from '@suzumina.click/shared-types/entities/work';
-import { Price } from '@suzumina.click/shared-types/value-objects/price';
+// ❌ 解決されない（exports に無い）
+import { workTransformers } from '@suzumina.click/shared-types/transformers/work-firestore';
 ```
 
-**Value Object使用例**:
+**読み取り境界の典型**（Firestore Document → Zod で検証 → transformer で PlainObject → 表示・判定）:
+
 ```typescript
-// ✅ 良い例: Value Object with ビジネスロジック
-import { Price, Rating } from '@suzumina.click/shared-types';
-
-// Priceの活用
-const price: Price = { amount: 1980, currency: 'JPY' };
-console.log(price.format());     // ¥1,980
-console.log(price.isFree());     // false
-console.log(price.isDiscounted()); // 割引判定
-
-// Ratingの活用
-const rating: Rating = { value: 4.5, count: 100 };
-console.log(rating.getStarRating());  // 5つ星評価
-console.log(rating.isHighlyRated());  // 高評価判定
+const doc = parseWorkDocument(snapshot.data());     // Zod safeParse の漏斗（apps/web 側の実装が正本）
+const work = workTransformers.fromFirestore(doc);   // WorkPlainObject
+work.price.formattedPrice;                          // 整形は変換時に済んでいる
+canCreateAudioButton(video);                        // 判定は operations の純関数
 ```
 
-**Mapper実装例**:
-```typescript
-// ✅ 良い例: Thin Mapper (functions/src/services/mappers/work-mapper.ts)
-import { Work, Price, Rating } from '@suzumina.click/shared-types';
-import type { DLsiteRawApiResponse } from '@suzumina.click/shared-types';
+**書き込み方向**（収集パイプライン）は shared-types の外にある。DLsite raw API → `WorkDocument` の写し替えは
+functions 側の薄い mapper が担い（[work-mapper.ts](../../apps/functions/src/services/mappers/work-mapper.ts)）、
+ドメイン判定を mapper に持ち込まない。
 
-export class WorkMapper {
-  static toWork(raw: DLsiteRawApiResponse): Work {
-    return {
-      id: raw.id,
-      title: raw.work_name,
-      price: this.toPrice(raw),
-      rating: this.toRating(raw),
-      // 薄い変換のみ、ビジネスロジックはValue Objectに
-    };
-  }
-  
-  private static toPrice(raw: DLsiteRawApiResponse): Price {
-    return {
-      amount: raw.price,
-      currency: 'JPY',
-      originalAmount: raw.price_without_campaign
-    };
-  }
-}
-```
-
-### 2. Value Object活用のベストプラクティス
-
-**Value Objectの設計指針**:
-
-1. **不変性の保証**
-   ```typescript
-   // ✅ 良い例: 不変のValue Object
-   const price1: Price = { amount: 1000, currency: 'JPY' };
-   const price2 = { ...price1, amount: 2000 }; // 新しいオブジェクトを作成
-   
-   // ❌ 悪い例: 直接変更
-   price1.amount = 2000; // Value Objectは変更不可
-   ```
-
-2. **ビジネスロジックのカプセル化**
-   ```typescript
-   // ✅ 良い例: ロジックをValue Object内に
-   const price: Price = { amount: 1980, currency: 'JPY' };
-   if (price.isFree()) {
-     // 無料作品の処理
-   }
-   
-   // ❌ 悪い例: 外部でロジックを実装
-   if (work.price === 0) { // Value Objectのメソッドを使うべき
-     // 無料作品の処理
-   }
-   ```
-
-3. **適切な粒度の維持**
-   ```typescript
-   // ✅ 良い例: 関連する概念をまとめる
-   const dateRange: DateRange = {
-     start: '2025-07-01',
-     end: '2025-07-31'
-   };
-   console.log(dateRange.getDays()); // 期間の日数
-   console.log(dateRange.includes('2025-07-15')); // 日付の包含判定
-   
-   // ❌ 悪い例: 過度に細分化
-   const startDate: Date = new Date('2025-07-01');
-   const endDate: Date = new Date('2025-07-31');
-   // ロジックが散在してしまう
-   ```
-
-4. **Domain Serviceとの使い分け**
-   ```typescript
-   // ✅ 良い例: 複数エンティティにまたがる処理はDomain Service
-   import { PriceCalculationService } from './domain/price-calculation-service';
-   
-   const finalPrice = PriceCalculationService.calculateWithCampaign(
-     work.price,
-     campaign,
-     user.membershipLevel
-   );
-   
-   // ❌ 悪い例: Value Object内で他のエンティティを参照
-   // Price Value Object内でユーザー情報を参照するのは不適切
-   ```
-
-### 3. 責任分離
+### 2. 責任分離
 
 **実装済みレイヤー構造**
 
@@ -1165,7 +1042,7 @@ apps/functions/src/
 
 ※ 各ディレクトリの中身（ファイル一覧）は転記しない。正本はツリーそのもの。
 
-### 2. 依存関係管理
+### 3. 依存関係管理
 
 **依存関係の方向**
 
@@ -1177,7 +1054,7 @@ UI層 → ビジネスロジック層 → データアクセス層
 - 下位層は上位層に依存しない
 - 循環依存を禁止
 
-### 3. エラーハンドリング
+### 4. エラーハンドリング
 
 **階層別エラー処理**
 
