@@ -7,7 +7,7 @@
 "use client";
 
 import { cn } from "@suzumina.click/ui/lib/utils";
-import { Play, Users } from "lucide-react";
+import { Play } from "lucide-react";
 import { buildCompactTags } from "./three-layer-tag-display/build-compact-tags";
 import { CategoryDisplay } from "./three-layer-tag-display/category-display";
 import { CompactTagDisplay } from "./three-layer-tag-display/compact-tag-display";
@@ -17,8 +17,6 @@ import { TagLayer } from "./three-layer-tag-display/tag-layer";
 export interface VideoTagDisplayProps {
 	/** 配信タイプタグ（自動分類） */
 	playlistTags?: string[];
-	/** みんなのタグ（ユーザー投稿） */
-	userTags?: string[];
 	/** ジャンルID（YouTube分類） */
 	categoryId?: string;
 	/** ジャンル表示名 */
@@ -30,9 +28,9 @@ export interface VideoTagDisplayProps {
 	/** コンテナのクラス名 */
 	className?: string;
 	/** タグクリック時のコールバック */
-	onTagClick?: (tag: string, layer: "playlist" | "user" | "category") => void;
+	onTagClick?: (tag: string, layer: "playlist" | "category") => void;
 	/** タグの遷移先 href ビルダー。指定時は onTagClick より優先し <Link> を描画する（server 化向け） */
-	tagHref?: (tag: string, layer: "playlist" | "user" | "category") => string;
+	tagHref?: (tag: string, layer: "playlist" | "category") => string;
 	/** 表示サイズ */
 	size?: "sm" | "default" | "lg";
 	/** 各層の最大表示タグ数（0の場合は制限なし） */
@@ -43,13 +41,12 @@ export interface VideoTagDisplayProps {
 	showCategory?: boolean;
 	/** 一列表示モード（コンパクト表示） */
 	compact?: boolean;
-	/** 表示順序（通常: playlist→user→category, 詳細: category→playlist→user） */
+	/** 表示順序（通常: playlist→category, 詳細: category→playlist） */
 	order?: "default" | "detail";
 }
 
 export function VideoTagDisplay({
 	playlistTags = [],
-	userTags = [],
 	categoryId,
 	categoryName,
 	searchQuery,
@@ -84,10 +81,9 @@ export function VideoTagDisplay({
 
 	// 各層の表示データ
 	const playlistDisplay = getDisplayTags(playlistTags);
-	const userDisplay = getDisplayTags(userTags);
 
 	// すべての層が空の場合
-	if (!showEmptyLayers && playlistTags.length === 0 && userTags.length === 0 && !categoryId) {
+	if (!showEmptyLayers && playlistTags.length === 0 && !categoryId) {
 		return null;
 	}
 
@@ -98,7 +94,6 @@ export function VideoTagDisplay({
 			categoryId,
 			categoryName,
 			playlistTags,
-			userTags,
 			maxTagsPerLayer,
 		});
 
@@ -133,23 +128,6 @@ export function VideoTagDisplay({
 		/>
 	);
 
-	const userLayer = (
-		<TagLayer
-			title="みんなのタグ"
-			icon={Users}
-			tags={userTags}
-			layer="user"
-			badgeClassName="bg-muted text-foreground border-border hover:bg-accent"
-			displayData={userDisplay}
-			sizeClasses={sizeClasses}
-			showEmptyLayers={showEmptyLayers}
-			onTagClick={onTagClick}
-			tagHref={tagHref}
-			searchQuery={searchQuery}
-			highlightClassName={highlightClassName}
-		/>
-	);
-
 	const categoryLayer = showCategory && categoryId && categoryName && (
 		<CategoryDisplay
 			categoryName={categoryName}
@@ -162,12 +140,11 @@ export function VideoTagDisplay({
 	);
 
 	if (order === "detail") {
-		// 詳細ページ用順序: ジャンル→配信タイプ→みんなのタグ
+		// 詳細ページ用順序: ジャンル→配信タイプ
 		return (
 			<div className={cn("space-y-4", className)}>
 				{categoryLayer}
 				{playlistLayer}
-				{userLayer}
 			</div>
 		);
 	}
@@ -176,7 +153,6 @@ export function VideoTagDisplay({
 	return (
 		<div className={cn("space-y-4", className)}>
 			{playlistLayer}
-			{userLayer}
 			{categoryLayer}
 		</div>
 	);

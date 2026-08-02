@@ -19,10 +19,6 @@ const meta: Meta<typeof VideoTagDisplay> = {
 			control: "object",
 			description: "配信タイプタグ（自動分類）",
 		},
-		userTags: {
-			control: "object",
-			description: "みんなのタグ（ユーザー投稿）",
-		},
 		categoryId: {
 			control: "text",
 			description: "ジャンルID（YouTube分類）",
@@ -80,7 +76,6 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
 	args: {
 		playlistTags: ["配信", "雑談"],
-		userTags: ["ASMR", "涼花みなせ", "癒し"],
 		categoryId: "22",
 		categoryName: "People & Blogs",
 		size: "default",
@@ -93,7 +88,6 @@ export const Default: Story = {
 export const ASMRStream: Story = {
 	args: {
 		playlistTags: ["ASMR", "バイノーラル"],
-		userTags: ["耳かき", "囁き", "癒し", "睡眠"],
 		categoryId: "22",
 		categoryName: "People & Blogs",
 		size: "default",
@@ -106,7 +100,6 @@ export const ASMRStream: Story = {
 export const GameStream: Story = {
 	args: {
 		playlistTags: ["ゲーム実況", "アクション"],
-		userTags: ["初見プレイ", "コメント読み", "楽しい"],
 		categoryId: "20",
 		categoryName: "Gaming",
 		size: "default",
@@ -119,7 +112,6 @@ export const GameStream: Story = {
 export const ChatStream: Story = {
 	args: {
 		playlistTags: ["雑談", "フリートーク"],
-		userTags: ["日常", "近況報告", "質問回答", "リスナーとの交流"],
 		categoryId: "22",
 		categoryName: "People & Blogs",
 		size: "default",
@@ -132,7 +124,6 @@ export const ChatStream: Story = {
 export const SingingStream: Story = {
 	args: {
 		playlistTags: ["歌枠", "音楽"],
-		userTags: ["アニソン", "ボカロ", "リクエスト"],
 		categoryId: "10",
 		categoryName: "Music",
 		size: "default",
@@ -145,7 +136,6 @@ export const SingingStream: Story = {
 export const SmallSize: Story = {
 	args: {
 		playlistTags: ["配信", "雑談"],
-		userTags: ["ASMR", "癒し"],
 		categoryId: "22",
 		categoryName: "People & Blogs",
 		size: "sm",
@@ -158,7 +148,6 @@ export const SmallSize: Story = {
 export const LargeSize: Story = {
 	args: {
 		playlistTags: ["配信", "雑談"],
-		userTags: ["ASMR", "癒し"],
 		categoryId: "22",
 		categoryName: "People & Blogs",
 		size: "lg",
@@ -171,7 +160,6 @@ export const LargeSize: Story = {
 export const CompactMode: Story = {
 	args: {
 		playlistTags: ["配信", "雑談"],
-		userTags: ["ASMR", "涼花みなせ", "癒し", "睡眠"],
 		categoryId: "22",
 		categoryName: "People & Blogs",
 		size: "default",
@@ -184,7 +172,6 @@ export const CompactMode: Story = {
 export const DetailPageOrder: Story = {
 	args: {
 		playlistTags: ["ASMR", "バイノーラル"],
-		userTags: ["耳かき", "囁き", "癒し"],
 		categoryId: "22",
 		categoryName: "People & Blogs",
 		size: "default",
@@ -197,7 +184,6 @@ export const DetailPageOrder: Story = {
 export const WithSearchHighlight: Story = {
 	args: {
 		playlistTags: ["音楽配信", "歌枠"],
-		userTags: ["音質", "高音", "低音"],
 		categoryId: "10",
 		categoryName: "Music",
 		searchQuery: "音",
@@ -211,7 +197,6 @@ export const WithSearchHighlight: Story = {
 export const MaxTagsLimit: Story = {
 	args: {
 		playlistTags: ["配信", "雑談", "フリートーク", "質問回答"],
-		userTags: ["ASMR", "癒し", "睡眠", "耳かき", "囁き", "バイノーラル"],
 		categoryId: "22",
 		categoryName: "People & Blogs",
 		maxTagsPerLayer: 3,
@@ -225,7 +210,6 @@ export const MaxTagsLimit: Story = {
 export const CompactWithMaxTags: Story = {
 	args: {
 		playlistTags: ["配信", "雑談", "フリートーク"],
-		userTags: ["ASMR", "癒し", "睡眠", "耳かき"],
 		categoryId: "22",
 		categoryName: "People & Blogs",
 		maxTagsPerLayer: 5,
@@ -239,7 +223,6 @@ export const CompactWithMaxTags: Story = {
 export const ShowEmptyLayers: Story = {
 	args: {
 		playlistTags: [],
-		userTags: ["ASMR", "癒し"],
 		categoryId: "22",
 		categoryName: "People & Blogs",
 		showEmptyLayers: true,
@@ -253,7 +236,6 @@ export const ShowEmptyLayers: Story = {
 export const NoCategory: Story = {
 	args: {
 		playlistTags: ["配信", "雑談"],
-		userTags: ["ASMR", "癒し"],
 		showCategory: false,
 		size: "default",
 		compact: false,
@@ -264,18 +246,6 @@ export const NoCategory: Story = {
 export const OnlyPlaylistTags: Story = {
 	args: {
 		playlistTags: ["ASMR", "バイノーラル", "耳かき"],
-		userTags: [],
-		showCategory: false,
-		size: "default",
-		compact: false,
-		order: "default",
-	},
-};
-
-export const OnlyUserTags: Story = {
-	args: {
-		playlistTags: [],
-		userTags: ["ファンアート", "感想", "応援", "コメント"],
 		showCategory: false,
 		size: "default",
 		compact: false,
@@ -286,7 +256,6 @@ export const OnlyUserTags: Story = {
 export const OnlyCategory: Story = {
 	args: {
 		playlistTags: [],
-		userTags: [],
 		categoryId: "10",
 		categoryName: "Music",
 		size: "default",
@@ -299,7 +268,6 @@ export const OnlyCategory: Story = {
 export const AllEmpty: Story = {
 	args: {
 		playlistTags: [],
-		userTags: [],
 		showCategory: false,
 		showEmptyLayers: false,
 		size: "default",
@@ -311,7 +279,6 @@ export const AllEmpty: Story = {
 export const ClickableInteraction: Story = {
 	args: {
 		playlistTags: ["配信", "雑談"],
-		userTags: ["ASMR", "癒し", "睡眠"],
 		categoryId: "22",
 		categoryName: "People & Blogs",
 		size: "default",

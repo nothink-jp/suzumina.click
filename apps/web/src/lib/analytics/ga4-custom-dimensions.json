@@ -39,7 +39,7 @@
 		"parameterName": "tag_count",
 		"displayName": "ユーザータグ件数",
 		"scope": "EVENT",
-		"description": "user_tag_save の保存件数。0件=全削除を独立した行として区別するため metric ではなく dimension で登録"
+		"description": "動画ユーザータグ保存時のタグ件数（SPR-276 で機能撤去済み・送信元なし）。GA4 はディメンションを削除できずアーカイブのみのため、drift 検出が管理外扱いしないよう宣言だけ残している"
 	},
 	{
 		"parameterName": "metric_name",
@@ -63,7 +63,7 @@
 		"parameterName": "video_id",
 		"displayName": "動画ID",
 		"scope": "EVENT",
-		"description": "create_* / mark_draft / suggestion_* / user_tag_* の対象 YouTube 動画ID"
+		"description": "create_* / mark_draft / suggestion_* の対象 YouTube 動画ID"
 	},
 	{
 		"parameterName": "audio_button_id",

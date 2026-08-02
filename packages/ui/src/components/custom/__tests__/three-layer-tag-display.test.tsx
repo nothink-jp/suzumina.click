@@ -15,15 +15,6 @@ describe("VideoTagDisplay", () => {
 			expect(screen.getByText("ASMR")).toBeInTheDocument();
 		});
 
-		it("should render user tags correctly", () => {
-			const userTags = ["可愛い", "癒し", "応援"];
-			render(<VideoTagDisplay userTags={userTags} />);
-
-			expect(screen.getByText("可愛い")).toBeInTheDocument();
-			expect(screen.getByText("癒し")).toBeInTheDocument();
-			expect(screen.getByText("応援")).toBeInTheDocument();
-		});
-
 		it("should render category when provided", () => {
 			render(
 				<VideoTagDisplay categoryId="24" categoryName="エンターテイメント" showCategory={true} />,
@@ -44,27 +35,23 @@ describe("VideoTagDisplay", () => {
 	// 空状態の処理テスト
 	describe("Empty state handling", () => {
 		it("should return null when all layers are empty and showEmptyLayers is false", () => {
-			const { container } = render(
-				<VideoTagDisplay playlistTags={[]} userTags={[]} showEmptyLayers={false} />,
-			);
+			const { container } = render(<VideoTagDisplay playlistTags={[]} showEmptyLayers={false} />);
 
 			expect(container.firstChild).toBeNull();
 		});
 
 		it("should show empty layers when showEmptyLayers is true", () => {
-			render(<VideoTagDisplay playlistTags={[]} userTags={[]} showEmptyLayers={true} />);
+			render(<VideoTagDisplay playlistTags={[]} showEmptyLayers={true} />);
 
 			expect(screen.getByText("配信タイプ")).toBeInTheDocument();
-			expect(screen.getByText("みんなのタグ")).toBeInTheDocument();
-			expect(screen.getAllByText("設定なし")).toHaveLength(2);
+			expect(screen.getAllByText("設定なし")).toHaveLength(1);
 		});
 
 		it("should only render non-empty layers when showEmptyLayers is false", () => {
-			render(<VideoTagDisplay playlistTags={["配信"]} userTags={[]} showEmptyLayers={false} />);
+			render(<VideoTagDisplay playlistTags={["配信"]} showEmptyLayers={false} />);
 
 			expect(screen.getByText("配信タイプ")).toBeInTheDocument();
 			expect(screen.getByText("配信")).toBeInTheDocument();
-			expect(screen.queryByText("みんなのタグ")).not.toBeInTheDocument();
 		});
 	});
 
@@ -159,18 +146,6 @@ describe("VideoTagDisplay", () => {
 			expect(onTagClick).toHaveBeenCalledWith("配信", "playlist");
 		});
 
-		it("should call onTagClick with correct parameters for user tags", async () => {
-			const user = userEvent.setup();
-			const onTagClick = vi.fn();
-
-			render(<VideoTagDisplay userTags={["可愛い"]} onTagClick={onTagClick} />);
-
-			await user.click(screen.getByText("可愛い"));
-
-			expect(onTagClick).toHaveBeenCalledTimes(1);
-			expect(onTagClick).toHaveBeenCalledWith("可愛い", "user");
-		});
-
 		it("should call onTagClick with correct parameters for category", async () => {
 			const user = userEvent.setup();
 			const onTagClick = vi.fn();
@@ -218,7 +193,6 @@ describe("VideoTagDisplay", () => {
 			render(
 				<VideoTagDisplay
 					playlistTags={["配信"]}
-					userTags={["可愛い"]}
 					categoryId="24"
 					categoryName="エンターテイメント"
 					compact={true}
@@ -227,12 +201,10 @@ describe("VideoTagDisplay", () => {
 
 			// コンパクトモードでは層のタイトルが表示されない
 			expect(screen.queryByText("配信タイプ")).not.toBeInTheDocument();
-			expect(screen.queryByText("みんなのタグ")).not.toBeInTheDocument();
 			expect(screen.queryByText("ジャンル")).not.toBeInTheDocument();
 
 			// タグは表示される
 			expect(screen.getByText("配信")).toBeInTheDocument();
-			expect(screen.getByText("可愛い")).toBeInTheDocument();
 			expect(screen.getByText("エンターテイメント")).toBeInTheDocument();
 		});
 
@@ -240,7 +212,6 @@ describe("VideoTagDisplay", () => {
 			render(
 				<VideoTagDisplay
 					playlistTags={["配信"]}
-					userTags={["可愛い"]}
 					categoryId="24"
 					categoryName="エンターテイメント"
 					compact={true}
@@ -254,17 +225,12 @@ describe("VideoTagDisplay", () => {
 			// 配信タイプは primary（category と同じ solid。種別はラベル/アイコンで区別）
 			const playlistBadge = screen.getByText("配信");
 			expect(playlistBadge).toHaveClass("bg-primary", "text-primary-foreground");
-
-			// ユーザータグは muted
-			const userBadge = screen.getByText("可愛い");
-			expect(userBadge).toHaveClass("bg-muted", "text-foreground");
 		});
 
 		it("should render compact tags as a semantic list (ul/li)", () => {
 			render(
 				<VideoTagDisplay
 					playlistTags={["配信"]}
-					userTags={["可愛い"]}
 					categoryId="24"
 					categoryName="エンターテイメント"
 					compact={true}
@@ -273,7 +239,7 @@ describe("VideoTagDisplay", () => {
 
 			const list = screen.getByRole("list", { name: "タグ" });
 			expect(list.tagName).toBe("UL");
-			expect(within(list).getAllByRole("listitem")).toHaveLength(3);
+			expect(within(list).getAllByRole("listitem")).toHaveLength(2);
 		});
 
 		it("should render tagHref tags as links inside list items", () => {
@@ -297,7 +263,6 @@ describe("VideoTagDisplay", () => {
 			const { container } = render(
 				<VideoTagDisplay
 					playlistTags={["配信"]}
-					userTags={["可愛い"]}
 					categoryId="24"
 					categoryName="エンターテイメント"
 					order="default"
@@ -310,15 +275,13 @@ describe("VideoTagDisplay", () => {
 
 			// 配信タイプが最初に来る
 			expect(sectionTexts[0]).toContain("配信タイプ");
-			expect(sectionTexts[1]).toContain("みんなのタグ");
-			expect(sectionTexts[2]).toContain("ジャンル");
+			expect(sectionTexts[1]).toContain("ジャンル");
 		});
 
-		it("should display in detail order (category -> playlist -> user)", () => {
+		it("should display in detail order (category -> playlist)", () => {
 			const { container } = render(
 				<VideoTagDisplay
 					playlistTags={["配信"]}
-					userTags={["可愛い"]}
 					categoryId="24"
 					categoryName="エンターテイメント"
 					order="detail"
@@ -332,7 +295,6 @@ describe("VideoTagDisplay", () => {
 			// ジャンルが最初に来る
 			expect(sectionTexts[0]).toContain("ジャンル");
 			expect(sectionTexts[1]).toContain("配信タイプ");
-			expect(sectionTexts[2]).toContain("みんなのタグ");
 		});
 	});
 
@@ -350,7 +312,6 @@ describe("VideoTagDisplay", () => {
 			render(
 				<VideoTagDisplay
 					playlistTags={["配信"]}
-					userTags={["可愛い"]}
 					categoryId="24"
 					categoryName="エンターテイメント"
 				/>,
@@ -359,10 +320,6 @@ describe("VideoTagDisplay", () => {
 			// 配信タイプは primary（category と同じ solid。種別はラベル/アイコンで区別）
 			const playlistBadge = screen.getByText("配信");
 			expect(playlistBadge).toHaveClass("bg-primary", "text-primary-foreground");
-
-			// ユーザータグは muted
-			const userBadge = screen.getByText("可愛い");
-			expect(userBadge).toHaveClass("bg-muted", "text-foreground");
 
 			// カテゴリは primary
 			const categoryBadge = screen.getByText("エンターテイメント");
@@ -409,19 +366,15 @@ describe("VideoTagDisplay", () => {
 	// アクセシビリティテスト
 	describe("Accessibility", () => {
 		it("should have proper section headers", () => {
-			render(
-				<VideoTagDisplay playlistTags={["配信"]} userTags={["可愛い"]} showEmptyLayers={true} />,
-			);
+			render(<VideoTagDisplay playlistTags={["配信"]} showEmptyLayers={true} />);
 
 			expect(screen.getByText("配信タイプ")).toBeInTheDocument();
-			expect(screen.getByText("みんなのタグ")).toBeInTheDocument();
 		});
 
 		it("should have descriptive text for each layer", () => {
 			render(
 				<VideoTagDisplay
 					playlistTags={["配信"]}
-					userTags={["可愛い"]}
 					categoryId="24"
 					categoryName="エンターテイメント"
 					showEmptyLayers={true}
@@ -429,7 +382,6 @@ describe("VideoTagDisplay", () => {
 			);
 
 			expect(screen.getByText("(録画時間による自動分類)")).toBeInTheDocument();
-			expect(screen.getByText("(ユーザーが自由に追加)")).toBeInTheDocument();
 			expect(screen.getByText("(YouTube分類)")).toBeInTheDocument();
 		});
 

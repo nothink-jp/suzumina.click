@@ -11,8 +11,6 @@ import {
 	trackPlayButton,
 	trackSuggestionApply,
 	trackSuggestionGenerate,
-	trackUserTagEditOpen,
-	trackUserTagSave,
 } from "../events";
 
 const gtag = vi.fn();
@@ -149,38 +147,5 @@ describe("GA4 カスタムイベント語彙 (SPR-149)", () => {
 			video_id: "vid00000001",
 			target: "tag",
 		});
-	});
-
-	// SPR-273 の修正後、ユーザータグ機能が実際に使われるかを測るための計装。
-	// open と save の差で「気づかれていない」と「試したが保存に至らない」を区別する。
-	it("user_tag_edit_open: 編集開始を video_id 付きで送る", () => {
-		grantAnalyticsConsent();
-		trackUserTagEditOpen("vid00000001");
-
-		expect(gtag).toHaveBeenCalledWith("event", "user_tag_edit_open", {
-			video_id: "vid00000001",
-		});
-	});
-
-	it("user_tag_save: タグ数を添えて送る（0件＝全削除も区別できる）", () => {
-		grantAnalyticsConsent();
-		trackUserTagSave("vid00000001", 3);
-		trackUserTagSave("vid00000002", 0);
-
-		expect(gtag).toHaveBeenCalledWith("event", "user_tag_save", {
-			video_id: "vid00000001",
-			tag_count: 3,
-		});
-		expect(gtag).toHaveBeenCalledWith("event", "user_tag_save", {
-			video_id: "vid00000002",
-			tag_count: 0,
-		});
-	});
-
-	it("consent 未取得ならタグ編集イベントも送らない", () => {
-		trackUserTagEditOpen("vid00000001");
-		trackUserTagSave("vid00000001", 1);
-
-		expect(gtag).not.toHaveBeenCalled();
 	});
 });

@@ -174,7 +174,6 @@ function VideoCard({ video, variant = "grid", priority = false, searchQuery }: V
 					<div className="mb-4">
 						<VideoCardTags
 							playlistTags={video.tags?.playlistTags || []}
-							userTags={video.tags?.userTags || []}
 							categoryId={video.categoryId}
 							searchQuery={searchQuery}
 						/>

@@ -10,16 +10,16 @@ import { HighlightText } from "../highlight-text";
 
 interface TagData {
 	text: string;
-	type: "category" | "playlist" | "user";
+	type: "category" | "playlist";
 	className: string;
 }
 
 interface CompactTagDisplayProps {
 	allTags: TagData[];
 	sizeClasses: { badge: string; layerContainer: string };
-	onTagClick?: (tag: string, layer: "playlist" | "user" | "category") => void;
+	onTagClick?: (tag: string, layer: "playlist" | "category") => void;
 	/** タグの遷移先 href ビルダー。指定時は onTagClick より優先し <Link> を描画する */
-	tagHref?: (tag: string, layer: "playlist" | "user" | "category") => string;
+	tagHref?: (tag: string, layer: "playlist" | "category") => string;
 	searchQuery?: string;
 	highlightClassName?: string;
 	className?: string;
@@ -36,7 +36,7 @@ export function CompactTagDisplay({
 }: CompactTagDisplayProps) {
 	const handleTagClick = (
 		tag: string,
-		layer: "playlist" | "user" | "category",
+		layer: "playlist" | "category",
 		event: MouseEvent<HTMLElement>,
 	) => {
 		if (onTagClick) {

@@ -64,7 +64,6 @@ function createMockVideo(overrides?: Partial<any>): VideoPlainObject {
 		liveStreamingDetails: null,
 		videoType: "normal",
 		playlistTags: [],
-		userTags: [],
 		audioButtonCount: 0,
 		_computed: {
 			isArchived: false,
@@ -455,8 +454,8 @@ describe("VideoDetail", () => {
 		});
 
 		it("タグがある場合は概要タブにタグバッジを表示する", () => {
-			render(<VideoDetail video={createMockVideo({ tags: { userTags: ["独自タグ"] } })} />);
-			expect(screen.getByText("独自タグ")).toBeInTheDocument();
+			render(<VideoDetail video={createMockVideo({ tags: { playlistTags: ["配信タグ"] } })} />);
+			expect(screen.getAllByText("配信タグ").length).toBeGreaterThan(0);
 		});
 	});
 

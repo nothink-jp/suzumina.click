@@ -52,7 +52,6 @@ interface VideoFilterParams {
 	year?: string;
 	search?: string;
 	playlistTags?: string[];
-	userTags?: string[];
 	categoryNames?: string[];
 	videoType?: string;
 }
@@ -88,13 +87,6 @@ function filterVideos(videos: VideoPlainObject[], params: VideoFilterParams): Vi
 	if (params.playlistTags && params.playlistTags.length > 0) {
 		filtered = filtered.filter((video) =>
 			params.playlistTags?.some((tag) => video.tags?.playlistTags?.includes(tag) || false),
-		);
-	}
-
-	// ユーザータグフィルタ
-	if (params.userTags && params.userTags.length > 0) {
-		filtered = filtered.filter((video) =>
-			params.userTags?.some((tag) => video.tags?.userTags?.includes(tag) || false),
 		);
 	}
 
@@ -167,9 +159,8 @@ export async function getVideosList(params: {
 		search: params.search,
 		year: params.filters?.year === "all" ? undefined : (params.filters?.year as string),
 		playlistTags: toStringArray(params.filters?.playlistTags),
-		userTags: toStringArray(params.filters?.userTags),
 		// "all" は select フィルタの空値センチネルなので undefined 化。
-		// それ以外は playlistTags/userTags と同じく string/string[] を配列へ正規化する。
+		// それ以外は playlistTags と同じく string/string[] を配列へ正規化する。
 		categoryNames:
 			params.filters?.categoryNames === "all"
 				? undefined
@@ -188,7 +179,6 @@ export async function getVideosList(params: {
 		videoParams.year ||
 		videoParams.search ||
 		videoParams.playlistTags ||
-		videoParams.userTags ||
 		videoParams.categoryNames ||
 		videoParams.videoType
 	);
@@ -262,7 +252,6 @@ async function getVideosWithFiltering(
 		search?: string;
 		year?: string;
 		playlistTags?: string[];
-		userTags?: string[];
 		categoryNames?: string[];
 		videoType?: string;
 	},
@@ -281,7 +270,6 @@ async function getVideosWithFiltering(
 		params.year ||
 		params.search ||
 		params.playlistTags?.length ||
-		params.userTags?.length ||
 		params.categoryNames?.length ||
 		params.videoType ||
 		sort === "least_buttons"
@@ -374,7 +362,6 @@ export async function getVideoTitles(params?: {
 	search?: string;
 	year?: string;
 	playlistTags?: string[];
-	userTags?: string[];
 	categoryNames?: string[];
 	videoType?: string;
 }): Promise<VideoListResult> {
@@ -391,7 +378,6 @@ export async function getVideoTitles(params?: {
 			search: params?.search,
 			year: params?.year,
 			playlistTags: params?.playlistTags,
-			userTags: params?.userTags,
 			categoryNames: params?.categoryNames,
 			videoType: params?.videoType,
 		});

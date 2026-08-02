@@ -124,15 +124,25 @@ describe("formatDuration", () => {
 });
 
 describe("tags / audio buttons", () => {
-	it("getAllTags は全ソースを重複排除して結合する", () => {
+	it("getAllTags は playlistTags と contentTags を重複排除して結合する", () => {
 		const v = video({
 			tags: {
 				playlistTags: ["a", "b"],
-				userTags: ["b", "c"],
-				contentTags: ["c", "d"],
+				contentTags: ["b", "c"],
 			},
 		} as never);
-		expect(getAllTags(v).sort()).toEqual(["a", "b", "c", "d"]);
+		expect(getAllTags(v).sort()).toEqual(["a", "b", "c"]);
+	});
+
+	it("getAllTags は userTags を集約しない（SPR-276 で撤去・書き手が残っていない）", () => {
+		const v = video({
+			tags: {
+				playlistTags: ["a"],
+				userTags: ["残骸"],
+				contentTags: [],
+			},
+		} as never);
+		expect(getAllTags(v)).toEqual(["a"]);
 	});
 
 	it("タグが無ければ空配列", () => {

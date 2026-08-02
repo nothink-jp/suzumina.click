@@ -6,6 +6,7 @@ import {
 	getAudioButtonCreationErrorMessage,
 	getVideoAllTags,
 } from "@suzumina.click/shared-types";
+import { VideoTagDisplay } from "@suzumina.click/ui/components/custom/three-layer-tag-display";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card } from "@suzumina.click/ui/components/ui/card";
@@ -26,7 +27,6 @@ import { resolveCaptureVideoMode } from "@/components/capture/video-mode";
 import { ThumbnailImage } from "@/components/ui";
 import { getVideoBadgeInfo } from "@/components/video/video-badge";
 import { formatDescriptionText } from "@/lib/text-utils";
-import { VideoUserTagEditor } from "./video-user-tag-editor";
 
 interface VideoDetailProps {
 	video: VideoPlainObject;
@@ -435,12 +435,16 @@ export default function VideoDetail({
 								{/* タグタブ */}
 								<TabsContent value="tags" className="space-y-4">
 									<div>
-										<h3 className="text-lg font-semibold mb-4">3層タグシステム</h3>
+										<h3 className="text-lg font-semibold mb-4">タグ</h3>
 										<p className="text-sm text-muted-foreground mb-6">
-											動画には3種類のタグが設定されています。プレイリストタグとカテゴリは自動で付与され、
-											ユーザータグは登録ユーザーが編集できます。
+											動画のタグは配信内容から自動で付与されます。
 										</p>
-										<VideoUserTagEditor video={video} />
+										<VideoTagDisplay
+											playlistTags={video.tags?.playlistTags ?? []}
+											categoryId={video.categoryId}
+											categoryName={getYouTubeCategoryName(video.categoryId) || undefined}
+											showEmptyLayers={true}
+										/>
 									</div>
 								</TabsContent>
 

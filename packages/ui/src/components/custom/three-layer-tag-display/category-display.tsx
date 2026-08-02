@@ -17,9 +17,9 @@ interface CategoryDisplayProps {
 		title: string;
 		layerContainer: string;
 	};
-	onTagClick?: (tag: string, layer: "playlist" | "user" | "category") => void;
+	onTagClick?: (tag: string, layer: "playlist" | "category") => void;
 	/** タグの遷移先 href ビルダー。指定時は onTagClick より優先し <Link> を描画する */
-	tagHref?: (tag: string, layer: "playlist" | "user" | "category") => string;
+	tagHref?: (tag: string, layer: "playlist" | "category") => string;
 	searchQuery?: string;
 	highlightClassName?: string;
 }

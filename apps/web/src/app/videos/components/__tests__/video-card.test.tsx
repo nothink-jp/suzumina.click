@@ -31,7 +31,6 @@ function createMockVideo(overrides?: Partial<any>): VideoPlainObject {
 		liveStreamingDetails: null,
 		videoType: "normal",
 		playlistTags: ["プレイリストタグ1"],
-		userTags: ["ユーザータグ1"],
 		audioButtonCount: 0,
 		_computed: {
 			isArchived: false,
@@ -152,21 +151,18 @@ describe("VideoCard", () => {
 		const video = createMockVideo({
 			tags: {
 				playlistTags: ["プレイリストタグ1"],
-				userTags: ["ユーザータグ1"],
 				contentTags: [],
 			},
 		});
 		render(<VideoCard video={video} />);
 
 		expect(screen.getByText("プレイリストタグ1")).toBeInTheDocument();
-		expect(screen.getByText("ユーザータグ1")).toBeInTheDocument();
 	});
 
 	it("タグが検索ページへのリンクになっている", () => {
 		const video = createMockVideo({
 			tags: {
 				playlistTags: ["プレイリストタグ1"],
-				userTags: ["ユーザータグ1"],
 				contentTags: [],
 			},
 		});
