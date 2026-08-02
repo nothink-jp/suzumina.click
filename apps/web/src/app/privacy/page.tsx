@@ -290,7 +290,8 @@ export default function PrivacyPage() {
 								</p>
 								<p className="text-sm text-muted-foreground mt-2">
 									同意がない場合は、Cookieや識別子を保存せず、個々の訪問者を追跡しない匿名の統計情報のみが
-									送信されます（ページの表示回数・滞在時間などの集計）。
+									送信されます（ページの表示回数・滞在時間に加え、音声ボタンの再生・作成、
+									お気に入り登録といったサイト内の操作回数の集計を含みます）。
 								</p>
 							</div>
 							<div>
@@ -313,6 +314,10 @@ export default function PrivacyPage() {
 											<li>
 												• IPアドレスから推定されるおおよその地域（IPアドレス自体はGoogle Analytics
 												4に保存されません）
+											</li>
+											<li>
+												•
+												サイト内での操作の集計（音声ボタンの再生・作成、お気に入り登録、ログインなど）
 											</li>
 											<li>• 同意した場合のみ：Cookieに保存される識別子</li>
 										</ul>

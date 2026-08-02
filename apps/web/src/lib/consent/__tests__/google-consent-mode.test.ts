@@ -97,11 +97,26 @@ describe("resetAllConsent", () => {
 });
 
 describe("sendGoogleAnalyticsPageView / Event", () => {
-	it("analytics 同意が無ければ gtag を呼ばない", () => {
+	// SPR-299: 同意ゲートを撤廃した。送信可否は GA4 の consent mode（cookieless ping）に委ね、
+	// 同意は「識別子を保存するか」だけを意味する。ゲートしていた頃は同意率 3.3% のため
+	// カスタムイベントが本番0件・landingPage の 63% が (not set) になっていた。
+	it("analytics 同意が無くても送信する（可否は consent mode に委ねる）", () => {
+		process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID = "G-TEST";
 		localStorage.setItem("consent-state", JSON.stringify({ analytics: false }));
-		sendGoogleAnalyticsPageView("/x");
+		expect(sendGoogleAnalyticsPageView("/x")).toBe(true);
 		sendGoogleAnalyticsEvent("evt");
-		expect(gtag).not.toHaveBeenCalled();
+		expect(gtag).toHaveBeenCalledWith(
+			"config",
+			"G-TEST",
+			expect.objectContaining({ page_path: "/x" }),
+		);
+		expect(gtag).toHaveBeenCalledWith("event", "evt", {});
+	});
+
+	it("同意の有無に関わらず measurementId が無ければ page view は送らない", () => {
+		// 代入では "undefined" という文字列になり真値のままなので delete する
+		delete process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+		expect(sendGoogleAnalyticsPageView("/x")).toBe(false);
 	});
 
 	it("analytics 同意 + measurementId があれば送信する", () => {

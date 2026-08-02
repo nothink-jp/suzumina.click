@@ -2,7 +2,10 @@
  * Web Vitals Reporter for Google Analytics 4
  *
  * Measures Core Web Vitals and sends them to GA4 as custom events.
- * Respects user consent via Google Consent Mode.
+ *
+ * SPR-299: 送信自体は同意でゲートしない（他のイベントと同じ扱い）。Cookie/識別子を
+ * 保存するかどうかだけが GA4 の consent mode 側で切り替わる。送る内容は metric 名・値・
+ * 評価・navigationType だけで、訪問者を識別する要素を含まない。
  *
  * Metrics:
  * - LCP (Largest Contentful Paint): Should be ≤2.5s
@@ -14,7 +17,6 @@
 
 import type { CLSMetric, FCPMetric, INPMetric, LCPMetric, TTFBMetric } from "web-vitals";
 import { onCLS, onFCP, onINP, onLCP, onTTFB } from "web-vitals";
-import { getCurrentConsentState } from "../consent/google-consent-mode";
 
 type WebVitalMetric = LCPMetric | INPMetric | CLSMetric | FCPMetric | TTFBMetric;
 
@@ -31,22 +33,15 @@ interface WebVitalsEventParams {
 }
 
 /**
- * Check if analytics consent is granted
- */
-function hasAnalyticsConsent(): boolean {
-	const consentState = getCurrentConsentState();
-	return consentState?.analytics === true;
-}
-
-/**
  * Send Web Vitals metric to Google Analytics 4
+ *
+ * SPR-299: 同意ゲートを外し、他のイベントと同じく GA4 の consent mode に委ねる。
+ * ここだけゲートを残すと「操作の集計は同意なしで送るが、個人を識別しない性能値は送らない」
+ * という逆転した線引きになる（送る内容は metric 名・値・評価・navigationType だけで、
+ * 訪問者を識別する要素を含まない）。
  */
 function sendToGA4(metric: WebVitalMetric): void {
 	if (typeof window === "undefined" || !window.gtag) {
-		return;
-	}
-
-	if (!hasAnalyticsConsent()) {
 		return;
 	}
 

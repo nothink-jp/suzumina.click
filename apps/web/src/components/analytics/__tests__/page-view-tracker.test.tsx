@@ -11,9 +11,12 @@ function setRoute(pathname: string, query = "") {
 	vi.mocked(useSearchParams).mockReturnValue(new URLSearchParams(query) as never);
 }
 
-/** 同意状態を模す。granted=true のときだけ実送信が成功したことにする */
-function mockPageView(granted: boolean) {
-	return vi.spyOn(consent, "sendGoogleAnalyticsPageView").mockReturnValue(granted);
+/**
+ * 送信の成否を模す。SPR-299 で同意ゲートを撤廃したため、戻り値の意味は
+ * 「同意されたか」ではなく「gtag がロード済みで実際に送れたか」。
+ */
+function mockPageView(sent: boolean) {
+	return vi.spyOn(consent, "sendGoogleAnalyticsPageView").mockReturnValue(sent);
 }
 
 function dispatchConsentUpdate() {
@@ -31,7 +34,7 @@ afterEach(() => {
 });
 
 describe("PageViewTracker", () => {
-	it("同意済みならマウント時に現在の URL を送る", () => {
+	it("マウント時に現在の URL を送る", () => {
 		const spy = mockPageView(true);
 
 		render(<PageViewTracker />);
@@ -48,11 +51,11 @@ describe("PageViewTracker", () => {
 		expect(spy).toHaveBeenCalledExactlyOnceWith("/works?page=2&sort=new");
 	});
 
-	it("未同意のロードは送らず、同意反映後にその時開いているページを送る", () => {
+	it("gtag 未ロードで送れなかった場合、consentUpdate を契機に再送する", () => {
 		const spy = mockPageView(false);
 
 		render(<PageViewTracker />);
-		expect(spy).toHaveBeenCalledTimes(1); // 呼びはするが送信されない（同意ゲート内で no-op）
+		expect(spy).toHaveBeenCalledTimes(1); // 呼びはするが gtag 未ロードで送信されない
 
 		spy.mockReturnValue(true);
 		dispatchConsentUpdate();
@@ -61,7 +64,7 @@ describe("PageViewTracker", () => {
 		expect(spy).toHaveBeenLastCalledWith("/buttons");
 	});
 
-	it("同意反映後、同じページの consentUpdate 再発火では二重に送らない", () => {
+	it("再送後、同じページの consentUpdate 再発火では二重に送らない", () => {
 		const spy = mockPageView(false);
 		render(<PageViewTracker />);
 
@@ -69,10 +72,10 @@ describe("PageViewTracker", () => {
 		dispatchConsentUpdate();
 		dispatchConsentUpdate();
 
-		expect(spy).toHaveBeenCalledTimes(2); // 初回ロード分 + 同意反映分のみ
+		expect(spy).toHaveBeenCalledTimes(2); // 初回ロード分 + 再送分のみ
 	});
 
-	it("同意済みで送信済みのページでは consentUpdate に反応しない", () => {
+	it("送信済みのページでは consentUpdate に反応しない", () => {
 		const spy = mockPageView(true);
 		render(<PageViewTracker />);
 

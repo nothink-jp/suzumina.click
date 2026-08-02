@@ -139,19 +139,18 @@ export function resetAllConsent() {
 
 /**
  * Send a page view to Google Analytics
- * Only works if analytics consent is granted
  *
- * @returns 実際に送信したか。同意前のロードでは false を返すため、呼び出し側は
- * 同意反映後に再送する判断ができる（未送信を「送信済み」と誤認すると landing page が欠ける）
+ * SPR-299: 同意ゲートを外し、Cookie/識別子の可否は GA4 の consent mode に委ねる。
+ * 非同意時は `analytics_storage: denied` の cookieless ping として送られ、
+ * Cookie も識別子も保存されない（同意の意味を「識別子を保存するか」に純化した）。
+ * ゲートしていた頃は同意率 3.3% のため page_view がほぼ送られず、
+ * landingPage の 63% が `(not set)` という壊れた指標になっていた（SPR-281 実測）。
+ *
+ * @returns 実際に送信したか。gtag 未ロードや測定ID未設定では false を返すため、
+ * 呼び出し側は再送を判断できる（未送信を「送信済み」と誤認すると landing page が欠ける）
  */
 export function sendGoogleAnalyticsPageView(url?: string): boolean {
 	if (typeof window === "undefined" || !window.gtag) return false;
-
-	const consentState = getCurrentConsentState();
-	if (!consentState?.analytics) {
-		// Page view blocked - no consent
-		return false;
-	}
 
 	const measurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 	if (!measurementId) return false;
@@ -166,19 +165,26 @@ export function sendGoogleAnalyticsPageView(url?: string): boolean {
 
 /**
  * Utility to send custom events to Google Analytics
- * Only works if analytics consent is granted
+ *
+ * SPR-299: 同意ゲートを外した。理由は3つ。
+ *
+ * 1. **測れていなかった**。同意率 3.3%（1/30セッション）でカスタムイベント13種が本番0件。
+ *    SPR-137 の成功指標がこの計器でしか測れないのに、母数が事実上存在しなかった（SPR-281 実測）。
+ * 2. **線引きが恣意的だった**。GA4 タグは advanced consent mode で同意なしでもロードされ
+ *    `session_start` / `scroll` / `video_start` / `user_engagement` を送っている。
+ *    つまり「行動の集計は同意なしで送るが、自作イベントだけは送らない」という状態で、
+ *    プライバシー上の区別として意味を成していなかった（送信元が Google か自分かの違いでしかない）。
+ * 3. **同意の意味を純化できる**。可否は GA4 の consent mode に委ね、非同意時は
+ *    `analytics_storage: denied` の cookieless ping として Cookie も識別子も保存せずに送る。
+ *    同意は「識別子を保存するか」だけを意味し、イベント送信の可否とは分離される。
+ *
+ * privacy ページの記述もこの方針に合わせてある（同意がない場合も匿名の統計情報は送信される旨）。
  */
 export function sendGoogleAnalyticsEvent(
 	eventName: string,
 	parameters: Record<string, string | number | boolean> = {},
 ) {
 	if (typeof window === "undefined" || !window.gtag) return;
-
-	const consentState = getCurrentConsentState();
-	if (!consentState?.analytics) {
-		// Analytics event blocked - no consent
-		return;
-	}
 
 	window.gtag("event", eventName, parameters);
 }
