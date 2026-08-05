@@ -101,32 +101,35 @@ describe("sendGoogleAnalyticsPageView / Event", () => {
 	// 同意は「識別子を保存するか」だけを意味する。ゲートしていた頃は同意率 3.3% のため
 	// カスタムイベントが本番0件・landingPage の 63% が (not set) になっていた。
 	it("analytics 同意が無くても送信する（可否は consent mode に委ねる）", () => {
-		process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID = "G-TEST";
 		localStorage.setItem("consent-state", JSON.stringify({ analytics: false }));
-		expect(sendGoogleAnalyticsPageView("/x")).toBe(true);
+		expect(sendGoogleAnalyticsPageView("/x", "G-TEST")).toBe(true);
 		sendGoogleAnalyticsEvent("evt");
 		expect(gtag).toHaveBeenCalledWith(
-			"config",
-			"G-TEST",
-			expect.objectContaining({ page_path: "/x" }),
+			"event",
+			"page_view",
+			expect.objectContaining({ page_location: "http://localhost:3000/x", send_to: "G-TEST" }),
 		);
 		expect(gtag).toHaveBeenCalledWith("event", "evt", {});
 	});
 
-	it("同意の有無に関わらず measurementId が無ければ page view は送らない", () => {
-		// 代入では "undefined" という文字列になり真値のままなので delete する
-		delete process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
-		expect(sendGoogleAnalyticsPageView("/x")).toBe(false);
+	// SPR-307 の回帰テスト。以前は測定IDが無いと早期 return しており、その ID は
+	// ビルド時にしかバンドルへ入らない env 由来だったため、本番の client では常に
+	// 未設定＝page_view が全訪問者・常に欠測していた。ID が無くても送ることが要件。
+	it("measurementId が無くても page view を送る（send_to を省いて既定の送信先へ）", () => {
+		expect(sendGoogleAnalyticsPageView("/x")).toBe(true);
+		expect(gtag).toHaveBeenCalledWith(
+			"event",
+			"page_view",
+			expect.not.objectContaining({ send_to: expect.anything() }),
+		);
 	});
 
-	it("analytics 同意 + measurementId があれば送信する", () => {
-		process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID = "G-TEST";
-		localStorage.setItem("consent-state", JSON.stringify({ analytics: true }));
-		sendGoogleAnalyticsPageView("/page");
+	it("クエリつきの URL をそのまま page_location に載せる", () => {
+		sendGoogleAnalyticsPageView("/works?page=2", "G-TEST");
 		expect(gtag).toHaveBeenCalledWith(
-			"config",
-			"G-TEST",
-			expect.objectContaining({ page_path: "/page" }),
+			"event",
+			"page_view",
+			expect.objectContaining({ page_location: "http://localhost:3000/works?page=2" }),
 		);
 		sendGoogleAnalyticsEvent("my_event", { foo: 1 });
 		expect(gtag).toHaveBeenCalledWith("event", "my_event", { foo: 1 });

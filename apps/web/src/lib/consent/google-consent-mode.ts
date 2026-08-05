@@ -143,22 +143,33 @@ export function resetAllConsent() {
  * SPR-299: 同意ゲートを外し、Cookie/識別子の可否は GA4 の consent mode に委ねる。
  * 非同意時は `analytics_storage: denied` の cookieless ping として送られ、
  * Cookie も識別子も保存されない（同意の意味を「識別子を保存するか」に純化した）。
- * ゲートしていた頃は同意率 3.3% のため page_view がほぼ送られず、
- * landingPage の 63% が `(not set)` という壊れた指標になっていた（SPR-281 実測）。
  *
- * @returns 実際に送信したか。gtag 未ロードや測定ID未設定では false を返すため、
- * 呼び出し側は再送を判断できる（未送信を「送信済み」と誤認すると landing page が欠ける）
+ * SPR-307: 送信形式を 2 回目の `config` から `gtag("event", "page_view")` に変更した。
+ * 変更前は `process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID` を読んで未設定なら早期 return して
+ * いたが、この env はビルド時にしかバンドルへ埋め込まれない一方、本番では Cloud Run の
+ * 実行時 env としてしか渡していない。結果クライアントでは常に `undefined` で、
+ * **page_view が全訪問者・常に送られていなかった**（landingPage が (not set) 79%）。
+ * event 形式は測定IDを必須にしないため、ID が無くても既定の送信先へ送られる＝
+ * 同じ理由で黙って全滅する構造ではなくなる。SPA で推奨されている形でもある
+ * （同一測定IDへの 2 回目の `config` は設定更新として扱われ、page_view 送信は保証されない）。
+ *
+ * @param url 送信するパス（クエリ込み）。省略時は現在地
+ * @param measurementId 送信先の GA4 プロパティ。**Server Component から prop で渡す**
+ * （[ga-measurement-id.ts](../analytics/ga-measurement-id.ts) 参照）。省略すると
+ * 設定済みの全ターゲットに送られる。GTM 併用時に送信先を絞るためだけに使う
+ * @returns 実際に送信したか。gtag 未ロードでは false を返すため、呼び出し側は再送を
+ * 判断できる（未送信を「送信済み」と誤認すると landing page が欠ける）
  */
-export function sendGoogleAnalyticsPageView(url?: string): boolean {
+export function sendGoogleAnalyticsPageView(url?: string, measurementId?: string): boolean {
 	if (typeof window === "undefined" || !window.gtag) return false;
 
-	const measurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
-	if (!measurementId) return false;
+	const path = url || `${window.location.pathname}${window.location.search}`;
 
-	window.gtag("config", measurementId, {
-		page_path: url || window.location.pathname,
+	window.gtag("event", "page_view", {
+		page_location: new URL(path, window.location.origin).href,
 		page_title: document.title,
-		page_location: window.location.href,
+		// 未指定なら設定済みの全ターゲットに送る（ID が無いだけで欠測させない）
+		...(measurementId ? { send_to: measurementId } : {}),
 	});
 	return true;
 }

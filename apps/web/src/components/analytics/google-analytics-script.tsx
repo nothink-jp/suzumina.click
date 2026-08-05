@@ -1,11 +1,12 @@
 import Script from "next/script";
+import { getGaMeasurementId } from "@/lib/analytics/ga-measurement-id";
 
 /**
  * Google Analytics 4 Script Component
  * Integrates with Google Consent Mode for privacy compliance
  */
 export function GoogleAnalyticsScript() {
-	const measurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+	const measurementId = getGaMeasurementId();
 
 	// Don't render if measurement ID is not configured
 	if (!measurementId) {

@@ -15,6 +15,7 @@ import SiteHeader from "@/components/layout/site-header";
 import { DeferredGlobalEffects } from "@/components/system/deferred-global-effects";
 import { SessionProvider } from "@/components/user/session-provider";
 import { AgeVerificationProvider } from "@/contexts/age-verification-context";
+import { getGaMeasurementId } from "@/lib/analytics/ga-measurement-id";
 
 /**
  * ブランドフォント M PLUS Rounded 1c（丸ゴシック）。
@@ -133,7 +134,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 						<SiteFooter />
 						<Toaster />
 						{/* 非クリティカルな全ページ client 副作用/UI を hydration 後に遅延ロード (SPR-81 WS-A) */}
-						<DeferredGlobalEffects />
+						<DeferredGlobalEffects gaMeasurementId={getGaMeasurementId()} />
 					</SessionProvider>
 					<AgeVerificationOverlayDeferred />
 				</AgeVerificationProvider>

@@ -15,8 +15,12 @@ import { sendGoogleAnalyticsPageView } from "@/lib/consent/google-consent-mode";
  * （同意バナーの操作は gtag が動いている証拠になるため、再試行の契機として有効）。
  * 送信できたときだけ印を付ける設計は、未送信を「送信済み」と誤認して
  * landingPage を欠落させないために引き続き必要。
+ *
+ * SPR-307: `measurementId` は Server Component から prop で受け取る。ここで
+ * `process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID` を読んではいけない（クライアントでは
+ * 常に undefined。理由は [ga-measurement-id.ts](@/lib/analytics/ga-measurement-id)）。
  */
-export function PageViewTracker() {
+export function PageViewTracker({ measurementId }: { measurementId?: string }) {
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
 	const query = searchParams?.toString();
@@ -26,12 +30,15 @@ export function PageViewTracker() {
 	const sentUrl = useRef<string | null>(null);
 
 	// 送信できたときだけ印を付ける（gtag 未ロード時の no-op を「送信済み」にすると再送の機会を失う）
-	const sendOnce = useCallback((target: string): boolean => {
-		if (sentUrl.current === target) return true;
-		const sent = sendGoogleAnalyticsPageView(target);
-		if (sent) sentUrl.current = target;
-		return sent;
-	}, []);
+	const sendOnce = useCallback(
+		(target: string): boolean => {
+			if (sentUrl.current === target) return true;
+			const sent = sendGoogleAnalyticsPageView(target, measurementId);
+			if (sent) sentUrl.current = target;
+			return sent;
+		},
+		[measurementId],
+	);
 
 	useEffect(() => {
 		if (!url) return;
