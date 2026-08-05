@@ -36,7 +36,11 @@ const CookieConsentBanner = lazy(() =>
 	})),
 );
 
-export function DeferredGlobalEffects() {
+/**
+ * @param gaMeasurementId GA4 測定ID。client では env から読めないため Server Component
+ * から受け取って PageViewTracker へ渡す（SPR-307）
+ */
+export function DeferredGlobalEffects({ gaMeasurementId }: { gaMeasurementId?: string }) {
 	const [mounted, setMounted] = useState(false);
 
 	useEffect(() => {
@@ -52,7 +56,7 @@ export function DeferredGlobalEffects() {
 			<InternalTrafficMarker />
 			<Suspense fallback={null}>
 				<PerformanceMonitor />
-				<PageViewTracker />
+				<PageViewTracker measurementId={gaMeasurementId} />
 				<LoginSuccessTracker />
 				<CookieConsentBanner />
 			</Suspense>

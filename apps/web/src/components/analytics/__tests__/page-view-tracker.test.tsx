@@ -39,7 +39,7 @@ describe("PageViewTracker", () => {
 
 		render(<PageViewTracker />);
 
-		expect(spy).toHaveBeenCalledExactlyOnceWith("/buttons");
+		expect(spy).toHaveBeenCalledExactlyOnceWith("/buttons", undefined);
 	});
 
 	it("クエリつきの URL は pathname?query の形で送る", () => {
@@ -48,7 +48,17 @@ describe("PageViewTracker", () => {
 
 		render(<PageViewTracker />);
 
-		expect(spy).toHaveBeenCalledExactlyOnceWith("/works?page=2&sort=new");
+		expect(spy).toHaveBeenCalledExactlyOnceWith("/works?page=2&sort=new", undefined);
+	});
+
+	// SPR-307: client では env から測定IDを読めないため prop 経由で受け取る。
+	// ここが切れると送信先を絞れなくなる（GTM 併用時に効く）。
+	it("prop で渡された measurementId を送信先として引き渡す", () => {
+		const spy = mockPageView(true);
+
+		render(<PageViewTracker measurementId="G-TEST" />);
+
+		expect(spy).toHaveBeenCalledExactlyOnceWith("/buttons", "G-TEST");
 	});
 
 	it("gtag 未ロードで送れなかった場合、consentUpdate を契機に再送する", () => {
@@ -61,7 +71,7 @@ describe("PageViewTracker", () => {
 		dispatchConsentUpdate();
 
 		expect(spy).toHaveBeenCalledTimes(2);
-		expect(spy).toHaveBeenLastCalledWith("/buttons");
+		expect(spy).toHaveBeenLastCalledWith("/buttons", undefined);
 	});
 
 	it("再送後、同じページの consentUpdate 再発火では二重に送らない", () => {
@@ -91,6 +101,6 @@ describe("PageViewTracker", () => {
 		setRoute("/works");
 		rerender(<PageViewTracker />);
 
-		expect(spy).toHaveBeenNthCalledWith(2, "/works");
+		expect(spy).toHaveBeenNthCalledWith(2, "/works", undefined);
 	});
 });

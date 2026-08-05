@@ -49,6 +49,11 @@ const IGNORED_PARAMS = new Map([
 	],
 	["consent_advertising", "同意率の観測は consent_analytics だけで足りるため意図的に未登録"],
 	["consent_personalization", "同上（consent_analytics で足りる）"],
+	// SPR-307: page_view を gtag("event") 形式に変えたことで現れた。いずれも予約語で、
+	// カスタムディメンションとして登録すると組み込みディメンションと二重になる。
+	["page_location", "GA4 組み込みディメンション（ページの完全URL）にマップされるため登録不可"],
+	["page_title", "GA4 組み込みディメンション（ページタイトル）にマップされるため登録不可"],
+	["send_to", "送信先を選ぶ gtag の指示で、イベントパラメータとして GA4 に届かない"],
 ]);
 
 /**
