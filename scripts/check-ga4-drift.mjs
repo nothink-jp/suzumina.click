@@ -4,7 +4,7 @@
 // live GA4 と宣言の drift を検出する（SPR-279 / SPR-285）。check-firestore-index-drift.mjs と同型。
 // 宣言の正本は 2 ファイル（どちらも apps/web/src/lib/analytics/ 配下・Admin API の payload と同一形）:
 //   ga4-custom-dimensions.json  カスタムディメンション
-//   ga4-property-settings.json  プロパティ設定（Googleシグナル / データ保持 / BigQuery リンク）
+//   ga4-property-settings.json  プロパティ設定（Googleシグナル / データ保持 / BigQuery リンク / 拡張計測）
 //
 // bigQueryLinks は宣言から `project` を意図的に外している（プロジェクト番号は CI 側で
 // secrets.GCP_PROJECT_NUMBER として扱っているため、リポジトリに置かない）。
@@ -62,6 +62,11 @@ const SETTINGS_API_VERSION = {
 	googleSignalsSettings: "v1alpha",
 	dataRetentionSettings: "v1beta",
 	bigQueryLinks: "v1alpha",
+	enhancedMeasurementSettings: "v1alpha",
+};
+// プロパティ直下に無いリソースのパス。拡張計測はデータストリーム配下にある
+const SETTINGS_PATH = {
+	enhancedMeasurementSettings: `dataStreams/${process.env.GA4_STREAM_ID ?? "11473068450"}/enhancedMeasurementSettings`,
 };
 // リスト応答のリソースと、その配列が入るレスポンスキー
 // （URL は bigQueryLinks だがレスポンスキーは bigqueryLinks で q の大小が違う）
@@ -217,8 +222,11 @@ function diffList(resource, declaredList, liveList) {
 }
 
 /**
- * プロパティ設定（Googleシグナル / データ保持 / BigQuery リンク）を宣言と突き合わせる。
+ * プロパティ設定（Googleシグナル / データ保持 / BigQuery リンク / 拡張計測）を宣言と突き合わせる。
  * 宣言に書いたフィールドだけ比較する（live の name / createTime 等は対象外）。--apply では直さない。
+ *
+ * `pageChangesEnabled: false` は SPR-307 で意図的に落としたもの。ON に戻ると App Router の
+ * client 遷移で拡張計測と PageViewTracker の両方が page_view を送り、SPA 遷移だけ二重計上される。
  */
 async function checkSettings(token) {
 	const results = [];
@@ -226,7 +234,7 @@ async function checkSettings(token) {
 		const version = SETTINGS_API_VERSION[resource];
 		let live;
 		try {
-			live = await callApi(`${version}/${PROPERTY}/${resource}`, token);
+			live = await callApi(`${version}/${PROPERTY}/${SETTINGS_PATH[resource] ?? resource}`, token);
 		} catch (e) {
 			return abort(`${resource} を取得できませんでした: ${e.message}`);
 		}

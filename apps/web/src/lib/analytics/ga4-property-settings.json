@@ -7,6 +7,10 @@
 		"userDataRetention": "FOURTEEN_MONTHS",
 		"resetUserDataOnNewActivity": true
 	},
+	"enhancedMeasurementSettings": {
+		"streamEnabled": true,
+		"pageChangesEnabled": false
+	},
 	"bigQueryLinks": [
 		{
 			"datasetLocation": "asia-northeast1",

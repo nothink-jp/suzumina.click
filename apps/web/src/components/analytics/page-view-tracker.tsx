@@ -9,6 +9,11 @@ import { sendGoogleAnalyticsPageView } from "@/lib/consent/google-consent-mode";
  *
  * GA 本体は send_page_view: false のため page view の送信元はここだけ。
  *
+ * SPR-307: 「ここだけ」を成立させるために、GA4 拡張計測の「履歴の変更」も無効にしてある
+ * （正本は ga4-property-settings.json の `pageChangesEnabled: false`）。
+ * send_page_view が抑止するのは config 時の初回 page_view だけで、拡張計測は別経路のため、
+ * ON のままだと App Router の client 遷移で page_view が二重に飛ぶ。
+ *
  * SPR-299 で同意ゲートを外したので、送信可否は同意状態に依存しなくなった
  * （非同意時も cookieless ping として送られる）。残る失敗要因は gtag の未ロードだけで、
  * consentUpdate の再送はその取りこぼしに対する保険として残している
