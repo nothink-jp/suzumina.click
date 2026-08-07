@@ -81,6 +81,7 @@ const mockWhere = vi.fn();
 const mockOrderBy = vi.fn();
 const mockLimit = vi.fn();
 const mockGet = vi.fn();
+const mockGetAll = vi.fn();
 
 const mockCollection = vi.fn((_collectionName) => ({
 	doc: mockDoc,
@@ -109,12 +110,61 @@ mockLimit.mockReturnValue(mockQuery);
 vi.mock("@/lib/firestore", () => ({
 	getFirestore: () => ({
 		collection: mockCollection,
+		getAll: mockGetAll,
 	}),
 }));
 
 // テスト対象のインポート（モック設定後）
 
 import { getCircleInfo, getCircleWorksList } from "../actions";
+
+/**
+ * サークル作品一覧の Firestore モック。
+ *
+ * 実装は `circles/{id}.workIds` を所属の正本として引き、その ID を `getAll` で取得する
+ * （works の全件スキャンはしない）。モックも同じ経路だけを満たすようにし、
+ * 全件スキャンへ戻ったら `works` コレクションに `get` が無くて落ちるようにしてある。
+ *
+ * `workIds` と `works` を別々に渡せるのは、非正規化配列に実在しない ID が残る状態
+ * （作品削除と整合性cron の間のラグ）を表現するため。
+ */
+function setupCircleWorksMock({
+	circle,
+	workIds,
+	works,
+}: {
+	circle: Record<string, unknown>;
+	workIds: string[];
+	works: { id: string }[];
+}) {
+	const worksById = new Map(works.map((work) => [work.id, work]));
+
+	mockCollection.mockImplementation((collectionName) => {
+		if (collectionName === "circles") {
+			return {
+				doc: vi.fn().mockReturnValue({
+					get: vi.fn().mockResolvedValue({
+						exists: true,
+						data: () => ({ ...circle, workIds }),
+					}),
+				}),
+			};
+		}
+		if (collectionName === "works") {
+			return { doc: (id: string) => ({ id }) };
+		}
+		return {};
+	});
+
+	mockGetAll.mockImplementation((...refs: { id: string }[]) =>
+		Promise.resolve(
+			refs.map((ref) => {
+				const work = worksById.get(ref.id);
+				return { exists: work !== undefined, id: ref.id, data: () => work };
+			}),
+		),
+	);
+}
 
 describe("Circle page server actions", () => {
 	beforeEach(() => {
@@ -311,29 +361,10 @@ describe("Circle page server actions", () => {
 				},
 			];
 
-			mockCollection.mockImplementation((collectionName) => {
-				if (collectionName === "circles") {
-					return {
-						doc: vi.fn().mockReturnValue({
-							get: vi.fn().mockResolvedValue({
-								exists: true,
-								data: () => mockCircleData,
-							}),
-						}),
-					};
-				}
-				if (collectionName === "works") {
-					return {
-						get: vi.fn().mockResolvedValue({
-							empty: false,
-							docs: mockWorks.map((work) => ({
-								id: work.id,
-								data: () => work,
-							})),
-						}),
-					};
-				}
-				return {};
+			setupCircleWorksMock({
+				circle: mockCircleData,
+				workIds: mockWorks.map((work) => work.id),
+				works: mockWorks,
 			});
 
 			// "魔法"で検索
@@ -422,29 +453,10 @@ describe("Circle page server actions", () => {
 				},
 			];
 
-			mockCollection.mockImplementation((collectionName) => {
-				if (collectionName === "circles") {
-					return {
-						doc: vi.fn().mockReturnValue({
-							get: vi.fn().mockResolvedValue({
-								exists: true,
-								data: () => mockCircleData,
-							}),
-						}),
-					};
-				}
-				if (collectionName === "works") {
-					return {
-						get: vi.fn().mockResolvedValue({
-							empty: false,
-							docs: mockWorks.map((work) => ({
-								id: work.id,
-								data: () => work,
-							})),
-						}),
-					};
-				}
-				return {};
+			setupCircleWorksMock({
+				circle: mockCircleData,
+				workIds: mockWorks.map((work) => work.id),
+				works: mockWorks,
 			});
 
 			// 声優名で検索
@@ -499,29 +511,10 @@ describe("Circle page server actions", () => {
 				lastFetchedAt: `2025-01-${15 - i}T00:00:00.000Z`,
 			}));
 
-			mockCollection.mockImplementation((collectionName) => {
-				if (collectionName === "circles") {
-					return {
-						doc: vi.fn().mockReturnValue({
-							get: vi.fn().mockResolvedValue({
-								exists: true,
-								data: () => mockCircleData,
-							}),
-						}),
-					};
-				}
-				if (collectionName === "works") {
-					return {
-						get: vi.fn().mockResolvedValue({
-							empty: false,
-							docs: mockWorks.map((work) => ({
-								id: work.id,
-								data: () => work,
-							})),
-						}),
-					};
-				}
-				return {};
+			setupCircleWorksMock({
+				circle: mockCircleData,
+				workIds: mockWorks.map((work) => work.id),
+				works: mockWorks,
 			});
 
 			// "冒険"で検索、ページ2を取得（limit=2）
@@ -580,29 +573,10 @@ describe("Circle page server actions", () => {
 				},
 			];
 
-			mockCollection.mockImplementation((collectionName) => {
-				if (collectionName === "circles") {
-					return {
-						doc: vi.fn().mockReturnValue({
-							get: vi.fn().mockResolvedValue({
-								exists: true,
-								data: () => mockCircleData,
-							}),
-						}),
-					};
-				}
-				if (collectionName === "works") {
-					return {
-						get: vi.fn().mockResolvedValue({
-							empty: false,
-							docs: mockWorks.map((work) => ({
-								id: work.id,
-								data: () => work,
-							})),
-						}),
-					};
-				}
-				return {};
+			setupCircleWorksMock({
+				circle: mockCircleData,
+				workIds: mockWorks.map((work) => work.id),
+				works: mockWorks,
 			});
 
 			const result = await getCircleWorksList({
@@ -657,29 +631,10 @@ describe("Circle page server actions", () => {
 				},
 			];
 
-			mockCollection.mockImplementation((collectionName) => {
-				if (collectionName === "circles") {
-					return {
-						doc: vi.fn().mockReturnValue({
-							get: vi.fn().mockResolvedValue({
-								exists: true,
-								data: () => mockCircleData,
-							}),
-						}),
-					};
-				}
-				if (collectionName === "works") {
-					return {
-						get: vi.fn().mockResolvedValue({
-							empty: false,
-							docs: mockWorks.map((work) => ({
-								id: work.id,
-								data: () => work,
-							})),
-						}),
-					};
-				}
-				return {};
+			setupCircleWorksMock({
+				circle: mockCircleData,
+				workIds: mockWorks.map((work) => work.id),
+				works: mockWorks,
 			});
 
 			const result = await getCircleWorksList({
@@ -730,6 +685,125 @@ describe("Circle page server actions", () => {
 			});
 
 			expect(result).toEqual({ works: [], totalCount: 0 });
+		});
+
+		describe("所属判定の正本（workIds）", () => {
+			const buildWork = (id: string, overrides: Record<string, unknown> = {}) => ({
+				id,
+				productId: id,
+				title: `作品${id}`,
+				circle: "テストサークル",
+				circleId: "RG12345",
+				price: { current: 1100, currency: "JPY" },
+				category: "SOU",
+				workType: "SOU",
+				thumbnailUrl: "https://example.com/thumb.jpg",
+				workUrl: "https://example.com/work.html",
+				registDate: "2025-01-15",
+				releaseDateISO: "2025-01-15",
+				releaseDateDisplay: "2025年01月15日",
+				description: "",
+				genres: [],
+				customGenres: [],
+				creators: {
+					voiceActors: [],
+					scenario: [],
+					illustration: [],
+					music: [],
+					others: [],
+				},
+				salesStatus: {},
+				sampleImages: [],
+				ageRating: "general",
+				updateDate: "2025-01-15",
+				createdAt: "2025-01-15T00:00:00.000Z",
+				updatedAt: "2025-01-15T00:00:00.000Z",
+				lastFetchedAt: "2025-01-15T00:00:00.000Z",
+				...overrides,
+			});
+
+			it("workIds に無い作品は circleId が一致していても含めない", async () => {
+				// 旧実装は works 全件から `circleId 一致 || サークル名一致` で再導出していたため、
+				// workIds に未登録の作品も拾えていた。所属の正本を workIds に一本化した回帰テスト。
+				const listed = buildWork("RJ111111");
+				const unlisted = buildWork("RJ999999");
+
+				setupCircleWorksMock({
+					circle: { circleId: "RG12345", name: "テストサークル" },
+					workIds: [listed.id],
+					works: [listed, unlisted],
+				});
+
+				const result = await getCircleWorksList({ circleId: "RG12345" });
+
+				expect(result.totalCount).toBe(1);
+				expect(result.works.map((work) => work.productId)).toEqual(["RJ111111"]);
+			});
+
+			it("同名の別サークルの作品は workIds に載っていれば含める", async () => {
+				// DLsite の maker_id 振り直しで同名サークルが 2 件並ぶ実データがある
+				// （RG56747 / RG01076099「桃色アルカディア」）。旧実装のサークル名フォールバックを
+				// 外しても、整合性cron が workIds に載せている限り表示は変わらないことを固定する。
+				const renumbered = buildWork("RJ01443068", { circleId: "RG01076099" });
+
+				setupCircleWorksMock({
+					circle: { circleId: "RG56747", name: "桃色アルカディア" },
+					workIds: [renumbered.id],
+					works: [renumbered],
+				});
+
+				const result = await getCircleWorksList({ circleId: "RG56747" });
+
+				expect(result.totalCount).toBe(1);
+				expect(result.works[0]!.productId).toBe("RJ01443068");
+			});
+
+			it("workIds に実在しない作品IDが混ざっていても残りを返す", async () => {
+				// 作品削除と整合性cron の間には必ずラグがあり、欠けている ID は異常ではない。
+				const existing = buildWork("RJ111111");
+
+				setupCircleWorksMock({
+					circle: { circleId: "RG12345", name: "テストサークル" },
+					workIds: ["RJ000000", existing.id, "RJ777777"],
+					works: [existing],
+				});
+
+				const result = await getCircleWorksList({ circleId: "RG12345" });
+
+				expect(result.totalCount).toBe(1);
+				expect(result.works[0]!.productId).toBe("RJ111111");
+			});
+
+			it("workIds が重複していても totalCount を水増ししない", async () => {
+				// 重複は checkDataIntegrity が事後修復する対象＝週次 cron までは残りうる。
+				// 全件スキャンだった旧実装はクエリ結果が doc 単位で一意になるため免疫があった。
+				const duplicated = buildWork("RJ111111");
+				const other = buildWork("RJ222222");
+
+				setupCircleWorksMock({
+					circle: { circleId: "RG12345", name: "テストサークル" },
+					workIds: [duplicated.id, other.id, duplicated.id],
+					works: [duplicated, other],
+				});
+
+				const result = await getCircleWorksList({ circleId: "RG12345" });
+
+				expect(result.totalCount).toBe(2);
+				expect(result.works.map((work) => work.productId)).toEqual(["RJ222222", "RJ111111"]);
+			});
+
+			it("workIds が空なら works を一切読まない", async () => {
+				setupCircleWorksMock({
+					circle: { circleId: "RG12345", name: "テストサークル" },
+					workIds: [],
+					works: [],
+				});
+
+				const result = await getCircleWorksList({ circleId: "RG12345" });
+
+				expect(result).toEqual({ works: [], totalCount: 0, filteredCount: undefined });
+				expect(mockGetAll).not.toHaveBeenCalled();
+			});
 		});
 	});
 
