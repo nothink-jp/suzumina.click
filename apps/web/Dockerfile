@@ -1,9 +1,11 @@
 # suzumina.click Web Application Dockerfile for Cloud Run
 # Optimized for Next.js with advanced caching and monorepo structure
 
-FROM node:24.18.0-alpine AS base
+FROM node:24.19.0-alpine AS base
 # ベースイメージ同梱の OS パッケージ(openssl libssl3/libcrypto3 等)に既知 CVE が出るため
 # Alpine の security backport を取り込んでから必要パッケージを追加する
+# base image は patch まで pin しているため中身が凍結される。
+# bump 直後は no-op でも、次の bump までの間に出る Alpine 側の修正を拾うために必要。
 RUN apk upgrade --no-cache && apk add --no-cache libc6-compat tini
 
 # pnpm v11 では非対話環境での node_modules purge が abort されるため
