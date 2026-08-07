@@ -4,12 +4,12 @@ import type {
 	CreatorDocument,
 	CreatorPageInfo,
 	CreatorWorkRelation,
-	WorkDocument,
 	WorkPlainObject,
 } from "@suzumina.click/shared-types";
 import { isValidCreatorId } from "@suzumina.click/shared-types";
 import { compareWorks, searchWorks } from "@/lib/circle-creator-works";
 import { getFirestore } from "@/lib/firestore";
+import { fetchWorksByIds } from "../../works/utils/fetch-works-by-ids";
 import { convertWorksToPlainObjects } from "../../works/utils/work-converters";
 
 /**
@@ -88,35 +88,6 @@ async function fetchWorkIds(
 }
 
 /**
- * 作品詳細を取得
- */
-async function fetchWorkDocuments(
-	firestore: FirebaseFirestore.Firestore,
-	workIds: string[],
-): Promise<WorkDocument[]> {
-	const allWorks: WorkDocument[] = [];
-
-	// Firestoreの whereIn 制限により、一度に10件まで
-	for (let i = 0; i < workIds.length; i += 10) {
-		const batch = workIds.slice(i, i + 10);
-		const workRefs = batch.map((id) => firestore.collection("works").doc(id));
-		const workDocs = await firestore.getAll(...workRefs);
-
-		for (const doc of workDocs) {
-			if (doc.exists) {
-				const data = doc.data();
-				allWorks.push({
-					...data,
-					id: doc.id,
-				} as WorkDocument);
-			}
-		}
-	}
-
-	return allWorks;
-}
-
-/**
  * クリエイター作品リストを取得（ConfigurableList用）
  * @param params パラメータ
  * @returns 作品一覧と総件数
@@ -148,7 +119,7 @@ export async function getCreatorWorksList(params: {
 		}
 
 		// 作品詳細を取得
-		const allWorks = await fetchWorkDocuments(firestore, workIds);
+		const allWorks = await fetchWorksByIds(firestore, workIds);
 
 		// WorkPlainObjectに変換
 		const convertedWorks = convertWorksToPlainObjects(allWorks);

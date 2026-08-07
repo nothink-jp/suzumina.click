@@ -3,12 +3,12 @@
 import type {
 	CircleDocument,
 	CirclePlainObject,
-	WorkDocument,
 	WorkPlainObject,
 } from "@suzumina.click/shared-types";
 import { convertToCirclePlainObject, isValidCircleId } from "@suzumina.click/shared-types";
 import { compareWorks, searchWorks } from "@/lib/circle-creator-works";
 import { getFirestore } from "@/lib/firestore";
+import { fetchWorksByIds } from "../../works/utils/fetch-works-by-ids";
 import { convertWorksToPlainObjects } from "../../works/utils/work-converters";
 
 /**
@@ -60,33 +60,27 @@ export async function getCircleWorksList(params: {
 	try {
 		const firestore = getFirestore();
 
-		// まずサークル情報を取得してサークル名を確認
 		const circleDoc = await firestore.collection("circles").doc(circleId).get();
 		if (!circleDoc.exists) {
 			return { works: [], totalCount: 0 };
 		}
 
 		const circleData = circleDoc.data() as CircleDocument;
-		const circleName = circleData.name;
 
-		// 全作品を取得してクライアント側でフィルタリング
-		const allWorksSnapshot = await firestore.collection("works").get();
-
-		const allMatchingWorks = allWorksSnapshot.docs
-			.map((doc) => {
-				const data = doc.data();
-				return {
-					...data,
-					id: doc.id,
-				} as WorkDocument;
-			})
-			.filter((work) => {
-				// circleId が一致するか、circleId がない場合はサークル名で一致判定
-				return work.circleId === circleId || work.circle === circleName;
-			});
+		// サークル所属作品の正本は circles/{id}.workIds。
+		// 書き手は DLsite 取り込み（2h毎に arrayUnion・circle-firestore.ts）で、
+		// checkDataIntegrity（週次）が重複除去と欠落補填を事後修復する。
+		// 読み取り側はこの配列を引き当てるだけにし、所属条件を read 時に再計算しない。
+		//
+		// 旧実装は works を全件取得して `circleId 一致 || サークル名一致` で再導出していたため、
+		// 1 リクエストあたり works 全件（実測 2,156件）を読んでいた。
+		// ヘッダーの「作品数」は元から workIds.length 由来（circle-conversions.ts）で、
+		// 同一ページ内で所属の正本が二重化していた状態を解消する。
+		const workIds = circleData.workIds ?? [];
+		const matchingWorks = await fetchWorksByIds(firestore, workIds);
 
 		// WorkPlainObjectに変換（work-converters の正本を共用）
-		const convertedWorks = convertWorksToPlainObjects(allMatchingWorks);
+		const convertedWorks = convertWorksToPlainObjects(matchingWorks);
 
 		// 検索フィルタリング（circle/creator 共通）
 		const { filtered: filteredWorks, count: filteredCount } = searchWorks(convertedWorks, search);
