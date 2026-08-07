@@ -54,6 +54,23 @@ describe("fetchWorksByIds", () => {
 		expect(works.map((work) => work.id)).toEqual(["RJ111111"]);
 	});
 
+	it("重複 ID は 1 件に畳む（件数の水増しと二重描画を防ぐ）", async () => {
+		// circles/{id}.workIds の重複は checkDataIntegrity が事後修復する対象で、
+		// 週次 cron が走るまでは重複したままになりうる。
+		const { firestore, batchSizes } = createFirestoreMock(["RJ111111", "RJ222222"]);
+
+		const works = await fetchWorksByIds(firestore, [
+			"RJ111111",
+			"RJ222222",
+			"RJ111111",
+			"RJ111111",
+		]);
+
+		expect(works.map((work) => work.id)).toEqual(["RJ111111", "RJ222222"]);
+		// 重複分の ref を Firestore に投げていない（read も無駄に増やさない）
+		expect(batchSizes).toEqual([2]);
+	});
+
 	it("空配列なら Firestore に触らない", async () => {
 		const { firestore, getAll } = createFirestoreMock([]);
 

@@ -774,6 +774,24 @@ describe("Circle page server actions", () => {
 				expect(result.works[0]!.productId).toBe("RJ111111");
 			});
 
+			it("workIds が重複していても totalCount を水増ししない", async () => {
+				// 重複は checkDataIntegrity が事後修復する対象＝週次 cron までは残りうる。
+				// 全件スキャンだった旧実装はクエリ結果が doc 単位で一意になるため免疫があった。
+				const duplicated = buildWork("RJ111111");
+				const other = buildWork("RJ222222");
+
+				setupCircleWorksMock({
+					circle: { circleId: "RG12345", name: "テストサークル" },
+					workIds: [duplicated.id, other.id, duplicated.id],
+					works: [duplicated, other],
+				});
+
+				const result = await getCircleWorksList({ circleId: "RG12345" });
+
+				expect(result.totalCount).toBe(2);
+				expect(result.works.map((work) => work.productId)).toEqual(["RJ222222", "RJ111111"]);
+			});
+
 			it("workIds が空なら works を一切読まない", async () => {
 				setupCircleWorksMock({
 					circle: { circleId: "RG12345", name: "テストサークル" },

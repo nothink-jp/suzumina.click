@@ -21,21 +21,27 @@ const BATCH_SIZE = 300;
  * 存在しない ID は黙って除外する。ID の出所は非正規化された配列/サブコレクションで、
  * 作品削除との間に必ずラグがあるため「欠けている」は異常ではない（整合性cron の担当）。
  *
+ * 重複 ID は 1 件に畳む。`circles/{id}.workIds` の重複は checkDataIntegrity が
+ * 事後修復する対象＝週次 cron が走るまでは重複したままになりうる不変条件で、
+ * 読み取り側がそれに依存すると cron 未実行の窓で件数の水増しと同一作品の二重描画になる。
+ * 全件スキャンだった旧実装はクエリ結果が doc 単位で一意になるため構造的に免疫があった。
+ *
  * @param firestore Firestore インスタンス
  * @param workIds 取得する作品IDの配列
- * @returns 実在した作品のみの WorkDocument 配列（入力順を保つ）
+ * @returns 実在した作品のみの WorkDocument 配列（ID ごとに1件・初出順を保つ）
  */
 export async function fetchWorksByIds(
 	firestore: FirebaseFirestore.Firestore,
 	workIds: string[],
 ): Promise<WorkDocument[]> {
-	if (workIds.length === 0) {
+	const uniqueWorkIds = Array.from(new Set(workIds));
+	if (uniqueWorkIds.length === 0) {
 		return [];
 	}
 
 	const batches: string[][] = [];
-	for (let i = 0; i < workIds.length; i += BATCH_SIZE) {
-		batches.push(workIds.slice(i, i + BATCH_SIZE));
+	for (let i = 0; i < uniqueWorkIds.length; i += BATCH_SIZE) {
+		batches.push(uniqueWorkIds.slice(i, i + BATCH_SIZE));
 	}
 
 	const snapshots = await Promise.all(
