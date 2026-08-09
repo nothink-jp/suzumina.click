@@ -21,12 +21,12 @@
 		"chromatic": "chromatic --build-script-name=build-storybook --only-changed"
 	},
 	"dependencies": {
-		"@base-ui/react": "^1.6.0",
+		"@base-ui/react": "^1.7.0",
 		"@suzumina.click/shared-types": "workspace:*",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
 		"embla-carousel-react": "8.6.0",
-		"lucide-react": "^1.28.0",
+		"lucide-react": "^1.30.0",
 		"recharts": "3.10.1",
 		"sonner": "^2.0.7",
 		"tailwind-merge": "^3.6.0",
@@ -56,7 +56,7 @@
 		"@vitest/coverage-v8": "^4.1.10",
 		"chromatic": "^18.1.0",
 		"happy-dom": "^20.11.1",
-		"next": "^16.2.12",
+		"next": "^16.3.0",
 		"playwright": "^1.62.1",
 		"react": "^19.2.8",
 		"react-dom": "^19.2.8",
