@@ -3,9 +3,13 @@ name: Chromatic
 # packages/ui の Storybook を Chromatic にアップロードし視覚回帰(visual regression)を検出する（SPR-130）。
 # コスト設計: ui 変更時のみ実行 + TurboSnap(--only-changed) で変更 story だけスナップショットし無料枠を節約。
 # - pull_request: マージ前に視覚差分をレビュー（exitZeroOnChanges で GH チェックはブロックしない＝段階的導入）。
-# - push(main) トリガーは廃止（SPR-263）。globals.css 等グローバルファイル変更のたびに TurboSnap が
-#   無効化されフルビルド(678 snapshots)になり無料枠を圧迫したため、main のベースライン確立は
-#   workflow_dispatch の手動実行に切替（autoAcceptChanges: main は手動実行時のみ効く）。
+# - push(main): **TurboSnap のベースラインを作るために必須**。SPR-263 で一度廃止したが、それが
+#   「全ビルドがフルビルドになる」真因だった＝squash merge + ブランチ削除で PR ビルドの commit は
+#   GitHub から消えるため、main 上にビルドが無いと Chromatic は直近ビルドの commit を見つけられず
+#   （`we couldn't find the commit (…) for the most recent build`）、commit が生きている最後のビルド
+#   （廃止直前の #188 / 2026-07-11）まで遡る。差分が1か月ぶんに膨らみ globals.css が毎回入る
+#   → preview.ts が import している → TurboSnap 無効 → 毎回フル 357 snapshots。
+#   実測: 2026-08-03〜13 の 14 ビルドが全てフル ＝ 4,998 snapshots で無料枠 5,000 を消費。
 # - draft PR 中は実行しない（開発中の連続 push でフルビルドを繰り返さないため）。
 # play/a11y は storybook-test.yml、本番ビルド回帰は e2e-smoke.yml が担い、本 workflow は見た目の差分のみ担保する。
 
@@ -14,11 +18,16 @@ on:
     branches:
       - main
     types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # main の run は打ち切らない。途中で切るとその commit のビルドが残らず、次回また
+  # 「直近ビルドの commit が見つからない」状態に戻ってフルビルドを誘発するため。
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -36,11 +45,13 @@ jobs:
       - uses: dorny/paths-filter@v4
         id: changes
         with:
+          # pnpm-lock.yaml は対象外。dependabot 以外の依存更新 PR（Node 更新・脆弱性 override 等）が
+          # UI 無関係のままフルビルドを起こしていた（2026-08 期間で 14 本中 3 本 ≒ 1,070 snapshots）。
+          # 依存起因の見た目の変化は packages/ui を触る PR か workflow_dispatch のフルビルドで拾う。
           filters: |
             ui:
               - 'packages/ui/**'
               - 'packages/shared-types/**'
-              - 'pnpm-lock.yaml'
               - '.github/workflows/chromatic.yml'
 
   chromatic:
@@ -52,6 +63,8 @@ jobs:
     # draft PR は対象外（ready_for_review か workflow_dispatch で改めて実行される）。
     # workflow_dispatch は paths-filter の差分検出（既定 base は直近コミットのみ比較）に関わらず常に実行し、
     # 手動でのベースライン更新が静かに no-op になることを防ぐ。
+    # push(main) は paths-filter で ui 変更のみに絞る（＝ベースラインは ui を触った commit 上にだけ立つ。
+    # 無関係な commit まで撮ると枠を食うだけで、TurboSnap の遡り先としては ui 変更 commit で十分）。
     if: >
       (needs.changes.outputs.ui == 'true' || github.event_name == 'workflow_dispatch') &&
       github.actor != 'dependabot[bot]' &&
@@ -106,7 +119,10 @@ jobs:
           buildScriptName: build-storybook
           # TurboSnap: 変更に関係する story のみスナップショット
           onlyChanged: true
+          # lock の変更は依存トレースの起点にしない。packages/ui と同時に依存を足す PR で
+          # 「lock が変わった → 依存グラフ全体が変更 → TurboSnap 無効」になるのを防ぐ。
+          untraced: pnpm-lock.yaml
           # 視覚差分があっても GH チェックは成功させる（差分は Chromatic 上でレビュー＝段階的導入）
           exitZeroOnChanges: true
-          # main では差分を新ベースラインとして自動採用（push トリガー廃止済みのため workflow_dispatch 時のみ効く）
+          # main では差分を新ベースラインとして自動採用（push(main) と workflow_dispatch で効く）
           autoAcceptChanges: main
