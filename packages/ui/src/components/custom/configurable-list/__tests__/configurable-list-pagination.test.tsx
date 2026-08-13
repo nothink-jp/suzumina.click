@@ -54,3 +54,25 @@ describe("ConfigurableListPagination: href", () => {
 		expect(onPageChange).toHaveBeenCalledWith(4);
 	});
 });
+
+// 省略記号を中間ページへのリンクに置き換えた結果（SPR-308 ③）。
+// 見た目は飛びのある番号列になり、飛ぶ先はすべて実 URL のリンク。
+describe("ConfigurableListPagination: 番号列", () => {
+	const renderedNumbers = () =>
+		screen
+			.getAllByRole("link")
+			.map((link) => link.textContent?.trim() ?? "")
+			.filter((label) => /^\d+$/.test(label));
+
+	it("多ページでは飛びのある番号列を描画し、すべてリンクになっている", () => {
+		renderPagination({ currentPage: 10, totalPages: 33 });
+		expect(renderedNumbers()).toEqual(["1", "4", "8", "9", "10", "11", "12", "23", "33"]);
+		expect(hrefOf("4")).toBe("/works?page=4");
+		expect(hrefOf("23")).toBe("/works?page=23");
+	});
+
+	it("窓に収まるページ数なら従来どおり連番", () => {
+		renderPagination({ currentPage: 2, totalPages: 4 });
+		expect(renderedNumbers()).toEqual(["1", "2", "3", "4"]);
+	});
+});

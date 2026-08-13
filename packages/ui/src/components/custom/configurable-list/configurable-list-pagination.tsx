@@ -5,12 +5,12 @@
 import {
 	Pagination,
 	PaginationContent,
-	PaginationEllipsis,
 	PaginationItem,
 	PaginationLink,
 	PaginationNext,
 	PaginationPrevious,
 } from "../../ui/pagination";
+import { getPaginationPages } from "./pagination-pages";
 
 interface ConfigurableListPaginationProps {
 	currentPage: number;
@@ -40,17 +40,8 @@ export function ConfigurableListPagination({
 	// ハード遷移で応答するため、クリックは元々フルリロードになっている）。
 	const hrefFor = (page: number) => getPageHref?.(page) ?? "#";
 
-	const maxVisiblePages = 5;
-	const halfVisible = Math.floor(maxVisiblePages / 2);
-
-	// ページ番号の範囲を計算
-	let startPage = Math.max(1, currentPage - halfVisible);
-	const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-
-	// 開始ページを調整
-	if (endPage - startPage < maxVisiblePages - 1) {
-		startPage = Math.max(1, endPage - maxVisiblePages + 1);
-	}
+	// どのページ番号を出すかは pagination-pages.ts が決める（クローラの到達深度に直結・SPR-308）
+	const pages = getPaginationPages(currentPage, totalPages);
 
 	return (
 		<Pagination className="mt-8">
@@ -70,28 +61,8 @@ export function ConfigurableListPagination({
 					/>
 				</PaginationItem>
 
-				{/* 最初のページと省略記号 */}
-				{startPage > 1 && (
-					<PaginationItem key="page-1">
-						<PaginationLink
-							href={hrefFor(1)}
-							onClick={(e) => {
-								e.preventDefault();
-								onPageChange(1);
-							}}
-						>
-							1
-						</PaginationLink>
-					</PaginationItem>
-				)}
-				{startPage > 2 && (
-					<PaginationItem key="ellipsis-start">
-						<PaginationEllipsis />
-					</PaginationItem>
-				)}
-
-				{/* ページ番号 */}
-				{Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i).map((page) => (
+				{/* ページ番号（飛びのある番号列になる。飛ぶ先が省略区間の中間ページ） */}
+				{pages.map((page) => (
 					<PaginationItem key={`page-${page}`}>
 						<PaginationLink
 							href={hrefFor(page)}
@@ -105,28 +76,6 @@ export function ConfigurableListPagination({
 						</PaginationLink>
 					</PaginationItem>
 				))}
-
-				{/* 最後のページと省略記号 */}
-				{endPage < totalPages && (
-					<>
-						{endPage < totalPages - 1 && (
-							<PaginationItem key="ellipsis-end">
-								<PaginationEllipsis />
-							</PaginationItem>
-						)}
-						<PaginationItem key={`page-${totalPages}`}>
-							<PaginationLink
-								href={hrefFor(totalPages)}
-								onClick={(e) => {
-									e.preventDefault();
-									onPageChange(totalPages);
-								}}
-							>
-								{totalPages}
-							</PaginationLink>
-						</PaginationItem>
-					</>
-				)}
 
 				{/* Next ボタン */}
 				<PaginationItem>
