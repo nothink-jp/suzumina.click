@@ -15,10 +15,11 @@ import { PaginationLink } from "../../ui/pagination";
  * 折りたたみの中身も DOM には存在するのでクローラはリンクを辿れる。閉じた領域の
  * テキストはランキング上の重みが下がるが、ここで必要なのは発見であって重み付けではない。
  * ユーザーが実際に開いて使える機能なので隠しリンクにも当たらない。
+ *
+ * 出すかどうかの判定は呼び出し側（ページ送り本体）が持つ。ページ送りが実際に
+ * リンクしたページ集合から導出しないと、窓の幅を変えたときに二重掲載や
+ * 「到達できないページがあるのに出ない」が静かに起きるため。
  */
-
-/** ページ送りが一度に見せられるページ数（現在ページの窓5 ＋ 先頭 ＋ 末尾） */
-const PAGES_SHOWN_BY_PAGINATION = 7;
 
 interface ConfigurableListPageJumpProps {
 	currentPage: number;
@@ -34,9 +35,6 @@ export function ConfigurableListPageJump({
 	onPageChange,
 	getPageHref,
 }: ConfigurableListPageJumpProps) {
-	// ページ送りに全ページが出ているなら、同じリンクを二度置く意味がない
-	if (totalPages <= PAGES_SHOWN_BY_PAGINATION) return null;
-
 	return (
 		<details className="mt-3">
 			<summary className="cursor-pointer text-center text-sm text-muted-foreground hover:text-foreground">

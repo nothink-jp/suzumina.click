@@ -53,6 +53,18 @@ export function ConfigurableListPagination({
 		startPage = Math.max(1, endPage - maxVisiblePages + 1);
 	}
 
+	// このページ送りが実際にリンクするページ（先頭 ＋ 窓 ＋ 末尾）。
+	// 全ページを出せているなら「ページを選んで移動」は同じリンクの二重掲載になる。
+	// maxVisiblePages から閾値を別に定義すると、片方だけ変えたときに
+	// 「二重掲載」または「到達できないページがあるのに折りたたみが出ない」が静かに起きるため、
+	// **実際に描画するリンク集合から導出する**（SPR-308）
+	const linkedPages = new Set([
+		1,
+		...Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i),
+		totalPages,
+	]);
+	const linksEveryPage = linkedPages.size >= totalPages;
+
 	return (
 		<>
 			<Pagination className="mt-8">
@@ -150,12 +162,14 @@ export function ConfigurableListPagination({
 			</Pagination>
 			{/* 全ページへのリンク。ページ送りだけでは末端まで 45 ホップ必要で、
 				クローラが深いページを発見できない（SPR-308 ③） */}
-			<ConfigurableListPageJump
-				currentPage={currentPage}
-				totalPages={totalPages}
-				onPageChange={onPageChange}
-				getPageHref={getPageHref}
-			/>
+			{!linksEveryPage && (
+				<ConfigurableListPageJump
+					currentPage={currentPage}
+					totalPages={totalPages}
+					onPageChange={onPageChange}
+					getPageHref={getPageHref}
+				/>
+			)}
 		</>
 	);
 }

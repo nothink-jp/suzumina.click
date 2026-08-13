@@ -84,8 +84,20 @@ describe("ConfigurableListPagination: ページを選んで移動", () => {
 	});
 
 	it("ページ送りに全ページが出ているときは表示しない（同じリンクの二重掲載を避ける）", () => {
-		renderPagination({ currentPage: 1, totalPages: 7 });
+		renderPagination({ currentPage: 1, totalPages: 6 });
 		expect(jumpList()).not.toBeInTheDocument();
+	});
+
+	// 窓5 + 先頭 + 末尾で「7ページ以下なら全部出る」と考えると誤る。
+	// totalPages=7 の1ページ目は 1〜5 と 7 しかリンクされず、6ページ目へ到達できない
+	it("リンクされないページが1つでもあれば表示する", () => {
+		renderPagination({ currentPage: 1, totalPages: 7 });
+		const numbers = inPagination()
+			.getAllByRole("link")
+			.map((link) => link.textContent?.trim() ?? "")
+			.filter((label) => /^\d+$/.test(label));
+		expect(numbers).not.toContain("6");
+		expect(jumpList()).toBeInTheDocument();
 	});
 
 	it("ページ送りの番号列は従来どおり（飛びのある番号にしない）", () => {
