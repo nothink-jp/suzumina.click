@@ -215,7 +215,7 @@ jobs:
 
       # gcloud 版 Firestore Emulator は JVM 上で動くため Java が必要（firebase CLI は使わない）
       - name: Setup Java (Firestore Emulator 用)
-        uses: actions/setup-java@v5.6.0
+        uses: actions/setup-java@v5.7.0
         with:
           distribution: temurin
           java-version: '21'
