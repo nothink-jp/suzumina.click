@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { ConfigurableListPagination } from "../configurable-list-pagination";
@@ -20,7 +20,11 @@ const renderPagination = (props: Partial<Parameters<typeof ConfigurableListPagin
 		/>,
 	);
 
-const hrefOf = (name: string | RegExp) => screen.getByRole("link", { name }).getAttribute("href");
+// 同じページ番号のリンクはページ送りと「ページを選んで移動」の両方に出るため、
+// どちらを見ているかを明示してから引く
+const inPagination = () => within(screen.getByRole("navigation", { name: "pagination" }));
+const hrefOf = (name: string | RegExp) =>
+	inPagination().getByRole("link", { name }).getAttribute("href");
 
 describe("ConfigurableListPagination: href", () => {
 	it("ページ番号リンクが実 URL を持つ", () => {
@@ -50,29 +54,46 @@ describe("ConfigurableListPagination: href", () => {
 		const user = userEvent.setup();
 		const onPageChange = vi.fn();
 		renderPagination({ onPageChange });
-		await user.click(screen.getByRole("link", { name: "4" }));
+		await user.click(inPagination().getByRole("link", { name: "4" }));
 		expect(onPageChange).toHaveBeenCalledWith(4);
 	});
 });
 
-// 省略記号を中間ページへのリンクに置き換えた結果（SPR-308 ③）。
-// 見た目は飛びのある番号列になり、飛ぶ先はすべて実 URL のリンク。
-describe("ConfigurableListPagination: 番号列", () => {
-	const renderedNumbers = () =>
-		screen
+// ページ送りは末端まで 45 ホップ必要（181ページ実測）で、クローラが深いページを
+// 発見できない。全ページのリンクを別に置いて 1 ホップにするのが狙い（SPR-308 ③）。
+describe("ConfigurableListPagination: ページを選んで移動", () => {
+	const jumpList = () => screen.queryByRole("group"); // <details>
+
+	const jumpLinks = () =>
+		within(screen.getByRole("group"))
+			.getAllByRole("link")
+			.map((link) => link.textContent?.trim());
+
+	it("全ページへのリンクを持つ（どのページからでも 1 ホップで到達できる）", () => {
+		renderPagination({ currentPage: 10, totalPages: 33 });
+		const links = jumpLinks();
+		expect(links).toHaveLength(33);
+		expect(links[0]).toBe("1");
+		expect(links.at(-1)).toBe("33");
+	});
+
+	it("リンクは実 URL を持つ", () => {
+		renderPagination({ currentPage: 10, totalPages: 33 });
+		const link = within(screen.getByRole("group")).getByRole("link", { name: "27" });
+		expect(link.getAttribute("href")).toBe("/works?page=27");
+	});
+
+	it("ページ送りに全ページが出ているときは表示しない（同じリンクの二重掲載を避ける）", () => {
+		renderPagination({ currentPage: 1, totalPages: 7 });
+		expect(jumpList()).not.toBeInTheDocument();
+	});
+
+	it("ページ送りの番号列は従来どおり（飛びのある番号にしない）", () => {
+		renderPagination({ currentPage: 10, totalPages: 33 });
+		const numbers = inPagination()
 			.getAllByRole("link")
 			.map((link) => link.textContent?.trim() ?? "")
 			.filter((label) => /^\d+$/.test(label));
-
-	it("多ページでは飛びのある番号列を描画し、すべてリンクになっている", () => {
-		renderPagination({ currentPage: 10, totalPages: 33 });
-		expect(renderedNumbers()).toEqual(["1", "4", "8", "9", "10", "11", "12", "23", "33"]);
-		expect(hrefOf("4")).toBe("/works?page=4");
-		expect(hrefOf("23")).toBe("/works?page=23");
-	});
-
-	it("窓に収まるページ数なら従来どおり連番", () => {
-		renderPagination({ currentPage: 2, totalPages: 4 });
-		expect(renderedNumbers()).toEqual(["1", "2", "3", "4"]);
+		expect(numbers).toEqual(["1", "8", "9", "10", "11", "12", "33"]);
 	});
 });

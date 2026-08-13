@@ -5,12 +5,13 @@
 import {
 	Pagination,
 	PaginationContent,
+	PaginationEllipsis,
 	PaginationItem,
 	PaginationLink,
 	PaginationNext,
 	PaginationPrevious,
 } from "../../ui/pagination";
-import { getPaginationPages } from "./pagination-pages";
+import { ConfigurableListPageJump } from "./configurable-list-page-jump";
 
 interface ConfigurableListPaginationProps {
 	currentPage: number;
@@ -40,60 +41,121 @@ export function ConfigurableListPagination({
 	// ハード遷移で応答するため、クリックは元々フルリロードになっている）。
 	const hrefFor = (page: number) => getPageHref?.(page) ?? "#";
 
-	// どのページ番号を出すかは pagination-pages.ts が決める（クローラの到達深度に直結・SPR-308）
-	const pages = getPaginationPages(currentPage, totalPages);
+	const maxVisiblePages = 5;
+	const halfVisible = Math.floor(maxVisiblePages / 2);
+
+	// ページ番号の範囲を計算
+	let startPage = Math.max(1, currentPage - halfVisible);
+	const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+	// 開始ページを調整
+	if (endPage - startPage < maxVisiblePages - 1) {
+		startPage = Math.max(1, endPage - maxVisiblePages + 1);
+	}
 
 	return (
-		<Pagination className="mt-8">
-			{/* 折り返し必須。番号は最大9個 + 前後ボタンで実測 516px あり、モバイル(375px)では
-				溢れて「前へ」が画面外に出ていた（本変更以前から。中間ページのリンク化で +16px） */}
-			<PaginationContent className="max-w-full flex-wrap justify-center">
-				{/* Previous ボタン */}
-				<PaginationItem>
-					<PaginationPrevious
-						href={hasPrev ? hrefFor(currentPage - 1) : "#"}
-						aria-disabled={!hasPrev}
-						onClick={(e) => {
-							e.preventDefault();
-							if (hasPrev) {
-								onPageChange(currentPage - 1);
-							}
-						}}
-						className={!hasPrev ? "pointer-events-none opacity-50" : "cursor-pointer"}
-					/>
-				</PaginationItem>
-
-				{/* ページ番号（飛びのある番号列になる。飛ぶ先が省略区間の中間ページ） */}
-				{pages.map((page) => (
-					<PaginationItem key={`page-${page}`}>
-						<PaginationLink
-							href={hrefFor(page)}
-							isActive={currentPage === page}
+		<>
+			<Pagination className="mt-8">
+				{/* 折り返し必須。番号と前後ボタンで実測 516px あり、モバイル(375px)では
+					溢れて「前へ」が画面外（x=-70px）に出ていた */}
+				<PaginationContent className="max-w-full flex-wrap justify-center">
+					{/* Previous ボタン */}
+					<PaginationItem>
+						<PaginationPrevious
+							href={hasPrev ? hrefFor(currentPage - 1) : "#"}
+							aria-disabled={!hasPrev}
 							onClick={(e) => {
 								e.preventDefault();
-								onPageChange(page);
+								if (hasPrev) {
+									onPageChange(currentPage - 1);
+								}
 							}}
-						>
-							{page}
-						</PaginationLink>
+							className={!hasPrev ? "pointer-events-none opacity-50" : "cursor-pointer"}
+						/>
 					</PaginationItem>
-				))}
 
-				{/* Next ボタン */}
-				<PaginationItem>
-					<PaginationNext
-						href={hasNext ? hrefFor(currentPage + 1) : "#"}
-						aria-disabled={!hasNext}
-						onClick={(e) => {
-							e.preventDefault();
-							if (hasNext) {
-								onPageChange(currentPage + 1);
-							}
-						}}
-						className={!hasNext ? "pointer-events-none opacity-50" : "cursor-pointer"}
-					/>
-				</PaginationItem>
-			</PaginationContent>
-		</Pagination>
+					{/* 最初のページと省略記号 */}
+					{startPage > 1 && (
+						<PaginationItem key="page-1">
+							<PaginationLink
+								href={hrefFor(1)}
+								onClick={(e) => {
+									e.preventDefault();
+									onPageChange(1);
+								}}
+							>
+								1
+							</PaginationLink>
+						</PaginationItem>
+					)}
+					{startPage > 2 && (
+						<PaginationItem key="ellipsis-start">
+							<PaginationEllipsis />
+						</PaginationItem>
+					)}
+
+					{/* ページ番号 */}
+					{Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i).map((page) => (
+						<PaginationItem key={`page-${page}`}>
+							<PaginationLink
+								href={hrefFor(page)}
+								isActive={currentPage === page}
+								onClick={(e) => {
+									e.preventDefault();
+									onPageChange(page);
+								}}
+							>
+								{page}
+							</PaginationLink>
+						</PaginationItem>
+					))}
+
+					{/* 最後のページと省略記号 */}
+					{endPage < totalPages && (
+						<>
+							{endPage < totalPages - 1 && (
+								<PaginationItem key="ellipsis-end">
+									<PaginationEllipsis />
+								</PaginationItem>
+							)}
+							<PaginationItem key={`page-${totalPages}`}>
+								<PaginationLink
+									href={hrefFor(totalPages)}
+									onClick={(e) => {
+										e.preventDefault();
+										onPageChange(totalPages);
+									}}
+								>
+									{totalPages}
+								</PaginationLink>
+							</PaginationItem>
+						</>
+					)}
+
+					{/* Next ボタン */}
+					<PaginationItem>
+						<PaginationNext
+							href={hasNext ? hrefFor(currentPage + 1) : "#"}
+							aria-disabled={!hasNext}
+							onClick={(e) => {
+								e.preventDefault();
+								if (hasNext) {
+									onPageChange(currentPage + 1);
+								}
+							}}
+							className={!hasNext ? "pointer-events-none opacity-50" : "cursor-pointer"}
+						/>
+					</PaginationItem>
+				</PaginationContent>
+			</Pagination>
+			{/* 全ページへのリンク。ページ送りだけでは末端まで 45 ホップ必要で、
+				クローラが深いページを発見できない（SPR-308 ③） */}
+			<ConfigurableListPageJump
+				currentPage={currentPage}
+				totalPages={totalPages}
+				onPageChange={onPageChange}
+				getPageHref={getPageHref}
+			/>
+		</>
 	);
 }
