@@ -38,7 +38,7 @@
 	"dependencies": {
 		"@google-cloud/firestore": "^8.7.0",
 		"@google-cloud/functions-framework": "^5.0.5",
-		"@googleapis/youtube": "^33.0.0",
+		"@googleapis/youtube": "^34.0.0",
 		"@suzumina.click/shared-types": "workspace:*"
 	},
 	"devDependencies": {
