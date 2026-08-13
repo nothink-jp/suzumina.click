@@ -45,7 +45,9 @@ export function ConfigurableListPagination({
 
 	return (
 		<Pagination className="mt-8">
-			<PaginationContent>
+			{/* 折り返し必須。番号は最大9個 + 前後ボタンで実測 516px あり、モバイル(375px)では
+				溢れて「前へ」が画面外に出ていた（本変更以前から。中間ページのリンク化で +16px） */}
+			<PaginationContent className="max-w-full flex-wrap justify-center">
 				{/* Previous ボタン */}
 				<PaginationItem>
 					<PaginationPrevious
