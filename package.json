@@ -18,6 +18,7 @@
 		"check:ga4-drift": "node scripts/check-ga4-drift.mjs",
 		"report:ga4": "node scripts/report-ga4.mjs",
 		"report:search-console": "node scripts/search-console-report.mjs",
+		"report:url-inspection": "node scripts/search-console-inspect.mjs",
 		"format": "pnpm -r format",
 		"check": "pnpm -r check",
 		"secretlint": "secretlint \"**/*\"",
