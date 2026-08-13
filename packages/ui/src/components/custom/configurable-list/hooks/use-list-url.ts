@@ -4,7 +4,7 @@
 
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { FilterConfig } from "../types";
 import { getDefaultFilterValues } from "../utils/filter-helpers";
@@ -161,6 +161,7 @@ function updateParam(
 export function useListUrl(options: UseListUrlOptions = {}) {
 	const { filters = {}, defaultPageSize = 12, defaultSort } = options;
 	const searchParams = useSearchParams();
+	const pathname = usePathname();
 
 	// URLの更新フラグを管理
 	const isUpdatingUrl = useRef(false);
@@ -282,6 +283,23 @@ export function useListUrl(options: UseListUrlOptions = {}) {
 		[updateUrl],
 	);
 
+	/**
+	 * setPage(page) が遷移する先の URL を、遷移せずに返す。
+	 *
+	 * ページ送りを `<a href>` として描画するために使う。href が無い（`#`）と
+	 * クローラは一覧の2ページ目以降へ到達できず、詳細ページが発見されない（SPR-308）。
+	 * 直列化は updateParam を updateUrl と共有するため、page=1 はクエリから落ちる。
+	 */
+	const getPageHref = useCallback(
+		(page: number) => {
+			const params = new URLSearchParams(searchParams.toString());
+			updateParam(params, "page", page, 1);
+			const query = params.toString();
+			return query ? `${pathname}?${query}` : pathname;
+		},
+		[searchParams, pathname],
+	);
+
 	const setItemsPerPage = useCallback(
 		(itemsPerPage: number) => {
 			updateUrl({ itemsPerPage, page: 1 }); // ページサイズ変更時は1ページ目へ
@@ -347,6 +365,7 @@ export function useListUrl(options: UseListUrlOptions = {}) {
 	return {
 		params: stableParams,
 		setPage,
+		getPageHref,
 		setItemsPerPage,
 		setSort,
 		setSearch,

@@ -6,6 +6,7 @@ import type { FilterConfig, StandardListParams } from "../configurable-list/type
 // Next.js のルーターをモック
 vi.mock("next/navigation", () => ({
 	useSearchParams: () => new URLSearchParams(),
+	usePathname: () => "/works",
 	useRouter: () => ({
 		push: vi.fn(),
 		replace: vi.fn(),

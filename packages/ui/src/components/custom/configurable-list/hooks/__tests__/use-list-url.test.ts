@@ -7,6 +7,7 @@ import { useListUrl } from "../use-list-url";
 const h = vi.hoisted(() => ({ sp: new URLSearchParams() }));
 vi.mock("next/navigation", () => ({
 	useSearchParams: () => h.sp,
+	usePathname: () => "/works",
 }));
 
 const setSP = (qs: string) => {
@@ -128,5 +129,36 @@ describe("useListUrl: setter（pushState）", () => {
 		const p = lastPushedParams(pushSpy);
 		expect(p.get("tags")).toBeNull();
 		expect(p.get("flag")).toBeNull();
+	});
+});
+
+// クローラが2ページ目以降へ到達できることが要件（SPR-308）。
+describe("useListUrl: getPageHref", () => {
+	it("パス付きの実 URL を返す（相対クエリにしない）", () => {
+		const { result } = renderHook(() => useListUrl({ filters }));
+		expect(result.current.getPageHref(2)).toBe("/works?page=2");
+	});
+
+	it("1ページ目は page を落とし、クエリが空ならパスだけになる", () => {
+		setSP("page=3");
+		const { result } = renderHook(() => useListUrl({ filters }));
+		expect(result.current.getPageHref(1)).toBe("/works");
+	});
+
+	it("フィルター・検索語・ソートを保持する", () => {
+		setSP("q=kw&sort=rating&tags=a|b&page=2");
+		const { result } = renderHook(() => useListUrl({ filters }));
+		const p = new URLSearchParams(result.current.getPageHref(5).split("?")[1]);
+		expect(p.get("page")).toBe("5");
+		expect(p.get("q")).toBe("kw");
+		expect(p.get("sort")).toBe("rating");
+		expect(p.get("tags")).toBe("a|b");
+	});
+
+	it("setPage と同じ遷移先を指す", () => {
+		setSP("q=kw&tags=a|b");
+		const { result } = renderHook(() => useListUrl({ filters }));
+		act(() => result.current.setPage(4));
+		expect(result.current.getPageHref(4)).toBe(`/works?${lastPushedParams(pushSpy).toString()}`);
 	});
 });
