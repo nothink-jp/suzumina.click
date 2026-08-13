@@ -64,6 +64,9 @@ Object.defineProperty(window, "matchMedia", {
 });
 
 // Mock for getComputedStyle
+// 未定義プロパティは undefined になるため、参照する側が文字列前提だとクラッシュする
+// （base-ui の Select popup が maxHeight.endsWith("px") を読む）。
+// 実ブラウザの初期計算値と同じ値を返す。
 Object.defineProperty(window, "getComputedStyle", {
 	writable: true,
 	value: (element: Element) => ({
@@ -75,6 +78,10 @@ Object.defineProperty(window, "getComputedStyle", {
 		bottom: "auto",
 		width: "auto",
 		height: "auto",
+		maxWidth: "none",
+		maxHeight: "none",
+		minWidth: "auto",
+		minHeight: "auto",
 		transform: "none",
 		transformOrigin: "50% 50% 0px",
 		display: "block",
