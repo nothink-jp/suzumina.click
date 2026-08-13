@@ -18,6 +18,12 @@ interface ConfigurableListPaginationProps {
 	hasPrev: boolean;
 	hasNext: boolean;
 	onPageChange: (page: number) => void;
+	/**
+	 * ページ番号から実 URL を作る。クローラが2ページ目以降を辿れるようにするため、
+	 * 与えられた場合は各リンクの href に使う（SPR-308）。
+	 * URL 同期していない一覧（urlSync=false）では URL に意味が無いため未指定＝`#` になる。
+	 */
+	getPageHref?: (page: number) => string;
 }
 
 export function ConfigurableListPagination({
@@ -26,7 +32,14 @@ export function ConfigurableListPagination({
 	hasPrev,
 	hasNext,
 	onPageChange,
+	getPageHref,
 }: ConfigurableListPaginationProps) {
+	// href はクローラの経路と、新しいタブで開く・戻る等のブラウザ標準動作のために置く。
+	// クリック時は onPageChange 側が preventDefault するため href の遷移は起きない
+	// （体感の挙動は変更前後で不変。use-list-url の pushState + popstate に App Router が
+	// ハード遷移で応答するため、クリックは元々フルリロードになっている）。
+	const hrefFor = (page: number) => getPageHref?.(page) ?? "#";
+
 	const maxVisiblePages = 5;
 	const halfVisible = Math.floor(maxVisiblePages / 2);
 
@@ -45,7 +58,7 @@ export function ConfigurableListPagination({
 				{/* Previous ボタン */}
 				<PaginationItem>
 					<PaginationPrevious
-						href="#"
+						href={hasPrev ? hrefFor(currentPage - 1) : "#"}
 						aria-disabled={!hasPrev}
 						onClick={(e) => {
 							e.preventDefault();
@@ -61,7 +74,7 @@ export function ConfigurableListPagination({
 				{startPage > 1 && (
 					<PaginationItem key="page-1">
 						<PaginationLink
-							href="#"
+							href={hrefFor(1)}
 							onClick={(e) => {
 								e.preventDefault();
 								onPageChange(1);
@@ -81,7 +94,7 @@ export function ConfigurableListPagination({
 				{Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i).map((page) => (
 					<PaginationItem key={`page-${page}`}>
 						<PaginationLink
-							href="#"
+							href={hrefFor(page)}
 							isActive={currentPage === page}
 							onClick={(e) => {
 								e.preventDefault();
@@ -103,7 +116,7 @@ export function ConfigurableListPagination({
 						)}
 						<PaginationItem key={`page-${totalPages}`}>
 							<PaginationLink
-								href="#"
+								href={hrefFor(totalPages)}
 								onClick={(e) => {
 									e.preventDefault();
 									onPageChange(totalPages);
@@ -118,7 +131,7 @@ export function ConfigurableListPagination({
 				{/* Next ボタン */}
 				<PaginationItem>
 					<PaginationNext
-						href="#"
+						href={hasNext ? hrefFor(currentPage + 1) : "#"}
 						aria-disabled={!hasNext}
 						onClick={(e) => {
 							e.preventDefault();

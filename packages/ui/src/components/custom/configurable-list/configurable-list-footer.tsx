@@ -10,6 +10,8 @@ interface ConfigurableListFooterProps {
 	hasPrev: boolean;
 	hasNext: boolean;
 	onPageChange: (page: number) => void;
+	/** ページ送りを実 URL のリンクにするための href 生成（未指定なら `#`）。SPR-308 */
+	getPageHref?: (page: number) => string;
 	total: number;
 	startIndex: number;
 	endIndex: number;
@@ -21,6 +23,7 @@ export function ConfigurableListFooter({
 	hasPrev,
 	hasNext,
 	onPageChange,
+	getPageHref,
 	total,
 	startIndex,
 	endIndex,
@@ -35,6 +38,7 @@ export function ConfigurableListFooter({
 				hasPrev={hasPrev}
 				hasNext={hasNext}
 				onPageChange={onPageChange}
+				getPageHref={getPageHref}
 			/>
 			<div className="mt-2 text-center text-sm text-muted-foreground">
 				{total}件中 {startIndex + 1}〜{Math.min(endIndex, total)}

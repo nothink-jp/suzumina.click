@@ -306,6 +306,8 @@ export function ConfigurableList<T>({
 				hasPrev={pagination.hasPrev}
 				hasNext={pagination.hasNext}
 				onPageChange={handlePageChange}
+				// urlSync=false のときはページが URL に現れないため href を作らない
+				getPageHref={urlSync ? urlHook.getPageHref : undefined}
 				total={actualData.total}
 				startIndex={pagination.startIndex}
 				endIndex={pagination.endIndex}
