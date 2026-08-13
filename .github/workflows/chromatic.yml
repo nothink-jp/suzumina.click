@@ -42,6 +42,15 @@ jobs:
       ui: ${{ steps.changes.outputs.ui }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          # push(main) では paths-filter が github.event.before とのローカル diff で判定する
+          # （pull_request は GitHub API 経由なので git 履歴に依存しない）。main ruleset は
+          # squash-only ＝ push は常に 1 コミットなので、depth 2 あれば before が手元に揃い
+          # ネットワーク取得なしで確定する。取れなかった場合 paths-filter は自力で
+          # `git fetch --depth=1 origin <sha>` するが、そこが失敗すると changes ジョブごと落ちて
+          # chromatic が静かに skip され、ベースラインが立たない（＝この修正が直した状態に逆戻り）。
+          # 黙って自己修復しない失敗なので、ほぼ無料な保険として depth を明示する。
+          fetch-depth: 2
       - uses: dorny/paths-filter@v4
         id: changes
         with:
