@@ -42,6 +42,15 @@ updates:
       # 認証コアは major/minor とも手動（One-Way Door: better-auth/Discord 認証・認可）
       - dependency-name: "better-auth"
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      # next 16.3.1 のみ除外。Cloud Run の起動プローブが必ず落ちるため本番に載せられない。
+      # 16.3.1 が同梱する @swc/helpers 0.5.23 は exports の先頭が module-sync で、Node >= 22.12 の
+      # require はそちらに解決するが、Turbopack の tracing が条件を取り違えて cjs 側しか standalone に
+      # 含めず MODULE_NOT_FOUND で exit(1) する（pnpm の仮想ストアで候補ディレクトリが2つになると発現）。
+      # 上流 issue vercel/next.js#97358 ／ 修正 PR #97372 は canary にのみ入り 16.3.1 stable には未収録。
+      # **この行の解除は不要**: 16.3.2 以降は通常どおり Dependabot が提案するので、
+      # 出てきた PR の deploy が通れば解決、落ちれば同じ症状として即座に分かる。
+      - dependency-name: "next"
+        versions: ["16.3.1"]
 
   # --- GitHub Actions（SPR-173 のようなアクション版上げを自動化）---
   - package-ecosystem: "github-actions"
