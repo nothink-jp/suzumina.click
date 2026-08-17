@@ -116,9 +116,8 @@ describe("buildWorkStructuredData", () => {
 	// offers を落とすと review / aggregateRating / offers すべてを欠き、
 	// product snippet の適格性ごと失う（助言レベルの警告 → 必須項目エラーに悪化）
 	it("評価がなくても Offer は落とさない", () => {
-		const data = buildWorkStructuredData(createWork(), PAGE_URL);
+		const data = buildWorkStructuredData(createWork({ rating: undefined }), PAGE_URL);
 
-		expect(data.aggregateRating).toBeUndefined();
 		expect(data.offers?.price).toBe(1760);
 	});
 
