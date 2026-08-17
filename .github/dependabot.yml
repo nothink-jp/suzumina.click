@@ -49,6 +49,10 @@ updates:
       # 上流 issue vercel/next.js#97358 ／ 修正 PR #97372 は canary にのみ入り 16.3.1 stable には未収録。
       # **この行の解除は不要**: 16.3.2 以降は通常どおり Dependabot が提案するので、
       # 出てきた PR の deploy が通れば解決、落ちれば同じ症状として即座に分かる。
+      # @next/bundle-analyzer は版番号が next の release train に揃うだけの別パッケージで、
+      # 依存は webpack-bundle-analyzer のみ・next にも @swc/helpers にも依存しない。
+      # next.config が読むのはビルド時だけで standalone 出力には入らないため 16.3.1 のままでよい
+      # （ここを exact pin すると「16.3.1 が危険」という誤った信号になり、dependabot とも綱引きになる）。
       - dependency-name: "next"
         versions: ["16.3.1"]
 
