@@ -13,6 +13,15 @@ import type { WorkPlainObject } from "@suzumina.click/shared-types";
  * 入れると Google 側で「無効な値」として警告になるため。
  *
  * 表示文言と同じくロジックを純関数に置くのは、テスト対象を JSX でなくデータにするため。
+ *
+ * 狙う Google の枠は **product snippet**（購入できないページ向け）であって
+ * merchant listing ではない。販売は DLsite 側で行われ、当サイトは購入できないため
+ * merchant listing の適格性はそもそも無い（Google: 購入できるページのみが対象で、
+ * 他サイトへのリンクを持つページは対象外）。Search Console が「販売者のリスティング」
+ * レポートで `shippingDetails` / `hasMerchantReturnPolicy` の欠落を報告するのは、
+ * Offer を含む Product を merchant listing 側でも検査するためで、**埋めても得るものはない**。
+ * ダウンロード販売の配送条件・返品規定を当サイトが宣言する形になり不実記載になるので、
+ * この2項目は意図的に出さない。`seller` を明示するのはその境界を機械可読にするため。
  */
 export interface WorkStructuredData {
 	"@context": "https://schema.org";
@@ -32,6 +41,7 @@ export interface WorkStructuredData {
 		priceCurrency: string;
 		availability: "https://schema.org/InStock";
 		url: string;
+		seller: { "@type": "Organization"; name: "DLsite" };
 	};
 	aggregateRating?: {
 		"@type": "AggregateRating";
@@ -43,7 +53,18 @@ export interface WorkStructuredData {
 	contributor?: { "@type": "Person"; name: string }[];
 }
 
-/** 評価は件数がある場合のみ出す（0件で ratingCount:0 を出すと無効な構造化データになる） */
+/** 購入先は常に DLsite。当サイトは販売者ではない（上の doc コメント参照） */
+const SELLER = { "@type": "Organization", name: "DLsite" } as const;
+
+/**
+ * 評価は件数がある場合のみ出す（0件で ratingCount:0 を出すと無効な構造化データになる）。
+ *
+ * 結果として評価なし作品は `offers` 単独の Product になり、Rich Results Test の
+ * product snippet セクションが「review / aggregateRating を伴わない offers」を
+ * 警告することがある。**それでも `offers` は落とさない**：product snippet の必須は
+ * review / aggregateRating / offers のいずれか1つで、offers を落とすと評価なし作品は
+ * 3つすべてを欠いて適格性ごと失う＝助言レベルの警告が必須項目エラーに悪化する。
+ */
 function buildAggregateRating(work: WorkPlainObject): WorkStructuredData["aggregateRating"] {
 	const rating = work.rating;
 	if (!rating?.hasRatings || rating.count <= 0) return undefined;
@@ -107,6 +128,7 @@ export function buildWorkStructuredData(
 					priceCurrency: work.price.currency,
 					availability: "https://schema.org/InStock",
 					url: work.workUrl,
+					seller: SELLER,
 				},
 		aggregateRating: buildAggregateRating(work),
 		contributor: buildContributors(work),
