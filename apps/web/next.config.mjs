@@ -14,6 +14,16 @@ const nextConfig = {
 	// Server ComponentsでのみGoogle Cloud SDKを使用するための設定
 	serverExternalPackages: ["@google-cloud/firestore", "@google-cloud/storage", "resend"],
 
+	// standalone の file tracing が @swc/helpers の esm/ を取りこぼすため明示的に含める。
+	// next 16.3.1 が同梱する @swc/helpers 0.5.23 は exports がワイルドカード subpath（"./esm/*"）
+	// になっており静的解析でたどれない。一方 next の require-hook は esm/_interop_require_default.js を
+	// 実行時に解決するため、欠落すると Cloud Run で MODULE_NOT_FOUND となり起動プローブが落ちる
+	// （standalone 出力に cjs/ と package.json しか入らない状態を実ビルドで確認済み）。
+	// パスは next.config からの相対＝monorepo ルートの node_modules を指す。
+	outputFileTracingIncludes: {
+		"**/*": ["../../node_modules/.pnpm/@swc+helpers@*/node_modules/@swc/helpers/esm/**"],
+	},
+
 	// コンパイラー最適化
 	compiler: {
 		// 本番環境でのコンソール除去
