@@ -15,10 +15,16 @@ const nextConfig = {
 	serverExternalPackages: ["@google-cloud/firestore", "@google-cloud/storage", "resend"],
 
 	// standalone の file tracing が @swc/helpers の esm/ を取りこぼすため明示的に含める。
-	// next 16.3.1 が同梱する @swc/helpers 0.5.23 は exports がワイルドカード subpath（"./esm/*"）
-	// になっており静的解析でたどれない。一方 next の require-hook は esm/_interop_require_default.js を
-	// 実行時に解決するため、欠落すると Cloud Run で MODULE_NOT_FOUND となり起動プローブが落ちる
-	// （standalone 出力に cjs/ と package.json しか入らない状態を実ビルドで確認済み）。
+	// 上流バグ: vercel/next.js#97358（pnpm + standalone + Docker で 16.3.1 のみ起動失敗）。
+	// Turbopack の ResolveResult::with_replaced_request_key が条件（conditions）を上書きし、
+	// 同一 subpath の module-sync と require の解決結果が同じキーに潰れて片方が捨てられる。
+	// pnpm は仮想ストアで候補ディレクトリが2つになるため顕在化する。
+	// @swc/helpers 0.5.23（next 16.3.1 が同梱）は module-sync を先頭に持ち、Node >= 22.12 の
+	// require は esm/_interop_require_default.js に解決するため、cjs/ しか含まれない standalone は
+	// MODULE_NOT_FOUND で exit(1)＝Cloud Run の起動プローブが落ちる。
+	// 修正 PR vercel/next.js#97372 は 16.3.1-canary.20 以降にのみ入っており stable 未リリース。
+	// **stable に取り込まれたらこの include は不要**（判定: 修正コミット 904a4185 が対象タグに
+	// 含まれるかを `gh api repos/vercel/next.js/compare/904a4185...v<version>` の status で確認）。
 	// パスは next.config からの相対＝monorepo ルートの node_modules を指す。
 	outputFileTracingIncludes: {
 		"**/*": ["../../node_modules/.pnpm/@swc+helpers@*/node_modules/@swc/helpers/esm/**"],
