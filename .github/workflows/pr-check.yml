@@ -59,6 +59,8 @@ jobs:
               - 'apps/web/Dockerfile'
               - 'apps/web/.dockerignore'
               - '.dockerignore'
+              # standalone 出力の中身を直接変える（output / outputFileTracing* 等）ため対象に含める
+              - 'apps/web/next.config.mjs'
               - 'apps/web/package.json'
               - 'packages/shared-types/package.json'
               - 'packages/ui/package.json'
@@ -259,15 +261,50 @@ jobs:
       # push せず build のみ。cache の export は行わない
       # （GHA cache へのアップロードがジョブ時間の 60% を占めていたため）
       # cache は deploy-web.yml が registry に維持するため PR 側で書き戻す必要がない
+      # load: true は下の起動チェックでコンテナを実際に動かすために必要（daemon に載せる）
       - name: Build web image (no push)
         uses: docker/build-push-action@v7
         with:
           context: .
           file: apps/web/Dockerfile
           push: false
-          load: false
+          load: true
           tags: suzumina-web:pr-${{ github.event.pull_request.number }}
           platforms: linux/amd64
+
+      # ビルド成功は起動成功を意味しない。next 16.3.1 では standalone の file tracing が
+      # @swc/helpers の esm を取りこぼし、ビルドは通るのに Cloud Run の起動プローブだけが落ちた
+      # （PR #937 / 上流 vercel/next.js#97358）。当時 PR では build のみ・e2e-smoke は
+      # next start で standalone 出力を使わないため誰も検出できず、deploy して初めて分かった
+      # ＝本番 revision が2回更新されないまま滞留した。実際に起動して疎通まで見る。
+      # Secret は渡さない: /api/health は Firestore も認証も触らず、Cloud Run と同じ
+      # NODE_ENV=production・PORT=8080 でプロセスが立ち上がることの確認が目的。
+      - name: Verify container starts and serves /api/health
+        run: |
+          docker run -d --name web-smoke -p 8080:8080 \
+            suzumina-web:pr-${{ github.event.pull_request.number }}
+
+          for _ in $(seq 1 30); do
+            # 起動失敗（MODULE_NOT_FOUND 等）は即 exit するので待たずに落とす
+            if [ -z "$(docker ps -q -f name=web-smoke -f status=running)" ]; then
+              echo "::error::コンテナが起動直後に終了しました"
+              docker logs web-smoke
+              exit 1
+            fi
+            if [ "$(curl -sS -o /dev/null -w '%{http_code}' http://localhost:8080/api/health || true)" = "200" ]; then
+              echo "✅ /api/health が 200 を返しました"
+              exit 0
+            fi
+            sleep 2
+          done
+
+          echo "::error::60秒以内に /api/health が 200 を返しませんでした"
+          docker logs web-smoke
+          exit 1
+
+      - name: Stop smoke container
+        if: always()
+        run: docker rm -f web-smoke || true
 
   security-check:
     name: Security Check
