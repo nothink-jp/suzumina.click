@@ -70,6 +70,14 @@ describe("buildWorkStructuredData", () => {
 		expect(data.offers?.url).toContain("dlsite.com");
 	});
 
+	// 当サイトは販売者ではない（merchant listing ではなく product snippet を狙う）
+	it("Offer の seller は DLsite", () => {
+		expect(buildWorkStructuredData(createWork(), PAGE_URL).offers?.seller).toEqual({
+			"@type": "Organization",
+			name: "DLsite",
+		});
+	});
+
 	it("無料作品は Offer を出さない", () => {
 		const work = createWork({
 			price: {
@@ -103,6 +111,15 @@ describe("buildWorkStructuredData", () => {
 		});
 
 		expect(buildWorkStructuredData(createWork(), PAGE_URL).aggregateRating).toBeUndefined();
+	});
+
+	// offers を落とすと review / aggregateRating / offers すべてを欠き、
+	// product snippet の適格性ごと失う（助言レベルの警告 → 必須項目エラーに悪化）
+	it("評価がなくても Offer は落とさない", () => {
+		const data = buildWorkStructuredData(createWork(), PAGE_URL);
+
+		expect(data.aggregateRating).toBeUndefined();
+		expect(data.offers?.price).toBe(1760);
 	});
 
 	it("制作陣を role 横断で平坦化し重複を除く", () => {
