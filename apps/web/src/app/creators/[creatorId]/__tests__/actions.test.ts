@@ -4,6 +4,9 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+// vitest では "use cache" ディレクティブは no-op になり cacheLife が cache スコープ外呼び出しになるためモックする
+vi.mock("next/cache", () => ({ cacheLife: vi.fn() }));
+
 // workTransformers のモック
 vi.mock("@suzumina.click/shared-types", () => ({
 	// parseWorkDocument 用の pass-through（検証は素通し）
@@ -86,14 +89,16 @@ import { getCreatorInfo, getCreatorWorksList } from "../actions";
 describe("Creator page server actions", () => {
 	// テスト用のヘルパー関数
 	const setupCreatorMocks = (creatorData: any, worksSnapshot: any) => {
-		// mockDocの設定
+		// mockDocの設定。Firestore の QuerySnapshot は size === docs.length なので、
+		// 呼び出し側が size を読んでも実物と食い違わないよう補完する。
+		const snapshot = { size: worksSnapshot.docs?.length ?? 0, ...worksSnapshot };
 		mockDoc.mockReturnValue({
 			get: vi.fn().mockResolvedValue({
 				exists: true,
 				data: () => creatorData,
 				ref: {
 					collection: vi.fn().mockReturnValue({
-						get: vi.fn().mockResolvedValue(worksSnapshot),
+						get: vi.fn().mockResolvedValue(snapshot),
 					}),
 				},
 			}),

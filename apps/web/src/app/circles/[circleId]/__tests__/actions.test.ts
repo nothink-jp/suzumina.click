@@ -4,6 +4,9 @@
 
 import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from "vitest";
 
+// vitest では "use cache" ディレクティブは no-op になり cacheLife が cache スコープ外呼び出しになるためモックする
+vi.mock("next/cache", () => ({ cacheLife: vi.fn() }));
+
 // Mock conversion helper function
 
 // workTransformers, convertToCirclePlainObject のモック
