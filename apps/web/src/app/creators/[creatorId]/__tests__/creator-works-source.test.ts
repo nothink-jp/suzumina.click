@@ -30,17 +30,23 @@ vi.mock("@/lib/firestore", () => ({
 	getFirestore: () => ({ collection: mockCollection, getAll: mockGetAll }),
 }));
 
-import { loadCreatorSource } from "../creator-works-source";
+import { loadCreatorInfo, loadCreatorWorks } from "../creator-works-source";
 
-/** 関連付け 3 件・実在する works 3 件のクリエイターを組み立てる */
-function setupCreator(relationDocs: Array<{ id: string; roles?: string[] }>) {
+/**
+ * @param creatorData creators/{id} の中身。workCount/types を渡すと非正規化ありの経路になる
+ * @param relationDocs works サブコレクションの中身
+ */
+function setupCreator(
+	creatorData: Record<string, unknown>,
+	relationDocs: Array<{ id: string; roles?: string[] }>,
+) {
 	worksSubcollectionGet.mockResolvedValue({
 		size: relationDocs.length,
 		docs: relationDocs.map((r) => ({ id: r.id, data: () => ({ roles: r.roles }) })),
 	});
 	creatorDocGet.mockResolvedValue({
 		exists: true,
-		data: () => ({ name: "テストクリエイター", primaryRole: "voiceActor" }),
+		data: () => creatorData,
 		ref: { collection: vi.fn(() => ({ get: worksSubcollectionGet })) },
 	});
 	mockGetAll.mockImplementation((...refs: Array<{ id: string }>) =>
@@ -48,67 +54,107 @@ function setupCreator(relationDocs: Array<{ id: string; roles?: string[] }>) {
 	);
 }
 
-describe("loadCreatorSource", () => {
+const RELATIONS = [
+	{ id: "RJ111111", roles: ["scenario"] },
+	{ id: "RJ222222", roles: ["illustration"] },
+];
+
+describe("loadCreatorInfo", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 	});
 
-	it("creator doc と works サブコレクションをそれぞれ 1 回だけ読む", async () => {
-		setupCreator([
-			{ id: "RJ111111", roles: ["voiceActor", "scenario"] },
-			{ id: "RJ222222", roles: ["illustration"] },
-		]);
+	it("非正規化された workCount/types があればサブコレクションを読まない", async () => {
+		setupCreator(
+			{ name: "テストクリエイター", primaryRole: "voiceActor", workCount: 2, types: ["scenario"] },
+			RELATIONS,
+		);
 
-		await loadCreatorSource("VA12345");
+		const info = await loadCreatorInfo("VA12345");
 
-		// 旧実装は getCreatorInfo と fetchWorkIds が同じものを二重に引いており、
-		// 1 ページ表示あたり 3N + 2 read になっていた（SPR-311 の主因）。
+		// OG 画像ルートはこの経路しか通らない。ここでサブコレクションを読むと、
+		// 作品 2,178 件のクリエイターが OG 巡回のたびに数千 read を払う（SPR-311）。
 		expect(creatorDocGet).toHaveBeenCalledTimes(1);
-		expect(worksSubcollectionGet).toHaveBeenCalledTimes(1);
-	});
-
-	it("ヘッダー情報と作品を 1 回の取得から組み立てる", async () => {
-		setupCreator([
-			{ id: "RJ111111", roles: ["scenario"] },
-			{ id: "RJ222222", roles: ["illustration"] },
-		]);
-
-		const source = await loadCreatorSource("VA12345");
-
-		expect(source?.info).toEqual({
+		expect(worksSubcollectionGet).not.toHaveBeenCalled();
+		expect(info).toEqual({
 			id: "VA12345",
 			name: "テストクリエイター",
-			// primaryRole は roles に含まれないので先頭に足される
+			// primaryRole は types に含まれないので先頭に足される
+			types: ["voiceActor", "scenario"],
+			workCount: 2,
+		});
+	});
+
+	it("非正規化が無い旧データはサブコレクションから数え直す", async () => {
+		setupCreator({ name: "テストクリエイター", primaryRole: "voiceActor" }, RELATIONS);
+
+		const info = await loadCreatorInfo("VA12345");
+
+		expect(worksSubcollectionGet).toHaveBeenCalledTimes(1);
+		expect(info).toEqual({
+			id: "VA12345",
+			name: "テストクリエイター",
 			types: ["voiceActor", "scenario", "illustration"],
 			workCount: 2,
 		});
-		expect(source?.works.map((w) => w.id)).toEqual(["RJ111111", "RJ222222"]);
 	});
 
-	it("workCount は関連付けの件数で、実在しない作品が欠けても減らない", async () => {
-		setupCreator([{ id: "RJ111111" }, { id: "RJ222222" }]);
+	it("workCount だけ・types だけの半端な非正規化は fallback 扱いにする", async () => {
+		setupCreator({ name: "C", workCount: 2 }, RELATIONS);
+		await loadCreatorInfo("VA12345");
+		expect(worksSubcollectionGet).toHaveBeenCalledTimes(1);
+	});
+
+	it("存在しないクリエイターは null を返す（キャッシュしてよい結果）", async () => {
+		creatorDocGet.mockResolvedValue({ exists: false });
+
+		await expect(loadCreatorInfo("VA99999")).resolves.toBeNull();
+	});
+
+	it("取得失敗は throw する（null に畳むとエラーが 1 日キャッシュに居座る）", async () => {
+		creatorDocGet.mockRejectedValue(new Error("Firestore error"));
+
+		await expect(loadCreatorInfo("VA12345")).rejects.toThrow("Firestore error");
+	});
+});
+
+describe("loadCreatorWorks", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	it("サブコレクションを 1 回だけ読んで作品本体を引く", async () => {
+		setupCreator({ name: "C", workCount: 2, types: ["scenario"] }, RELATIONS);
+
+		const works = await loadCreatorWorks("VA12345");
+
+		// 旧実装は getCreatorInfo と fetchWorkIds が同じものを二重に引いており、
+		// 1 ページ表示あたり 3N + 2 read になっていた（SPR-311 の主因）。
+		expect(worksSubcollectionGet).toHaveBeenCalledTimes(1);
+		expect(works?.map((w) => w.id)).toEqual(["RJ111111", "RJ222222"]);
+	});
+
+	it("実在しない作品は黙って除外する（workCount とは一致しなくてよい）", async () => {
+		setupCreator({ name: "C" }, RELATIONS);
 		mockGetAll.mockImplementation((...refs: Array<{ id: string }>) =>
 			Promise.resolve(
 				refs.map((ref) => ({ exists: ref.id === "RJ111111", id: ref.id, data: () => ({}) })),
 			),
 		);
 
-		const source = await loadCreatorSource("VA12345");
-
-		// 欠けは整合性 cron の担当で、ヘッダーの総作品数は関連付け基準のまま（既存挙動）
-		expect(source?.info.workCount).toBe(2);
-		expect(source?.works).toHaveLength(1);
+		// 欠けは整合性 cron の担当。ヘッダーの総作品数（workCount）は関連付け基準のまま
+		await expect(loadCreatorWorks("VA12345")).resolves.toHaveLength(1);
 	});
 
-	it("存在しないクリエイターは null を返す（キャッシュしてよい結果）", async () => {
+	it("存在しないクリエイターは null を返す（作品0件と区別する）", async () => {
 		creatorDocGet.mockResolvedValue({ exists: false });
 
-		await expect(loadCreatorSource("VA99999")).resolves.toBeNull();
+		await expect(loadCreatorWorks("VA99999")).resolves.toBeNull();
 	});
 
-	it("取得失敗は throw する（null に畳むとエラーが 1 日キャッシュに居座る）", async () => {
+	it("取得失敗は throw する", async () => {
 		creatorDocGet.mockRejectedValue(new Error("Firestore error"));
 
-		await expect(loadCreatorSource("VA12345")).rejects.toThrow("Firestore error");
+		await expect(loadCreatorWorks("VA12345")).rejects.toThrow("Firestore error");
 	});
 });

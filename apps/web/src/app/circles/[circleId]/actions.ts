@@ -27,7 +27,7 @@ export async function getCircleInfo(circleId: string): Promise<CirclePlainObject
 /**
  * サークル作品リストを取得（ConfigurableList用）
  *
- * ページ送り・ソート・検索は `loadCircleSource` が返す全作品に対する純粋な導出。
+ * ページ送り・ソート・検索は `loadCircleWorks` が返す全作品に対する純粋な導出。
  * Firestore へは行かない（キャッシュ境界の内側で 1 日 1 回）。
  * @param params パラメータ
  * @returns 作品一覧と総件数
