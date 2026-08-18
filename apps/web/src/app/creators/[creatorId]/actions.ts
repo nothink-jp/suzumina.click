@@ -1,16 +1,9 @@
 "use server";
 
-import type {
-	CreatorDocument,
-	CreatorPageInfo,
-	CreatorWorkRelation,
-	WorkPlainObject,
-} from "@suzumina.click/shared-types";
+import type { CreatorPageInfo, WorkPlainObject } from "@suzumina.click/shared-types";
 import { isValidCreatorId } from "@suzumina.click/shared-types";
 import { compareWorks, searchWorks } from "@/lib/circle-creator-works";
-import { getFirestore } from "@/lib/firestore";
-import { fetchWorksByIds } from "../../works/utils/fetch-works-by-ids";
-import { convertWorksToPlainObjects } from "../../works/utils/work-converters";
+import { loadCreatorInfo, loadCreatorWorks } from "./creator-works-source";
 
 /**
  * クリエイター情報を取得
@@ -24,41 +17,7 @@ export async function getCreatorInfo(creatorId: string): Promise<CreatorPageInfo
 	}
 
 	try {
-		// 新しいcreatorsコレクションから情報を取得
-		const firestore = getFirestore();
-		const creatorDoc = await firestore.collection("creators").doc(creatorId).get();
-
-		if (!creatorDoc.exists) {
-			return null;
-		}
-
-		const creatorData = creatorDoc.data() as CreatorDocument;
-
-		// worksサブコレクションから作品数と役割を取得
-		const worksSnapshot = await creatorDoc.ref.collection("works").get();
-
-		const allTypes = new Set<string>();
-		worksSnapshot.docs.forEach((doc) => {
-			const workRelation = doc.data() as CreatorWorkRelation;
-			workRelation.roles?.forEach((role) => {
-				allTypes.add(role);
-			});
-		});
-
-		// クリエイター情報の集約
-		const creatorInfo: CreatorPageInfo = {
-			id: creatorId,
-			name: creatorData.name,
-			types: Array.from(allTypes),
-			workCount: worksSnapshot.size,
-		};
-
-		// primaryRoleが設定されていて、typesに含まれていない場合は追加
-		if (creatorData.primaryRole && !allTypes.has(creatorData.primaryRole)) {
-			creatorInfo.types.unshift(creatorData.primaryRole);
-		}
-
-		return creatorInfo;
+		return await loadCreatorInfo(creatorId);
 	} catch (_error) {
 		// エラー発生時はnullを返す
 		return null;
@@ -66,29 +25,10 @@ export async function getCreatorInfo(creatorId: string): Promise<CreatorPageInfo
 }
 
 /**
- * 作品IDを取得
- */
-async function fetchWorkIds(
-	firestore: FirebaseFirestore.Firestore,
-	creatorId: string,
-): Promise<string[] | null> {
-	const creatorDoc = await firestore.collection("creators").doc(creatorId).get();
-
-	if (!creatorDoc.exists) {
-		return null;
-	}
-
-	const worksSnapshot = await creatorDoc.ref.collection("works").get();
-
-	if (worksSnapshot.empty) {
-		return [];
-	}
-
-	return worksSnapshot.docs.map((doc) => doc.id);
-}
-
-/**
  * クリエイター作品リストを取得（ConfigurableList用）
+ *
+ * ページ送り・ソート・検索は `loadCreatorWorks` が返す全作品に対する純粋な導出。
+ * Firestore へは行かない（キャッシュ境界の内側で 1 日 1 回）。
  * @param params パラメータ
  * @returns 作品一覧と総件数
  */
@@ -107,35 +47,24 @@ export async function getCreatorWorksList(params: {
 	}
 
 	try {
-		const firestore = getFirestore();
-
-		// 作品IDを取得
-		const workIds = await fetchWorkIds(firestore, creatorId);
-		if (workIds === null) {
+		const allWorks = await loadCreatorWorks(creatorId);
+		if (!allWorks) {
 			return { works: [], totalCount: 0 };
 		}
-		if (workIds.length === 0) {
-			return { works: [], totalCount: 0 };
-		}
-
-		// 作品詳細を取得
-		const allWorks = await fetchWorksByIds(firestore, workIds);
-
-		// WorkPlainObjectに変換
-		const convertedWorks = convertWorksToPlainObjects(allWorks);
 
 		// 検索フィルター適用
-		const { filtered: filteredWorks, count: filteredCount } = searchWorks(convertedWorks, search);
+		const { filtered: filteredWorks, count: filteredCount } = searchWorks(allWorks, search);
 
-		// ソート処理
-		filteredWorks.sort((a, b) => compareWorks(a, b, sort));
+		// ソート処理。`searchWorks` は検索語が無いと入力配列をそのまま返すため、
+		// ここで複製しないと **キャッシュ済みの配列を破壊的に並べ替える**（以降の全リクエストに漏れる）。
+		const sortedWorks = [...filteredWorks].sort((a, b) => compareWorks(a, b, sort));
 
 		// ページネーション適用
 		const startIndex = (page - 1) * limit;
 		const endIndex = startIndex + limit;
-		const paginatedWorks = filteredWorks.slice(startIndex, endIndex);
+		const paginatedWorks = sortedWorks.slice(startIndex, endIndex);
 
-		return { works: paginatedWorks, totalCount: convertedWorks.length, filteredCount };
+		return { works: paginatedWorks, totalCount: allWorks.length, filteredCount };
 	} catch (_error) {
 		// エラー発生時は空配列を返す
 		return { works: [], totalCount: 0 };
