@@ -28,6 +28,8 @@ import { convertWorksToPlainObjects } from "../../works/utils/work-converters";
  * `getCreatorInfo` は OG 画像ルート（`opengraph-image.tsx`）が単独で呼ぶ経路で、そこは
  * name / types / workCount しか使わない。1 つの境界に畳むと OG 生成が全作品まで引くことになり、
  * クローラの OG 巡回で `28165` のような大口が数千 read を払い続ける。
+ * 代償として、ページ表示（info と works の両方を使う経路）では creators/{id} を境界ごとに
+ * 1 回ずつ＝計 2 read 引く。分割で削れる量に対して無視できるので畳んでいない。
  *
  * 取得失敗は **throw して伝播させる**（キャッシュに載せない）。null を返すとエラーが 1 日居座る。
  * null は「そのクリエイターが存在しない」という、キャッシュしてよい結果だけに使う。

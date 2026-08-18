@@ -24,8 +24,9 @@ import { convertWorksToPlainObjects } from "../../works/utils/work-converters";
  * **ヘッダー情報と作品でキャッシュ境界を分けてある**。`loadCircleInfo` は OG 画像ルート
  * （`opengraph-image.tsx`）が単独で呼ぶ経路で、そこは元から circles/{id} の 1 read で済む。
  * 1 つの境界に畳むと OG 生成が所属作品まで引くことになり、クローラの OG 巡回で悪化する。
- * creator 側を 1 つに畳んであるのは、あちらのヘッダー情報（types / workCount）が
- * サブコレクション全件を必要とし、分けても安くならないため。
+ * creator 側も同じ理由・同じ構造で `loadCreatorInfo` / `loadCreatorWorks` に分割済み（SPR-311）。
+ * 代償として、ページ表示（info と works の両方を使う経路）では circles/{id} を境界ごとに
+ * 1 回ずつ＝計 2 read 引く。分割で削れる量に対して無視できるので畳んでいない。
  *
  * 取得失敗は throw して伝播させる（キャッシュに載せない）。
  * null は「そのサークルが存在しない」という、キャッシュしてよい結果だけに使う。
