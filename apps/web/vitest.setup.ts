@@ -260,6 +260,7 @@ vi.mock("lucide-react", () => {
 		ChevronUpIcon: createMockIcon("ChevronUpIcon"),
 		CheckIcon: createMockIcon("CheckIcon"),
 		// Icons for Cookie Settings
+		Cookie: createMockIcon("Cookie"),
 		Shield: createMockIcon("Shield"),
 		BarChart3: createMockIcon("BarChart3"),
 		Target: createMockIcon("Target"),

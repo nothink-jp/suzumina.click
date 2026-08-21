@@ -3,7 +3,7 @@
 import { DockedPanel } from "@suzumina.click/ui/components/custom";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Cookie } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useAgeVerification } from "@/contexts/age-verification-context";
 import { useIsClient } from "@/hooks/use-is-client";
 import {
@@ -22,6 +22,11 @@ const DEFAULT_CONSENT: ConsentState = {
 };
 
 const NARROW_VIEWPORT_QUERY = "(max-width: 639px)";
+
+/** 同意の確定を他のクライアント機能へ通知する（page_view の再送契機など） */
+function notifyConsentUpdate(choices: ConsentState) {
+	window.dispatchEvent(new CustomEvent("consentUpdate", { detail: choices }));
+}
 
 /**
  * 案A: 左下に独立して浮く非モーダルなピル型バー（年齢確認カードは右下・重ならない）。
@@ -46,20 +51,9 @@ export function CookieConsentBanner() {
 		return () => mediaQuery.removeEventListener("change", update);
 	}, []);
 
-	// Apply consent choices using unified system
-	const applyConsentChoices = useCallback((choices: ConsentState) => {
-		updateConsent(choices);
-
-		// Trigger custom event for other services to listen
-		window.dispatchEvent(
-			new CustomEvent("consentUpdate", {
-				detail: choices,
-			}),
-		);
-	}, []);
-
 	const saveConsent = (choices: ConsentState) => {
-		applyConsentChoices(choices);
+		updateConsent(choices);
+		notifyConsentUpdate(choices);
 		setShowBanner(false);
 		setShowPreferences(false);
 	};
@@ -85,12 +79,16 @@ export function CookieConsentBanner() {
 		// Only run on client side
 		if (!isClient) return;
 
-		// Check if user has already made consent choices using unified system
+		// 有効な同意が保存済みか（期限切れは null＝未同意扱いで再確認へ）
 		const savedConsent = getCurrentConsentState();
 
 		if (savedConsent) {
-			// User has already made consent choices
-			applyConsentChoices(savedConsent);
+			// SPR-280: 保存済み同意の gtag への反映は ConsentModeScript（layout に常設）が
+			// 済ませている。ここで updateConsent を呼ぶと (1) 同じ consent update の二重 push、
+			// (2) ユーザー操作でないのに consent_update イベントの送信、
+			// (3) consent-state-date の更新で1年の再確認が永久に来ない、の3つが起きていた。
+			// 残すのは DOM イベントの通知だけ（page_view 再送の契機・page-view-tracker.tsx）。
+			notifyConsentUpdate(savedConsent);
 			setShowBanner(false);
 		} else {
 			// No consent yet, show banner
@@ -98,7 +96,7 @@ export function CookieConsentBanner() {
 		}
 
 		setIsLoading(false);
-	}, [isClient, applyConsentChoices]);
+	}, [isClient]);
 
 	// 狭い画面では年齢確認カードのドック占有中（ask/toast）は出さず、決着後に表示する（順次表示）
 	const deferredForMobileAgeGate = isNarrowViewport && isAgeCardDocked;
