@@ -24,6 +24,10 @@ interface AllowedImagePattern {
  * 正本は next.config.mjs の `images.remotePatterns`（Next 本体が実際に読む設定）で、
  * ここはその写し。ズレは `__tests__/image-src.test.ts` が next.config.mjs を読み込んで
  * 突き合わせ、テスト失敗として検出する（コメントでの運用に頼らない）。
+ *
+ * 写しがモデル化しているのは **hostname と pathname の前方一致（protocol は https 固定）** のみ。
+ * remotePatterns にポート・`search` 制約が入ると写しの方が緩くなる（＝許可外 URL を
+ * next/image に渡してしまう）ため、同テストが「前提に収まっているか」も併せて固定している。
  */
 export const ALLOWED_IMAGE_PATTERNS: readonly AllowedImagePattern[] = [
 	{ hostname: "i.ytimg.com", pathnamePrefix: "/vi/" },

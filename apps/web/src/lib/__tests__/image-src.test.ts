@@ -62,11 +62,34 @@ describe("isOptimizableImageSrc", () => {
 describe("ALLOWED_IMAGE_PATTERNS と next.config.mjs の一致", () => {
 	// 正本は next.config.mjs（Next 本体が読む設定）。写しがズレたらここで落とす。
 	const remotePatterns = (
-		nextConfig as { images?: { remotePatterns?: { hostname: string; pathname: string }[] } }
+		nextConfig as {
+			images?: {
+				remotePatterns?: {
+					protocol?: string;
+					hostname: string;
+					port?: string;
+					pathname: string;
+					search?: string;
+				}[];
+			};
+		}
 	).images?.remotePatterns;
 
 	it("remotePatterns が読み取れる", () => {
 		expect(remotePatterns?.length).toBeGreaterThan(0);
+	});
+
+	// 写しは hostname + pathname 前方一致（https 固定）しかモデル化していない。
+	// next.config.mjs 側にそれ以外の制約（ポート・クエリ・http）が入ると、写しの方が
+	// 緩くなり許可外 URL を next/image に渡してしまう＝この防御が抜ける。
+	// 前提が崩れたことを検出できるよう、前提そのものをここで固定する。
+	it("remotePatterns が写しの前提に収まっている（https / ポート無し / search 無し / `/x/**`）", () => {
+		for (const pattern of remotePatterns ?? []) {
+			expect(pattern.protocol).toBe("https");
+			expect(pattern.port ?? "").toBe("");
+			expect(pattern.search ?? "").toBe("");
+			expect(pattern.pathname).toMatch(/\/\*\*$/);
+		}
 	});
 
 	it("すべての remotePattern が ALLOWED_IMAGE_PATTERNS に存在する", () => {
