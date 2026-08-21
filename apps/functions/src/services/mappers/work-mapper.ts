@@ -237,11 +237,14 @@ function isNoImagePlaceholder(url: string | undefined): boolean {
  * API から画像 URL が一切得られなかった場合の最終フォールバック。
  *
  * DLsite の画像は「次の千番台」ディレクトリ配下に置かれる（RJ01098758 → RJ01099000）。
- * ただしこれは**推測**であり、API 由来の値が取れるときは必ずそちらを優先すること。
+ * 従来この関数はそのディレクトリを欠いた URL を返しており、実際には常に 404 だった。
+ *
+ * ただし**推測**であることに変わりはなく、API 由来の値が取れるときは必ずそちらを優先する。
  * SPR-312 の実測では productId からの導出は 39件中 7件で外れた
  * （翻訳版の画像は元作品 ID の配下にあり、productId からは辿れない）。
- *
- * 原寸（modpub）が無い作品でも解決することがある resize 形式を使う。
+ * そもそもカバー画像が存在しない作品もあり、その場合はどう組み立てても 404 になる
+ * （web 側は #943 の「画像なし」プレースホルダで受ける）。resize 形式の派生ファイルが
+ * 残っていて 200 を返すことがあるが、原本が消えた作品では失効し得るので採用しない。
  */
 function buildFallbackThumbnailUrl(productId: string): string {
 	const match = productId.match(/^([A-Z]+)(\d+)$/);
@@ -251,7 +254,7 @@ function buildFallbackThumbnailUrl(productId: string): string {
 	const [, prefix, digits] = match;
 	const bucket = (Math.floor(Number(digits) / 1000) + 1) * 1000;
 	const dir = `${prefix}${String(bucket).padStart(digits.length, "0")}`;
-	return `https://img.dlsite.jp/resize/images2/work/doujin/${dir}/${productId}_img_main_240x240.jpg`;
+	return `https://img.dlsite.jp/modpub/images2/work/doujin/${dir}/${productId}_img_main.jpg`;
 }
 
 /**

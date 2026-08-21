@@ -346,7 +346,7 @@ describe("WorkMapper", () => {
 			} as DLsiteApiResponse);
 
 			expect(work.thumbnailUrl).toBe(
-				"https://img.dlsite.jp/resize/images2/work/doujin/RJ01042000/RJ01041035_img_main_240x240.jpg",
+				"https://img.dlsite.jp/modpub/images2/work/doujin/RJ01042000/RJ01041035_img_main.jpg",
 			);
 			expect(work.highResImageUrl).toBeUndefined();
 		});
@@ -358,7 +358,7 @@ describe("WorkMapper", () => {
 				image_thum: { url: NO_IMG_SAM },
 				image_main: { url: NO_IMG_MAIN },
 			} as DLsiteApiResponse);
-			expect(sixDigits.thumbnailUrl).toContain("/doujin/RJ253000/RJ252366_img_main_240x240.jpg");
+			expect(sixDigits.thumbnailUrl).toContain("/doujin/RJ253000/RJ252366_img_main.jpg");
 
 			const onBoundary = WorkMapper.toWork({
 				...mockRawApiData,
@@ -366,9 +366,7 @@ describe("WorkMapper", () => {
 				image_thum: { url: NO_IMG_SAM },
 				image_main: { url: NO_IMG_MAIN },
 			} as DLsiteApiResponse);
-			expect(onBoundary.thumbnailUrl).toContain(
-				"/doujin/RJ01043000/RJ01042000_img_main_240x240.jpg",
-			);
+			expect(onBoundary.thumbnailUrl).toContain("/doujin/RJ01043000/RJ01042000_img_main.jpg");
 		});
 
 		it("正常な画像URLの作品は挙動が変わらない", () => {
