@@ -191,9 +191,11 @@ Monthly:
 
 ### Budget Alerts
 
-- **Monthly budget**: $150
+- **Monthly budget**: ¥3,000（billing budget「希望予算」。正本は GCP Billing）
 - **Alert at**: 50%, 90%, 100%
-- **Hard limit**: 120% (then disable billing)
+
+予算アラートは「使い切ってから」しか鳴らない（SPR-311 では月の18日目に 100% 到達メールで気づいた）。
+使用量そのものを見るアラートが `terraform/monitoring_firestore_reads.tf` にあり、こちらが先に鳴る。
 
 ### Cost Optimization
 
