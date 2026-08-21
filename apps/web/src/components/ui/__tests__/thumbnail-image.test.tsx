@@ -5,7 +5,7 @@ import ThumbnailImage from "../thumbnail-image";
 
 describe("ThumbnailImage", () => {
 	const defaultProps = {
-		src: "https://example.com/image.jpg",
+		src: "https://img.dlsite.jp/resize/images2/work/doujin/RJ01/RJ001_img_main.jpg",
 		alt: "テスト画像",
 	};
 
@@ -48,7 +48,10 @@ describe("ThumbnailImage", () => {
 
 		const image = screen.getByTestId("next-image");
 		expect(image).toBeInTheDocument();
-		expect(image).toHaveAttribute("src", "https://example.com/image.jpg");
+		expect(image).toHaveAttribute(
+			"src",
+			"https://img.dlsite.jp/resize/images2/work/doujin/RJ01/RJ001_img_main.jpg",
+		);
 		expect(image).toHaveAttribute("alt", "テスト画像");
 	});
 
@@ -58,7 +61,10 @@ describe("ThumbnailImage", () => {
 		const image = screen.getByTestId("next-image");
 
 		// 初期状態の確認
-		expect(image).toHaveAttribute("src", "https://example.com/image.jpg");
+		expect(image).toHaveAttribute(
+			"src",
+			"https://img.dlsite.jp/resize/images2/work/doujin/RJ01/RJ001_img_main.jpg",
+		);
 		expect(image).toHaveAttribute("alt", "テスト画像");
 
 		// エラーイベントを発火
@@ -104,7 +110,12 @@ describe("ThumbnailImage", () => {
 		fireEvent.load(image);
 		expect(container?.querySelector('[aria-hidden="true"].blur-sm')).not.toBeInTheDocument();
 
-		rerender(<ThumbnailImage {...defaultProps} src="https://example.com/new-image.jpg" />);
+		rerender(
+			<ThumbnailImage
+				{...defaultProps}
+				src="https://img.dlsite.jp/resize/images2/work/doujin/RJ01/RJ002_img_main.jpg"
+			/>,
+		);
 
 		expect(container?.querySelector('[aria-hidden="true"].blur-sm')).toBeInTheDocument();
 	});
@@ -116,7 +127,10 @@ describe("ThumbnailImage", () => {
 
 		// 初期状態の確認
 		expect(image).toBeInTheDocument();
-		expect(image).toHaveAttribute("src", "https://example.com/image.jpg");
+		expect(image).toHaveAttribute(
+			"src",
+			"https://img.dlsite.jp/resize/images2/work/doujin/RJ01/RJ001_img_main.jpg",
+		);
 
 		// 最初のエラーイベントを発火
 		fireEvent.error(image);
@@ -142,7 +156,10 @@ describe("ThumbnailImage", () => {
 		);
 
 		const image = screen.getByTestId("next-image");
-		expect(image).toHaveAttribute("src", "https://example.com/image.jpg");
+		expect(image).toHaveAttribute(
+			"src",
+			"https://img.dlsite.jp/resize/images2/work/doujin/RJ01/RJ001_img_main.jpg",
+		);
 		expect(image).toHaveAttribute("alt", "テスト画像");
 		expect(image).toHaveAttribute("data-fill", "true");
 		expect(image).toHaveAttribute("data-priority", "true");
@@ -242,20 +259,11 @@ describe("ThumbnailImage", () => {
 
 	// エラーハンドリングの詳細テスト
 	describe("エラーハンドリング", () => {
-		it("無効なURL形式でもプレースホルダーで適切に処理される", async () => {
-			const invalidUrl = "invalid-url";
-			render(<ThumbnailImage {...defaultProps} src={invalidUrl} />);
+		it("無効なURL形式は next/image に渡さずプレースホルダーになる", () => {
+			render(<ThumbnailImage {...defaultProps} src="invalid-url" />);
 
 			const image = screen.getByTestId("next-image");
-			expect(image).toHaveAttribute("src", invalidUrl);
-
-			// エラーイベントを発火
-			fireEvent.error(image);
-
-			// プレースホルダーに切り替わることを確認
-			await waitFor(() => {
-				expect(image).toHaveAttribute("src", expect.stringContaining("data:image/svg+xml"));
-			});
+			expect(image).toHaveAttribute("src", expect.stringContaining("data:image/svg+xml"));
 		});
 
 		it("プレースホルダー状態からの再度のsrc変更で正常に復帰する", async () => {
@@ -270,12 +278,56 @@ describe("ThumbnailImage", () => {
 			});
 
 			// 新しいsrcで再レンダリング
-			const newSrc = "https://example.com/new-image.jpg";
+			const newSrc = "https://img.dlsite.jp/resize/images2/work/doujin/RJ01/RJ002_img_main.jpg";
 			rerender(<ThumbnailImage {...defaultProps} src={newSrc} />);
 
 			// useEffectによる状態リセットを待機
 			await waitFor(() => {
 				expect(image).toHaveAttribute("src", newSrc);
+			});
+		});
+	});
+
+	// 許可ホスト外の src の扱い（next/image のホスト検証は開発時のみ throw する）
+	describe("許可ホスト外のsrc", () => {
+		// DLsite の「画像なし」プレースホルダ。実データに存在し、next.config.mjs の
+		// remotePatterns に無いため next/image に渡すと開発時はレンダリングごと落ちる。
+		const NO_IMAGE_SAM = "https://www.dlsite.com/images/web/home/no_img_sam.gif";
+		const NO_IMAGE_MAIN = "https://www.dlsite.com/images/web/home/no_img_main.gif";
+		const ALLOWED_SRC = "https://img.dlsite.jp/resize/images2/work/doujin/RJ01/RJ003_img_main.jpg";
+
+		it("src・fallbackSrc とも許可外ならプレースホルダーを表示する", () => {
+			render(
+				<ThumbnailImage
+					{...defaultProps}
+					src={NO_IMAGE_MAIN}
+					fallbackSrc={NO_IMAGE_SAM}
+					alt="テスト画像"
+				/>,
+			);
+
+			const image = screen.getByTestId("next-image");
+			expect(image).toHaveAttribute("src", expect.stringContaining("data:image/svg+xml"));
+			expect(screen.getByText("画像なし")).toBeInTheDocument();
+		});
+
+		it("src が許可外でも fallbackSrc が許可ホストならそちらを使う", () => {
+			render(<ThumbnailImage {...defaultProps} src={NO_IMAGE_MAIN} fallbackSrc={ALLOWED_SRC} />);
+
+			const image = screen.getByTestId("next-image");
+			expect(image).toHaveAttribute("src", ALLOWED_SRC);
+		});
+
+		it("読み込みエラー時に許可外の fallbackSrc へは切り替えない", async () => {
+			render(<ThumbnailImage {...defaultProps} src={ALLOWED_SRC} fallbackSrc={NO_IMAGE_SAM} />);
+
+			const image = screen.getByTestId("next-image");
+			expect(image).toHaveAttribute("src", ALLOWED_SRC);
+
+			fireEvent.error(image);
+
+			await waitFor(() => {
+				expect(image).toHaveAttribute("src", expect.stringContaining("data:image/svg+xml"));
 			});
 		});
 	});

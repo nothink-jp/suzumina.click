@@ -13,28 +13,11 @@ import {
 import { Image as ImageIcon, ZoomIn } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { isOptimizableImageSrc, normalizeImageUrl } from "@/lib/image-src";
 
 interface SampleImageGalleryProps {
 	sampleImages: SampleImage[];
 	workTitle: string;
-}
-
-// DLsite画像URLを正規化
-function normalizeDLsiteUrl(url: string): string {
-	if (typeof url !== "string" || url.trim() === "") {
-		return "";
-	}
-
-	// プロトコル相対URL（//img.dlsite.jp/...）をHTTPS URLに変換
-	if (url.startsWith("//")) {
-		return `https:${url}`;
-	}
-	// HTTPプロトコルをHTTPSに変換
-	if (url.startsWith("http://")) {
-		return url.replace("http://", "https://");
-	}
-
-	return url;
 }
 
 // サムネイル専用の画像コンポーネント
@@ -48,9 +31,9 @@ function SampleThumbnail({
 	className?: string;
 }) {
 	const [hasError, setHasError] = useState(false);
-	const normalizedSrc = normalizeDLsiteUrl(src);
-
-	if (hasError) {
+	const normalizedSrc = normalizeImageUrl(src);
+	// 許可ホスト外の URL は next/image に渡さない（開発時の throw / 本番の 400 を避ける）
+	if (hasError || !isOptimizableImageSrc(normalizedSrc)) {
 		return (
 			<div
 				className={`${className} bg-muted flex items-center justify-center`}
@@ -92,7 +75,7 @@ function ExpandedImage({
 }) {
 	const [hasError, setHasError] = useState(false);
 	const [displayDimensions, setDisplayDimensions] = useState({ width, height });
-	const normalizedSrc = normalizeDLsiteUrl(src);
+	const normalizedSrc = normalizeImageUrl(src);
 
 	// SSR対応: クライアントサイドでのみwindowサイズを取得
 	useEffect(() => {
@@ -128,7 +111,7 @@ function ExpandedImage({
 		return () => window.removeEventListener("resize", handleResize);
 	}, [width, height]);
 
-	if (hasError) {
+	if (hasError || !isOptimizableImageSrc(normalizedSrc)) {
 		return (
 			<div
 				className="bg-muted flex items-center justify-center"
