@@ -1,19 +1,7 @@
 "use server";
 
-import type {
-	CreatorDocument,
-	CreatorPageInfo,
-	CreatorWorkRelation,
-} from "@suzumina.click/shared-types";
-import { unstable_cache } from "next/cache";
-import { getFirestore } from "@/lib/firestore";
-
-/**
- * /creators の Firestore 読み込みを 60s revalidate でキャッシュ (SPR-74 Phase A)。
- * writes は 2h ごとの DLsite 同期のみで低頻度のため鮮度問題なし。
- * params (page/limit/sort/search/role) は unstable_cache が自動でキー化する。
- */
-const CREATORS_REVALIDATE_SECONDS = 60;
+import type { CreatorPageInfo } from "@suzumina.click/shared-types";
+import { loadAllCreators } from "./creators-source";
 
 type GetCreatorsParams = {
 	page?: number;
@@ -25,124 +13,64 @@ type GetCreatorsParams = {
 
 type GetCreatorsResult = { creators: CreatorPageInfo[]; totalCount: number };
 
-async function fetchCreators(params: GetCreatorsParams): Promise<GetCreatorsResult> {
+function compareCreators(a: CreatorPageInfo, b: CreatorPageInfo, sort: string): number {
+	switch (sort) {
+		case "nameDesc":
+			return b.name.localeCompare(a.name, "ja");
+		case "workCount":
+			// 作品数順（多い順）。同数なら名前順
+			return b.workCount - a.workCount || a.name.localeCompare(b.name, "ja");
+		case "workCountAsc":
+			// 作品数順（少ない順）。同数なら名前順
+			return a.workCount - b.workCount || a.name.localeCompare(b.name, "ja");
+		default:
+			// name / 未知の値ともに名前順（昇順）
+			return a.name.localeCompare(b.name, "ja");
+	}
+}
+
+/**
+ * クリエイター一覧を取得（ConfigurableList用）
+ *
+ * 絞り込み・並べ替え・ページ送りは `loadAllCreators` が返す全件に対する純粋な導出。
+ * Firestore へは行かない（キャッシュ境界の内側）。
+ * @param params パラメータ
+ * @returns クリエイター一覧と総件数
+ */
+export async function getCreators(params: GetCreatorsParams): Promise<GetCreatorsResult> {
 	const { page = 1, limit = 12, sort = "name", search, role } = params;
 
 	try {
-		const firestore = getFirestore();
-
-		// 全クリエイターを取得
-		const creatorsSnapshot = await firestore.collection("creators").get();
-
-		// SPR-74 Phase B: denormalized な workCount/types があれば subcollection 読み込みを省略。
-		// backfill 未完了の旧データは fallback で従来の Promise.all 並列読みに退避する。
-		const allCreators: CreatorPageInfo[] = await Promise.all(
-			creatorsSnapshot.docs.map(async (doc) => {
-				const creatorData = doc.data() as CreatorDocument;
-
-				if (typeof creatorData.workCount === "number" && Array.isArray(creatorData.types)) {
-					const allTypes = new Set<string>(creatorData.types);
-					if (creatorData.primaryRole && !allTypes.has(creatorData.primaryRole)) {
-						allTypes.add(creatorData.primaryRole);
-					}
-					return {
-						id: creatorData.creatorId,
-						name: creatorData.name,
-						types: Array.from(allTypes),
-						workCount: creatorData.workCount,
-					} satisfies CreatorPageInfo;
-				}
-
-				const worksSnapshot = await doc.ref.collection("works").get();
-
-				const allTypes = new Set<string>();
-				worksSnapshot.docs.forEach((workDoc) => {
-					const workRelation = workDoc.data() as CreatorWorkRelation;
-					workRelation.roles?.forEach((r) => {
-						allTypes.add(r);
-					});
-				});
-
-				if (creatorData.primaryRole && !allTypes.has(creatorData.primaryRole)) {
-					allTypes.add(creatorData.primaryRole);
-				}
-
-				return {
-					id: creatorData.creatorId,
-					name: creatorData.name,
-					types: Array.from(allTypes),
-					workCount: worksSnapshot.size,
-				} satisfies CreatorPageInfo;
-			}),
-		);
+		const allCreators = await loadAllCreators();
 
 		// 役割でフィルタリング
-		let filteredCreators = allCreators;
-		if (role && role !== "all") {
-			filteredCreators = allCreators.filter((creator) => creator.types.includes(role));
-		}
+		let filteredCreators =
+			role && role !== "all"
+				? allCreators.filter((creator) => creator.types.includes(role))
+				: allCreators;
 
 		// 検索フィルタリング
 		if (search) {
 			const searchLower = search.toLowerCase();
-			filteredCreators = filteredCreators.filter((creator) => {
-				return creator.name.toLowerCase().includes(searchLower);
-			});
+			filteredCreators = filteredCreators.filter((creator) =>
+				creator.name.toLowerCase().includes(searchLower),
+			);
 		}
 
-		// ソート処理
-		filteredCreators.sort((a, b) => {
-			switch (sort) {
-				case "name":
-					// 名前順（昇順）
-					return a.name.localeCompare(b.name, "ja");
-				case "nameDesc":
-					// 名前順（降順）
-					return b.name.localeCompare(a.name, "ja");
-				case "workCount":
-					// 作品数順（多い順）
-					if (b.workCount !== a.workCount) {
-						return b.workCount - a.workCount;
-					}
-					// 作品数が同じ場合は名前順
-					return a.name.localeCompare(b.name, "ja");
-				case "workCountAsc":
-					// 作品数順（少ない順）
-					if (a.workCount !== b.workCount) {
-						return a.workCount - b.workCount;
-					}
-					// 作品数が同じ場合は名前順
-					return a.name.localeCompare(b.name, "ja");
-				default:
-					return a.name.localeCompare(b.name, "ja");
-			}
-		});
+		// ソート処理。フィルタが無いと filteredCreators は `loadAllCreators` の戻り値そのものなので、
+		// ここで複製しないと **キャッシュ済みの配列を破壊的に並べ替える**（以降の全リクエストに漏れる）。
+		const sortedCreators = [...filteredCreators].sort((a, b) => compareCreators(a, b, sort));
 
 		// ページネーション適用
 		const startIndex = (page - 1) * limit;
 		const endIndex = startIndex + limit;
-		const paginatedCreators = filteredCreators.slice(startIndex, endIndex);
 
 		return {
-			creators: paginatedCreators,
-			totalCount: filteredCreators.length,
+			creators: sortedCreators.slice(startIndex, endIndex),
+			totalCount: sortedCreators.length,
 		};
 	} catch (_error) {
 		// エラー発生時は空配列を返す
 		return { creators: [], totalCount: 0 };
 	}
-}
-
-const getCreatorsCached = unstable_cache(fetchCreators, ["creators-list"], {
-	revalidate: CREATORS_REVALIDATE_SECONDS,
-	tags: ["creators-list"],
-});
-
-/**
- * クリエイター一覧を取得（ConfigurableList用）
- * @param params パラメータ
- * @returns クリエイター一覧と総件数
- */
-export async function getCreators(params: GetCreatorsParams): Promise<GetCreatorsResult> {
-	return getCreatorsCached(params);
 }
