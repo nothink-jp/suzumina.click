@@ -222,23 +222,43 @@ const nextConfig = {
 					},
 				],
 			},
-			// 動的ページのstale-while-revalidate（LCP改善）
-			// force-dynamicページでもブラウザキャッシュを活用
+			// creators / circles はクローラの巡回先で、同じ URL が何度も来る（SPR-315）。
+			// 8/20 の実測（/creators/* + /circles/* の詳細 4,372 リクエスト・異なり 1,223 URL）で
+			// TTL ごとのオリジン到達数を出すと、**60 秒は何も吸収していなかった**:
+			//
+			//    60秒 → 4,370 件（削減 0.0%）   1時間 → 3,484（20.3%）
+			//    6時間 → 2,162 件（50.5%）      12時間 → 1,668（61.8%）   24時間 → 1,223（72.0%）
+			//
+			// クローラは同じ URL を平均 7.35 回叩く（86.4% が再訪）が、再訪の間隔が数時間オーダーなので
+			// 60 秒では全部すり抜けていた。オリジン側の `use cache` は creator/circle 詳細が
+			// cacheLife("days")・一覧が ("hours") で、データはもともと時間〜日オーダーで陳腐化する。
+			// エッジをそれより短く保つ意味が無いため 6 時間 fresh + 12 時間 swr に広げる。
+			// 最悪 18 時間ぶん古い内容を返しうるが、元データの鮮度（最大1日）を下回らない範囲。
+			//
+			// Cloudflare 側は Cache Rule #5 が respect_origin なのでここの値がそのまま効く（terraform 無変更）。
+			//
+			// 一覧と詳細で TTL を分ける。オリジンの鮮度契約が違うため:
+			//   詳細 = cacheLife("days") → エッジも時間〜日オーダーでよい
+			//   一覧 = cacheLife("hours") → 新着クリエイター/サークルの反映を時間オーダーに保つ意図（SPR-311）
+			// 一覧にも詳細と同じ 6+12 時間を当てると、**エッジがオリジンの鮮度契約を追い越して古くなる**。
+			// 一覧側の実測（8/20・creators 720 req / circles 237 req）では 6時間と 2時間の差は
+			// オリジン到達 +270 件/日＝概ね ¥100〜140/月 で、鮮度の一貫性に対して十分小さい。
 			{
-				source: "/creators/:path*",
+				source: "/(creators|circles)",
 				headers: [
 					{
 						key: "Cache-Control",
-						value: "public, s-maxage=60, stale-while-revalidate=300",
+						// 2時間 fresh + 2時間 swr（最悪4時間）。DLsite 取り込みの間隔（2h）に合わせる。
+						value: "public, s-maxage=7200, stale-while-revalidate=7200",
 					},
 				],
 			},
 			{
-				source: "/circles/:path*",
+				source: "/(creators|circles)/:path+",
 				headers: [
 					{
 						key: "Cache-Control",
-						value: "public, s-maxage=60, stale-while-revalidate=300",
+						value: "public, s-maxage=21600, stale-while-revalidate=43200",
 					},
 				],
 			},
