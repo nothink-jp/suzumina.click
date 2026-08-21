@@ -162,9 +162,11 @@ describe("URL正規化機能", () => {
 
 		const result = WorkMapper.toWork(mockApiData);
 
-		// デフォルトURLが設定されることを確認
+		// デフォルトURLが設定されることを確認。
+		// SPR-312: 旧フォールバック（.../doujin/RJ01037463_img_main.jpg）は千番台ディレクトリを
+		// 欠いており実際には 404 だった。次の千番台配下の resize 形式へ是正している。
 		expect(result.thumbnailUrl).toBe(
-			"https://img.dlsite.jp/modpub/images2/work/doujin/RJ01037463_img_main.jpg",
+			"https://img.dlsite.jp/resize/images2/work/doujin/RJ01038000/RJ01037463_img_main_240x240.jpg",
 		);
 		expect(result.highResImageUrl).toBeUndefined();
 	});

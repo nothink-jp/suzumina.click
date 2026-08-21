@@ -307,6 +307,82 @@ describe("WorkMapper", () => {
 		});
 	});
 
+	// SPR-312: DLsite API は画像未登録の作品で no_img プレースホルダを返す。
+	// これを保存すると web の remotePatterns 外のホストになり、JSON-LD / OG 画像も壊れる。
+	describe("「画像なし」プレースホルダの正規化", () => {
+		const NO_IMG_SAM = "//www.dlsite.com/images/web/home/no_img_sam.gif";
+		const NO_IMG_MAIN = "//www.dlsite.com/images/web/home/no_img_main.gif";
+
+		it("image_thum が no_img なら image_main の URL を使う", () => {
+			// 翻訳版は image_main が元作品の画像を指す（実データ: RJ01113566 → RJ01098758）
+			const work = WorkMapper.toWork({
+				...mockRawApiData,
+				image_thum: { url: NO_IMG_SAM },
+				image_main: {
+					url: "//img.dlsite.jp/modpub/images2/work/doujin/RJ01099000/RJ01098758_img_main.jpg",
+				},
+			} as DLsiteApiResponse);
+
+			expect(work.thumbnailUrl).toBe(
+				"https://img.dlsite.jp/modpub/images2/work/doujin/RJ01099000/RJ01098758_img_main.jpg",
+			);
+		});
+
+		it("image_main が no_img なら highResImageUrl は undefined になる", () => {
+			const work = WorkMapper.toWork({
+				...mockRawApiData,
+				image_main: { url: NO_IMG_MAIN },
+			} as DLsiteApiResponse);
+
+			expect(work.highResImageUrl).toBeUndefined();
+		});
+
+		it("image_thum / image_main とも no_img なら次の千番台のフォールバックURLになる", () => {
+			const work = WorkMapper.toWork({
+				...mockRawApiData,
+				workno: "RJ01041035",
+				image_thum: { url: NO_IMG_SAM },
+				image_main: { url: NO_IMG_MAIN },
+			} as DLsiteApiResponse);
+
+			expect(work.thumbnailUrl).toBe(
+				"https://img.dlsite.jp/resize/images2/work/doujin/RJ01042000/RJ01041035_img_main_240x240.jpg",
+			);
+			expect(work.highResImageUrl).toBeUndefined();
+		});
+
+		it("フォールバックURLは元IDの桁数を保ち、千番台ちょうどでも次の千番台へ繰り上げる", () => {
+			const sixDigits = WorkMapper.toWork({
+				...mockRawApiData,
+				workno: "RJ252366",
+				image_thum: { url: NO_IMG_SAM },
+				image_main: { url: NO_IMG_MAIN },
+			} as DLsiteApiResponse);
+			expect(sixDigits.thumbnailUrl).toContain("/doujin/RJ253000/RJ252366_img_main_240x240.jpg");
+
+			const onBoundary = WorkMapper.toWork({
+				...mockRawApiData,
+				workno: "RJ01042000",
+				image_thum: { url: NO_IMG_SAM },
+				image_main: { url: NO_IMG_MAIN },
+			} as DLsiteApiResponse);
+			expect(onBoundary.thumbnailUrl).toContain(
+				"/doujin/RJ01043000/RJ01042000_img_main_240x240.jpg",
+			);
+		});
+
+		it("正常な画像URLの作品は挙動が変わらない", () => {
+			const work = WorkMapper.toWork(mockRawApiData);
+
+			expect(work.thumbnailUrl).toBe(
+				"https://img.dlsite.jp/modpub/images2/work/doujin/RJ12345678_img_thum.jpg",
+			);
+			expect(work.highResImageUrl).toBe(
+				"https://img.dlsite.jp/modpub/images2/work/doujin/RJ12345678_img_main.jpg",
+			);
+		});
+	});
+
 	describe("プロトコル相対URLの正規化", () => {
 		it("プロトコル相対URLをHTTPSに変換する", () => {
 			const work = WorkMapper.toWork(mockRawApiData);

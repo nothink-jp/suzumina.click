@@ -27,6 +27,10 @@ const DLSITE_WORKS_COLLECTION = "works";
  *
  * price の任意フィールド（original / discount / point）は不在時に FieldValue.delete() を
  * 明示し、セール終了などの状態遷移を Firestore 上の正本へ確実に反映する。
+ *
+ * highResImageUrl も同様。API が「画像なし」プレースホルダを返す作品では
+ * mapper が undefined を返すため（SPR-312）、delete しないと過去に保存した
+ * no_img gif の URL が残り続ける。
  */
 function toWorkWriteData(work: WorkDocument): WorkDocument {
 	const { original, discount, point } = work.price;
@@ -40,6 +44,7 @@ function toWorkWriteData(work: WorkDocument): WorkDocument {
 			discount: discount ?? del,
 			point: point ?? del,
 		},
+		highResImageUrl: work.highResImageUrl ?? del,
 	};
 }
 

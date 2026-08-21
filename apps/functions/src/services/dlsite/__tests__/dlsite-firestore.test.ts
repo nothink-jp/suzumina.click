@@ -123,6 +123,37 @@ describe("dlsite-firestore", () => {
 			expect(payload.price.current).toBe(1650);
 		});
 
+		it("highResImageUrl が不在なら FieldValue.delete() で旧値を消す", async () => {
+			// SPR-312: API が「画像なし」プレースホルダを返す作品では mapper が undefined を返す。
+			// delete しないと過去に保存した no_img gif の URL が残り続ける（sticky）。
+			const workWithoutHighRes: WorkDocument = {
+				...sampleWork,
+				highResImageUrl: undefined,
+			};
+			mockQuery.get.mockResolvedValue({ empty: true, docs: [] });
+
+			await saveWorksToFirestore([workWithoutHighRes]);
+
+			const payload = mockBatch.set.mock.calls[0]![1] as Record<string, unknown>;
+			expect((payload.highResImageUrl as any).isEqual(FieldValue.delete())).toBe(true);
+		});
+
+		it("highResImageUrl があればその値を保持する", async () => {
+			const workWithHighRes: WorkDocument = {
+				...sampleWork,
+				highResImageUrl:
+					"https://img.dlsite.jp/modpub/images2/work/doujin/RJ01099000/RJ01098758_img_main.jpg",
+			};
+			mockQuery.get.mockResolvedValue({ empty: true, docs: [] });
+
+			await saveWorksToFirestore([workWithHighRes]);
+
+			const payload = mockBatch.set.mock.calls[0]![1] as Record<string, unknown>;
+			expect(payload.highResImageUrl).toBe(
+				"https://img.dlsite.jp/modpub/images2/work/doujin/RJ01099000/RJ01098758_img_main.jpg",
+			);
+		});
+
 		it("セール中（discount/original あり）はその値を保持する", async () => {
 			const workOnSale: WorkDocument = {
 				...sampleWork,
