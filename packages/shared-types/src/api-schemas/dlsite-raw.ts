@@ -102,17 +102,19 @@ export const DLsiteRawCampaign = z.object({
 });
 
 // === 翻訳情報 ===
+// 非翻訳作品では original_workno / parent_workno / lang が **null** で返る（実 API で確認）。
+// 保存側の TranslationInfo は `string | undefined` なので、マッパーで null を落とすこと。
 export const DLsiteRawTranslation = z.object({
 	is_translation_agree: z.boolean().optional(),
 	is_volunteer: z.boolean().optional(),
 	is_original: z.boolean().optional(),
 	is_parent: z.boolean().optional(),
 	is_child: z.boolean().optional(),
-	original_workno: z.string().optional(),
-	parent_workno: z.string().optional(),
-	child_worknos: z.array(z.string()).optional(),
-	lang: z.string().optional(),
-	production_trade_price_rate: z.number().optional(),
+	original_workno: z.string().nullish(),
+	parent_workno: z.string().nullish(),
+	child_worknos: z.array(z.string()).nullish(),
+	lang: z.string().nullish(),
+	production_trade_price_rate: z.number().nullish(),
 });
 
 // === 言語版情報 ===
@@ -166,8 +168,9 @@ export const DLsiteApiResponse = z.object({
 	title: DLsiteRawSeries.optional(),
 	// キャンペーン
 	campaign: DLsiteRawCampaign.optional(),
-	// 翻訳
-	translation: DLsiteRawTranslation.optional(),
+	// 翻訳（API の実フィールド名は `translation_info`。SPR-313 まで `translation` を見ており
+	// 全作品で欠落していた）
+	translation_info: DLsiteRawTranslation.optional(),
 	// 言語版
 	language_editions: DLsiteRawLanguageEditions.optional(),
 	// ランキング
