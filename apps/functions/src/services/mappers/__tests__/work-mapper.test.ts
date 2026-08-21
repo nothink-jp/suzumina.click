@@ -337,7 +337,6 @@ describe("WorkMapper", () => {
 				parentWorkno: undefined,
 				childWorknos: ["RJ01113567"],
 				lang: "CHI_HANS",
-				productionTradePriceRate: undefined,
 			});
 		});
 

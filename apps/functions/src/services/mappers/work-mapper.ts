@@ -420,7 +420,9 @@ function toTranslationInfo(raw: DLsiteApiResponse): TranslationInfo | undefined 
 		parentWorkno: translation.parent_workno ?? undefined,
 		childWorknos: translation.child_worknos ?? undefined,
 		lang: translation.lang ?? undefined,
-		productionTradePriceRate: translation.production_trade_price_rate ?? undefined,
+		// production_trade_price_rate は TranslationInfoSchema に定義はあるが、
+		// 実 API では翻訳親/子・原作・非翻訳のいずれでもキー自体が返らない（8件で確認）。
+		// 常に undefined になるだけなので取り込まない。
 	};
 }
 
