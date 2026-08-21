@@ -20,8 +20,8 @@ const createWork = (overrides: Partial<WorkPlainObject> = {}): WorkPlainObject =
 		circle: "テストサークル",
 		circleId: "RG12345",
 		workUrl: "https://www.dlsite.com/work/RJ123456",
-		thumbnailUrl: "thumb.jpg",
-		highResImageUrl: "high.jpg",
+		thumbnailUrl: "https://img.dlsite.jp/resize/images2/work/doujin/RJ01/RJ001_img_sam.jpg",
+		highResImageUrl: "https://img.dlsite.jp/modpub/images2/work/doujin/RJ01/RJ001_img_main.jpg",
 		releaseDate: "2023年5月6日",
 		genres: ["ボイス・ASMR", "癒し"],
 		price: {
@@ -231,13 +231,33 @@ describe("WorkCard", () => {
 	it("highResImageUrl が無いと thumbnailUrl をサムネイルに使う", () => {
 		render(<WorkCard work={createWork({ highResImageUrl: undefined })} />);
 		const img = screen.getByAltText("テスト作品のサムネイル画像");
-		expect(img).toHaveAttribute("src", "thumb.jpg");
+		expect(img).toHaveAttribute(
+			"src",
+			"https://img.dlsite.jp/resize/images2/work/doujin/RJ01/RJ001_img_sam.jpg",
+		);
 	});
 
-	it("highResImageUrl も thumbnailUrl も無いと placeholder にフォールバックする", () => {
+	it("highResImageUrl も thumbnailUrl も無いと「画像なし」プレースホルダーになる", () => {
 		render(<WorkCard work={createWork({ highResImageUrl: undefined, thumbnailUrl: undefined })} />);
 		const img = screen.getByAltText("テスト作品のサムネイル画像");
-		expect(img).toHaveAttribute("src", "/placeholder.svg");
+		expect(img).toHaveAttribute("src", expect.stringContaining("data:image/svg+xml"));
+	});
+
+	// DLsite の「画像なし」プレースホルダ（next.config.mjs の remotePatterns に無いホスト）は
+	// next/image に渡すと開発時にレンダリングごと throw する。一覧カード 1 枚のデータ汚れで
+	// ページ全体が落ちないことを固定する。
+	it("DLsite の「画像なし」プレースホルダURLでもカードが落ちず「画像なし」表示になる", () => {
+		render(
+			<WorkCard
+				work={createWork({
+					highResImageUrl: "https://www.dlsite.com/images/web/home/no_img_main.gif",
+					thumbnailUrl: "https://www.dlsite.com/images/web/home/no_img_sam.gif",
+				})}
+			/>,
+		);
+		const img = screen.getByAltText("テスト作品のサムネイル画像");
+		expect(img).toHaveAttribute("src", expect.stringContaining("data:image/svg+xml"));
+		expect(screen.getByText("画像なし")).toBeInTheDocument();
 	});
 
 	it("creators が無くてもクラッシュせず CV 表示を出さない", () => {
