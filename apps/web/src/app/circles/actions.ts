@@ -1,9 +1,7 @@
 "use server";
 
-import type { CircleDocument, CirclePlainObject } from "@suzumina.click/shared-types";
-import { convertToCirclePlainObject } from "@suzumina.click/shared-types";
-import { unstable_cache } from "next/cache";
-import { getFirestore } from "@/lib/firestore";
+import type { CirclePlainObject } from "@suzumina.click/shared-types";
+import { loadAllCircles } from "./circles-source";
 
 type GetCirclesParams = {
 	page?: number;
@@ -12,31 +10,35 @@ type GetCirclesParams = {
 	search?: string;
 };
 
+function compareCircles(a: CirclePlainObject, b: CirclePlainObject, sort: string): number {
+	switch (sort) {
+		case "nameDesc":
+			return b.name.localeCompare(a.name, "ja");
+		case "workCount":
+			return b.workCount - a.workCount;
+		case "workCountAsc":
+			return a.workCount - b.workCount;
+		default:
+			// name / 未知の値ともに名前順（昇順）
+			return a.name.localeCompare(b.name, "ja");
+	}
+}
+
 /**
- * circles 全件を読み込む内部フェッチ。表示ごとの全件 read を避けるため下の `getCircles` で
- * 60s revalidate キャッシュする（SPR-161）。writes は 2h DLsite 同期と整合 cron のみで低頻度の
- * ため鮮度問題なし。params は unstable_cache が自動でキー化する。
+ * サークル一覧を取得（ConfigurableList用）
+ *
+ * 絞り込み・並べ替え・ページ送りは `loadAllCircles` が返す全件に対する純粋な導出。
+ * Firestore へは行かない（キャッシュ境界の内側）。
+ * @param params パラメータ
+ * @returns サークル一覧と総件数
  */
-async function fetchCircles(
+export async function getCircles(
 	params: GetCirclesParams,
 ): Promise<{ circles: CirclePlainObject[]; totalCount: number }> {
 	const { page = 1, limit = 12, sort = "name", search } = params;
 
 	try {
-		const firestore = getFirestore();
-
-		// 全サークルを取得
-		const circlesSnapshot = await firestore.collection("circles").get();
-
-		// CirclePlainObjectに変換
-		const allCircles: CirclePlainObject[] = [];
-		for (const doc of circlesSnapshot.docs) {
-			const data = doc.data() as CircleDocument;
-			const plainObject = convertToCirclePlainObject(data);
-			if (plainObject) {
-				allCircles.push(plainObject);
-			}
-		}
+		const allCircles = await loadAllCircles();
 
 		// 検索フィルタリング
 		let filteredCircles = allCircles;
@@ -48,53 +50,20 @@ async function fetchCircles(
 			});
 		}
 
-		// ソート処理
-		filteredCircles.sort((a, b) => {
-			switch (sort) {
-				case "name":
-					// 名前順（昇順）
-					return a.name.localeCompare(b.name, "ja");
-				case "nameDesc":
-					// 名前順（降順）
-					return b.name.localeCompare(a.name, "ja");
-				case "workCount":
-					// 作品数順（多い順）
-					return b.workCount - a.workCount;
-				case "workCountAsc":
-					// 作品数順（少ない順）
-					return a.workCount - b.workCount;
-				default:
-					return a.name.localeCompare(b.name, "ja");
-			}
-		});
+		// ソート処理。検索が無いと filteredCircles は `loadAllCircles` の戻り値そのものなので、
+		// ここで複製しないと **キャッシュ済みの配列を破壊的に並べ替える**（以降の全リクエストに漏れる）。
+		const sortedCircles = [...filteredCircles].sort((a, b) => compareCircles(a, b, sort));
 
 		// ページネーション適用
 		const startIndex = (page - 1) * limit;
 		const endIndex = startIndex + limit;
-		const paginatedCircles = filteredCircles.slice(startIndex, endIndex);
 
 		return {
-			circles: paginatedCircles,
-			totalCount: filteredCircles.length,
+			circles: sortedCircles.slice(startIndex, endIndex),
+			totalCount: sortedCircles.length,
 		};
 	} catch (_error) {
 		// エラー発生時は空配列を返す
 		return { circles: [], totalCount: 0 };
 	}
-}
-
-const getCirclesCached = unstable_cache(fetchCircles, ["circles-list"], {
-	revalidate: 60,
-	tags: ["circles-list"],
-});
-
-/**
- * サークル一覧を取得（ConfigurableList用）
- * @param params パラメータ
- * @returns サークル一覧と総件数
- */
-export async function getCircles(
-	params: GetCirclesParams,
-): Promise<{ circles: CirclePlainObject[]; totalCount: number }> {
-	return getCirclesCached(params);
 }
