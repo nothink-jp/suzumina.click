@@ -26,10 +26,16 @@
  *
  * 6時間平均に均すと素直に分離できる（同じ閾値のまま）:
  *
- *   警告(2バケット=12時間連続) → 8/15・8/17 に発火＝**予算メール(8/18)より3日早い**。
- *                                 平常日(8/09-8/13)は 8/13 に単発の超過が1回あるだけで、
- *                                 2バケット連続の条件がこれを落とす
- *   緊急(1バケット=6時間)      → 8/17 に1回のみ。修正後(8/19-8/21)では鳴らない
+ *   警告(duration=43200s) → 8/15・8/17 に発火＝**予算メール(8/18)より3日早い**。
+ *                           平常日(8/09-8/13)は 8/13 に単発の超過が1回あるが、複数バケットの
+ *                           継続を要求する条件がこれを落とす
+ *   緊急(duration=0s)     → 8/17 に1回のみ。修正後(8/19-8/21)では鳴らない
+ *
+ * 警告の `duration` を alignment_period と同値（21600s）にしないこと。
+ * duration は「最初に違反した点から計測し、違反しない点が来たらリセット」だが、
+ * 同値のときに 1 バケットで足りるのか次の点まで要るのかは公式ドキュメントに明記が無い。
+ * 両方の解釈で実データに当てると、21600s は前者の解釈で 8/13 の単発超過を拾って誤発火する。
+ * 43200s なら**どちらの解釈でも**平常日の誤発火ゼロ・8/15 検知になるので、こちらを採る。
  *
  * 「平常時 11 read/秒 / 修正後 20〜24 / スパイク時 73〜94」という日次平均の水準に対して、
  * 警告は修正後もまだ鳴る。これは誤検知ではなく**実際に予算ペースを超えている**ことの反映で、
@@ -57,13 +63,14 @@ resource "google_monitoring_alert_policy" "firestore_read_rate_warning" {
   severity     = "WARNING"
 
   conditions {
-    display_name = "read レートが予算100%ペースを12時間継続で超過"
+    display_name = "read レートが予算100%ペースを継続して超過（6時間平均×2バケット以上）"
 
     condition_threshold {
       filter = "resource.type=\"firestore_instance\" AND metric.type=\"firestore.googleapis.com/document/read_count\""
-      # 6時間平均を2バケット（=12時間）連続で超えたら発火。
+      # alignment_period の 2 倍。既存ポリシー（monitoring_performance.tf の
+      # duration=600s + alignment_period=60s）と同じ「N バケット連続 = N × alignment_period」の書き方。
       # 単発のクロールバーストを落としつつ、傾向としての上昇を捉える窓（冒頭の検証を参照）。
-      duration        = "21600s"
+      duration        = "43200s"
       comparison      = "COMPARISON_GT"
       threshold_value = local.firestore_reads_per_second_at_budget
 
@@ -87,7 +94,7 @@ resource "google_monitoring_alert_policy" "firestore_read_rate_warning" {
     content   = <<-EOT
     # Firestore 読み取りが予算ペースを超過
 
-    直近12時間の read レートが月額予算 ¥${local.monthly_budget_jpy} を使い切るペースを超え続けています。
+    直近の read レートが月額予算 ¥${local.monthly_budget_jpy} を使い切るペースを超え続けています。
     このまま推移すると月末に予算超過します。まだ超過はしていない段階の警告です。
 
     ## 切り分け（SPR-311 で有効だった順）
