@@ -13,12 +13,27 @@
  *
  *   ¥3,000/月 ÷ ¥0.00006222 = 48,216,008 read/月 = 1,607,200 read/日 = 18.6 read/秒
  *
- * 実績との対比:
- *   平常時(8/12)          11.5 read/秒
- *   修正後(8/19, 8/20)    20.1 / 24.2 read/秒
- *   スパイク(8/17, 8/18)  72.8 / 94.2 read/秒  ← これを検知したい
- *
  * 予算やコレクション規模が変われば `locals` の値を変えるだけで両方の閾値が追従する。
+ *
+ * ## 窓の取り方は実データで決めた
+ *
+ * read は元から極端にスパイキーで（1時間平均で 8/17 のピークは 567 read/秒、同じ日の谷は
+ * 十数 read/秒）、**1時間平均 + 「N時間連続」では機能しない**。実データに当てて確認した:
+ *
+ *   1時間平均・警告(6時間連続) → 発火 1 回（8/18）。連続条件が厳しすぎて、谷で毎回リセットされ、
+ *                                 予算メールと同日にしか鳴らない＝早期検知にならない
+ *   1時間平均・緊急(2時間連続) → 発火 9 回。修正後の 8/19〜8/21 でも鳴る＝ノイズ
+ *
+ * 6時間平均に均すと素直に分離できる（同じ閾値のまま）:
+ *
+ *   警告(2バケット=12時間連続) → 8/15・8/17 に発火＝**予算メール(8/18)より3日早い**。
+ *                                 平常日(8/09-8/13)は 8/13 に単発の超過が1回あるだけで、
+ *                                 2バケット連続の条件がこれを落とす
+ *   緊急(1バケット=6時間)      → 8/17 に1回のみ。修正後(8/19-8/21)では鳴らない
+ *
+ * 「平常時 11 read/秒 / 修正後 20〜24 / スパイク時 73〜94」という日次平均の水準に対して、
+ * 警告は修正後もまだ鳴る。これは誤検知ではなく**実際に予算ペースを超えている**ことの反映で、
+ * 一覧ページのキャッシュ修正が効けば下回る想定。鳴り続けるなら閾値ではなく残りの read を疑う。
  */
 
 locals {
@@ -42,18 +57,18 @@ resource "google_monitoring_alert_policy" "firestore_read_rate_warning" {
   severity     = "WARNING"
 
   conditions {
-    display_name = "read レートが予算100%ペースを6時間継続で超過"
+    display_name = "read レートが予算100%ペースを12時間継続で超過"
 
     condition_threshold {
       filter = "resource.type=\"firestore_instance\" AND metric.type=\"firestore.googleapis.com/document/read_count\""
-      # 1時間平均で見る。read は元から極端にスパイキー（平常 3〜6万/時 に対し
-      # 8/17 11時は 222万/時）なので、短い窓で見ると通常の巡回でも鳴ってしまう。
-      duration        = "21600s" # 6時間継続。単発のクロールバーストではなく傾向の変化を捉える
+      # 6時間平均を2バケット（=12時間）連続で超えたら発火。
+      # 単発のクロールバーストを落としつつ、傾向としての上昇を捉える窓（冒頭の検証を参照）。
+      duration        = "21600s"
       comparison      = "COMPARISON_GT"
       threshold_value = local.firestore_reads_per_second_at_budget
 
       aggregations {
-        alignment_period     = "3600s"
+        alignment_period     = "21600s"
         per_series_aligner   = "ALIGN_RATE"
         cross_series_reducer = "REDUCE_SUM"
       }
@@ -72,7 +87,7 @@ resource "google_monitoring_alert_policy" "firestore_read_rate_warning" {
     content   = <<-EOT
     # Firestore 読み取りが予算ペースを超過
 
-    直近6時間の read レートが月額予算 ¥${local.monthly_budget_jpy} を使い切るペースを超え続けています。
+    直近12時間の read レートが月額予算 ¥${local.monthly_budget_jpy} を使い切るペースを超え続けています。
     このまま推移すると月末に予算超過します。まだ超過はしていない段階の警告です。
 
     ## 切り分け（SPR-311 で有効だった順）
@@ -104,16 +119,17 @@ resource "google_monitoring_alert_policy" "firestore_read_rate_critical" {
   severity     = "CRITICAL"
 
   conditions {
-    display_name = "read レートが予算200%ペースを2時間継続で超過"
+    display_name = "read レートが予算200%ペースを6時間継続で超過"
 
     condition_threshold {
-      filter          = "resource.type=\"firestore_instance\" AND metric.type=\"firestore.googleapis.com/document/read_count\""
-      duration        = "7200s" # 2時間継続。この水準は明らかな異常なので警告より早く鳴らす
+      filter = "resource.type=\"firestore_instance\" AND metric.type=\"firestore.googleapis.com/document/read_count\""
+      # 6時間平均が1バケットでもこの水準なら明らかな異常なので、連続を待たずに鳴らす。
+      duration        = "0s"
       comparison      = "COMPARISON_GT"
       threshold_value = local.firestore_reads_per_second_at_budget * 2
 
       aggregations {
-        alignment_period     = "3600s"
+        alignment_period     = "21600s"
         per_series_aligner   = "ALIGN_RATE"
         cross_series_reducer = "REDUCE_SUM"
       }
@@ -132,8 +148,8 @@ resource "google_monitoring_alert_policy" "firestore_read_rate_critical" {
     content   = <<-EOT
     # Firestore 読み取りが予算の2倍ペース
 
-    直近2時間の read レートが月額予算 ¥${local.monthly_budget_jpy} の2倍を使い切るペースです。
-    2026-08 の SPR-311（72.8〜94.2 read/秒）がこの水準でした。放置すると数日で予算を使い切ります。
+    直近6時間の read レートが月額予算 ¥${local.monthly_budget_jpy} の2倍を使い切るペースです。
+    2026-08 の SPR-311 がこの水準でした（実データ再生では 8/17 に発火・予算メールより1日早い）。放置すると数日で予算を使い切ります。
 
     切り分けは警告アラート「Firestore 読み取り量 警告」のドキュメントを参照。
     EOT
