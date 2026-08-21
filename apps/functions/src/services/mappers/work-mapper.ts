@@ -222,25 +222,76 @@ function mapAgeCategoryString(ageCategory?: number): string | undefined {
 }
 
 /**
+ * DLsite の「画像なし」プレースホルダ URL かどうか。
+ *
+ * API は画像が未登録の作品で `image_thum` / `image_main` に
+ * `//www.dlsite.com/images/web/home/no_img_sam.gif`（`no_img_main.gif`）を返す。
+ * これを URL として保存すると、web の `remotePatterns` 外のホストになるため画像を出せず、
+ * JSON-LD・OG 画像も壊れた URL を指す（SPR-312）。保存前にここで弾く。
+ */
+function isNoImagePlaceholder(url: string | undefined): boolean {
+	return url?.includes("/images/web/home/no_img_") ?? false;
+}
+
+/**
+ * API から画像 URL が一切得られなかった場合の最終フォールバック。
+ *
+ * DLsite の画像は「次の千番台」ディレクトリ配下に置かれる（RJ01098758 → RJ01099000）。
+ * 従来この関数はそのディレクトリを欠いた URL を返しており、実際には常に 404 だった。
+ *
+ * ただし**推測**であることに変わりはなく、API 由来の値が取れるときは必ずそちらを優先する。
+ * SPR-312 の実測では productId からの導出は 39件中 7件で外れた
+ * （翻訳版の画像は元作品 ID の配下にあり、productId からは辿れない）。
+ * そもそもカバー画像が存在しない作品もあり、その場合はどう組み立てても 404 になる
+ * （web 側は #943 の「画像なし」プレースホルダで受ける）。resize 形式の派生ファイルが
+ * 残っていて 200 を返すことがあるが、原本が消えた作品では失効し得るので採用しない。
+ */
+function buildFallbackThumbnailUrl(productId: string): string {
+	const match = productId.match(/^([A-Z]+)(\d+)$/);
+	if (!match?.[1] || !match[2]) {
+		return `https://img.dlsite.jp/modpub/images2/work/doujin/${productId}_img_main.jpg`;
+	}
+	const [, prefix, digits] = match;
+	const bucket = (Math.floor(Number(digits) / 1000) + 1) * 1000;
+	const dir = `${prefix}${String(bucket).padStart(digits.length, "0")}`;
+	return `https://img.dlsite.jp/modpub/images2/work/doujin/${dir}/${productId}_img_main.jpg`;
+}
+
+/**
  * サムネイルURLの抽出
+ *
+ * `image_thum` が「画像なし」プレースホルダのときは `image_main` を使う。
+ * 翻訳版は `image_main` が元作品の画像を指しており、API 側が正しい URL を持っている
+ * （例: RJ01113566 の image_main は RJ01098758 の画像）。
  */
 function extractThumbnailUrl(raw: DLsiteApiResponse, productId: string): string {
-	const url = extractUrlFromImageField(raw.image_thum);
+	const thumbUrl = extractUrlFromImageField(raw.image_thum);
+	if (thumbUrl && !isNoImagePlaceholder(thumbUrl)) {
+		return thumbUrl;
+	}
 
-	// URLが取得できた場合はそれを返す、できなかった場合はデフォルトURL
-	return url || `https://img.dlsite.jp/modpub/images2/work/doujin/${productId}_img_main.jpg`;
+	const mainUrl = extractHighResImageUrl(raw);
+	if (mainUrl) {
+		return mainUrl;
+	}
+
+	return buildFallbackThumbnailUrl(productId);
 }
 
 /**
  * 高解像度画像URLの抽出
+ *
+ * 「画像なし」プレースホルダは URL として無価値なため undefined を返す
+ * （= フィールド不在。書き込み側で FieldValue.delete() に変換される）。
  */
 function extractHighResImageUrl(raw: DLsiteApiResponse): string | undefined {
 	// image_mainから抽出
 	const mainUrl = extractUrlFromImageField(raw.image_main);
-	if (mainUrl) return mainUrl;
+	if (mainUrl && !isNoImagePlaceholder(mainUrl)) return mainUrl;
 
 	// srcsetから抽出
-	return extractUrlFromSrcset(raw.srcset);
+	const srcsetUrl = extractUrlFromSrcset(raw.srcset);
+	return isNoImagePlaceholder(srcsetUrl) ? undefined : srcsetUrl;
 }
 
 /**
