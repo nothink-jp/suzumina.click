@@ -40,20 +40,61 @@ export interface ConsentState {
 }
 
 /**
+ * 保存済みの任意値を ConsentState に正規化する（`functional` の既定は true）
+ *
+ * localStorage から読む経路が複数あるため（このファイルの getCurrentConsentState と、
+ * hydration 前に走る consent-mode-script.tsx）、解釈のズレを避けて正本をここに置く。
+ */
+export function normalizeConsentState(saved: unknown): ConsentState {
+	const source = (saved ?? {}) as Partial<Record<keyof ConsentState, unknown>>;
+	return {
+		analytics: source.analytics === true,
+		advertising: source.advertising === true,
+		functional: source.functional !== false,
+		personalization: source.personalization === true,
+	};
+}
+
+/**
+ * ConsentState → Google Consent Mode v2 パラメータの対応（正本）
+ *
+ * SPR-280: `ad_personalization` は「広告のパーソナライズ」なので advertising 駆動にする。
+ * personalization カテゴリが駆動するのは GA のコンテンツ・パーソナライズ
+ * （`personalization_storage`）だけで、両者は別物。以前は ad_personalization を
+ * personalization で駆動していたため、「広告を拒否したのに ad_personalization: granted」
+ * という、カテゴリ名から予測できない状態になっていた。
+ */
+function toGoogleConsentParams(consentState: ConsentState): ConsentParams {
+	const advertising = consentState.advertising ? "granted" : "denied";
+	return {
+		ad_storage: advertising,
+		ad_user_data: advertising,
+		ad_personalization: advertising,
+		analytics_storage: consentState.analytics ? "granted" : "denied",
+		functionality_storage: consentState.functional ? "granted" : "denied",
+		personalization_storage: consentState.personalization ? "granted" : "denied",
+	};
+}
+
+/**
+ * 同意状態を gtag に反映する（`consent update` の push のみ・イベントは送らない）
+ *
+ * 保存済み同意の復元時にも使うため、ユーザー操作を表す `consent_update` イベントは
+ * 含めない（そちらは updateGoogleConsent の責務）。
+ */
+export function applyGoogleConsent(consentState: ConsentState) {
+	if (typeof window === "undefined" || !window.gtag) return;
+
+	window.gtag("consent", "update", toGoogleConsentParams(consentState));
+}
+
+/**
  * Update consent choices and notify Google services
  */
 export function updateGoogleConsent(consentState: ConsentState) {
 	if (typeof window === "undefined" || !window.gtag) return;
 
-	// Update consent mode with user choices
-	window.gtag("consent", "update", {
-		ad_storage: consentState.advertising ? "granted" : "denied",
-		ad_user_data: consentState.advertising ? "granted" : "denied",
-		ad_personalization: consentState.personalization ? "granted" : "denied",
-		analytics_storage: consentState.analytics ? "granted" : "denied",
-		functionality_storage: consentState.functional ? "granted" : "denied",
-		personalization_storage: consentState.personalization ? "granted" : "denied",
-	});
+	applyGoogleConsent(consentState);
 
 	// Send custom event for tracking consent changes
 	window.gtag("event", "consent_update", {
@@ -64,22 +105,31 @@ export function updateGoogleConsent(consentState: ConsentState) {
 }
 
 /**
+ * 保存済み同意の有効期間（1年）。クッキー設定パネルの「設定は1年間保存され、
+ * 期限後に再確認をお願いします」という記述がこの値の対外的な約束にあたる。
+ */
+function isConsentValid(savedAt: Date): boolean {
+	const oneYearAgo = new Date();
+	oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+	return savedAt > oneYearAgo;
+}
+
+/**
  * Check current consent state from localStorage
+ *
+ * SPR-280: 期限切れ（保存から1年超・日付が無い・壊れている）は null を返す＝
+ * 「同意していない」と同じ扱いにして再確認へ倒す。以前は期限判定が
+ * consent-mode-script.tsx 側にしか無く、バナーはこの関数が値を返す限り
+ * 表示されないため、**期限を過ぎても再確認が出ない**状態だった。
  */
 export function getCurrentConsentState(): ConsentState | null {
 	if (typeof window === "undefined") return null;
 
 	try {
 		const saved = localStorage.getItem("consent-state");
-		if (saved) {
-			const parsed = JSON.parse(saved);
-			// Ensure functional property exists with default value
-			return {
-				analytics: parsed.analytics === true,
-				advertising: parsed.advertising === true,
-				functional: parsed.functional !== false,
-				personalization: parsed.personalization === true,
-			};
+		const savedAt = localStorage.getItem("consent-state-date");
+		if (saved && savedAt && isConsentValid(new Date(savedAt))) {
+			return normalizeConsentState(JSON.parse(saved));
 		}
 	} catch (_error) {
 		// Silently handle parsing errors for consent state
@@ -94,14 +144,6 @@ export function getCurrentConsentState(): ConsentState | null {
 export function updateConsent(consentState: ConsentState) {
 	if (typeof window === "undefined") return;
 
-	// Update Google Consent Mode
-	window.gtag("consent", "update", {
-		analytics_storage: consentState.analytics ? "granted" : "denied",
-		ad_storage: consentState.advertising ? "granted" : "denied",
-		functionality_storage: consentState.functional ? "granted" : "denied",
-		personalization_storage: consentState.personalization ? "granted" : "denied",
-	});
-
 	// Save to localStorage
 	try {
 		localStorage.setItem("consent-state", JSON.stringify(consentState));
@@ -111,6 +153,9 @@ export function updateConsent(consentState: ConsentState) {
 	}
 
 	// Apply consent based on updated state
+	// SPR-280: gtag への push は updateGoogleConsent に一本化（以前はここでも
+	// 4フィールドだけの consent update を先に push しており、二重 push かつ
+	// 一瞬だけ ad_user_data / ad_personalization を欠いた中間状態が存在した）
 	updateGoogleConsent(consentState);
 }
 

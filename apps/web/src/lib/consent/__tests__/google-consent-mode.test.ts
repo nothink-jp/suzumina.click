@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+	applyGoogleConsent,
 	getCurrentConsentState,
+	normalizeConsentState,
 	resetAllConsent,
 	sendGoogleAnalyticsEvent,
 	sendGoogleAnalyticsPageView,
@@ -29,13 +31,24 @@ const grantAnalytics = {
 	personalization: false,
 };
 
+function saveConsent(data: Record<string, boolean>, savedAt = new Date()) {
+	localStorage.setItem("consent-state", JSON.stringify(data));
+	localStorage.setItem("consent-state-date", savedAt.toISOString());
+}
+
+function yearsAgo(years: number) {
+	const date = new Date();
+	date.setFullYear(date.getFullYear() - years);
+	return date;
+}
+
 describe("getCurrentConsentState", () => {
 	it("保存が無ければ null", () => {
 		expect(getCurrentConsentState()).toBeNull();
 	});
 
 	it("保存値を ConsentState に正規化する（functional は既定 true）", () => {
-		localStorage.setItem("consent-state", JSON.stringify({ analytics: true }));
+		saveConsent({ analytics: true });
 		expect(getCurrentConsentState()).toEqual({
 			analytics: true,
 			advertising: false,
@@ -45,8 +58,84 @@ describe("getCurrentConsentState", () => {
 	});
 
 	it("不正 JSON は null（catch）", () => {
+		saveConsent({});
 		localStorage.setItem("consent-state", "{壊れた");
 		expect(getCurrentConsentState()).toBeNull();
+	});
+
+	// SPR-280: 期限判定は consent-mode-script.tsx 側にしか無く、バナーが参照する
+	// この関数は日付を見ていなかったため「1年で再確認」が実際には起きなかった
+	it("保存から1年を超えた同意は null（＝未同意扱いで再確認へ）", () => {
+		saveConsent({ analytics: true }, yearsAgo(2));
+		expect(getCurrentConsentState()).toBeNull();
+	});
+
+	it("保存日時が無い（壊れた保存）場合も null", () => {
+		localStorage.setItem("consent-state", JSON.stringify({ analytics: true }));
+		expect(getCurrentConsentState()).toBeNull();
+	});
+});
+
+describe("normalizeConsentState", () => {
+	it("欠けた項目は既定に落とす（functional のみ true）", () => {
+		expect(normalizeConsentState({})).toEqual({
+			analytics: false,
+			advertising: false,
+			functional: true,
+			personalization: false,
+		});
+		expect(normalizeConsentState(null)).toEqual({
+			analytics: false,
+			advertising: false,
+			functional: true,
+			personalization: false,
+		});
+	});
+});
+
+describe("applyGoogleConsent", () => {
+	// SPR-280: ad_personalization は「広告のパーソナライズ」なので advertising 駆動。
+	// personalization カテゴリが駆動するのは personalization_storage だけ。
+	// 以前は personalization 駆動で、バナーの「許可」が
+	// ad_storage: denied なのに ad_personalization: granted を生んでいた。
+	it("ad_* は advertising 駆動・personalization_storage だけが personalization 駆動", () => {
+		applyGoogleConsent({
+			analytics: true,
+			advertising: false,
+			functional: true,
+			personalization: true,
+		});
+		expect(gtag).toHaveBeenCalledWith("consent", "update", {
+			ad_storage: "denied",
+			ad_user_data: "denied",
+			ad_personalization: "denied",
+			analytics_storage: "granted",
+			functionality_storage: "granted",
+			personalization_storage: "granted",
+		});
+	});
+
+	it("advertising 同意時は ad_* が揃って granted", () => {
+		applyGoogleConsent({
+			analytics: false,
+			advertising: true,
+			functional: true,
+			personalization: false,
+		});
+		expect(gtag).toHaveBeenCalledWith(
+			"consent",
+			"update",
+			expect.objectContaining({
+				ad_storage: "granted",
+				ad_user_data: "granted",
+				ad_personalization: "granted",
+			}),
+		);
+	});
+
+	it("consent_update イベントは送らない（復元時に使うため）", () => {
+		applyGoogleConsent(grantAnalytics);
+		expect(gtag).not.toHaveBeenCalledWith("event", "consent_update", expect.anything());
 	});
 });
 
@@ -78,6 +167,17 @@ describe("updateConsent", () => {
 		expect(JSON.parse(localStorage.getItem("consent-state") || "{}")).toEqual(grantAnalytics);
 		expect(localStorage.getItem("consent-state-date")).toBeTruthy();
 	});
+
+	// SPR-280: 以前は updateConsent 自身が4フィールドだけの consent update を push した
+	// 直後に updateGoogleConsent が6フィールドを push しており、ad_user_data /
+	// ad_personalization を欠いた中間状態が一瞬存在した
+	it("consent update は1回だけ push する", () => {
+		updateConsent(grantAnalytics);
+		const consentUpdates = gtag.mock.calls.filter(
+			([command, action]) => command === "consent" && action === "update",
+		);
+		expect(consentUpdates).toHaveLength(1);
+	});
 });
 
 describe("resetAllConsent", () => {
@@ -101,7 +201,7 @@ describe("sendGoogleAnalyticsPageView / Event", () => {
 	// 同意は「識別子を保存するか」だけを意味する。ゲートしていた頃は同意率 3.3% のため
 	// カスタムイベントが本番0件・landingPage の 63% が (not set) になっていた。
 	it("analytics 同意が無くても送信する（可否は consent mode に委ねる）", () => {
-		localStorage.setItem("consent-state", JSON.stringify({ analytics: false }));
+		saveConsent({ analytics: false });
 		expect(sendGoogleAnalyticsPageView("/x", "G-TEST")).toBe(true);
 		sendGoogleAnalyticsEvent("evt");
 		expect(gtag).toHaveBeenCalledWith(

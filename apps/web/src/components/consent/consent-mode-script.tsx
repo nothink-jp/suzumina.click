@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { applyGoogleConsent, getCurrentConsentState } from "@/lib/consent/google-consent-mode";
 
 // EU/GDPR countries list
 const GDPR_COUNTRIES = [
@@ -113,74 +114,17 @@ function setDefaultConsent() {
 
 /**
  * Apply saved consent preferences if valid
+ *
+ * SPR-280: 保存値の読み取り・期限判定・gtag へのマッピングはすべて
+ * google-consent-mode.ts が正本。ここは gtag.js ロード前だが、setupDataLayer の
+ * polyfill が window.gtag を用意済みなので同じ関数を通せる。
+ * 復元は「ユーザー操作」ではないので consent_update イベントは送らない。
+ *
+ * 保存済み同意を gtag に反映するのはこの経路だけ（バナー側は再 push しない）。
  */
 function applySavedConsent() {
-	try {
-		const savedConsent = getSavedConsent();
-		if (!savedConsent) return;
-
-		const { data, date } = savedConsent;
-		if (isConsentValid(date)) {
-			updateConsent(data);
-			logConsentInDevelopment(data);
-		}
-	} catch {
-		// Silent fail for normal operation
-	}
-}
-
-/**
- * Get saved consent from localStorage
- */
-function getSavedConsent() {
-	const consentState = localStorage.getItem("consent-state");
-	const consentDate = localStorage.getItem("consent-state-date");
-
-	if (!consentState || !consentDate) return null;
-
-	return {
-		data: JSON.parse(consentState),
-		date: new Date(consentDate),
-	};
-}
-
-/**
- * Check if consent is still valid (less than 1 year old)
- */
-function isConsentValid(consentDate: Date): boolean {
-	const oneYearAgo = new Date();
-	oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-	return consentDate > oneYearAgo;
-}
-
-interface ConsentData {
-	advertising: boolean;
-	analytics: boolean;
-	personalization: boolean;
-}
-
-/**
- * Update consent based on saved preferences
- */
-function updateConsent(consentData: ConsentData) {
-	function gtag(...args: unknown[]) {
-		window.dataLayer.push(args);
-	}
-
-	gtag("consent", "update", {
-		ad_storage: consentData.advertising ? "granted" : "denied",
-		ad_user_data: consentData.advertising ? "granted" : "denied",
-		ad_personalization: consentData.personalization ? "granted" : "denied",
-		analytics_storage: consentData.analytics ? "granted" : "denied",
-		functionality_storage: "granted",
-		personalization_storage: consentData.personalization ? "granted" : "denied",
-	});
-}
-
-/**
- * Log consent application in development environment
- */
-function logConsentInDevelopment(_consentData: ConsentData) {
-	if (window.location.hostname === "localhost") {
+	const savedConsent = getCurrentConsentState();
+	if (savedConsent) {
+		applyGoogleConsent(savedConsent);
 	}
 }
