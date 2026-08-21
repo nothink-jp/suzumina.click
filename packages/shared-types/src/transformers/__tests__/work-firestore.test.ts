@@ -68,3 +68,56 @@ describe("work-firestore fromFirestore の言語判定（detectWorkLanguage へ�
 		expect(fromFirestore(doc)._computed.primaryLanguage).toBe("ko");
 	});
 });
+
+// SPR-313: translationInfo の親子関係（isParent / isChild / parentWorkno / childWorknos）は
+// PlainObject まで通す必要がある。ここで落ちると Firestore にデータがあっても web からは
+// 見えず、「翻訳版を1つにまとめる」導線が組めない（フィールド名バグと同じ静かな欠落）。
+describe("work-firestore fromFirestore の translationInfo", () => {
+	it("親子関係を PlainObject まで落とさず渡す", () => {
+		const work = fromFirestore(
+			createWorkDocument({
+				translationInfo: {
+					isTranslationAgree: false,
+					isOriginal: false,
+					isParent: true,
+					isChild: false,
+					originalWorkno: "RJ01098758",
+					childWorknos: ["RJ01113567"],
+					lang: "CHI_HANS",
+				},
+			}),
+		);
+
+		expect(work.translationInfo).toEqual({
+			isTranslationAgree: false,
+			isOriginal: false,
+			isParent: true,
+			isChild: false,
+			originalWorkno: "RJ01098758",
+			parentWorkno: undefined,
+			childWorknos: ["RJ01113567"],
+			lang: "CHI_HANS",
+		});
+	});
+
+	it("子作品の parentWorkno を渡す", () => {
+		const work = fromFirestore(
+			createWorkDocument({
+				translationInfo: {
+					isOriginal: false,
+					isParent: false,
+					isChild: true,
+					parentWorkno: "RJ01113566",
+					childWorknos: [],
+				},
+			}),
+		);
+
+		expect(work.translationInfo?.isChild).toBe(true);
+		expect(work.translationInfo?.parentWorkno).toBe("RJ01113566");
+	});
+
+	it("translationInfo が無ければ undefined", () => {
+		expect(fromFirestore(createWorkDocument()).translationInfo).toBeUndefined();
+	});
+});

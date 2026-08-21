@@ -226,7 +226,11 @@ export function fromFirestore(doc: WorkDocument): WorkPlainObject {
 			? {
 					isTranslationAgree: doc.translationInfo.isTranslationAgree || false,
 					isOriginal: doc.translationInfo.isOriginal || false,
+					isParent: doc.translationInfo.isParent || false,
+					isChild: doc.translationInfo.isChild || false,
 					originalWorkno: doc.translationInfo.originalWorkno,
+					parentWorkno: doc.translationInfo.parentWorkno,
+					childWorknos: doc.translationInfo.childWorknos,
 					lang: doc.translationInfo.lang,
 				}
 			: undefined,

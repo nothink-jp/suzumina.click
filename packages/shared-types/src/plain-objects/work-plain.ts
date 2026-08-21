@@ -190,7 +190,13 @@ export interface WorkPlainObject {
 	translationInfo?: {
 		isTranslationAgree: boolean;
 		isOriginal: boolean;
+		/** 翻訳版の親（この作品の下に各言語版がぶら下がる） */
+		isParent: boolean;
+		/** 翻訳版の子（parentWorkno に親がいる） */
+		isChild: boolean;
 		originalWorkno?: string;
+		parentWorkno?: string;
+		childWorknos?: string[];
 		lang?: string;
 	};
 	languageDownloads?: Array<{

@@ -401,15 +401,26 @@ function extractSampleImages(
 
 /**
  * 翻訳情報の変換
+ *
+ * 親子関係（isParent / isChild / parentWorkno / childWorknos）まで取り込む。
+ * 同じ作品の各言語版を1つにまとめる導線は、この関係が無いと復元できない（SPR-313）。
  */
 function toTranslationInfo(raw: DLsiteApiResponse): TranslationInfo | undefined {
-	if (!raw.translation) return undefined;
+	const translation = raw.translation_info;
+	if (!translation) return undefined;
+	// API は非翻訳作品で original_workno / parent_workno / lang を null で返す。
+	// 保存側は `string | undefined` なので null は「不在」に倒す。
 	return {
-		isTranslationAgree: raw.translation.is_translation_agree,
-		isVolunteer: raw.translation.is_volunteer,
-		isOriginal: raw.translation.is_original,
-		originalWorkno: raw.translation.original_workno,
-		lang: raw.translation.lang,
+		isTranslationAgree: translation.is_translation_agree,
+		isVolunteer: translation.is_volunteer,
+		isOriginal: translation.is_original,
+		isParent: translation.is_parent,
+		isChild: translation.is_child,
+		originalWorkno: translation.original_workno ?? undefined,
+		parentWorkno: translation.parent_workno ?? undefined,
+		childWorknos: translation.child_worknos ?? undefined,
+		lang: translation.lang ?? undefined,
+		productionTradePriceRate: translation.production_trade_price_rate ?? undefined,
 	};
 }
 

@@ -307,6 +307,88 @@ describe("WorkMapper", () => {
 		});
 	});
 
+	// SPR-313: API の実フィールド名は translation_info。旧実装は raw.translation を見ており
+	// 全作品で translationInfo が欠落していた（本番 works で 0 件）。
+	describe("translationInfo（翻訳版の親子関係）", () => {
+		it("親作品は is_parent と child_worknos まで取り込む", () => {
+			// 実データ: RJ01113566（CHI_HANS 版・親） → 原作 RJ01098758 / 子 RJ01113567
+			const work = WorkMapper.toWork({
+				...mockRawApiData,
+				translation_info: {
+					is_translation_agree: false,
+					is_volunteer: false,
+					is_original: false,
+					is_parent: true,
+					is_child: false,
+					original_workno: "RJ01098758",
+					parent_workno: null,
+					child_worknos: ["RJ01113567"],
+					lang: "CHI_HANS",
+				},
+			} as DLsiteApiResponse);
+
+			expect(work.translationInfo).toEqual({
+				isTranslationAgree: false,
+				isVolunteer: false,
+				isOriginal: false,
+				isParent: true,
+				isChild: false,
+				originalWorkno: "RJ01098758",
+				parentWorkno: undefined,
+				childWorknos: ["RJ01113567"],
+				lang: "CHI_HANS",
+				productionTradePriceRate: undefined,
+			});
+		});
+
+		it("子作品は parent_workno を取り込む", () => {
+			const work = WorkMapper.toWork({
+				...mockRawApiData,
+				translation_info: {
+					is_original: false,
+					is_parent: false,
+					is_child: true,
+					original_workno: "RJ01098758",
+					parent_workno: "RJ01113566",
+					child_worknos: [],
+					lang: "CHI_HANS",
+				},
+			} as DLsiteApiResponse);
+
+			expect(work.translationInfo?.isChild).toBe(true);
+			expect(work.translationInfo?.parentWorkno).toBe("RJ01113566");
+			expect(work.translationInfo?.childWorknos).toEqual([]);
+		});
+
+		it("非翻訳作品の null は undefined に落とす", () => {
+			// API は非翻訳作品で original_workno / parent_workno / lang を null で返す
+			const work = WorkMapper.toWork({
+				...mockRawApiData,
+				translation_info: {
+					is_translation_agree: true,
+					is_original: true,
+					is_parent: false,
+					is_child: false,
+					original_workno: null,
+					parent_workno: null,
+					child_worknos: [],
+					lang: null,
+				},
+			} as DLsiteApiResponse);
+
+			expect(work.translationInfo?.isOriginal).toBe(true);
+			expect(work.translationInfo?.originalWorkno).toBeUndefined();
+			expect(work.translationInfo?.parentWorkno).toBeUndefined();
+			expect(work.translationInfo?.lang).toBeUndefined();
+		});
+
+		it("translation_info が無ければ undefined", () => {
+			const work = WorkMapper.toWork(mockRawApiData);
+
+			expect(work.translationInfo).toBeUndefined();
+		});
+	});
+
 	// SPR-312: DLsite API は画像未登録の作品で no_img プレースホルダを返す。
 	// これを保存すると web の remotePatterns 外のホストになり、JSON-LD / OG 画像も壊れる。
 	describe("「画像なし」プレースホルダの正規化", () => {
