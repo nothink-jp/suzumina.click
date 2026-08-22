@@ -19,8 +19,12 @@ export function GoogleAnalyticsScript() {
 			 * lazyOnload で `load` 後にロードし、Mobile LCP への影響を抑える (SPR-9)。
 			 * Consent Mode の default は ConsentModeScript の useEffect で hydration 直後に
 			 * dataLayer に push 済み。GA 本体は send_page_view: false で、page view は
-			 * PageViewTracker から手動送信するため、ロード順序の遅延は
-			 * 計測結果の整合性に影響しない。 */}
+			 * PageViewTracker から手動送信する。
+			 *
+			 * SPR-317: この `config` は hydration より後に走る（lazyOnload = window `load` 後）。
+			 * 一方 PageViewTracker は hydration 直後に送るため、放置すると page_view が
+			 * `config` より前に dataLayer へ積まれる＝送信先未設定のまま捨てられる。
+			 * 下の `gaConfigured` はその順序を送信側に伝えるための印。 */}
 			<Script
 				strategy="lazyOnload"
 				src={`https://www.googletagmanager.com/gtag/js?id=${measurementId}`}
@@ -39,6 +43,10 @@ export function GoogleAnalyticsScript() {
 							page_location: window.location.href,
 							send_page_view: false  // We'll manually control page views based on consent
 						});
+						// SPR-317: config 完了を送信側へ伝える。window.gtag は ConsentModeScript の
+						// polyfill が hydration 時に定義済みなので、gtag の有無では順序を判別できない。
+						window.gaConfigured = true;
+						window.dispatchEvent(new Event('gaConfigured'));
 						// Debug: Log GA initialization in development only
 						if (window.location.hostname === 'localhost') {
 							console.log('Google Analytics initialized with ID:', '${measurementId}');

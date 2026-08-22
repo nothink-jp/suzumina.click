@@ -15,9 +15,11 @@ import { sendGoogleAnalyticsPageView } from "@/lib/consent/google-consent-mode";
  * ON のままだと App Router の client 遷移で page_view が二重に飛ぶ。
  *
  * SPR-299 で同意ゲートを外したので、送信可否は同意状態に依存しなくなった
- * （非同意時も cookieless ping として送られる）。残る失敗要因は gtag の未ロードだけで、
- * consentUpdate の再送はその取りこぼしに対する保険として残している
- * （同意バナーの操作は gtag が動いている証拠になるため、再試行の契機として有効）。
+ * （非同意時も cookieless ping として送られる）。
+ *
+ * SPR-317: 残る失敗要因は「gtag の未ロード」ではなく「`gtag('config', ...)` の未完了」。
+ * GA は lazyOnload（window `load` 後）で config するのに対しこの effect は hydration 直後に
+ * 走るため、**初回送信は空振りするのが常態**で、再送は gaConfigured 通知が担う。
  * 送信できたときだけ印を付ける設計は、未送信を「送信済み」と誤認して
  * landingPage を欠落させないために引き続き必要。
  *
@@ -49,12 +51,22 @@ export function PageViewTracker({ measurementId }: { measurementId?: string }) {
 		if (!url) return;
 		if (sendOnce(url)) return;
 
-		// gtag が未ロードだった。同意操作は gtag が動いている証拠になるので再送の契機に使う
-		const handleConsentUpdate = () => {
+		// まだ送れていない（gtag 未ロード、または config 未完了）。再送の契機は2つ。
+		//
+		// - gaConfigured: `gtag('config', ...)` の完了通知（SPR-317）。lazyOnload の GA は
+		//   hydration より後に config するため、初回送信はここで空振りするのが常態。
+		//   これが主たる再送契機で、consentUpdate だけだった頃は同意操作をしない訪問
+		//   （＝ほぼ全部）の page_view が永久に失われていた。
+		// - consentUpdate: 同意操作は gtag が動いている証拠なので保険として残す
+		const retry = () => {
 			sendOnce(url);
 		};
-		window.addEventListener("consentUpdate", handleConsentUpdate);
-		return () => window.removeEventListener("consentUpdate", handleConsentUpdate);
+		window.addEventListener("gaConfigured", retry);
+		window.addEventListener("consentUpdate", retry);
+		return () => {
+			window.removeEventListener("gaConfigured", retry);
+			window.removeEventListener("consentUpdate", retry);
+		};
 	}, [url, sendOnce]);
 
 	// This component doesn't render anything

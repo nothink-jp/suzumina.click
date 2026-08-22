@@ -13,7 +13,7 @@ function setRoute(pathname: string, query = "") {
 
 /**
  * 送信の成否を模す。SPR-299 で同意ゲートを撤廃したため、戻り値の意味は
- * 「同意されたか」ではなく「gtag がロード済みで実際に送れたか」。
+ * 「同意されたか」ではなく「gtag が config 済みで実際に送れたか」（SPR-317）。
  */
 function mockPageView(sent: boolean) {
 	return vi.spyOn(consent, "sendGoogleAnalyticsPageView").mockReturnValue(sent);
@@ -22,6 +22,13 @@ function mockPageView(sent: boolean) {
 function dispatchConsentUpdate() {
 	act(() => {
 		window.dispatchEvent(new CustomEvent("consentUpdate", { detail: { analytics: true } }));
+	});
+}
+
+/** GA ブートストラップの `gtag('config', ...)` 完了通知（SPR-317） */
+function dispatchGaConfigured() {
+	act(() => {
+		window.dispatchEvent(new Event("gaConfigured"));
 	});
 }
 
@@ -59,6 +66,34 @@ describe("PageViewTracker", () => {
 		render(<PageViewTracker measurementId="G-TEST" />);
 
 		expect(spy).toHaveBeenCalledExactlyOnceWith("/buttons", "G-TEST");
+	});
+
+	// SPR-317 の回帰テスト。GA は lazyOnload（window `load` 後）で config するのに対し
+	// この effect は hydration 直後に走るため、初回送信は空振りするのが常態。
+	// これを再送できないと、遷移も同意操作もしないセッション＝直帰の page_view が
+	// 丸ごと失われ、landingPage が「速いセッションだけ」に偏る。
+	it("config 未完了で送れなかった場合、gaConfigured を契機に再送する", () => {
+		const spy = mockPageView(false);
+
+		render(<PageViewTracker />);
+		expect(spy).toHaveBeenCalledTimes(1); // 呼びはするが config 前なので送信されない
+
+		spy.mockReturnValue(true);
+		dispatchGaConfigured();
+
+		expect(spy).toHaveBeenCalledTimes(2);
+		expect(spy).toHaveBeenLastCalledWith("/buttons", undefined);
+	});
+
+	it("gaConfigured で再送済みなら、後続の consentUpdate で二重に送らない", () => {
+		const spy = mockPageView(false);
+		render(<PageViewTracker />);
+
+		spy.mockReturnValue(true);
+		dispatchGaConfigured();
+		dispatchConsentUpdate();
+
+		expect(spy).toHaveBeenCalledTimes(2); // 初回ロード分 + 再送分のみ
 	});
 
 	it("gtag 未ロードで送れなかった場合、consentUpdate を契機に再送する", () => {
