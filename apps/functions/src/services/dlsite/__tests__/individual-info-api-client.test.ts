@@ -232,7 +232,7 @@ describe("Individual Info API Client", () => {
 
 			await expect(fetchIndividualWorkInfo("RJ123456")).rejects.toThrow();
 
-			// タイムアウトは1回あたり30秒を消費するためリトライ上限は1回（初回+1回=2回）
+			// タイムアウトは1回あたり15秒を消費するためリトライ上限は1回（初回+1回=2回）
 			expect(mockFetch).toHaveBeenCalledTimes(2);
 		});
 
