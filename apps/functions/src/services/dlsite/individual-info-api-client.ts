@@ -12,6 +12,18 @@ import { recordSchemaDriftForBatch } from "./schema-drift";
 
 // API設定
 const INDIVIDUAL_INFO_API_BASE_URL = "https://www.dlsite.com/maniax/api/=/product.json";
+// タイムアウトを 30 秒から詰めているのは、リトライ1回分を足しても1作品あたりの
+// 最悪待ち時間（15s + backoff 1s + 15s = 31s）が従来の 30s から増えないようにするため。
+// バッチは Cloud Functions の 300 秒上限の中で 10 サブバッチ（BATCH_SIZE=50 /
+// maxConcurrent=5）を直列に回すので、1作品の最悪値がそのまま run の生死に効く。
+// 実測レイテンシは 0.08〜0.37 秒（2026-08-22・タイムアウトした作品で計測）＝15 秒でも 40 倍以上の余裕がある。
+const REQUEST_TIMEOUT_MS = 15000;
+
+// リトライ上限はエラーの「1回あたりのコスト」で分ける。
+// 429/5xx は即座にレスポンスが返るため2回まで許容できるが、タイムアウトは1回で
+// REQUEST_TIMEOUT_MS を丸ごと消費するため1回に抑える。
+const MAX_RETRIES_HTTP = 2;
+const MAX_RETRIES_TIMEOUT = 1;
 
 /**
  * Individual Info API リクエストオプション
@@ -127,6 +139,30 @@ function validateResponseFormat(
 }
 
 /**
+ * エラー種別ごとのリトライ上限を返す（0 = リトライしない）
+ *
+ * タイムアウトは一過性のネットワーク遅延が主因でリトライが最も効くクラス。
+ * fetch は AbortSignal.timeout() 由来だと "TimeoutError" を投げる（"AbortError" は
+ * AbortController.abort() 由来）ので、dlsite-ajax-fetcher と同じく両方を見る。
+ */
+function getMaxRetries(error: unknown): number {
+	if (!(error instanceof Error)) {
+		return 0;
+	}
+
+	// 429 / 5xx は handleHttpError が "retry needed" を付けて投げる
+	if (error.message.includes("retry needed")) {
+		return MAX_RETRIES_HTTP;
+	}
+
+	if (error.name === "TimeoutError" || error.name === "AbortError") {
+		return MAX_RETRIES_TIMEOUT;
+	}
+
+	return 0;
+}
+
+/**
  * Individual Info APIから単一作品データを取得
  * 詳細エラーハンドリング付き（リトライ機能付き）
  *
@@ -139,7 +175,6 @@ export async function fetchIndividualWorkInfo(
 	options: IndividualInfoAPIOptions & { retryCount?: number } = {},
 ): Promise<DLsiteApiResponse | null> {
 	const { enableDetailedLogging = false, retryCount = 0 } = options;
-	const MAX_RETRIES = 2;
 
 	try {
 		const url = `${INDIVIDUAL_INFO_API_BASE_URL}?workno=${workId}`;
@@ -150,7 +185,7 @@ export async function fetchIndividualWorkInfo(
 		const response = await fetch(url, {
 			method: "GET",
 			headers,
-			signal: AbortSignal.timeout(30000), // 30秒タイムアウト
+			signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
 		});
 
 		if (!response.ok) {
@@ -189,12 +224,9 @@ export async function fetchIndividualWorkInfo(
 		return validatedData;
 	} catch (error) {
 		// リトライ可能なエラーかチェック
-		if (
-			error instanceof Error &&
-			error.message.includes("retry needed") &&
-			retryCount < MAX_RETRIES
-		) {
-			logger.warn(`リトライ実行 (${retryCount + 1}/${MAX_RETRIES}): ${workId}`);
+		const maxRetries = getMaxRetries(error);
+		if (maxRetries > 0 && retryCount < maxRetries) {
+			logger.warn(`リトライ実行 (${retryCount + 1}/${maxRetries}): ${workId}`);
 			// エクスポネンシャルバックオフ
 			await new Promise((resolve) => setTimeout(resolve, (retryCount + 1) * 1000));
 			return fetchIndividualWorkInfo(workId, {

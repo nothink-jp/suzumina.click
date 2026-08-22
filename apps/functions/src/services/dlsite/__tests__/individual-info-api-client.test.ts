@@ -188,10 +188,13 @@ describe("Individual Info API Client", () => {
 			expect(result).toBeNull();
 		});
 
-		it("ネットワークエラーの場合例外を投げる", async () => {
+		it("ネットワークエラーの場合リトライせず例外を投げる", async () => {
 			mockFetch.mockRejectedValue(new Error("Network error"));
 
 			await expect(fetchIndividualWorkInfo("RJ123456")).rejects.toThrow();
+
+			// 一過性と判定できないエラーはリトライ対象外（初回のみ）
+			expect(mockFetch).toHaveBeenCalledTimes(1);
 		});
 
 		it("リトライが成功した場合データを返す", async () => {
@@ -218,6 +221,46 @@ describe("Individual Info API Client", () => {
 
 			expect(result).toEqual(mockWorkData);
 			expect(mockFetch).toHaveBeenCalledTimes(2); // 初回失敗 + リトライ成功
+		});
+
+		// AbortSignal.timeout() が投げるのは "TimeoutError"。以前は "retry needed" を含む
+		// エラー（429/5xx）しかリトライ対象でなく、一過性の遅延がそのまま失敗計上されていた。
+		it("タイムアウト（TimeoutError）はリトライしてから例外を投げる", async () => {
+			mockFetch.mockRejectedValue(
+				new DOMException("The operation was aborted due to timeout", "TimeoutError"),
+			);
+
+			await expect(fetchIndividualWorkInfo("RJ123456")).rejects.toThrow();
+
+			// タイムアウトは1回あたり15秒を消費するためリトライ上限は1回（初回+1回=2回）
+			expect(mockFetch).toHaveBeenCalledTimes(2);
+		});
+
+		it("AbortError もリトライ対象になる", async () => {
+			mockFetch.mockRejectedValue(new DOMException("The operation was aborted", "AbortError"));
+
+			await expect(fetchIndividualWorkInfo("RJ123456")).rejects.toThrow();
+
+			expect(mockFetch).toHaveBeenCalledTimes(2);
+		});
+
+		it("タイムアウト後のリトライが成功した場合データを返す", async () => {
+			mockFetch
+				.mockRejectedValueOnce(
+					new DOMException("The operation was aborted due to timeout", "TimeoutError"),
+				)
+				.mockResolvedValueOnce({
+					ok: true,
+					status: 200,
+					statusText: "OK",
+					text: vi.fn().mockResolvedValue(JSON.stringify([mockWorkData])),
+					headers: new Headers({ "content-type": "application/json" }),
+				});
+
+			const result = await fetchIndividualWorkInfo("RJ123456");
+
+			expect(result).toEqual(mockWorkData);
+			expect(mockFetch).toHaveBeenCalledTimes(2);
 		});
 	});
 
