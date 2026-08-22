@@ -204,10 +204,6 @@ export function resetAllConsent() {
  * 同じ理由で黙って全滅する構造ではなくなる。SPA で推奨されている形でもある
  * （同一測定IDへの 2 回目の `config` は設定更新として扱われ、page_view 送信は保証されない）。
  *
- * @param url 送信するパス（クエリ込み）。省略時は現在地
- * @param measurementId 送信先の GA4 プロパティ。**Server Component から prop で渡す**
- * （[ga-measurement-id.ts](../analytics/ga-measurement-id.ts) 参照）。省略すると
- * 設定済みの全ターゲットに送られる。GTM 併用時に送信先を絞るためだけに使う
  * SPR-317: 送信可否の条件を「gtag があるか」から「`config` が済んでいるか」に変えた。
  * `gtag/js` は lazyOnload（window `load` 後・SPR-9）でロードされる一方、PageViewTracker は
  * hydration 直後に送るため、`window.gtag`（ConsentModeScript の polyfill）だけを見ていると
@@ -216,6 +212,10 @@ export function resetAllConsent() {
  * ページほど hydration が先行するため、**初期表示が遅い訪問ほど欠測する**偏りが出ていた
  * （landingPage の (not set) 30%・そのセッション群の page_view は0件）。
  *
+ * @param url 送信するパス（クエリ込み）。省略時は現在地
+ * @param measurementId 送信先の GA4 プロパティ。**Server Component から prop で渡す**
+ * （[ga-measurement-id.ts](../analytics/ga-measurement-id.ts) 参照）。省略すると
+ * 設定済みの全ターゲットに送られる。GTM 併用時に送信先を絞るためだけに使う
  * @returns 実際に送信したか。config 未完了では false を返すため、呼び出し側は再送を
  * 判断できる（未送信を「送信済み」と誤認すると landing page が欠ける）
  */
