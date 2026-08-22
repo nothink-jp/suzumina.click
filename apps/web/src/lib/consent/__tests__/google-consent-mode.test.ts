@@ -15,10 +15,13 @@ const gtag = vi.fn();
 beforeEach(() => {
 	vi.clearAllMocks();
 	(window as unknown as { gtag: typeof gtag }).gtag = gtag;
+	// SPR-317: page view は `gtag('config', ...)` 完了後にしか送らない
+	window.gaConfigured = true;
 	localStorage.clear();
 });
 
 afterEach(() => {
+	window.gaConfigured = undefined;
 	localStorage.clear();
 	// 文字列 "undefined" が残らないよう削除（テスト間の漏れ防止）
 	delete process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
@@ -222,6 +225,16 @@ describe("sendGoogleAnalyticsPageView / Event", () => {
 			"page_view",
 			expect.not.objectContaining({ send_to: expect.anything() }),
 		);
+	});
+
+	// SPR-317 の回帰テスト。window.gtag は ConsentModeScript の polyfill が hydration 時に
+	// 定義するため「gtag がある＝送れる」ではない。config 前に積むと送信先が未設定のまま
+	// 捨てられるうえ、true を返すと呼び出し側が「送信済み」と誤認して再送の機会を失う。
+	it("config が未完了なら page view を送らず false を返す", () => {
+		window.gaConfigured = undefined;
+
+		expect(sendGoogleAnalyticsPageView("/x", "G-TEST")).toBe(false);
+		expect(gtag).not.toHaveBeenCalledWith("event", "page_view", expect.anything());
 	});
 
 	it("クエリつきの URL をそのまま page_location に載せる", () => {
