@@ -509,7 +509,10 @@ resource "google_monitoring_alert_policy" "dlsite_api_failure_rate_high" {
     1. ログ確認: "API取得失敗が多数" / "Individual Info API サーバーエラー" を Cloud Logging で検索
        （エラー内訳が timeout ばかりなら上記の実行時間超過、HTTP 4xx/5xx なら DLsite 側）
     2. DLsite の稼働状況を手動確認
-    3. 失敗した作品は次サイクルで自動再試行される（手動介入は原則不要）
+    3. 失敗した作品は **そのサイクル内では再試行されない**（取得失敗の有無に関わらずバッチは
+       完了扱いになるため、次 run はサイクルの続き＝次バッチから始まる）。次サイクルの開始時に
+       due として拾われる＝通常は2時間後、サイクルが2 runにまたがった場合は4時間後（2026-08 実測）。
+       手動介入は原則不要。
     EOT
     mime_type = "text/markdown"
   }
