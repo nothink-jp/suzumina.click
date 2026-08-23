@@ -398,6 +398,11 @@ export async function runUnifiedDataCollection(
 	// SPR-225 Stage 1: 変更 creator の recompute キューを run 開始でクリアする。
 	resetCreatorRecomputeQueue();
 
+	// 実行時間の計測は run 起動時点から始める（SPR-318）。準備処理（メタデータ読み・
+	// 作品ID収集）に約35秒かかるため、準備完了後に測ると MAX_EXECUTION_TIME が
+	// そのまま関数 timeout との差になってくれない。
+	const startTime = Date.now();
+
 	try {
 		// メタデータから処理状態を確認
 		const metadata = await getOrCreateUnifiedMetadata();
@@ -427,9 +432,6 @@ export async function runUnifiedDataCollection(
 		logger.info(
 			`既存作品マップ取得完了: ${existingWorksMap.size}件（対象: ${remainingWorkIds.length}件）`,
 		);
-
-		// 準備完了後にタイマー開始（バッチ処理の実際の開始時点）
-		const startTime = Date.now();
 
 		// デバッグ: バッチ処理の状態を確認
 		logger.info(`バッチ処理開始: batches.length=${batches.length}, startBatch=${startBatch}`);
