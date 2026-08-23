@@ -435,7 +435,12 @@ resource "google_monitoring_alert_policy" "dlsite_run_absent" {
 # バッチ取得で失敗が 10% を超えるとクライアントが集約 WARN「API取得失敗が多数」を出す
 # （individual-info-api-client.ts）。per-work 一時エラー（常態・除外済み）と「全滅」
 # （dlsite_api_batch_all_failed）の中間帯＝部分劣化を検知する（SPR-234 分類 B2）。
-# 頻度実績は月1〜3回（直近30日で3回・失敗率12〜18%）＝低ノイズ。
+# 頻度実績は月1〜3回（2026-08 実測で 12%/20%/22%）＝低ノイズ。
+# ただし SPR-318 まで、実際の発火要因は DLsite 側ではなく自前の実行時間超過だった
+# （run が関数 timeout を超えて走り、リクエスト外＝CPU スロットリング下で API 取得が
+# 15 秒タイムアウトする）。観測した4回とも timeout 到達後に発生している。
+# timeout 540s + MAX_EXECUTION_TIME 480s（run 起動時点基準）で解消済みのため、
+# 以後の発火は DLsite 側の劣化として読んでよい（再発時はまず run の latency を見る）。
 # 単一文字列 warn のため textPayload に出る点に注意（両フィールド張り）。
 resource "google_logging_metric" "dlsite_api_failure_rate_high" {
   name    = "dlsite_api_failure_rate_high"
@@ -485,15 +490,29 @@ resource "google_monitoring_alert_policy" "dlsite_api_failure_rate_high" {
     content   = <<-EOT
     # DLsite API 取得失敗率の上昇（部分劣化）
 
-    バッチ取得の失敗率が 10% を超えました（実績: 月1〜3回・12〜18%）。DLsite 側の
-    部分障害・レート制限・ネットワーク不調の兆候です。単発は自己回復することが
-    多いですが、短時間に連続する場合は全面停止（DLsite API Batch All Failed）へ
+    バッチ取得の失敗率が 10% を超えました（実績: 月1〜3回・12〜22%）。単発は自己回復する
+    ことが多いですが、短時間に連続する場合は全面停止（DLsite API Batch All Failed）へ
     進行する可能性があるため要調査です。
 
-    ## 確認事項
+    ## まず確認すること（SPR-318）
+    2026-08 までの発火4回はすべて DLsite 側ではなく **自前の実行時間超過** が原因だった。
+    run が関数 timeout に達すると、以降はリクエスト外＝CPU スロットリング下で実行され、
+    平常 0.1〜0.4 秒で返る API 呼び出しが 15 秒のタイムアウトに掛かる。まず run が
+    timeout に張り付いていないかを見る（張り付いていれば DLsite は無実）:
+    ```bash
+    gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="fetchdlsiteunifieddata" AND logName:"run.googleapis.com%2Frequests"' --limit=20 --format="value(timestamp,httpRequest.status,httpRequest.latency)" --order=desc
+    ```
+    latency が上限（540s）に張り付いている場合は MAX_EXECUTION_TIME（process-batch.ts）と
+    timeout（deploy-functions.yml）の関係を見直す。
+
+    ## DLsite 側を疑う場合の確認事項
     1. ログ確認: "API取得失敗が多数" / "Individual Info API サーバーエラー" を Cloud Logging で検索
+       （エラー内訳が timeout ばかりなら上記の実行時間超過、HTTP 4xx/5xx なら DLsite 側）
     2. DLsite の稼働状況を手動確認
-    3. 失敗した作品は次 run（2h後）で自動再試行される（手動介入は原則不要）
+    3. 失敗した作品は **そのサイクル内では再試行されない**（取得失敗の有無に関わらずバッチは
+       完了扱いになるため、次 run はサイクルの続き＝次バッチから始まる）。次サイクルの開始時に
+       due として拾われる＝通常は2時間後、サイクルが2 runにまたがった場合は4時間後（2026-08 実測）。
+       手動介入は原則不要。
     EOT
     mime_type = "text/markdown"
   }

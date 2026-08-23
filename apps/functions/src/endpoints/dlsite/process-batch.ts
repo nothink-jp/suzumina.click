@@ -18,7 +18,14 @@ import * as logger from "../../shared/logger";
 const MAX_CONCURRENT_API_REQUESTS = 5; // 6 → 3 → 5（バッチ処理を効率化: 50件を10回の並列処理で実行）
 const API_REQUEST_DELAY = 400;
 export const BATCH_SIZE = 50; // 100 → 50に削減（エラー率低下とタイムアウト回避）
-export const MAX_EXECUTION_TIME = 270000; // 4.5分（Cloud Functions 5分タイムアウトより短く設定）
+// 実行時間制限（SPR-318）。関数の timeout は 540 秒（deploy-functions.yml が正本）で、
+// この 480 秒は **run 起動時点** からの経過で測る（準備処理＝作品ID収集の約35秒を含む）。
+// 旧 270 秒は準備処理の後にタイマーを開始していたため、起動から見ると約305秒でしか
+// break できず、当時の timeout 300 秒を構造的に超えていた。超過後もコンテナの JS は
+// 走り続けるがリクエスト外＝CPU が絞られ、平常 0.1〜0.4 秒で返る Individual Info API が
+// 15 秒のタイムアウトに掛かる（失敗率アラートの実発火要因）。
+// 残り 60 秒は「判定を通過した1バッチが走り切る」ぶんの余白（平常 約7秒/バッチ）。
+export const MAX_EXECUTION_TIME = 480000;
 
 /**
  * 統合処理結果の型定義
