@@ -296,6 +296,13 @@ resource "google_firestore_field" "price_history_disable_default_indexes" {
   # 自動単一フィールド index が全停止する。**map のサブフィールドもまとめて効く**ので
   # localePrice.* の 14 ロケールを個別に書く必要はない（Admin API で確認済み）。
   index_config {}
+
+  # **date より後に適用する**。最終状態は順序に依らない（明示設定を持つフィールドは
+  # usesAncestorConfig=false になりワイルドカードの影響を受けない）が、apply 中の
+  # 過渡状態は順序で変わる。先にこちらを適用すると date の index が一時的に消え、
+  # その窓で orderBy("date") が FAILED_PRECONDITION になる（価格チャートが落ちる）。
+  # date を先に明示しておけば、この窓が生じない。
+  depends_on = [google_firestore_field.price_history_date]
 }
 
 # 唯一のクエリ（orderBy("date") + 範囲 where）を維持するため date だけ索引を戻す。
@@ -319,8 +326,6 @@ resource "google_firestore_field" "price_history_date" {
     }
   }
 
-  # ワイルドカード側の既定が先に適用されるよう順序を固定する。
-  depends_on = [google_firestore_field.price_history_disable_default_indexes]
 }
 
 # （将来用・複合インデックスの例）役割と作品IDの組み合わせ検索用。
