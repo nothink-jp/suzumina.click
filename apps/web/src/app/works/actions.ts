@@ -9,7 +9,7 @@ import { withErrorHandling } from "@/lib/server-action-wrapper";
 // Internal modules
 import type { EnhancedSearchParams } from "./lib/work-filtering";
 import { filterWorksByUnifiedData, needsComplexFiltering } from "./lib/work-filtering";
-import { buildWorksQuery } from "./lib/work-query-builder";
+import { buildNonR18WorksQuery, buildWorksQuery } from "./lib/work-query-builder";
 import { sortWorks } from "./lib/work-sorting";
 import {
 	convertDocsToWorks,
@@ -24,10 +24,10 @@ async function getWorksWithSimpleQuery(
 	firestore: FirebaseFirestore.Firestore,
 	params: EnhancedSearchParams,
 ): Promise<WorkListResultPlain> {
-	const { page = 1, limit = 12, sort = "newest", category, ageRating } = params;
+	const { page = 1, limit = 12, sort = "newest", category } = params;
 
 	// クエリ構築
-	let query = buildWorksQuery(firestore, { category, ageRating, sort });
+	let query = buildWorksQuery(firestore, { category, sort });
 	query = query.limit(limit);
 
 	// オフセット処理
@@ -48,13 +48,10 @@ async function getWorksWithSimpleQuery(
 	const snapshot = await query.get();
 	const works = await convertDocsToWorks(snapshot.docs);
 
-	// 全件数取得用クエリ（ソート不要。category/ageRating フィルタのみ適用）
+	// 全件数取得用クエリ（ソート不要。category フィルタのみ適用）
 	let countQuery: FirebaseFirestore.Query = firestore.collection("works");
 	if (category && category !== "all") {
 		countQuery = countQuery.where("category", "==", category);
-	}
-	if (ageRating && ageRating.length === 1) {
-		countQuery = countQuery.where("ageRating", "==", ageRating[0]);
 	}
 	const countSnapshot = await countQuery.count().get();
 	const totalCount = countSnapshot.data().count;
@@ -87,12 +84,16 @@ async function getWorksWithComplexFiltering(
 		priceRange,
 		ratingRange,
 		hasHighResImage,
-		ageRating,
 		showR18,
 	} = params;
 
-	// クエリ構築
-	let query = buildWorksQuery(firestore, { category, ageRating, sort });
+	// クエリ構築。
+	// 匿名・年齢未確認（showR18 === false）は表示対象が非 R18 の 37 件しかないので、
+	// 全件を読んでから in-memory で落とすのをやめ、Firestore 側で絞る（SPR-321）。
+	const excludeR18 = showR18 === false;
+	let query = excludeR18
+		? buildNonR18WorksQuery(firestore, { category })
+		: buildWorksQuery(firestore, { category, sort });
 
 	// ページネーション用のオフセット
 	const startOffset = (page - 1) * limit;
@@ -106,8 +107,10 @@ async function getWorksWithComplexFiltering(
 		(voiceActors && voiceActors.length > 0);
 
 	if (requiresFullDataFetch) {
-		// 全件取得（limitを設定しない）
-		// 注: Firestoreには約1500件なので問題ない
+		// limit を設定しない。
+		// excludeR18 のときは上のクエリが既に 37 件程度まで絞っている。
+		// それ以外（検索・ジャンル・声優・言語）は絞り込み条件を Firestore で表現できないため
+		// 全件（2,191 件）を読む。ここは残っている増幅で、実トラフィックでの利用率が低いため据え置き。
 	} else {
 		// その他の複雑フィルタリングの場合は、必要な分+余裕を取得
 		const fetchLimit = Math.min(startOffset + limit * 10, 3000);
@@ -120,7 +123,12 @@ async function getWorksWithComplexFiltering(
 		id: doc.id,
 	})) as import("@suzumina.click/shared-types").WorkDocument[];
 
-	// メモリ上でのフィルタリング
+	// メモリ上でのフィルタリング。
+	// excludeR18 のときは既にクエリ側で非 R18 に絞られているため、この中の `showR18 === false`
+	// 分岐（filterR18Content = denylist）は実質 no-op になる（"全年齢" / "R15" はどちらも
+	// isR18Content で false）。**冗長に見えるが意図的に残している**: allowlist（クエリ）と
+	// denylist（判定）が将来食い違ったとき、R18 が匿名一覧へ漏れるのをここで止める安全網になる。
+	// 対象は 37 件程度なのでコストは無視できる。消さないこと（SPR-321）。
 	allWorks = filterWorksByUnifiedData(allWorks, {
 		search,
 		language,
@@ -129,7 +137,6 @@ async function getWorksWithComplexFiltering(
 		priceRange,
 		ratingRange,
 		hasHighResImage,
-		ageRating: ageRating && ageRating.length > 1 ? ageRating : undefined,
 		showR18, // R18フィルタリングも適用する
 	});
 

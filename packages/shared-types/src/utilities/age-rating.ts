@@ -65,6 +65,28 @@ const R18_KEYWORDS = ["R18", "R-18", "18禁", "成人向け", "Adult", "18歳以
 const ALL_AGES_KEYWORDS = ["全年齢", "全年令", "一般", "General", "All ages"];
 
 /**
+ * Firestore の `works.ageRating` に実在する「R18 ではない」値の集合（SPR-321）。
+ *
+ * `isR18Content()` は denylist（R18 らしいキーワードを含むか）で判定するため、
+ * **Firestore クエリには載らない**（部分一致は where で表現できない）。
+ * 一覧を「非 R18 だけ」に絞るクエリのために、実データから列挙した allowlist をここに置く。
+ *
+ * **この 3 値の正本は取り込み側の `mapAgeRating()`**（`apps/functions/src/services/mappers/work-mapper.ts`）。
+ * DLsite の `age_category` を 1→"全年齢" / 2→"R15" / 3→"R18" に正規化し、**未知の値は `undefined`**（フィールド自体が無い）。
+ * したがってここは「実データがたまたまこの 3 値だった」のではなく、**書き込み側の値域をそのまま写している**。
+ * `mapAgeRating()` の対応表を変えるときは、必ずこの定数も一緒に変えること。
+ * 本番実測（2026-08-24）でも R18 2,154 / 全年齢 26 / R15 11 = 2,191・欠損ゼロで一致している。
+ *
+ * `isR18Content()` の隣に置いてあるのは、あちらが denylist の部分一致（Firestore クエリに載らない）で
+ * 同じ判断を別の方法で行っており、**両者が食い違うと表示が壊れる**ため。
+ *
+ * 未知の区分（`ageRating` が無い doc）はこの `in` に一致しないため匿名ユーザーの一覧に出ない（fail-closed）。
+ * `isR18Content(undefined)` が false＝非 R18 扱い（fail-open）なのとは逆だが、
+ * 表示側の既定（`showR18 ?? false`）と失敗方向が揃うのはこちら。
+ */
+export const NON_R18_AGE_RATINGS = ["全年齢", "R15"] as const;
+
+/**
  * 年齢制限文字列がR18相当かどうかを判定
  * @param ageRating 年齢制限文字列
  * @returns R18相当の場合true

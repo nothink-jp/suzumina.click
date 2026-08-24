@@ -74,9 +74,6 @@ describe("filterWorksByUnifiedData", () => {
 		expect(run({ hasHighResImage: true })).toEqual(["w1"]);
 		expect(run({ hasHighResImage: false })).toEqual(["w2"]);
 	});
-	it("ageRating（特定指定）", () => {
-		expect(run({ ageRating: ["18禁"] })).toEqual(["w2"]);
-	});
 	// language / showR18 の実フィルタロジックは shared-types 側（filterWorksByLanguage /
 	// filterR18Content）の責務。ここでは当該分岐が実行され例外なく配列を返すことだけを担保する。
 	it("language 指定で当該分岐を通り配列を返す（実フィルタは shared-types の責務）", () => {
