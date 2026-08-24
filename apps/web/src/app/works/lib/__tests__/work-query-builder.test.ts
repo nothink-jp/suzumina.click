@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { buildWorksQuery } from "../work-query-builder";
+import { buildNonR18WorksQuery, buildWorksQuery } from "../work-query-builder";
 
 // where/orderBy がチェーン可能で、呼び出しを記録する Firestore モック
 const makeFirestore = () => {
@@ -38,15 +38,6 @@ describe("buildWorksQuery", () => {
 		expect(run({ category: "all" }).some((c) => c.method === "where")).toBe(false);
 	});
 
-	it("ageRating は単一指定のときのみ where", () => {
-		expect(run({ ageRating: ["18禁"] })).toContainEqual({
-			method: "where",
-			args: ["ageRating", "==", "18禁"],
-		});
-		// 複数指定は where しない
-		expect(run({ ageRating: ["全年齢", "18禁"] }).some((c) => c.method === "where")).toBe(false);
-	});
-
 	it("sort 種別ごとに orderBy を切り替える", () => {
 		const orderOf = (sort: string) => run({ sort }).find((c) => c.method === "orderBy")?.args;
 		expect(orderOf("oldest")).toEqual(["releaseDateISO", "asc"]);
@@ -56,5 +47,35 @@ describe("buildWorksQuery", () => {
 		expect(orderOf("popular")).toEqual(["rating.count", "desc"]);
 		expect(orderOf("newest")).toEqual(["releaseDateISO", "desc"]); // default
 		expect(orderOf("unknown")).toEqual(["releaseDateISO", "desc"]);
+	});
+});
+
+describe("buildNonR18WorksQuery", () => {
+	const runNonR18 = (params: Parameters<typeof buildNonR18WorksQuery>[1]) => {
+		const { firestore, calls } = makeFirestore();
+		buildNonR18WorksQuery(firestore as any, params);
+		return calls;
+	};
+
+	it("非 R18 の ageRating だけを in で絞る", () => {
+		expect(runNonR18({})).toContainEqual({
+			method: "where",
+			args: ["ageRating", "in", ["全年齢", "R15"]],
+		});
+	});
+
+	it("orderBy を付けない（複合インデックス不要を維持するため）", () => {
+		// ここが崩れると `in` + `orderBy` になり FAILED_PRECONDITION で一覧が 0 件になる。
+		// 並び替えは呼び出し側が in-memory の sortWorks で行うので Firestore 側は不要（SPR-321）。
+		expect(runNonR18({}).some((c) => c.method === "orderBy")).toBe(false);
+		expect(runNonR18({ category: "SOU" }).some((c) => c.method === "orderBy")).toBe(false);
+	});
+
+	it("category 指定で where を足し、'all' はスキップ", () => {
+		expect(runNonR18({ category: "SOU" })).toContainEqual({
+			method: "where",
+			args: ["category", "==", "SOU"],
+		});
+		expect(runNonR18({ category: "all" }).filter((c) => c.method === "where")).toHaveLength(1);
 	});
 });

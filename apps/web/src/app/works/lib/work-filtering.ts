@@ -23,7 +23,6 @@ export interface EnhancedSearchParams {
 	};
 	hasHighResImage?: boolean;
 	_strategy?: "minimal" | "standard" | "comprehensive";
-	ageRating?: string[];
 	showR18?: boolean;
 }
 
@@ -134,19 +133,6 @@ export function filterWorksByUnifiedData(
 		filteredWorks = filterR18Content(filteredWorks, getAgeRatingFromWork);
 	}
 
-	// 特定の年齢制限でフィルタリング
-	if (params.ageRating && params.ageRating.length > 0) {
-		filteredWorks = filteredWorks.filter((work) => {
-			const workAgeRating = work.ageRating || "";
-			return params.ageRating?.some(
-				(rating) =>
-					typeof workAgeRating === "string" &&
-					typeof rating === "string" &&
-					(workAgeRating.includes(rating) || rating === workAgeRating),
-			);
-		});
-	}
-
 	return filteredWorks;
 }
 
@@ -162,7 +148,6 @@ export function needsComplexFiltering(params: EnhancedSearchParams): boolean {
 		params.priceRange ||
 		params.ratingRange ||
 		params.hasHighResImage !== undefined ||
-		(params.ageRating && params.ageRating.length > 1) ||
 		params.showR18 === false
 	);
 }
