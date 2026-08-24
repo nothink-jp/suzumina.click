@@ -267,6 +267,67 @@ resource "google_firestore_field" "works_workid_collection_group" {
   }
 }
 
+# ===================================================================
+# priceHistory: 未使用な単一フィールド index の除外（SPR-323）
+# ===================================================================
+# works/{id}/priceHistory は 717,833 docs で DB の doc 数の約 98%。
+# doc の実体は 1.24 KB だが**ストレージ上は 1 doc 12.2 KB**を占めていた。差は索引。
+#
+# 原因は map のサブフィールドが個別に索引されること:
+#   capturedAt / date / discountRate / officialPrice / price / workId
+#   localePrice        : map（14 ロケール）
+#   localeOfficialPrice: map（14 ロケール）
+# → リーフ 34 フィールド × (ASC + DESC + array-contains) ≒ 1 doc 68 索引エントリ。
+#   実体 0.83 GiB に対し索引が約 7.50 GiB（DB 全体 8.33 GiB の 90%）。
+#
+# だが priceHistory を索引で引くクエリは `orderBy("date", ...)` の 3 箇所だけ
+# （web の actions/price-history.ts、functions の debug/check ツール）。
+# 書き込みは .doc(today) の直接参照で索引不要。collectionGroup("priceHistory") も無い。
+# **33/34 のリーフフィールドは索引を持ちながら一度も検索されていない。**
+#
+# データは一切消さない。索引だけを外す（可逆・戻せば再構築される）。
+resource "google_firestore_field" "price_history_disable_default_indexes" {
+  project    = var.gcp_project_id
+  database   = "(default)"
+  collection = "priceHistory"
+  field      = "*"
+
+  # ワイルドカードの index_config を空にすると、そのコレクショングループの
+  # 自動単一フィールド index が全停止する。**map のサブフィールドもまとめて効く**ので
+  # localePrice.* の 14 ロケールを個別に書く必要はない（Admin API で確認済み）。
+  index_config {}
+
+  # **date より後に適用する**。最終状態は順序に依らない（明示設定を持つフィールドは
+  # usesAncestorConfig=false になりワイルドカードの影響を受けない）が、apply 中の
+  # 過渡状態は順序で変わる。先にこちらを適用すると date の index が一時的に消え、
+  # その窓で orderBy("date") が FAILED_PRECONDITION になる（価格チャートが落ちる）。
+  # date を先に明示しておけば、この窓が生じない。
+  depends_on = [google_firestore_field.price_history_date]
+}
+
+# 唯一のクエリ（orderBy("date") + 範囲 where）を維持するため date だけ索引を戻す。
+# 上のワイルドカードで既定が「索引なし」になるため、ここは明示しないと date も引けなくなる。
+resource "google_firestore_field" "price_history_date" {
+  project    = var.gcp_project_id
+  database   = "(default)"
+  collection = "priceHistory"
+  field      = "date"
+
+  # index_config は当該フィールドの index 構成を「全置換」する（works_workid_collection_group と同じ注意）。
+  # orderBy("date","desc") と where("date", "<=" / ">=") の両方を賄うため ASC/DESC の両方が要る。
+  index_config {
+    indexes {
+      query_scope = "COLLECTION"
+      order       = "ASCENDING"
+    }
+    indexes {
+      query_scope = "COLLECTION"
+      order       = "DESCENDING"
+    }
+  }
+
+}
+
 # （将来用・複合インデックスの例）役割と作品IDの組み合わせ検索用。
 # 現在のクエリでは不要。必要になったら有効化する。
 # resource "google_firestore_index" "creators_works_collection_group_roles_workid" {
@@ -462,6 +523,10 @@ resource "google_firestore_index" "videos_livebroadcastcontent_lastfetchedat_asc
 # - works.workId COLLECTION_GROUP（google_firestore_field・SPR-204）: creator-firestore.ts
 # - videos_livebroadcastcontent_lastfetchedat_asc（1・2026-07-06 SPR-230回帰対応で追加）:
 #   getStaleLiveVideoIds()（youtube-firestore.ts）の配信中/配信予定固着動画の再取得
+# - priceHistory の単一フィールド index 設定（google_firestore_field ×2・SPR-323）:
+#   ワイルドカード `*` で自動 index を全停止し、実際に引く `date` だけ ASC/DESC を戻す。
+#   複合 index の「追加」ではなく**既定 index の除外**なので、上の query-backed 判定とは向きが逆。
+#   索引が DB ストレージの 90%（8.33 GiB 中 7.50 GiB）を占めていたのを解消する目的
 # - ※ audioButtons の creatorId / stats.* / videoId 系は firestore_indexes_audiobuttons_update.tf が管理
 #
 # 【SPR-213 で本ファイルから撤去した managed-unused（13）】
