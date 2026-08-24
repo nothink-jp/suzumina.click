@@ -337,7 +337,6 @@ resource "google_firestore_field" "price_history_date" {
     }
   }
 
-
   # 既定のタイムアウトは 20 分で、この規模には足りない（SPR-323 実測）。
   # date の索引変更（array-contains の削除 1 種のみ）で **720,022 doc を 21.2 分**かけて走査し、
   # terraform が 20 分で諦めた 53 秒後にサーバ側は SUCCESSFUL になっていた。
