@@ -123,7 +123,12 @@ async function getWorksWithComplexFiltering(
 		id: doc.id,
 	})) as import("@suzumina.click/shared-types").WorkDocument[];
 
-	// メモリ上でのフィルタリング
+	// メモリ上でのフィルタリング。
+	// excludeR18 のときは既にクエリ側で非 R18 に絞られているため、この中の `showR18 === false`
+	// 分岐（filterR18Content = denylist）は実質 no-op になる（"全年齢" / "R15" はどちらも
+	// isR18Content で false）。**冗長に見えるが意図的に残している**: allowlist（クエリ）と
+	// denylist（判定）が将来食い違ったとき、R18 が匿名一覧へ漏れるのをここで止める安全網になる。
+	// 対象は 37 件程度なのでコストは無視できる。消さないこと（SPR-321）。
 	allWorks = filterWorksByUnifiedData(allWorks, {
 		search,
 		language,
