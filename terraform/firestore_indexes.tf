@@ -303,6 +303,17 @@ resource "google_firestore_field" "price_history_disable_default_indexes" {
   # その窓で orderBy("date") が FAILED_PRECONDITION になる（価格チャートが落ちる）。
   # date を先に明示しておけば、この窓が生じない。
   depends_on = [google_firestore_field.price_history_date]
+
+  # 既定のタイムアウトは 20 分で、この規模には足りない（SPR-323 実測）。
+  # date の索引変更（array-contains の削除 1 種のみ）で **720,022 doc を 21.2 分**かけて走査し、
+  # terraform が 20 分で諦めた 53 秒後にサーバ側は SUCCESSFUL になっていた。
+  # ワイルドカード側は削除する索引が約 66 種と桁違いに多いので、さらに長くなる想定。
+  # GitHub Actions のジョブ上限は既定 360 分なので、その内側に収まる値にしてある。
+  timeouts {
+    create = "4h"
+    update = "4h"
+    delete = "4h"
+  }
 }
 
 # 唯一のクエリ（orderBy("date") + 範囲 where）を維持するため date だけ索引を戻す。
@@ -326,6 +337,16 @@ resource "google_firestore_field" "price_history_date" {
     }
   }
 
+  # 既定のタイムアウトは 20 分で、この規模には足りない（SPR-323 実測）。
+  # date の索引変更（array-contains の削除 1 種のみ）で **720,022 doc を 21.2 分**かけて走査し、
+  # terraform が 20 分で諦めた 53 秒後にサーバ側は SUCCESSFUL になっていた。
+  # ワイルドカード側は削除する索引が約 66 種と桁違いに多いので、さらに長くなる想定。
+  # GitHub Actions のジョブ上限は既定 360 分なので、その内側に収まる値にしてある。
+  timeouts {
+    create = "4h"
+    update = "4h"
+    delete = "4h"
+  }
 }
 
 # （将来用・複合インデックスの例）役割と作品IDの組み合わせ検索用。
