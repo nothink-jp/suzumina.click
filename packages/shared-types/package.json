@@ -27,7 +27,7 @@
 		"@google-cloud/firestore": "^9.0.0",
 		"neverthrow": "^8.2.0",
 		"tiny-invariant": "^1.3.3",
-		"zod": "^4.4.3"
+		"zod": "^4.5.1"
 	},
 	"devDependencies": {
 		"@suzumina.click/typescript-config": "workspace:*",
