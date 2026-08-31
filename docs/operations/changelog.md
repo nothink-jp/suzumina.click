@@ -4,6 +4,22 @@ suzumina.clickプロジェクトの変更履歴
 
 ## [Unreleased]
 
+### ⬆️ Node.js 24.20.0 / pnpm 12 への更新
+
+- **Node.js 24.19.0 → 24.20.0**（同じ LTS Krypton 系の最新パッチ）、**pnpm 11.22.0 → 12.1.0**。
+- **pnpm 12 は Rust ネイティブバイナリに移行**し、`preinstall` スクリプトでプラットフォーム別の実体を配置する。
+  ビルドスクリプトを止める経路では placeholder のまま壊れるため、**`pnpm/action-setup@v6` では CI が動かない**
+  （`ERR_PNPM_IGNORED_BUILDS` → 実行時に syntax error。`@pnpm/exe` 経由も同じ）。修正版のリリースは無い。
+- **CI を `pnpm/setup@v2` へ移行**（14 箇所）。pnpm の自己完結バイナリを npm 署名・チェックサム検証つきで直接取得し、
+  Node も同時に用意するため `actions/setup-node` を兼ねる。ロックファイル検証結果のキャッシュを内蔵しており、
+  `minimumReleaseAge` + supply-chain 検証（922 entries）の実行時間に効く。
+- バージョンの正本を **`package.json` の `packageManager` / `devEngines.runtime`** に集約。
+  ワークフローから `node-version` の literal が 15 箇所 → 3 箇所（pnpm 不要で `node scripts/*.mjs` のみ走らせる
+  ga4-report / ga4-dimension-drift / firestore-index-drift）に減った。
+- Dockerfile は corepack 経由（`corepack use pnpm@12`）。corepack 0.35.0 は pnpm 12 のバイナリ配布に対応済み。
+- ロックファイルは `lockfileVersion: '9.0'` のまま。pnpm 12 が先頭に別ドキュメントを足して自身のバイナリを
+  `packageManagerDependencies` として pin する。**pnpm 11 でも読めるため切り戻し可能**（実測確認済み）。
+
 ### 🧹 admin ロール／管理画面の撤去（SPR-164）
 
 - **admin / moderator ロールを撤去**し、ユーザー区分を実質 member 一本へ集約。`role` フィールドを `shared-types` の各スキーマ（Firestore/Frontend/UserSession/UserQuery）と UserSession から削除（zod は未知キーを strip するため既存ドキュメントは無害）。

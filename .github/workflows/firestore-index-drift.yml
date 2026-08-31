@@ -51,7 +51,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: '24.19.0'
+          node-version: '24.20.0'
 
       # continue-on-error は使わない（ステップの conclusion まで success に塗られ、
       # 「緑だが壊れている」を作るため＝SPR-282）。代わりに exit code を出力して次の

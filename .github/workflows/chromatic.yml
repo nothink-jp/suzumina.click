@@ -102,18 +102,16 @@ jobs:
             echo "stale=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Setup pnpm
+      # pnpm 12 はネイティブバイナリを preinstall で配置するため、ビルドスクリプトを
+      # 止める pnpm/action-setup では placeholder のまま壊れる。pnpm/setup は署名検証つきで
+      # バイナリを直接取得し、Node も同時に用意する（actions/setup-node 不要）。
+      # バージョンの正本は package.json の packageManager / devEngines.runtime。
+      - name: Setup pnpm & Node.js
         if: steps.debounce.outputs.stale != 'true'
-        uses: pnpm/action-setup@v6
+        uses: pnpm/setup@v2
         with:
-          run_install: false
-
-      - name: Setup Node.js
-        if: steps.debounce.outputs.stale != 'true'
-        uses: actions/setup-node@v7
-        with:
-          node-version: '24.19.0'
-          cache: 'pnpm'
+          cache: true
+          install: false
 
       - name: Install dependencies
         if: steps.debounce.outputs.stale != 'true'
