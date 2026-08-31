@@ -128,13 +128,25 @@ gcloud run deploy web \
   --allow-unauthenticated
 
 # 3. Deploy functions
-cd apps/functions
-pnpm build
-gcloud functions deploy dlsite-collector \
-  --runtime nodejs20 \
-  --trigger-topic dlsite-collection \
+# 関数は fetchYouTubeVideos / fetchDLsiteUnifiedData / checkDataIntegrity の3つ。
+# shared-types は esbuild で inline されるため、bundle 済みの lib/ と縮小した
+# package.json だけをデプロイする（下の deploy-functions.yml と同じ手順）。
+pnpm --filter=@suzumina.click/functions build
+gcloud functions deploy fetchDLsiteUnifiedData \
+  --gen2 \
+  --source apps/functions \
+  --runtime nodejs24 \
+  --entry-point fetchDLsiteUnifiedData \
+  --trigger-topic dlsite-individual-api-trigger \
   --region asia-northeast1
 ```
+
+> [!IMPORTANT]
+> メモリ・タイムアウト・max-instances・service account・環境変数の**正本は
+> [deploy-functions.yml](../../.github/workflows/deploy-functions.yml)**（インフラ側の正本は
+> [terraform/](../../terraform/)）。上のコマンドは緊急時に手で叩く最小形であり、
+> 全フラグを転記していない。手動デプロイは既存のリソース設定を上書きしうるため、
+> 復旧後は必ず workflow 経由で再デプロイして設定を揃える。
 
 ## Rollback Procedures
 
@@ -205,27 +217,17 @@ gcloud firestore import gs://suzumina-click-backups/2025-07-28
 - Max instances: 10
 - Timeout: 300s
 
-**Admin Application**:
-- CPU: 1 vCPU  
-- Memory: 1Gi
-- Concurrency: 50
-- Min instances: 0
-- Max instances: 3
-- Timeout: 300s
-
 ### Cloud Functions Configuration
 
-**dlsite-collector-function**:
-- Memory: 512MB
-- Timeout: 540s
-- Max instances: 10
-- Trigger: Pub/Sub topic
+いずれも Cloud Functions v2 / `nodejs24` / Pub/Sub トリガー。数値の**正本は
+[deploy-functions.yml](../../.github/workflows/deploy-functions.yml)** で、
+値を変えた理由（OOM 実測・タイムアウト超過）はその近接コメントにある。
 
-**youtube-updater-function**:
-- Memory: 256MB
-- Timeout: 300s
-- Max instances: 5
-- Trigger: Cloud Scheduler
+| 関数 | トリガートピック | 役割 |
+| --- | --- | --- |
+| `fetchYouTubeVideos` | `youtube-video-fetch-trigger` | YouTube 動画の取得 |
+| `fetchDLsiteUnifiedData` | `dlsite-individual-api-trigger` | DLsite Individual Info API から `works` を更新 |
+| `checkDataIntegrity` | `data-integrity-check-trigger` | 整合性チェック（日曜 3:00 JST・ingress は internal-only） |
 
 ## Secret Management
 
@@ -301,10 +303,9 @@ Always review the plan before applying!
 - [ ] No error spike in logs
 - [ ] Performance metrics normal
 - [ ] User-facing features tested
-- [ ] Admin features tested (if changed)
 - [ ] Monitoring alerts configured
 
 ---
 
-**Last Updated**: 2025-07-28  
+**Last Updated**: 2026-08-31  
 **Next Review**: When moving to multi-region deployment

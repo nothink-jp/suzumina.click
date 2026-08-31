@@ -39,14 +39,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
       
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6
-      
-      - name: Setup Node.js environment
-        uses: actions/setup-node@v7
+      # pnpm 12 はネイティブバイナリを preinstall で配置するため、ビルドスクリプトを
+      # 止める pnpm/action-setup では placeholder のまま壊れる。pnpm/setup は署名検証つきで
+      # バイナリを直接取得し、Node も同時に用意する（actions/setup-node 不要）。
+      # バージョンの正本は package.json の packageManager / devEngines.runtime。
+      - name: Setup pnpm & Node.js
+        uses: pnpm/setup@v2
         with:
-          node-version: '24.19.0'
-          cache: 'pnpm'
+          cache: true
+          install: false
       
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -101,14 +102,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
       
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6
-      
-      - name: Setup Node.js environment
-        uses: actions/setup-node@v7
+      # pnpm 12 はネイティブバイナリを preinstall で配置するため、ビルドスクリプトを
+      # 止める pnpm/action-setup では placeholder のまま壊れる。pnpm/setup は署名検証つきで
+      # バイナリを直接取得し、Node も同時に用意する（actions/setup-node 不要）。
+      # バージョンの正本は package.json の packageManager / devEngines.runtime。
+      - name: Setup pnpm & Node.js
+        uses: pnpm/setup@v2
         with:
-          node-version: '24.19.0'
-          cache: 'pnpm'
+          cache: true
+          install: false
       
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -152,14 +154,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6
-
-      - name: Setup Node.js environment
-        uses: actions/setup-node@v7
+      # pnpm 12 はネイティブバイナリを preinstall で配置するため、ビルドスクリプトを
+      # 止める pnpm/action-setup では placeholder のまま壊れる。pnpm/setup は署名検証つきで
+      # バイナリを直接取得し、Node も同時に用意する（actions/setup-node 不要）。
+      # バージョンの正本は package.json の packageManager / devEngines.runtime。
+      - name: Setup pnpm & Node.js
+        uses: pnpm/setup@v2
         with:
-          node-version: '24.19.0'
-          cache: 'pnpm'
+          cache: true
+          install: false
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile

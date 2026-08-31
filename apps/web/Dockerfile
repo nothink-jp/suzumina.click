@@ -1,14 +1,14 @@
 # suzumina.click Web Application Dockerfile for Cloud Run
 # Optimized for Next.js with advanced caching and monorepo structure
 
-FROM node:24.19.0-alpine AS base
+FROM node:24.20.0-alpine AS base
 # ベースイメージ同梱の OS パッケージ(openssl libssl3/libcrypto3 等)に既知 CVE が出るため
 # Alpine の security backport を取り込んでから必要パッケージを追加する
 # base image は patch まで pin しているため中身が凍結される。
 # bump 直後は no-op でも、次の bump までの間に出る Alpine 側の修正を拾うために必要。
 RUN apk upgrade --no-cache && apk add --no-cache libc6-compat tini
 
-# pnpm v11 では非対話環境での node_modules purge が abort されるため
+# pnpm v11 以降は非対話環境での node_modules purge が abort されるため
 # CI=true を設定して非対話モードで自動承認させる
 # https://pnpm.io/errors#err_pnpm_aborted_remove_modules_dir_no_tty
 ENV CI=true
@@ -17,10 +17,10 @@ ENV CI=true
 FROM base AS deps
 WORKDIR /app
 
-# Install pnpm (use latest version 11 to match engines)
+# Install pnpm (use latest version 12 to match engines)
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable pnpm && corepack use pnpm@11
+RUN corepack enable pnpm && corepack use pnpm@12
 # Ensure yarn is disabled to prevent conflicts
 RUN npm config delete prefix 2>/dev/null || true
 
@@ -43,7 +43,7 @@ WORKDIR /app
 # Install pnpm
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable pnpm && corepack use pnpm@11
+RUN corepack enable pnpm && corepack use pnpm@12
 # Ensure yarn is disabled to prevent conflicts
 RUN npm config delete prefix 2>/dev/null || true
 

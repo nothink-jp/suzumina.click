@@ -158,12 +158,16 @@ Common issues and solutions:
 
 2. **Function Timeouts**
    ```bash
-   # Check function logs
-   gcloud functions logs read dlsite-collector
-   
-   # Increase timeout
-   gcloud functions deploy dlsite-collector --timeout 540s
+   # Check function logs（関数名は fetchYouTubeVideos / fetchDLsiteUnifiedData /
+   # checkDataIntegrity。正本は .github/workflows/deploy-functions.yml）
+   gcloud functions logs read fetchDLsiteUnifiedData --region asia-northeast1
    ```
+
+   タイムアウトは 3 関数とも既に 540s（正本は deploy-functions.yml）。
+   `fetchDLsiteUnifiedData` はアプリ側でも `MAX_EXECUTION_TIME=480s` で打ち切っており
+   （[process-batch.ts](../../apps/functions/src/endpoints/dlsite/process-batch.ts)）、
+   超過後はリクエスト外実行で CPU が絞られ Individual Info API がタイムアウトを連発する
+   （SPR-318）。超過が続く場合は timeout ではなくバッチサイズ・並列度を見直す。
 
 ## Performance Optimization
 
