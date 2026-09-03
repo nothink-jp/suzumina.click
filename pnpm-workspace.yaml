@@ -59,6 +59,16 @@ overrides:
   # sharp < 0.35.0: 継承する libvips の脆弱性群（CVE-2026-33327/33328/35590/35591）。next の依存範囲が
   # ^0.34.5（0.35.0 未満に固定）のため override なしでは追従しない。
   sharp: ">=0.35.0"
+  # browserslist <=4.28.6: 信頼できない browserslist-stats.json の custom stats を normalizeStats が
+  # 検証せずクラッシュ / prototype へ書き込む（GHSA-73wf-gq98-2v4g）、および query 結果キャッシュに
+  # eviction が無く別クエリを重ねると OOM に至る（GHSA-c83g-rgw3-j3cx）。4.28.7 で修正。
+  # 依存元（@babel/helper-compilation-targets 等）は ^4.x を要求するが自然解決が 4.28.2 に留まる。
+  browserslist: ">=4.28.7"
+  # qs <6.16.0: 攻撃者が渡せる isBuffer による DoS（GHSA-4mjr-xmp4-gh2g）。
+  # >=6.14.2 <=6.15.3: bracket-key の comma parsing で arrayLimit を回避できる（GHSA-x5fp-wj9c-mxmx）。
+  # どちらも 6.16.0 で修正。依存元の express@5 / body-parser は ^6.14.0 を要求しており範囲内だが、
+  # 自然解決が 6.15.3 に留まるため引き上げ（apps/functions の functions-framework 経由＝本番ランタイム）。
+  qs: ">=6.16.0"
 
 allowBuilds:
   esbuild: true
