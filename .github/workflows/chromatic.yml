@@ -1,23 +1,32 @@
 name: Chromatic
 
 # packages/ui の Storybook を Chromatic にアップロードし視覚回帰(visual regression)を検出する（SPR-130）。
-# コスト設計: ui 変更時のみ実行 + TurboSnap(--only-changed) で変更 story だけスナップショットし無料枠を節約。
-# - pull_request: マージ前に視覚差分をレビュー（exitZeroOnChanges で GH チェックはブロックしない＝段階的導入）。
-# - push(main): **TurboSnap のベースラインを作るために必須**。#776 で一度廃止したが、それが
-#   「全ビルドがフルビルドになる」真因だった＝squash merge + ブランチ削除で PR ビルドの commit は
-#   GitHub から消えるため、main 上にビルドが無いと Chromatic は直近ビルドの commit を見つけられず
-#   （`we couldn't find the commit (…) for the most recent build`）、commit が生きている最後のビルド
-#   （廃止直前の #188 / 2026-07-11）まで遡る。差分が1か月ぶんに膨らみ globals.css が毎回入る
-#   → preview.ts が import している → TurboSnap 無効 → 毎回フル 357 snapshots。
-#   実測: 2026-08-03〜13 の 14 ビルドが全てフル ＝ 4,998 snapshots で無料枠 5,000 を消費。
-# - draft PR 中は実行しない（開発中の連続 push でフルビルドを繰り返さないため）。
 # play/a11y は storybook-test.yml、本番ビルド回帰は e2e-smoke.yml が担い、本 workflow は見た目の差分のみ担保する。
+#
+# コスト設計（無料枠 5,000 snapshots/月・1 フルビルド = 357 story）:
+# - 自動実行は **push(main) のみ**。main は squash-only で commit が消えないため、main 同士の連鎖なら
+#   TurboSnap の ancestor 探索（直近ビルドの commit を git で辿る）が壊れない。
+#   PR ビルドは head commit が squash merge + ブランチ削除で GitHub から消え、Chromatic の baseline 集合に
+#   「見つからない commit」を混ぜ続ける。2026-07〜09 は全ビルドがその置換先（#188 / 2026-07-11）まで遡り、
+#   差分 555 ファイルに globals.css が含まれて毎回フルビルドになっていた（PR #929 の push(main) 復活でも直らず）。
+# - **視覚差分のレビューは main ビルドで行う**（push(main) では autoAcceptChanges を付けない）。差分があれば Chromatic が
+#   「要レビュー」として通知し、UI で accept するまで差分は消えない＝ラベルの付け忘れで黙って通る経路が無い。
+#   accept できない差分は revert する（UI 変更は戻せる＝Two-Way Door）。
+# - pull_request は **`chromatic` ラベルを付けたときだけ**実行する（マージ前に見たいときの前倒しオプション。
+#   原則は付けない）。
+# - workflow_dispatch は main 上のベースライン作り直し用（このときだけ自動 accept）。
+# - paths-filter は「描画に効くファイル」に限定する。`packages/ui/package.json` や `vitest.d.ts` を触るだけの
+#   依存更新 PR が `packages/ui/**` に一致して PR + main で 1,428 枚（見た目の変更ゼロ）を消費した（2026-09-22）。
+# - 毎回 Job Summary に captured / inherited を出し、inherited が 0（TurboSnap が何も省けていない）なら warning を出す。
+#   2026-07〜09 の空振りは 1 か月半だれも気づかなかった＝数字を毎回目に入れる。
+# - draft PR 中は実行しない（開発中の連続 push でフルビルドを繰り返さないため）。
 
 on:
   pull_request:
     branches:
       - main
-    types: [opened, synchronize, reopened, ready_for_review]
+    # `labeled` で opt-in する。opened は含めない（ラベル無しの PR では走らせない）。
+    types: [labeled, synchronize, reopened, ready_for_review]
   push:
     branches:
       - main
@@ -25,7 +34,7 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  # main の run は打ち切らない。途中で切るとその commit のビルドが残らず、次回また
+  # main の run は打ち切らない。途中で切るとその commit のビルドが残らず、次回
   # 「直近ビルドの commit が見つからない」状態に戻ってフルビルドを誘発するため。
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
@@ -37,47 +46,65 @@ permissions:
 jobs:
   changes:
     name: Detect Changes
+    # push(main) だけ paths-filter で絞る。PR はラベル、workflow_dispatch は常時実行なので判定不要。
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     outputs:
       ui: ${{ steps.changes.outputs.ui }}
     steps:
       - uses: actions/checkout@v7
         with:
-          # push(main) では paths-filter が github.event.before とのローカル diff で判定する
-          # （pull_request は GitHub API 経由なので git 履歴に依存しない）。main ruleset は
-          # squash-only ＝ push は常に 1 コミットなので、depth 2 あれば before が手元に揃い
+          # push(main) では paths-filter が github.event.before とのローカル diff で判定する。
+          # main ruleset は squash-only ＝ push は常に 1 コミットなので、depth 2 あれば before が手元に揃い
           # ネットワーク取得なしで確定する。取れなかった場合 paths-filter は自力で
           # `git fetch --depth=1 origin <sha>` するが、そこが失敗すると changes ジョブごと落ちて
-          # chromatic が静かに skip され、ベースラインが立たない（＝この修正が直した状態に逆戻り）。
-          # 黙って自己修復しない失敗なので、ほぼ無料な保険として depth を明示する。
+          # chromatic が静かに skip され、ベースラインが立たない。ほぼ無料な保険として depth を明示する。
           fetch-depth: 2
       - uses: dorny/paths-filter@v4
         id: changes
         with:
-          # pnpm-lock.yaml は対象外。dependabot 以外の依存更新 PR（Node 更新・脆弱性 override 等）が
-          # UI 無関係のままフルビルドを起こしていた（2026-08 期間で 14 本中 3 本 ≒ 1,070 snapshots）。
-          # 依存起因の見た目の変化は packages/ui を触る PR か workflow_dispatch のフルビルドで拾う。
+          # `!` の除外は some-with-excludes でしか効かない（既定の some は除外を無視してマッチする）
+          predicate-quantifier: some-with-excludes
+          # 描画に効くファイルだけ。テスト・型宣言・package.json・lockfile は見た目を変えないので対象外
+          # （依存起因の見た目の変化は workflow_dispatch のフルビルドで拾う）。
+          # shared-types は ui がランタイム関数を import しているため src のみ含める。
           filters: |
             ui:
-              - 'packages/ui/**'
-              - 'packages/shared-types/**'
+              - 'packages/ui/src/**'
+              - '!packages/ui/src/**/__tests__/**'
+              - '!packages/ui/src/**/*.test.*'
+              - '!packages/ui/src/**/*.d.ts'
+              - 'packages/ui/.storybook/**'
+              - 'packages/shared-types/src/**'
+              - '!packages/shared-types/src/**/__tests__/**'
+              - '!packages/shared-types/src/**/*.test.*'
               - '.github/workflows/chromatic.yml'
 
   chromatic:
     name: Visual regression (Chromatic)
     runs-on: ubuntu-latest
     needs: changes
+    # changes は push 以外 skip されるため always() で待ち合わせ、イベントごとに実行条件を分ける:
+    # - push(main): paths-filter で ui 変更のみ（無関係な commit まで撮ると枠を食うだけ）
+    # - pull_request: `chromatic` ラベル付き & draft でない。`labeled` は付けたラベルがそれ自身のときだけ
+    #   （別ラベルの付与で再ビルドしない）。synchronize 等はラベルが付いている PR だけ
+    # - workflow_dispatch: 常時（手動のベースライン更新が静かに no-op になるのを防ぐ）
     # Dependabot run には Actions secrets（CHROMATIC_PROJECT_TOKEN）が注入されず必ず失敗するため除外する。
-    # 依存 bump は packages/ui の見た目に影響しない（lock 変更で発火するだけ）ので視覚回帰の対象外でよい。
-    # draft PR は対象外（ready_for_review か workflow_dispatch で改めて実行される）。
-    # workflow_dispatch は paths-filter の差分検出（既定 base は直近コミットのみ比較）に関わらず常に実行し、
-    # 手動でのベースライン更新が静かに no-op になることを防ぐ。
-    # push(main) は paths-filter で ui 変更のみに絞る（＝ベースラインは ui を触った commit 上にだけ立つ。
-    # 無関係な commit まで撮ると枠を食うだけで、TurboSnap の遡り先としては ui 変更 commit で十分）。
     if: >
-      (needs.changes.outputs.ui == 'true' || github.event_name == 'workflow_dispatch') &&
+      always() &&
       github.actor != 'dependabot[bot]' &&
-      (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
+      (
+        (github.event_name == 'push' && needs.changes.outputs.ui == 'true') ||
+        github.event_name == 'workflow_dispatch' ||
+        (
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.draft == false &&
+          (
+            (github.event.action == 'labeled' && github.event.label.name == 'chromatic') ||
+            (github.event.action != 'labeled' && contains(github.event.pull_request.labels.*.name, 'chromatic'))
+          )
+        )
+      )
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
@@ -119,6 +146,7 @@ jobs:
 
       - name: Run Chromatic
         if: steps.debounce.outputs.stale != 'true'
+        id: chromatic
         uses: chromaui/action@v18
         with:
           projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
@@ -129,7 +157,38 @@ jobs:
           # lock の変更は依存トレースの起点にしない。packages/ui と同時に依存を足す PR で
           # 「lock が変わった → 依存グラフ全体が変更 → TurboSnap 無効」になるのを防ぐ。
           untraced: pnpm-lock.yaml
-          # 視覚差分があっても GH チェックは成功させる（差分は Chromatic 上でレビュー＝段階的導入）
+          # 視覚差分があっても GH チェックは成功させる（差分は Chromatic 上でレビュー）
           exitZeroOnChanges: true
-          # main では差分を新ベースラインとして自動採用（push(main) と workflow_dispatch で効く）
-          autoAcceptChanges: main
+          # push(main) では自動 accept しない。main の差分を自動 accept すると、ラベル無しでマージした
+          # UI 変更の回帰が誰にも通知されず新ベースラインになる。main の差分は Chromatic UI で accept する。
+          # workflow_dispatch は「人がベースラインを作り直す」明示操作なので main 上に限り自動 accept する
+          # （プロジェクト作り直し直後や、依存更新起因の差分を一括で採用したいとき）。
+          # 空文字は chromaui/action の maybe() で undefined になりフラグごと省略される。
+          autoAcceptChanges: ${{ github.event_name == 'workflow_dispatch' && 'main' || '' }}
+
+      - name: Report snapshot usage
+        # 撮った枚数を毎回 Job Summary に残す。inherited（TurboSnap が省いた分）が 0 なら
+        # ベースライン切れの疑い＝ログの `we couldn't find the commit` / `TurboSnap disabled` を見る合図。
+        if: steps.debounce.outputs.stale != 'true' && steps.chromatic.outputs.actualCaptureCount != ''
+        env:
+          CAPTURED: ${{ steps.chromatic.outputs.actualCaptureCount }}
+          INHERITED: ${{ steps.chromatic.outputs.inheritedCaptureCount }}
+          TESTS: ${{ steps.chromatic.outputs.testCount }}
+          CHANGES: ${{ steps.chromatic.outputs.changeCount }}
+          BUILD_URL: ${{ steps.chromatic.outputs.buildUrl }}
+        run: |
+          {
+            echo "## Chromatic snapshot usage"
+            echo
+            echo "| captured (billed) | inherited (TurboSnap) | tests | changes |"
+            echo "|---:|---:|---:|---:|"
+            echo "| ${CAPTURED} | ${INHERITED} | ${TESTS} | ${CHANGES} |"
+            echo
+            echo "[Build](${BUILD_URL})"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "${CHANGES:-0}" -gt 0 ]; then
+            echo "::notice title=Chromatic changes need review::${CHANGES} stories changed. Accept or revert at ${BUILD_URL}"
+          fi
+          if [ "${INHERITED:-0}" -eq 0 ] && [ "${CAPTURED:-0}" -gt 0 ]; then
+            echo "::warning title=TurboSnap did not skip any story::captured=${CAPTURED} inherited=0. Check the Chromatic log for 'we couldn't find the commit' / 'TurboSnap disabled due to file change' (baseline may be broken)."
+          fi
