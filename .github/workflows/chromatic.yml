@@ -175,10 +175,15 @@ jobs:
           INHERITED: ${{ steps.chromatic.outputs.inheritedCaptureCount }}
           TESTS: ${{ steps.chromatic.outputs.testCount }}
           CHANGES: ${{ steps.chromatic.outputs.changeCount }}
-          # TurboSnap が全 story を省いた「skipped build」は Chromatic 上に表示されず buildUrl も空になる
-          # （初回 main ビルド #281 で notice のリンクが undefined になった）。その場合は一覧ページへ落とす。
-          BUILD_URL: ${{ steps.chromatic.outputs.buildUrl || 'https://www.chromatic.com/builds?appId=6a1ff1a750d5537043665f34' }}
+          # TurboSnap が全 story を省いた「skipped build」は Chromatic 上に表示されず、chromaui/action は
+          # buildUrl に **文字列 "undefined"** を出力する（#281・#282 で実測。空文字ではないので Actions 式の
+          # `||` では拾えない）。shell 側で空と "undefined" の両方を一覧ページへ落とす。
+          BUILD_URL: ${{ steps.chromatic.outputs.buildUrl }}
+          FALLBACK_URL: https://www.chromatic.com/builds?appId=6a1ff1a750d5537043665f34
         run: |
+          if [ -z "${BUILD_URL}" ] || [ "${BUILD_URL}" = "undefined" ]; then
+            BUILD_URL="${FALLBACK_URL}"
+          fi
           {
             echo "## Chromatic snapshot usage"
             echo
