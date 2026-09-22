@@ -175,15 +175,21 @@ jobs:
           INHERITED: ${{ steps.chromatic.outputs.inheritedCaptureCount }}
           TESTS: ${{ steps.chromatic.outputs.testCount }}
           CHANGES: ${{ steps.chromatic.outputs.changeCount }}
-          BUILD_URL: ${{ steps.chromatic.outputs.buildUrl }}
+          # TurboSnap が全 story を省いた「skipped build」は Chromatic 上に表示されず buildUrl も空になる
+          # （初回 main ビルド #281 で notice のリンクが undefined になった）。その場合は一覧ページへ落とす。
+          BUILD_URL: ${{ steps.chromatic.outputs.buildUrl || 'https://www.chromatic.com/builds?appId=6a1ff1a750d5537043665f34' }}
         run: |
           {
             echo "## Chromatic snapshot usage"
             echo
             echo "| captured (billed) | inherited (TurboSnap) | tests | changes |"
             echo "|---:|---:|---:|---:|"
-            echo "| ${CAPTURED} | ${INHERITED} | ${TESTS} | ${CHANGES} |"
+            echo "| ${CAPTURED:-0} | ${INHERITED:-0} | ${TESTS:-0} | ${CHANGES:-0} |"
             echo
+            if [ "${CAPTURED:-0}" -eq 0 ]; then
+              echo "Skipped build (no story affected). Pending changes, if any, are inherited from the ancestor build."
+              echo
+            fi
             echo "[Build](${BUILD_URL})"
           } >> "$GITHUB_STEP_SUMMARY"
           if [ "${CHANGES:-0}" -gt 0 ]; then
