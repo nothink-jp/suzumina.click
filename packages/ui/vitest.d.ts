@@ -1,10 +1,8 @@
 /// <reference types="vitest/globals" />
-/// <reference types="@testing-library/jest-dom" />
 
 import type { TestingLibraryMatchers } from "@testing-library/jest-dom/matchers";
 
-// describe/it/expect/vi 等のグローバルとマッチャ拡張を typecheck に供給する（tsconfig の include 対象）。
-//
+// jest-dom のマッチャ型を vitest 5 に供給する。
 // jest-dom 7.0.1 が同梱する types/vitest.d.ts は `interface Assertion<T = any>`（型引数1つ）を
 // module augmentation で拡張するが、vitest 5 の Assertion は
 // `<R extends void | Promise<void> = void, T = unknown>`（型引数2つ）に変わった。
