@@ -56,9 +56,15 @@ overrides:
   # CJS require している postcss（Tailwind/Next/Vite/Storybook の土台）が壊れる。
   # 将来また動かすときも floor と上限の両方を上げる（上限だけ残すと audit が赤くなって気づける）。
   nanoid: ">=3.3.18 <4"
-  # sharp < 0.35.0: 継承する libvips の脆弱性群（CVE-2026-33327/33328/35590/35591）。next の依存範囲が
-  # ^0.34.5（0.35.0 未満に固定）のため override なしでは追従しない。
-  sharp: ">=0.35.0"
+  # sharp < 0.35.0: 継承する libvips の脆弱性群（CVE-2026-33327/33328/35590/35591）。導入当時の next は
+  # ^0.34.5（0.35.0 未満に固定）で override なしでは追従しなかった。
+  # < 0.35.4: 同梱 libheif の heif_context_get_image_handle 系の境界外読み取り 2 件
+  # （GHSA-g89c-p67h-r497・GHSA-2jg2-4ch7-h545 = GHSA-rgj7-g3m4-5g8c）。0.35.4 で libvips/libheif を更新して修正。
+  # 依存元（next 16.3.3）は現在 ^0.35.3 を宣言しており自然解決も 0.35.4 に届くため、この override は
+  # 「引き上げ」ではなく floor の明示に変わっている。上限は置かない: 解決値が floor に張り付いていないので
+  # 上限で検知する必要がなく（fast-uri / nanoid と事情が違う）、next が将来 ^0.36 を要求したときに
+  # override が逆に上限として噛んで壊れる方が害が大きい。
+  sharp: ">=0.35.4"
   # browserslist <=4.28.6: 信頼できない browserslist-stats.json の custom stats を normalizeStats が
   # 検証せずクラッシュ / prototype へ書き込む（GHSA-73wf-gq98-2v4g）、および query 結果キャッシュに
   # eviction が無く別クエリを重ねると OOM に至る（GHSA-c83g-rgw3-j3cx）。4.28.7 で修正。
