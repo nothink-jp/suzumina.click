@@ -9,11 +9,12 @@ name: Chromatic
 #   PR ビルドは head commit が squash merge + ブランチ削除で GitHub から消え、Chromatic の baseline 集合に
 #   「見つからない commit」を混ぜ続ける。2026-07〜09 は全ビルドがその置換先（#188 / 2026-07-11）まで遡り、
 #   差分 555 ファイルに globals.css が含まれて毎回フルビルドになっていた（PR #929 の push(main) 復活でも直らず）。
-# - **視覚差分のレビューは main ビルドで行う**（autoAcceptChanges は付けない）。差分があれば Chromatic が
+# - **視覚差分のレビューは main ビルドで行う**（push(main) では autoAcceptChanges を付けない）。差分があれば Chromatic が
 #   「要レビュー」として通知し、UI で accept するまで差分は消えない＝ラベルの付け忘れで黙って通る経路が無い。
 #   accept できない差分は revert する（UI 変更は戻せる＝Two-Way Door）。
 # - pull_request は **`chromatic` ラベルを付けたときだけ**実行する（マージ前に見たいときの前倒しオプション。
 #   原則は付けない）。
+# - workflow_dispatch は main 上のベースライン作り直し用（このときだけ自動 accept）。
 # - paths-filter は「描画に効くファイル」に限定する。`packages/ui/package.json` や `vitest.d.ts` を触るだけの
 #   依存更新 PR が `packages/ui/**` に一致して PR + main で 1,428 枚（見た目の変更ゼロ）を消費した（2026-09-22）。
 # - 毎回 Job Summary に captured / inherited を出し、inherited が 0（TurboSnap が何も省けていない）なら warning を出す。
@@ -158,8 +159,12 @@ jobs:
           untraced: pnpm-lock.yaml
           # 視覚差分があっても GH チェックは成功させる（差分は Chromatic 上でレビュー）
           exitZeroOnChanges: true
-          # autoAcceptChanges は付けない。main の差分を自動 accept すると、ラベル無しでマージした
+          # push(main) では自動 accept しない。main の差分を自動 accept すると、ラベル無しでマージした
           # UI 変更の回帰が誰にも通知されず新ベースラインになる。main の差分は Chromatic UI で accept する。
+          # workflow_dispatch は「人がベースラインを作り直す」明示操作なので main 上に限り自動 accept する
+          # （プロジェクト作り直し直後や、依存更新起因の差分を一括で採用したいとき）。
+          # 空文字は chromaui/action の maybe() で undefined になりフラグごと省略される。
+          autoAcceptChanges: ${{ github.event_name == 'workflow_dispatch' && 'main' || '' }}
 
       - name: Report snapshot usage
         # 撮った枚数を毎回 Job Summary に残す。inherited（TurboSnap が省いた分）が 0 なら
