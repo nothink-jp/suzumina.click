@@ -4,6 +4,13 @@ suzumina.clickプロジェクトの変更履歴
 
 ## [Unreleased]
 
+### ⬆️ Node.js 24.21.0 / pnpm 12.5.1 への更新
+
+- **Node.js 24.20.0 → 24.21.0**（LTS Krypton 系の最新パッチ）、**pnpm 12.1.0 → 12.5.1**。
+- Node 26 は 2026-10-28 の LTS 化まで見送り（Cloud Functions の `--runtime nodejs24` も据え置き）。
+- `pnpm/setup` v3 は見送り。v3 は cache を job ごとに一意キー（run_id + attempt + UUID）で保存する仕様に変わり（pnpm/setup#43）、
+  1 エントリ約 400MB × 14 job でリポジトリの cache 上限（10GB・既に満杯）を常時追い出し合う。
+
 ### ⬆️ Node.js 24.20.0 / pnpm 12 への更新
 
 - **Node.js 24.19.0 → 24.20.0**（同じ LTS Krypton 系の最新パッチ）、**pnpm 11.22.0 → 12.1.0**。
