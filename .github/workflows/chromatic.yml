@@ -135,7 +135,7 @@ jobs:
       # バージョンの正本は package.json の packageManager / devEngines.runtime。
       - name: Setup pnpm & Node.js
         if: steps.debounce.outputs.stale != 'true'
-        uses: pnpm/setup@v2
+        uses: pnpm/setup@v3
         with:
           cache: true
           install: false
