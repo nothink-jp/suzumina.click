@@ -44,7 +44,7 @@ jobs:
       # バイナリを直接取得し、Node も同時に用意する（actions/setup-node 不要）。
       # バージョンの正本は package.json の packageManager / devEngines.runtime。
       - name: Setup pnpm & Node.js
-        uses: pnpm/setup@v2
+        uses: pnpm/setup@v3
         with:
           cache: true
           install: false
@@ -107,7 +107,7 @@ jobs:
       # バイナリを直接取得し、Node も同時に用意する（actions/setup-node 不要）。
       # バージョンの正本は package.json の packageManager / devEngines.runtime。
       - name: Setup pnpm & Node.js
-        uses: pnpm/setup@v2
+        uses: pnpm/setup@v3
         with:
           cache: true
           install: false
@@ -159,7 +159,7 @@ jobs:
       # バイナリを直接取得し、Node も同時に用意する（actions/setup-node 不要）。
       # バージョンの正本は package.json の packageManager / devEngines.runtime。
       - name: Setup pnpm & Node.js
-        uses: pnpm/setup@v2
+        uses: pnpm/setup@v3
         with:
           cache: true
           install: false
