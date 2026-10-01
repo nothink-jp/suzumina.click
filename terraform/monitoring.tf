@@ -66,14 +66,17 @@ resource "google_monitoring_alert_policy" "cloud_run_scaling" {
   display_name = "Cloud Run スケーリング通知"
   combiner     = "OR"
 
+  # 閾値は max_instances から導く。以前は固定値 5 だったが max_instances は 2 のため構造的に発火しなかった（SPR-326）。
+  # 上限に達するとそれ以上スケールできず、超過分のリクエストは待たされる。短い突発（デプロイ時の切替等）は
+  # duration で除外し、上限への張り付きだけを通知する。
   conditions {
-    display_name = "インスタンス数が急増 (> 5)"
+    display_name = "インスタンス数が上限 (${local.current_env.cloud_run_max_instances}) に張り付き"
 
     condition_threshold {
       filter          = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"suzumina-click-web\" AND metric.type=\"run.googleapis.com/container/instance_count\""
-      duration        = "60s"
+      duration        = "300s"
       comparison      = "COMPARISON_GT"
-      threshold_value = 5 # インスタンス数閾値
+      threshold_value = local.current_env.cloud_run_max_instances - 1
 
       aggregations {
         alignment_period   = "60s"
@@ -92,15 +95,15 @@ resource "google_monitoring_alert_policy" "cloud_run_scaling" {
 
   documentation {
     content   = <<-EOT
-    # Cloud Run インスタンス数急増
-    
-    suzumina-click-web サービスのインスタンス数が急増しました。
-    トラフィック増加または異常な負荷が考えられます。
-    
+    # Cloud Run インスタンス数が上限に張り付き
+
+    suzumina-click-web のインスタンス数が max_instances（terraform/locals.tf）に 5 分以上張り付いています。
+    これ以上スケールできないため、超過分のリクエストは待たされるかタイムアウトします。
+
     ## 確認事項
-    1. トラフィックパターンの確認
-    2. DoS攻撃の可能性確認
-    3. コスト影響の評価
+    1. トラフィックパターン（クローラの急増・DoS の可能性）
+    2. 1 リクエストあたりの処理時間が延びていないか（P95 レイテンシアラートと併せて見る）
+    3. 恒常的なら max_instances の引き上げとコスト影響の評価
     EOT
     mime_type = "text/markdown"
   }
