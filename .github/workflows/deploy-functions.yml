@@ -55,47 +55,39 @@ jobs:
       - name: Setup Cloud SDK
         uses: google-github-actions/setup-gcloud@v3
 
+      # 本番依存は workspace の lockfile どおりに固定する。pnpm deploy が functions 単体の
+      # pnpm-lock.yaml を切り出し（overrides も解決済みの版として載る）、Cloud Functions の
+      # buildpack は pnpm-lock.yaml があれば pnpm を選び CI=true＝frozen で install する
+      # （scripts が無いので --prod）。以前は lockfile を同梱しておらず、buildpack が npm で
+      # package.json の ^ 範囲をデプロイ時点の最新に解決していた＝テストした版と本番の版が別物だった。
+      # shared-types は esbuild が inline するため devDependencies に置き、ここには入らない。
       - name: Create deployment bundle
         run: |
-          # esbuild 後のバンドル lib/index.js と縮小 package.json のみをデプロイ
-          mkdir -p ./deployment-temp
-          cp -r apps/functions/lib ./deployment-temp/
-          cp apps/functions/package.json ./deployment-temp/
-
-          # workspace 依存（shared-types）を削除し、dev フィールドも除去
+          pnpm --filter=@suzumina.click/functions deploy --prod ./deployment-temp
           cd ./deployment-temp
+
+          # pnpm deploy は .gitignore に従い lib/*.map を落とすため、lib はビルド成果物をそのまま使う
+          rm -rf lib
+          cp -r ../apps/functions/lib ./
+
           node -e "
             const fs = require('fs');
             const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-
-            // shared-types は esbuild で inline 済み → ランタイム依存から削除
-            if (pkg.dependencies) {
-              delete pkg.dependencies['@suzumina.click/shared-types'];
-            }
-
-            // 開発用スクリプト・devDependencies を削除
+            const root = JSON.parse(fs.readFileSync('../package.json', 'utf8'));
+            // scripts があると buildpack が build を走らせ devDependencies 込みで install する
             delete pkg.scripts;
             delete pkg.devDependencies;
-
-            // main は esbuild バンドルの単一ファイルを指す
-            pkg.main = 'lib/index.js';
-
-            // enginesフィールドを確実に設定
-            pkg.engines = pkg.engines || {};
-            pkg.engines.node = '24';
-
+            delete pkg.optionalDependencies;
+            // Node の版は --runtime nodejs24 が正本。pnpm は lockfile を書いた版に揃える
+            // （buildpack は engines.pnpm で pnpm の版を決める。未指定だと最新版になる）
+            pkg.engines = { node: '24', pnpm: root.engines.pnpm };
             fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
           "
 
-          # 本番依存をインストール（workspace 依存がなくなったので標準フロー）
-          pnpm install --prod --no-frozen-lockfile
-
-          # デプロイ用のzipファイルを作成
-          zip -r ../functions-deployment.zip *
+          # pnpm-workspace.yaml は pnpm deploy が書き出す allowBuilds（protobufjs 等のビルド許可）
+          zip -r ../functions-deployment.zip lib package.json pnpm-lock.yaml pnpm-workspace.yaml
           cd ..
-
-          echo "Deployment bundle created: functions-deployment.zip"
-          ls -lh ../functions-deployment.zip 2>/dev/null || ls -lh functions-deployment.zip
+          ls -lh functions-deployment.zip
 
       - name: Upload to Cloud Storage
         run: |

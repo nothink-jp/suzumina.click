@@ -68,10 +68,10 @@ importers:
       '@googleapis/youtube':
         specifier: ^39.0.1
         version: 39.0.1(supports-color@10.2.2)
+    devDependencies:
       '@suzumina.click/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
-    devDependencies:
       '@suzumina.click/typescript-config':
         specifier: workspace:*
         version: link:../../packages/typescript-config
