@@ -65,12 +65,9 @@ LLM に毎回全部読ませて再構築させない。能動的に効かせた�
 - **コメント**: 不要なコメントを足さない（自己説明的に）。書くなら**意図・正本・副作用**など軸2–3に効くものを
 - **ファイル操作**: 既存編集を優先。新規作成は必要なときだけ。ドキュメント（*.md / README 等）を自動生成しない
 - **言語**: 思考は英語、**出力・コメントは日本語**。技術用語は原語のまま。JSDoc を用いる
-- **ログの構造化フィールド**: **監視の契約になるキーは英語**にする（`message` / `alert` / `metric_type` 等。
-  log-based メトリクス・アラートのフィルタ対象になるもの）。**人が読むための集計値は日本語で可**
-  （既存の `対象総数` / `scrape総数` / `入力` 等に倣う）。日本語キー自体は Cloud Logging の
-  フィルタ・数値比較とも動作する（本番実データで確認済み）ため一括英語化はしない＝
-  実害のない一貫性のための大規模置換は、`message` 本文を巻き込んでメトリクスを静かに
-  壊すリスクの方が大きい（SPR-234 の「発火しないメトリクス」の教訓）
+- **ログの構造化フィールド**: **監視の契約になるキーは英語**（`message` / `alert` / `metric_type` 等＝log-based メトリクス・
+  アラートのフィルタ対象）。人が読む集計値は日本語キーで可（既存の `対象総数` 等）。既存の日本語キーを一括英語化しない
+  （`message` 本文を巻き込んでメトリクスを静かに壊すリスクの方が大きい＝SPR-234）
 - **コミット**: Conventional Commits（`feat` / `fix` / `docs` / `style` / `refactor` / `test` / `chore`）
 - **セキュリティ**: 機密情報を露出・コミットしない
 - **禁止**: `firebase` コマンド（Firebase 未使用） / `npm` コマンド
@@ -85,36 +82,20 @@ LLM に毎回全部読ませて再構築させない。能動的に効かせた�
   `FAILED_PRECONDITION`（index 要求エラー）を catch で握りつぶさない（最低ログ。silent fallback は欠落を隠す）。
   drift 点検は `pnpm check:index-drift`（live↔config 突合）、本番欠落は監視アラート、削除はクエリ→index 対応で未使用確認後（背景: SPR-213）
 - **GA4 カスタムディメンション**: 正本は `apps/web/src/lib/analytics/ga4-custom-dimensions.json`
-  （Admin API の payload と同一形＝変換なしで登録できる。`events.ts` の隣に置くのは、パラメータを足す人の
-  視界に必ず入れるため）。**terraform では管理できない**（GA4 は GCP リソースではなく Marketing Platform 側で、
-  公式 provider に Analytics Admin API のリソースが無い）ので、live への反映は Admin API か GA4 管理画面で行う。
-  パラメータを**足したら同じ PR で JSON にも追加**する。`pnpm lint:ga4` が「送っているが宣言していない」を弾く。
-  未登録のパラメータは送信されても Data API・標準レポートから一切参照できず、
-  **カスタムディメンションは遡及適用されない**＝登録が遅れた期間のデータは永久に集計不能
-  （実測: 登録前の `web_vitals` 113件は `customEvent:metric_name` が全て `(not set)`）。
-  Firestore 複合インデックスと同型の負債だが、index は後から足せば効く点で向こうの方が軽い。
-  登録済みは `customEvent:<param>` で Data API からクエリ可能。live↔JSON の突合は `pnpm check:ga4-drift`
-  （GA4 認証が要るため verify には入れない＝`check:index-drift` と同じ扱い。`--apply` で未登録の登録と
-  description の同期まで行う。displayName/scope の差は人が判断・SPR-279）。
-  **プロパティ設定（Googleシグナル / データ保持 / BigQuery リンク / 拡張計測）の正本は `ga4-property-settings.json`** で、
-  同じスクリプトが突合する。ただし**設定は `--apply` で直さない**（保持期間の短縮はデータ削除で不可逆・
-  Googleシグナルは privacy ページの公開記述「無効に設定しています」と対で判断する＝SPR-285）。
-  BigQuery export は日次のみ有効（ストリーミングは課金対象なので既定オフ）。**リンクの作成・変更は
-  GA4 管理画面のみ**＝`ga4-reader@` は GCP プロジェクトの IAM ロールを持たないため API では 403（SPR-283）。
-  週次の非ブロッキング CI（`ga4-dimension-drift.yml`）も同じスクリプトを検出のみで走らせる。
-  GCP 側の identity は terraform（`analytics_ga4.tf`）だが、**GA4 プロパティのアクセス権は
-  terraform では付与できず GA4 管理画面のみ**（CI は閲覧者の `ga4-ci-reader@`・ローカルの `--apply` は編集者の `ga4-reader@`）
-  なお計器を足しただけでは測れない: カスタムイベントは consent ゲート内で送るため、同意率がそのまま母数になる
+  （プロパティ設定は隣の `ga4-property-settings.json`）。gtag へ送るパラメータを**足したら同じ PR で JSON にも追加**する
+  （`pnpm lint:ga4` が未宣言を弾く）。**カスタムディメンションは遡及適用されない**＝live への登録が遅れた期間のデータは
+  永久に集計不能なので、マージしたら live へ登録する（`pnpm check:ga4-drift --apply` か GA4 管理画面。GA4 認証が要るので
+  verify 外・週次 CI `ga4-dimension-drift.yml` は検出のみ。terraform では管理できない）。**プロパティ設定は `--apply` で直さない**（不可逆な変更・privacy ページの公開記述と対で判断）。
+  権限・BigQuery リンク・経緯の詳細は `scripts/check-ga4-drift.mjs` 冒頭コメントが正本（SPR-279 / 283 / 285）
 - **一覧の読み取りコスト**: 一覧を足す・触るときは「1 画面の read が**何に比例するか**」を先に答える。
   許されるのは「**表示件数**」か「**コレクション件数 × キャッシュ境界の更新頻度**」。**page 番号に比例させない**。
   - `.limit(startOffset).get()` → `startAfter` の**オフセット・エミュレーションは読み捨て分も課金される**。
     SPR-308 で深いページ送りが実 URL 化されクローラに到達可能になったため、全一覧ルートが該当する
   - `use cache` は**インスタンスローカル**（共有 cacheHandler 無し）で、支払いは `min(リクエスト数, インスタンス世代数)`。
-    世代数は実測 40/日。**リクエスト数 ≫ 世代数のときだけキャッシュが効く**（`/creators/[id]` は 526 req で 13 倍効いた／
-    `/works` は 44 req でほぼ効かず）。低トラフィックだが 1 回が高いルートは、キャッシュではなく**クエリ自体を直す**
+    世代数は実測 40/日。**リクエスト数 ≫ 世代数のときだけキャッシュが効く**。低トラフィックだが 1 回が高いルートは、
+    キャッシュではなく**クエリ自体を直す**
   - 「全件取得 + in-memory + キャッシュ境界」はコレクションが有界なら恒久設計として可。
-    **月額 ≒ 世代数(40/日) × 件数 × ¥0.00006222(Read Ops Tokyo) × 30日**
-    （works 2,191 件 → 日 5.45 円 = 月 164 円。4,018 件で月 300 円）。**4,000 件超 / 世代数の倍増 /
+    **月額 ≒ 世代数(40/日) × 件数 × ¥0.00006222(Read Ops Tokyo) × 30日**。**4,000 件超 / 世代数の倍増 /
     1 コレクションを複数ルートが全件ロード** のいずれかで再評価する
   - 件数上限で結果を打ち切らない（黙って欠ける）。絞り込みは Firestore 側の where に落とすか、全件+境界にする
 
@@ -159,11 +140,8 @@ PR は「やり直しが効くか」で自己マージ可否を分ける。AI �
     `withAuthenticatedAction` ラッパー・favorites/evaluation/settings も**この null チェックを使う点で同じ**。
     `requireAuth()` は `redirect()` を投げるため **Server Action の try/catch 内では使わない**
     （NEXT_REDIRECT が catch に飲まれる）。redirect は RSC/ページ側（ProtectedRoute 等）で行う。
-    - **`isActive=false`（無効ユーザー）のブロックは一律ではない**：`toggleReaction` /
-      `getLikeDislikeStatusAction` は `requireAuth`（無効ユーザーを弾いていた）からの置換で `!user.isActive` を明示ブロックするが、
-      `withAuthenticatedAction` 経由の buttons 更新/削除や favorites/evaluation/settings は現状 isActive を見ない。
-      「全書き込み系で無効ユーザーを一律ブロック」する統一は未実施（今後のタスク）。新規 action では正本の null チェックに揃え、
-      無効ユーザーも弾くべき破壊的操作なら `!user.isActive` を併記する。
+    - **`isActive=false`（無効ユーザー）のブロックは一律ではない**（現状は `toggleReaction` /
+      `getLikeDislikeStatusAction` のみ）。無効ユーザーも弾くべき破壊的操作なら `!user.isActive` を併記する。
 
 ### 開発コマンド
 ```bash
@@ -177,14 +155,10 @@ pnpm build                              # ビルド
 ### ローカル Firestore（Emulator と ADC 直結の二系統）
 ローカルは **2 つの接続先**を用途で使い分ける。どちらかが上位互換ではない。
 
-- **`pnpm dev:local`（既定 / Firestore Emulator）**：gcloud 版 Emulator（`gcloud emulators firestore start`、`firebase`
-  コマンドは使わない＝§1 の禁止を順守）を起動し、シード投入後に web dev を立ち上げる。
-  `@google-cloud/firestore` は `FIRESTORE_EMULATOR_HOST` を見て自動接続する（ダミー認証＝**ADC 不要**）。
-  データは**ハイブリッド方式**：`apps/functions/src/tools/firestore-local/fixtures/*.json`（公開系のみ・コミット対象）を
-  `pnpm seed` で投入し、鮮度更新は `pnpm seed:dump`（ADC 1 回で本番から再取得）。ユーザー機微系は dump 対象外
-  （例外は `users.json` の開発用ユーザー 1 件で、これは本番由来ではなく**手書きの合成データ**＝下記ログイン用）。
-  個別操作: `pnpm emulator`（Emulator のみ） / `pnpm seed`（投入のみ） / `pnpm seed:dump`（本番→fixtures 更新）。
-  安全弁: 本番 (`NODE_ENV=production`) で `FIRESTORE_EMULATOR_HOST` が設定されていたら接続を拒否する（両 `firestore.ts`）。
+- **`pnpm dev:local`（既定 / Firestore Emulator）**：gcloud 版 Emulator（`firebase` コマンドは使わない）を起動し、
+  `apps/functions/src/tools/firestore-local/fixtures/*.json`（公開系のみ・コミット対象）をシードして web dev を立ち上げる。
+  **ADC 不要**。fixtures の鮮度更新は `pnpm seed:dump`（ADC 1 回）。個別操作は `pnpm emulator` / `pnpm seed`。
+  `users.json` の 1 件だけは本番由来ではなく手書きの開発用ユーザー（下記ログイン用）
 - **`pnpm --filter @suzumina.click/web dev`（ADC 直結 / 本番 Firestore）**：ADC 必須。本番に直接読み書きする。
 
 **使い分けの原則**
@@ -201,11 +175,8 @@ pnpm build                              # ビルド
 守られたページをブラウザ確認するときだけ使う。起動後 `http://localhost:3000/api/dev/signin` を開くと
 開発用ユーザーでログイン済みになる（`?callbackUrl=/buttons/create` で戻り先指定可。ログアウトは通常のヘッダーから）。
 
-- **認証コードには分岐を入れていない**。発行されるのは better-auth の**実セッション**で、
-  `getCurrentUser()` / `ProtectedRoute` / クライアントの `useSession()` はすべて Discord ログインと同じ経路を通る
-- **本番では構造的に無効**。`NODE_ENV !== "production"`（例外なし）＋ `DEV_AUTH_BYPASS=1` の明示 opt-in ＋
-  `FIRESTORE_EMULATOR_HOST` 設定済（＝ ADC 直結では有効化できない）の 3 条件 AND。
-  1 つでも欠ければ `/api/dev/signin` は 404。正本は [guard.ts](apps/web/src/lib/dev-auth/guard.ts)
+- 認証コードに分岐は無く、発行されるのは better-auth の実セッション。本番では構造的に無効（3 条件 AND・
+  正本と理由は [guard.ts](apps/web/src/lib/dev-auth/guard.ts) の JSDoc）
 - 開発用ユーザーの doc ID は `guard.ts` の `DEV_AUTH_DISCORD_ID` と `fixtures/users.json` で**一致させる**
   （ずれると「ログインしたのに未認証」になる。テストで突き合わせ済み）
 
