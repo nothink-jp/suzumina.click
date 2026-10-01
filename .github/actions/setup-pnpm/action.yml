@@ -1,0 +1,25 @@
+name: Setup pnpm & install
+description: pnpm と Node.js を用意し、lockfile どおりに依存をインストールする（CI の pnpm セットアップの正本）
+
+# 呼び出し側は actions/checkout の後に置く（ローカル action はリポジトリ内から解決されるため）。
+# input は持たせない: 全ジョブが同じ手順で揃っていることがこの action の存在理由。
+# 改修の検証: knip.yml と pr-check.yml の secret-scan はパスフィルタなしで全 PR に走るため、
+# この action を変えた PR 上で自己検証される（各 workflow の paths に足す必要はない）。
+runs:
+  using: composite
+  steps:
+    # pnpm 12 はネイティブバイナリを preinstall で配置するため、ビルドスクリプトを
+    # 止める pnpm/action-setup では placeholder のまま壊れる。pnpm/setup は署名検証つきで
+    # バイナリを直接取得し、Node も同時に用意する（actions/setup-node 不要）。
+    # バージョンの正本は package.json の packageManager / devEngines.runtime。
+    - name: Setup pnpm & Node.js
+      uses: pnpm/setup@v3
+      with:
+        # pnpm store はキャッシュしない。v3 は保存キーに runId+UUID を含み、ヒット時もジョブ毎に
+        # 約 450MB を保存して GHA の 10GB 共有プール（docker build cache と共用）を食い潰すため。
+        cache: false
+        install: false
+
+    - name: Install dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile

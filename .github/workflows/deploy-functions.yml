@@ -28,6 +28,7 @@ jobs:
   check-pr-status:
     name: Check PR Status
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       skip-checks: ${{ steps.check.outputs.skip-checks }}
     steps:
@@ -53,26 +54,15 @@ jobs:
   pre-deploy-checks:
     name: Pre-deploy Checks
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: check-pr-status
     if: needs.check-pr-status.outputs.skip-checks == 'false'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
 
-      # pnpm 12 はネイティブバイナリを preinstall で配置するため、ビルドスクリプトを
-      # 止める pnpm/action-setup では placeholder のまま壊れる。pnpm/setup は署名検証つきで
-      # バイナリを直接取得し、Node も同時に用意する（actions/setup-node 不要）。
-      # バージョンの正本は package.json の packageManager / devEngines.runtime。
-      - name: Setup pnpm & Node.js
-        uses: pnpm/setup@v3
-        with:
-          # pnpm store はキャッシュしない。v3 は保存キーに runId+UUID を含み、ヒット時もジョブ毎に
-          # 約 450MB を保存して GHA の 10GB 共有プール（docker build cache と共用）を食い潰すため。
-          cache: false
-          install: false
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Setup pnpm & install
+        uses: ./.github/actions/setup-pnpm
 
       - name: Quick validation
         run: |
@@ -89,26 +79,15 @@ jobs:
   deploy:
     name: Deploy Functions
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs: [check-pr-status, pre-deploy-checks]
     if: always() && !failure() && !cancelled()
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
 
-      # pnpm 12 はネイティブバイナリを preinstall で配置するため、ビルドスクリプトを
-      # 止める pnpm/action-setup では placeholder のまま壊れる。pnpm/setup は署名検証つきで
-      # バイナリを直接取得し、Node も同時に用意する（actions/setup-node 不要）。
-      # バージョンの正本は package.json の packageManager / devEngines.runtime。
-      - name: Setup pnpm & Node.js
-        uses: pnpm/setup@v3
-        with:
-          # pnpm store はキャッシュしない。v3 は保存キーに runId+UUID を含み、ヒット時もジョブ毎に
-          # 約 450MB を保存して GHA の 10GB 共有プール（docker build cache と共用）を食い潰すため。
-          cache: false
-          install: false
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Setup pnpm & install
+        uses: ./.github/actions/setup-pnpm
 
       - name: Build functions (esbuild bundle)
         run: |

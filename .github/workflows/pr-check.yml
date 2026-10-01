@@ -80,20 +80,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
       
-      # pnpm 12 はネイティブバイナリを preinstall で配置するため、ビルドスクリプトを
-      # 止める pnpm/action-setup では placeholder のまま壊れる。pnpm/setup は署名検証つきで
-      # バイナリを直接取得し、Node も同時に用意する（actions/setup-node 不要）。
-      # バージョンの正本は package.json の packageManager / devEngines.runtime。
-      - name: Setup pnpm & Node.js
-        uses: pnpm/setup@v3
-        with:
-          # pnpm store はキャッシュしない。v3 は保存キーに runId+UUID を含み、ヒット時もジョブ毎に
-          # 約 450MB を保存して GHA の 10GB 共有プール（docker build cache と共用）を食い潰すため。
-          cache: false
-          install: false
-      
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Setup pnpm & install
+        uses: ./.github/actions/setup-pnpm
       
       # shared-types / ui は no-build（src を直接公開）のため事前ビルド不要。
       # 変更されたパッケージごとに lint / typecheck / test を並列実行する。
@@ -205,17 +193,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
 
-      # pnpm 12 はネイティブバイナリを preinstall で配置するため、ビルドスクリプトを
-      # 止める pnpm/action-setup では placeholder のまま壊れる。pnpm/setup は署名検証つきで
-      # バイナリを直接取得し、Node も同時に用意する（actions/setup-node 不要）。
-      # バージョンの正本は package.json の packageManager / devEngines.runtime。
-      - name: Setup pnpm & Node.js
-        uses: pnpm/setup@v3
-        with:
-          # pnpm store はキャッシュしない。v3 は保存キーに runId+UUID を含み、ヒット時もジョブ毎に
-          # 約 450MB を保存して GHA の 10GB 共有プール（docker build cache と共用）を食い潰すため。
-          cache: false
-          install: false
+      - name: Setup pnpm & install
+        uses: ./.github/actions/setup-pnpm
 
       # gcloud 版 Firestore Emulator は JVM 上で動くため Java が必要（firebase CLI は使わない）
       - name: Setup Java (Firestore Emulator 用)
@@ -231,9 +210,6 @@ jobs:
         uses: google-github-actions/setup-gcloud@v3
         with:
           install_components: 'cloud-firestore-emulator'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
 
       # scripts/test-functions-integration.sh が専用ポート(8765)で Emulator を起動し、
       # RUN_INTEGRATION_TESTS=true を立てて統合テストのみ実行・終了後に停止する。
@@ -308,34 +284,6 @@ jobs:
         if: always()
         run: docker rm -f web-smoke || true
 
-  security-check:
-    name: Security Check
-    runs-on: ubuntu-latest
-    if: contains(github.event.pull_request.title, 'deps') || contains(github.event.pull_request.title, 'security') || contains(github.event.pull_request.labels.*.name, 'security')
-    timeout-minutes: 5
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v7
-      
-      # pnpm 12 はネイティブバイナリを preinstall で配置するため、ビルドスクリプトを
-      # 止める pnpm/action-setup では placeholder のまま壊れる。pnpm/setup は署名検証つきで
-      # バイナリを直接取得し、Node も同時に用意する（actions/setup-node 不要）。
-      # バージョンの正本は package.json の packageManager / devEngines.runtime。
-      - name: Setup pnpm & Node.js
-        uses: pnpm/setup@v3
-        with:
-          # pnpm store はキャッシュしない。v3 は保存キーに runId+UUID を含み、ヒット時もジョブ毎に
-          # 約 450MB を保存して GHA の 10GB 共有プール（docker build cache と共用）を食い潰すため。
-          cache: false
-          install: false
-      
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-      
-      - name: Security audit
-        run: pnpm audit --audit-level moderate
-
   secret-scan:
     name: Secret Scan
     runs-on: ubuntu-latest
@@ -346,56 +294,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
 
-      # pnpm 12 はネイティブバイナリを preinstall で配置するため、ビルドスクリプトを
-      # 止める pnpm/action-setup では placeholder のまま壊れる。pnpm/setup は署名検証つきで
-      # バイナリを直接取得し、Node も同時に用意する（actions/setup-node 不要）。
-      # バージョンの正本は package.json の packageManager / devEngines.runtime。
-      - name: Setup pnpm & Node.js
-        uses: pnpm/setup@v3
-        with:
-          # pnpm store はキャッシュしない。v3 は保存キーに runId+UUID を含み、ヒット時もジョブ毎に
-          # 約 450MB を保存して GHA の 10GB 共有プール（docker build cache と共用）を食い潰すため。
-          cache: false
-          install: false
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Setup pnpm & install
+        uses: ./.github/actions/setup-pnpm
 
       # 検出時は非ゼロ終了で PR を fail させる（hard gate）
       - name: Run secretlint
         run: pnpm secretlint
-
-  pr-summary:
-    name: PR Summary
-    runs-on: ubuntu-latest
-    needs:
-      [changes, parallel-check, functions-integration, docker-build-check, security-check, secret-scan]
-    if: always()
-    
-    steps:
-      - name: Generate PR summary
-        run: |
-          echo "## 🔍 PR Check Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          echo "### 📁 Changed Components" >> $GITHUB_STEP_SUMMARY
-          echo "- Web App: ${{ needs.changes.outputs.web == 'true' && '✅' || '⏭️' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Functions: ${{ needs.changes.outputs.functions == 'true' && '✅' || '⏭️' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Shared Types: ${{ needs.changes.outputs.shared-types == 'true' && '✅' || '⏭️' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- UI Package: ${{ needs.changes.outputs.ui == 'true' && '✅' || '⏭️' }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          echo "### 🧪 Quality Checks" >> $GITHUB_STEP_SUMMARY
-          echo "- Parallel Check: ${{ needs.parallel-check.result == 'success' && '✅ Passed' || needs.parallel-check.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Functions Integration (Emulator): ${{ needs.functions-integration.result == 'success' && '✅ Passed' || needs.functions-integration.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Docker Build (web): ${{ needs.docker-build-check.result == 'success' && '✅ Passed' || needs.docker-build-check.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Security Check: ${{ needs.security-check.result == 'success' && '✅ Passed' || needs.security-check.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Secret Scan: ${{ needs.secret-scan.result == 'success' && '✅ Passed' || needs.secret-scan.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          echo "### 💡 Optimization Benefits" >> $GITHUB_STEP_SUMMARY
-          echo "- ⚡ Only changed components tested" >> $GITHUB_STEP_SUMMARY
-          echo "- 🚀 Parallel execution for all checks" >> $GITHUB_STEP_SUMMARY
-          echo "- ⏱️  ~70% faster with parallel runs" >> $GITHUB_STEP_SUMMARY
-          echo "- 💰 Significant cost reduction" >> $GITHUB_STEP_SUMMARY
-          echo "- 🎯 Early feedback for developers" >> $GITHUB_STEP_SUMMARY

@@ -49,6 +49,7 @@ jobs:
   plan:
     name: plan (read-only)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -93,6 +94,9 @@ jobs:
     name: apply (production / 承認ゲート)
     needs: plan
     runs-on: ubuntu-latest
+    # timeout-minutes は付けない（既定 360 分のまま）。Firestore index の作成は実測 39 分かかり、
+    # provider 側 timeouts も 4h（firestore_indexes.tf）。ジョブ側で先に打ち切ると state lock と
+    # 部分適用が残るため、terraform 自身のタイムアウトで失敗させる方が安全。
     # GitHub Environment(production) に required reviewer を設定しておくこと（未設定だとゲートが効かない）
     environment: production
     steps:

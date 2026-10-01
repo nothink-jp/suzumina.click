@@ -34,25 +34,14 @@ jobs:
   dependency-scan:
     name: Dependency Security Scan
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
       
-      # pnpm 12 はネイティブバイナリを preinstall で配置するため、ビルドスクリプトを
-      # 止める pnpm/action-setup では placeholder のまま壊れる。pnpm/setup は署名検証つきで
-      # バイナリを直接取得し、Node も同時に用意する（actions/setup-node 不要）。
-      # バージョンの正本は package.json の packageManager / devEngines.runtime。
-      - name: Setup pnpm & Node.js
-        uses: pnpm/setup@v3
-        with:
-          # pnpm store はキャッシュしない。v3 は保存キーに runId+UUID を含み、ヒット時もジョブ毎に
-          # 約 450MB を保存して GHA の 10GB 共有プール（docker build cache と共用）を食い潰すため。
-          cache: false
-          install: false
-      
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Setup pnpm & install
+        uses: ./.github/actions/setup-pnpm
       
       - name: Run npm audit
         continue-on-error: true
@@ -96,29 +85,22 @@ jobs:
             audit-summary.md
           retention-days: 7
 
+      # PR を止めるゲート（moderate 以上）。上の JSON はレポート用で落とさないため、判定はここで行う。
+      # audit の結果は lockfile だけで決まるので、lockfile を変える PR はこの workflow の paths で
+      # 過不足なく拾える（PR タイトルの文字列で判定するより確実）。schedule / main push でも赤くなる＝新規 CVE の通知になる。
+      - name: Audit gate (moderate+)
+        run: pnpm audit --audit-level moderate
+
   container-scan:
     name: Container Security Scan
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
-      
-      # pnpm 12 はネイティブバイナリを preinstall で配置するため、ビルドスクリプトを
-      # 止める pnpm/action-setup では placeholder のまま壊れる。pnpm/setup は署名検証つきで
-      # バイナリを直接取得し、Node も同時に用意する（actions/setup-node 不要）。
-      # バージョンの正本は package.json の packageManager / devEngines.runtime。
-      - name: Setup pnpm & Node.js
-        uses: pnpm/setup@v3
-        with:
-          # pnpm store はキャッシュしない。v3 は保存キーに runId+UUID を含み、ヒット時もジョブ毎に
-          # 約 450MB を保存して GHA の 10GB 共有プール（docker build cache と共用）を食い潰すため。
-          cache: false
-          install: false
-      
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
 
+      # ホストの pnpm install は不要（node_modules は .dockerignore で除外され、Dockerfile 内で入れ直す）
       - name: Build Docker image
         run: |
           docker build -f apps/web/Dockerfile -t suzumina-click:latest .
@@ -153,25 +135,14 @@ jobs:
   secret-scan:
     name: Secret Scan (SARIF)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
 
-      # pnpm 12 はネイティブバイナリを preinstall で配置するため、ビルドスクリプトを
-      # 止める pnpm/action-setup では placeholder のまま壊れる。pnpm/setup は署名検証つきで
-      # バイナリを直接取得し、Node も同時に用意する（actions/setup-node 不要）。
-      # バージョンの正本は package.json の packageManager / devEngines.runtime。
-      - name: Setup pnpm & Node.js
-        uses: pnpm/setup@v3
-        with:
-          # pnpm store はキャッシュしない。v3 は保存キーに runId+UUID を含み、ヒット時もジョブ毎に
-          # 約 450MB を保存して GHA の 10GB 共有プール（docker build cache と共用）を食い潰すため。
-          cache: false
-          install: false
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Setup pnpm & install
+        uses: ./.github/actions/setup-pnpm
 
       # SARIF を必ず生成・アップロードするため、検出時もここでは fail させない
       - name: Run secretlint (SARIF)
@@ -193,6 +164,7 @@ jobs:
     name: Security Summary
     needs: [dependency-scan, container-scan, secret-scan]
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     if: always()
     
     steps:

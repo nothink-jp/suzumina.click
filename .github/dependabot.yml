@@ -58,7 +58,9 @@ updates:
 
   # --- GitHub Actions（SPR-173 のようなアクション版上げを自動化）---
   - package-ecosystem: "github-actions"
-    directory: "/"
+    # "/" は .github/workflows のみを走査する。composite action（.github/actions/*）内の uses も
+    # 版上げ対象にするため明示する（漏らすと集約した action だけ更新が止まる）
+    directories: ["/", "/.github/actions/*"]
     schedule:
       interval: "weekly"
       day: "monday"
