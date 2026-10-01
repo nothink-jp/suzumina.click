@@ -1,38 +1,53 @@
-name: Terraform Apply
+name: Terraform
 
-# ADR-010 / SPR-99 Stage 2: main の terraform 変更を「plan 提示 → 承認 → apply」で適用する。
+# ADR-010 / SPR-99: terraform の plan と apply を 1 本で持つ（TF_VAR と plan 手順を二重管理しない）。
+# - pull_request: read-only SA で plan して Job Summary に出すだけ（apply しない）
+# - push(main) / workflow_dispatch(main): plan → GitHub Environment(production) 承認 → 保存した plan を apply
 # 二重ゲート: (1) WIF は terraform-apply-sa を main ブランチからのみ assume 可（iam.tf）。
-#            (2) apply job は GitHub Environment(production) の required reviewer 承認が必須。
-# plan は read-only SA、apply は強権限 SA に分離。
+#            (2) apply job は Environment(production) の required reviewer 承認が必須。
+# main 以外の ref で workflow_dispatch した場合は plan のみ（apply job は ref で弾く）。
 
 on:
+  pull_request:
+    paths:
+      - 'terraform/**'
+      - '.github/workflows/terraform.yml'
   push:
     branches: [main]
     paths:
       - 'terraform/**'
-      - '.github/workflows/terraform-apply.yml'
+      - '.github/workflows/terraform.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
   id-token: write
 
-# 全 apply を直列化（state lock と二重で安全。承認待ちを cancel しない）
+# PR の plan は同じ ref の古い run を打ち切る。main（apply あり）は全 run を直列化し、
+# 承認待ちを cancel しない（state lock と二重で安全）。
 concurrency:
-  group: terraform-apply
-  cancel-in-progress: false
+  group: ${{ github.event_name == 'pull_request' && format('terraform-plan-{0}', github.ref) || 'terraform-apply' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   TF_IN_AUTOMATION: 'true'
+  # --- 非機密 config ---
+  # current_env は var.environment で引かれる（locals.tf:37）。production workspace の state と揃えるため
+  # 必ず production を指定する（未指定だと default "staging" 評価で enable_custom_domain=false 等になり、
+  # 本番限定リソースを destroy 扱いする偽 plan になる）。
   TF_VAR_environment: production
   TF_VAR_gcp_project_id: ${{ secrets.GCP_PROJECT_ID }}
   TF_VAR_project_number: ${{ secrets.GCP_PROJECT_NUMBER }}
+  # default "suzumina-click" のままだと repo 名差で forces replacement の偽 plan になるため実値を渡す
   TF_VAR_artifact_registry_repository_id: suzumina-click-web
   TF_VAR_custom_domain: suzumina.click
   TF_VAR_domain_name: suzumina.click
+  # --- 実値が必要な変数 ---
+  # cloudflare provider 認証（plan の cloudflare refresh に必須）/ monitoring 通知先
   TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
   TF_VAR_admin_email: ${{ secrets.ADMIN_EMAIL }}
-  # app 機密は Terraform 管理外（secrets.tf の ignore_changes=[secret_data]）。placeholder で plan/apply 可能。
+  # --- app 機密は Terraform 管理外（secrets.tf の ignore_changes=[secret_data]）---
+  # placeholder で plan/apply 可能（diff に出ない）。実値は out-of-band 管理。
   TF_VAR_youtube_api_key: 'ci-placeholder'
   TF_VAR_gemini_api_key: 'ci-placeholder'
   TF_VAR_discord_client_id: 'ci-placeholder'
@@ -47,52 +62,82 @@ defaults:
 
 jobs:
   plan:
-    name: plan (read-only)
+    name: terraform plan (production)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+
       - name: Authenticate (read-only plan SA)
         uses: google-github-actions/auth@v3
         with:
           workload_identity_provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
           service_account: 'terraform-plan-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com'
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: '1.13.5'
           terraform_wrapper: false
+
       - name: Init
         run: terraform init -input=false
+
       - name: Select production workspace
         run: terraform workspace select production
+
       - name: Plan (save to file)
         run: |
           set -o pipefail
           # read-only SA は lock 書き込み不可のため plan は -lock=false。apply job 側で lock する。
           terraform plan -input=false -lock=false -out=tfplan.bin -no-color 2>&1 | tee /tmp/plan.txt
+
       - name: Plan summary
         if: always()
+        env:
+          NOTE: ${{ github.event_name == 'pull_request' && 'read-only SA による plan。apply は main マージ後に承認制で行う。' || '承認前にこの差分を確認する。承認すると保存したこの plan がそのまま apply される。' }}
         run: |
           {
-            echo '## Terraform Apply — plan（承認前にこの差分を確認）'
+            echo '## Terraform plan (production workspace)'
+            echo ''
+            echo "${NOTE}"
             echo ''
             echo '```hcl'
+            # job summary 上限対策に末尾を優先表示（plan の Plan: 行は末尾付近）
             tail -c 60000 /tmp/plan.txt
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+
+      # tfplan.bin は入力変数の値（TF_VAR_cloudflare_api_token 等）を平文で含む（sensitive 指定でも同じ）。
+      # public repo の artifact はログインした誰でもダウンロードできるため、暗号化してから渡す。
+      # パスフレーズは argv に載せず env で渡す（openssl -pass env:）。agent 不要で runner に標準搭載。
+      - name: Encrypt plan
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        env:
+          TF_PLAN_PASSPHRASE: ${{ secrets.TF_PLAN_PASSPHRASE }}
+        run: |
+          if [ -z "${TF_PLAN_PASSPHRASE}" ]; then
+            echo "::error::secret TF_PLAN_PASSPHRASE が未設定です（平文の plan はアップロードしない）"
+            exit 1
+          fi
+          openssl enc -aes-256-cbc -pbkdf2 -iter 600000 -salt \
+            -pass env:TF_PLAN_PASSPHRASE -in tfplan.bin -out tfplan.bin.enc
+          rm -f tfplan.bin
+
       - name: Upload plan artifact
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v7
         with:
           name: tfplan
-          path: terraform/tfplan.bin
+          path: terraform/tfplan.bin.enc
           retention-days: 1
           if-no-files-found: error
 
   apply:
     name: apply (production / 承認ゲート)
     needs: plan
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     # timeout-minutes は付けない（既定 360 分のまま）。Firestore index の作成は実測 39 分かかり、
     # provider 側 timeouts も 4h（firestore_indexes.tf）。ジョブ側で先に打ち切ると state lock と
@@ -102,24 +147,37 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+
       - name: Authenticate (privileged apply SA / main 限定)
         uses: google-github-actions/auth@v3
         with:
           workload_identity_provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
           service_account: 'terraform-apply-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com'
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: '1.13.5'
           terraform_wrapper: false
+
       - name: Init
         run: terraform init -input=false
+
       - name: Select production workspace
         run: terraform workspace select production
+
       - name: Download plan artifact
         uses: actions/download-artifact@v8
         with:
           name: tfplan
           path: terraform
+
+      - name: Decrypt plan
+        env:
+          TF_PLAN_PASSPHRASE: ${{ secrets.TF_PLAN_PASSPHRASE }}
+        run: |
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 \
+            -pass env:TF_PLAN_PASSPHRASE -in tfplan.bin.enc -out tfplan.bin
+
       - name: Apply saved plan
         run: terraform apply -input=false tfplan.bin
