@@ -9,7 +9,8 @@ overrides:
   # js-yaml: secretlint 系（@textlint/linter-formatter・rc-config-loader）が4.2.0を要求し続けており
   # 自然解決が4.3.0未満に戻ったため override を復活（YAML merge-key連鎖によるCPU二次消費 GHSA-52cp-r559-cp3m）。
   # >=5.0.0 <=5.2.1: flow collection の解析が指数時間になる別DoS（GHSA-pm4m-ph32-ghv5）。5.2.2 で修正のため floor を引き上げ。
-  js-yaml: ">=5.2.2"
+  # >=5.0.0 <=5.4.0: 空 mapping の merge source が maxTotalMergeKeys に数えられず CPU を消費する（GHSA-r3ph-w7gj-g6xm）。5.4.1 で修正。
+  js-yaml: ">=5.4.1"
   # protobufjs <= 8.5.0: schema 由来の名前が runtime プロパティを shadow（CVE-2026-54269）/
   # binary decode の unknown fields 保持によるメモリ増幅（CVE-2026-54270）。8.6.0 で修正。
   # <= 8.6.4: Text Format の string map parsing が返り値の prototype を汚染しうる（GHSA-jfj6-75fj-8934）。8.6.5 で修正。
@@ -21,7 +22,9 @@ overrides:
   # pnpm の override はセレクタが違っても同一パッケージ名では最後の1件のみが解決全体に効く（実測・複数セレクタ
   # 併記は無意味）ため、単一ルールで最新パッチ済みの5.x系に寄せる。
   # >=4.0.0 <5.0.9: 中間展開結果が非制限に膨らむ DoS（GHSA-rgw5-rvv9-x895、CVE-2026-14257 の修正漏れ）。5.0.9 で修正。
-  brace-expansion: ">=5.0.9"
+  # >=4.0.0 <5.0.12: ネストした brace / parseCommaParts の非制限再帰によるスタック枯渇（GHSA-qhr7-859c-m2p7・
+  # GHSA-6j4f-fj2g-mc7p）と `{a},b}` 書き換えの二乗時間展開（GHSA-q2hr-2g5m-vwhr）。5.0.12 で全て修正。
+  brace-expansion: ">=5.0.12"
   # uuid: override を外すと transitive が 8.3.2（deprecated）に落ちる。11.x に統一して維持。
   uuid: ">=11.1.1"
   # ws < 8.21.0: 小さな fragment/data chunk によるメモリ枯渇 DoS（GHSA-96hv-2xvq-fx4p）。8.21.0 で修正。
@@ -45,7 +48,11 @@ overrides:
   # ここでも floor 4.1.2 に張り付いていた解決値がそのまま範囲に入った（nanoid と同じ再発）。
   # 上限は nanoid と同じ意図で置く: 解決値を floor に張り付かせておくと、次に脆弱範囲が広がったとき
   # audit が赤くなって気づける（上限なしだと公開直後版へ勝手に進んで検知が遅れる）。
-  fast-uri: ">=4.1.3 <4.1.4"
+  # その設計どおり 4.1.3 が次の 4 件で赤くなったため floor/上限とも 4.1.5 へ引き上げ:
+  # serialize で未検証の port による authority 注入（GHSA-qw65-cvwx-89v3, <4.1.4）/ authority の閉じ括弧欠落による
+  # ホスト混同（GHSA-58mr-gqgx-xq4g, =4.1.3）/ percent-encoded octet のホスト大文字小文字正規化の不一致
+  # （GHSA-hrr3-gc8f-f4qj, <4.1.5）/ mailto の field-name desync によるヘッダ注入（GHSA-jvvf-x445-j334, <4.1.5）。
+  fast-uri: ">=4.1.5 <4.1.6"
   # nanoid < 3.3.18: custom generator に size=0 を渡すと無限ループする DoS（GHSA-2v37-7h3g-55p8）。
   # 唯一の依存元 postcss は `^3.3.16` を要求し自然解決が 3.3.16 に留まるため引き上げる。
   # 当初この advisory の patched は 3.3.17 で、3.3.18 が公開直後（minimumReleaseAge に掛かる）
@@ -75,6 +82,11 @@ overrides:
   # どちらも 6.16.0 で修正。依存元の express@5 / body-parser は ^6.14.0 を要求しており範囲内だが、
   # 自然解決が 6.15.3 に留まるため引き上げ（apps/functions の functions-framework 経由＝本番ランタイム）。
   qs: ">=6.16.0"
+  # @grpc/grpc-js >=1.14.0 <1.14.5: 特定構成で getAuthContext が未認可の証明書を認可済みとして返す
+  # （GHSA-m9gg-hp2v-232j）/ method handler の例外メッセージを status message でクライアントへ送る（low）。
+  # 1.14.5 で修正。依存元 google-gax（Firestore 経由＝本番ランタイム）は ^1.x を要求し範囲内だが、
+  # 自然解決が 1.14.4 に留まるため引き上げ（以前は追従済みとして撤去していた override の復活）。
+  "@grpc/grpc-js": ">=1.14.5"
 
 allowBuilds:
   esbuild: true
