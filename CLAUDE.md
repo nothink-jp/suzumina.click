@@ -50,11 +50,11 @@ LLM に毎回全部読ませて再構築させない。能動的に効かせた�
 
 ## 1. 能動ルール（必ず守る）
 
-- **パッケージマネージャ**: pnpm のみ。npm は禁止（`pnpm test` / `pnpm dev` / `pnpm build`）
-- **完了前チェック**: 必ず **`pnpm verify`**（lint:docs + lint:tokens + lint + typecheck + test を一括・各 `vitest.config.ts` のカバレッジ閾値も強制）。
+- **パッケージマネージャ**: pnpm のみ。npm は禁止（`pnpm test` / `pnpm dev:local` / `pnpm build`）
+- **完了前チェック**: 必ず **`pnpm verify`**（lint:docs + lint:tokens + lint:ga4 + lint + typecheck + test を一括・各 `vitest.config.ts` のカバレッジ閾値も強制）。
   これが手元の**完全版ゲート**。pre-push hook（lefthook）は変更パッケージの `typecheck:fast`（tsgo）のみで lint/test を含まず、
   CI（`pr-check.yml`）は変更パッケージ単位の差分実行と scope が異なる（＝同一判定ではない）。最終確認は `pnpm verify` を正とする。
-  個別確認は `pnpm lint` / `pnpm typecheck` / `pnpm test`。doc・トークンの整合は次の2つ:
+  個別確認は `pnpm lint` / `pnpm typecheck` / `pnpm test`。doc・トークン・GA4 の整合は次の3つ:
   - `pnpm lint:docs`: docs のリンク整合 + 型 shape 転記禁止。ポインタ doc のリンク腐敗＝#652 型 drift・転記の再混入を弾く（`scripts/lint-docs.mjs`・SPR-205）
   - `pnpm lint:tokens`: globals.css の `:root` トークンで「定義あり・参照なし」を弾く＝chart-*/a11y 型の死にトークン再混入防止（`scripts/lint-css-tokens.mjs`）
   - `pnpm lint:ga4`: gtag に送っている GA4 パラメータで「宣言なし」を弾く＝遡及不可なカスタムディメンション登録漏れの防止（`scripts/lint-ga4-params.mjs`）
@@ -138,7 +138,7 @@ PR は「やり直しが効くか」で自己マージ可否を分ける。AI �
 
 ## 2. プロジェクトの座標（事実）
 
-- **URL**: https://suzumina.click ／ Status: PRODUCTION READY
+- **URL**: https://suzumina.click
 - **Issue トラッカーの正本は Linear**（`nothink` workspace / **Sprints** チーム＝本文中の `SPR-*` / プロジェクト `suzumina.click`）。
   Issue を起票・参照するときは Linear を使う。**GitHub Issues は #386 までで運用終了**（2026 年前半の遺物）。
   MCP が未接続なら起票せず、内容を提示して人に渡す（`gh issue create` に流れない）
@@ -170,7 +170,7 @@ PR は「やり直しが効くか」で自己マージ可否を分ける。AI �
 pnpm dev:local                          # 推奨: Firestore Emulator 起動 + シード投入 + web dev（ADC 不要・本番に触れない）
 pnpm dev:local:auth                     # 上記 + ローカル開発ログイン有効（認証必須ページの確認時のみ）
 pnpm --filter @suzumina.click/web dev   # 本番 Firestore 直結（ADC 必須。データ確認や本番調査時のみ）
-pnpm verify                             # lint + typecheck + test（CI と同一判定）
+pnpm verify                             # lint:* + lint + typecheck + test（手元の完全版ゲート。CI とは scope が異なる＝§1）
 pnpm build                              # ビルド
 ```
 
@@ -213,14 +213,14 @@ pnpm build                              # ビルド
 原則は **lazy start**：セッション開始時に先回りで起動しない。**ブラウザ preview での確認が必要だと判断した直前**にだけ
 `pnpm dev:local` を実行する。判断は 2 段で行う。
 
-1. **そもそもブラウザ確認が要るか**（preview の `<when_to_verify>` と同基準）。要らないなら Emulator も不要：
+1. **そもそもブラウザ確認が要るか**。要らないなら Emulator も不要：
    - ドキュメント/コメントのみ・型/lint・ユニットテストで完結する変更（テストは Firestore をモックするため
      `pnpm verify` に Emulator は不要）
    - preview で再生できない領域（`apps/functions` ランタイム、Terraform、CI、ビルド設定）
    - 解析・調査・質問のみ、Firestore に触れない UI（必要なら Storybook で足りる）
 2. **ブラウザ確認が要る** なら接続先を選ぶ：
    - Firestore 由来の表示・読み書きを確認 → **Emulator（`pnpm dev:local`）**。書き込みを伴う実験もこちら（安全）
-   - 上の「ADC 直結に切り替える 3 条件」に当たる → **ADC 直結（`pnpm dev`）**
+   - 上の「ADC 直結に切り替える 3 条件」に当たる → **ADC 直結（`pnpm --filter @suzumina.click/web dev`）**
    - Firestore に触れない見た目だけの確認 → Emulator なしで素の `pnpm --filter @suzumina.click/web dev` でも可
 
 Emulator はメモリ常駐で再起動ごとに再シードが要る点、初回は component 導入（約65MB）がある点もコスト要因。
@@ -237,7 +237,3 @@ Emulator はメモリ常駐で再起動ごとに再シードが要る点、初�
 - アーキ／基盤: [architecture](docs/reference/architecture.md) / [application-architecture](docs/reference/application-architecture.md) / [infrastructure-architecture](docs/reference/infrastructure-architecture.md) / [database-schema](docs/reference/database-schema.md)
 - ガイド: [development](docs/guides/development.md) / [testing](docs/guides/testing.md)
 - 運用: [changelog](docs/operations/changelog.md) / [todo](docs/operations/todo.md)
-
----
-
-**Last Updated**: 2026-06-01 ／ **Document Version**: 5.0（SPR-63: ステートレスLLM協働前提に全面再構成）
