@@ -4,7 +4,7 @@
 
 ## 関連ドキュメント
 
-- [インフラストラクチャアーキテクチャ](infrastructure-architecture.md) - GCPインフラとデプロイメント
+- GCP インフラ: [terraform/README.md](../../terraform/README.md) のファイル索引
 - [ドメインモデル](domain-model.md) - ドメイン駆動設計
 - [データベーススキーマ](database-schema.md) - Firestoreデータ構造
 

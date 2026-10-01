@@ -1,5 +1,8 @@
 # Changelog
 
+> **v0.3.13 で凍結**（2026-10-01）。以降の変更履歴は git log（Conventional Commits）と Linear（SPR-*）が正本で、
+> このファイルは更新しない。
+
 suzumina.clickプロジェクトの変更履歴
 
 ## [Unreleased]

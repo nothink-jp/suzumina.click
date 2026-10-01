@@ -48,8 +48,7 @@ pnpm build
 #       package.json apps/*/package.json packages/*/package.json
 # その後 pnpm install で lockfile を同期
 
-# 3. Update CHANGELOG
-# Edit docs/operations/changelog.md（前タグ以降の変更をカテゴリ要約で追記）
+# 3. 変更履歴は git log / Linear が正本（docs/operations/changelog.md は v0.3.13 で凍結）
 
 # 4. Commit and push（main へは PR 経由でマージ）
 git add .

@@ -91,7 +91,7 @@ pnpm build
 
 - **開発ガイド**: [docs/guides/development.md](docs/guides/development.md)
 - **技術仕様**: [CLAUDE.md](CLAUDE.md)
-- **アーキテクチャ**: [docs/reference/architecture.md](docs/reference/architecture.md)
+- **ドキュメント索引**: [docs/README.md](docs/README.md)
 - **データベース**: [docs/reference/database-schema.md](docs/reference/database-schema.md)
 
 ## ライセンス

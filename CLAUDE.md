@@ -206,6 +206,6 @@ Emulator はメモリ常駐で再起動ごとに再シードが要る点、初�
 
 - 設計判断: [ADR 索引](docs/decisions/README.md)（Entity 判断は ADR-001 / ADR-005）
 - ドメイン: [domain-model](docs/reference/domain-model.md) / [ubiquitous-language](docs/reference/ubiquitous-language.md)
-- アーキ／基盤: [architecture](docs/reference/architecture.md) / [application-architecture](docs/reference/application-architecture.md) / [infrastructure-architecture](docs/reference/infrastructure-architecture.md) / [database-schema](docs/reference/database-schema.md)
+- アーキ／基盤: [application-architecture](docs/reference/application-architecture.md) / [database-schema](docs/reference/database-schema.md) / インフラは [terraform/README](terraform/README.md) の索引
 - ガイド: [development](docs/guides/development.md) / [testing](docs/guides/testing.md)
-- 運用: [changelog](docs/operations/changelog.md) / [todo](docs/operations/todo.md)
+- 運用: [deployment](docs/guides/deployment.md) / [monitoring](docs/operations/monitoring.md)（タスクは Linear・変更履歴は git log が正本）

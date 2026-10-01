@@ -22,6 +22,9 @@ cd .claude/worktrees/feature-x && claude
 PORT=3001 pnpm --filter @suzumina.click/web dev
 ```
 
+- **main は ruleset で保護**（squash マージのみ）。直接 push せず PR 経由でマージする。取り消しも `git revert` を PR で入れる
+- **ブランチ名**: `feature/` / `fix/` / `docs/` / `chore/` + 内容（Claude Code の `--worktree` は `worktree-<name>` を自動命名）
+
 ## Quick Commands
 
 ```bash

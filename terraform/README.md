@@ -115,10 +115,29 @@ gsutil ls gs://suzumina-click-tfstate/terraform/state/
 gsutil cat gs://suzumina-click-tfstate/terraform/state/production.tflock
 ```
 
+## 🗂️ ファイルの役割（索引）
+
+GCP 構成の正本は各 `.tf`（旧 `docs/reference/infrastructure-architecture.md` は実態と乖離したため廃止）。
+CI での plan / apply は `.github/workflows/terraform.yml`、Deploy と IaC の分担は [ADR-009](../docs/decisions/infrastructure/ADR-009-deploy-iac-responsibility-split.md)。
+
+| 領域 | ファイル |
+|---|---|
+| 基盤・プロジェクト | `providers.tf` / `backend.tf` / `variables.tf` / `locals.tf`（Cloud Run の sizing 等）/ `project.tf` / `api_services.tf` |
+| 権限・秘密 | `iam.tf`（CI 用 SA・WIF）/ `secrets.tf`（Secret Manager。値は TF 管理外） |
+| Web（Cloud Run） | `cloud_run.tf` / `artifact_registry.tf`（GC の例外は冒頭コメント） |
+| Functions | `function_common.tf` / `function_*.tf`（本体の spec は deploy-functions.yml が正本）/ `pubsub.tf` / `scheduler.tf` |
+| Firestore | `firestore_database.tf` / `firestore_rules.tf` / `firestore_indexes*.tf`（複合 index の正本） |
+| ストレージ | `gcs.tf`（tfstate）/ `storage.tf`（Functions デプロイ用） |
+| CDN・DNS | `cloudflare.tf` / `cloudflare_dns.tf` |
+| 監視・ログ | `monitoring*.tf`（アラートと閾値の正本）/ `logging.tf` |
+| 分析 | `analytics_ga4.tf`（GA4 用 SA。プロパティ権限は GA4 管理画面）/ `analytics_search_console.tf` |
+
+> Secret 名の経緯: SPR-158 で NextAuth → better-auth に移行（当初は `NEXTAUTH_SECRET` を値ごと流用）。SPR-159 で
+> Secret Manager・terraform 変数・Cloud Run の env 名を `BETTER_AUTH_SECRET` / `better_auth_secret` に統一した。
+
 ## 📚 関連ドキュメント
 
 - **[プロジェクト概要](../README.md)** - メインプロジェクト情報
-- **[インフラアーキテクチャ](../docs/reference/infrastructure-architecture.md)** - 全体設計・認証設定
 - **[デプロイガイド](../docs/guides/deployment.md)** - デプロイ・運用方針
 - **[Terraform公式ドキュメント](https://www.terraform.io/docs)** - Terraformの基本情報
 - **[Google Cloud Provider](https://registry.terraform.io/providers/hashicorp/google/latest/docs)** - GCPプロバイダー情報

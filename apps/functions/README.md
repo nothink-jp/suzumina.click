@@ -110,7 +110,6 @@ GOOGLE_APPLICATION_CREDENTIALS=path/to/service-account.json
 
 - [プロジェクト概要](../../README.md)
 - [ドキュメントインデックス](../../docs/README.md)
-- [インフラアーキテクチャ](../../docs/reference/infrastructure-architecture.md)
 - [DLsite API リファレンス](../../docs/reference/external-apis/dlsite-api.md)
 
 ---
