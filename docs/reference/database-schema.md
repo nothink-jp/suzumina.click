@@ -90,7 +90,7 @@ cron の正本は Terraform の Cloud Scheduler（[`scheduler.tf`](../../terrafo
   （CLAUDE.md「ADC 直結に切り替える 3 条件」）。
 - `works` 一覧も複合インデックスを使う: カテゴリ絞り込み + ソートは Firestore クエリ（offset はエミュレーション）で、
   `category` + 各ソートキーの複合インデックスが Terraform にある（[works/actions.ts](../../apps/web/src/app/works/actions.ts)）。
-  in-memory フィルタになるのは検索・ジャンル・声優・言語などを指定したときだけ。
+  in-memory フィルタになるのは、匿名・年齢未確認（`showR18 === false`＝既定の経路）か、検索・ジャンル・声優・言語を指定したとき。
 
 ## 型定義の場所
 

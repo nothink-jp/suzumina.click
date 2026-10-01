@@ -141,8 +141,9 @@ PR は「やり直しが効くか」で自己マージ可否を分ける。AI �
     `withAuthenticatedAction` ラッパー・favorites/evaluation/settings も**この null チェックを使う点で同じ**。
     `requireAuth()` は `redirect()` を投げるため **Server Action の try/catch 内では使わない**
     （NEXT_REDIRECT が catch に飲まれる）。redirect は RSC/ページ側（ProtectedRoute 等）で行う。
-    - **`isActive=false`（無効ユーザー）のブロックは一律ではない**（現状は `toggleReaction` /
-      `getLikeDislikeStatusAction` のみ）。無効ユーザーも弾くべき破壊的操作なら `!user.isActive` を併記する。
+    - **`isActive=false`（無効ユーザー）のブロックは一律ではない**。`withAuthenticatedAction` 経由の buttons 更新/削除と
+      favorites/evaluation/settings は isActive を見ない（`src/actions/` の reaction・dislike・drafts 等は見る）。
+      無効ユーザーも弾くべき破壊的操作なら `!user.isActive` を併記する。
 
 ### 開発コマンド
 ```bash
