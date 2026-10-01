@@ -284,6 +284,34 @@ jobs:
         if: always()
         run: docker rm -f web-smoke || true
 
+  # リポジトリ横断の整合チェック（pnpm verify の lint:docs / lint:tokens / lint:ga4）。
+  # パスフィルタなし: docs のみの PR では parallel-check が丸ごと skip されるため、ここで必ず拾う。
+  repo-lint:
+    name: Repo Lint (docs / tokens / ga4)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: package.json
+
+      # 3 スクリプトとも npm 依存ゼロ（node: 組み込みのみ）なので install 不要。
+      # node --run は package.json の scripts を実行する＝コマンドの正本は package.json のまま。
+      # 1 つ落ちても残りを走らせ、全件の結果を 1 回の run で見られるようにする。
+      - name: lint:docs
+        run: node --run lint:docs
+      - name: lint:tokens
+        if: ${{ !cancelled() }}
+        run: node --run lint:tokens
+      - name: lint:ga4
+        if: ${{ !cancelled() }}
+        run: node --run lint:ga4
+
   secret-scan:
     name: Secret Scan
     runs-on: ubuntu-latest

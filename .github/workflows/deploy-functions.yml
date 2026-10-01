@@ -303,17 +303,3 @@ jobs:
                 --quiet || true
             done
           done || true
-
-      - name: Deploy summary
-        run: |
-          echo "## 🚀 デプロイ結果" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📦 デプロイされた関数" >> $GITHUB_STEP_SUMMARY
-          echo "- **fetchYouTubeVideos**: ✅ デプロイ完了" >> $GITHUB_STEP_SUMMARY
-          echo "- **fetchDLsiteUnifiedData**: ✅ デプロイ完了" >> $GITHUB_STEP_SUMMARY
-          echo "- **checkDataIntegrity**: ✅ デプロイ完了" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🛡️ 最適化の改善点" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ PRマージ時の重複チェック回避" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ 並列デプロイで高速化" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ 自動クリーンアップ（最新3リビジョンを保持）" >> $GITHUB_STEP_SUMMARY
