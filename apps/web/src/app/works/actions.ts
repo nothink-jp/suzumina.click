@@ -18,7 +18,19 @@ import {
 } from "./utils/work-converters";
 
 /**
- * シンプルなクエリで作品を取得
+ * シンプルなクエリで作品を取得（カテゴリ + ソートだけを Firestore で表現できる経路）
+ *
+ * ページ送りは**同じクエリ**に `offset` を掛ける。以前は別クエリ（カテゴリ無視・新着順固定）で
+ * 読み捨て位置を決めて `startAfter` していたため、新着順以外のソートやカテゴリ指定の 2 ページ目以降が
+ * 別の作品にずれていた（SPR-326）。
+ *
+ * read はページ位置に比例する（`offset` も読み捨て分を読む。最悪でもコレクション件数）。CLAUDE.md
+ * 「一覧の読み取りコスト」の例外として許容している理由: この経路に入るのは `showR18 !== false` のときだけで、
+ * SSR の既定（`page.tsx` は URL 未指定なら fail-closed で `showR18: false`）とクローラは非 R18 の
+ * 絞り込み経路へ行く。到達するのは年齢確認済みユーザーのクライアント再フェッチと、
+ * `?showR18=true` を明示した URL に限られる低トラフィック経路で、全件キャッシュは 1 回の
+ * cache miss がコレクション件数分になりかえって高い。表示件数比例にするにはページ番号 URL を
+ * カーソルに置き換える必要がある。
  */
 async function getWorksWithSimpleQuery(
 	firestore: FirebaseFirestore.Firestore,
@@ -26,23 +38,11 @@ async function getWorksWithSimpleQuery(
 ): Promise<WorkListResultPlain> {
 	const { page = 1, limit = 12, sort = "newest", category } = params;
 
-	// クエリ構築
-	let query = buildWorksQuery(firestore, { category, sort });
-	query = query.limit(limit);
+	let query = buildWorksQuery(firestore, { category, sort }).limit(limit);
 
-	// オフセット処理
 	const startOffset = (page - 1) * limit;
 	if (startOffset > 0) {
-		const offsetSnapshot = await firestore
-			.collection("works")
-			.orderBy("releaseDateISO", sort === "oldest" ? "asc" : "desc")
-			.limit(startOffset)
-			.get();
-
-		if (offsetSnapshot.size > 0) {
-			const lastDoc = offsetSnapshot.docs[offsetSnapshot.docs.length - 1];
-			query = query.startAfter(lastDoc);
-		}
+		query = query.offset(startOffset);
 	}
 
 	const snapshot = await query.get();

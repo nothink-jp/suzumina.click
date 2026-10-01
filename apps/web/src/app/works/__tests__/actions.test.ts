@@ -9,6 +9,7 @@ const mockWhere = vi.fn();
 const mockOrderBy = vi.fn();
 const mockLimit = vi.fn();
 const mockStartAfter = vi.fn();
+const mockOffset = vi.fn();
 const mockCount = vi.fn();
 
 vi.mock("@/lib/firestore", () => ({
@@ -41,6 +42,7 @@ describe("Works Server Actions", () => {
 			orderBy: mockOrderBy,
 			limit: mockLimit,
 			startAfter: mockStartAfter,
+			offset: mockOffset,
 			get: mockGet,
 			count: mockCount,
 		};
@@ -50,6 +52,7 @@ describe("Works Server Actions", () => {
 		mockOrderBy.mockReturnValue(mockQuery);
 		mockLimit.mockReturnValue(mockQuery);
 		mockStartAfter.mockReturnValue(mockQuery);
+		mockOffset.mockReturnValue(mockQuery);
 		mockCount.mockReturnValue({
 			get: vi.fn().mockResolvedValue({
 				data: vi.fn().mockReturnValue({ count: 100 }),
@@ -218,8 +221,28 @@ describe("Works Server Actions", () => {
 				limit: 12,
 			});
 
-			// オフセット処理の確認
-			expect(mockLimit).toHaveBeenCalledWith(12); // オフセット用
+			expect(mockLimit).toHaveBeenCalledWith(12);
+			expect(mockOffset).toHaveBeenCalledWith(12);
+		});
+
+		it("2 ページ目以降もカテゴリとソートを保ったクエリで読み進める（新着順の別クエリで位置を決めない）", async () => {
+			mockGet.mockResolvedValue({ docs: [], size: 0 });
+
+			await getWorks({ page: 3, limit: 12, sort: "price_low", category: "SOU" });
+
+			expect(mockWhere).toHaveBeenCalledWith("category", "==", "SOU");
+			expect(mockOrderBy).toHaveBeenCalledTimes(1);
+			expect(mockOrderBy).toHaveBeenCalledWith("price.current", "asc");
+			expect(mockOffset).toHaveBeenCalledWith(24);
+			expect(mockStartAfter).not.toHaveBeenCalled();
+		});
+
+		it("1 ページ目は offset を掛けない", async () => {
+			mockGet.mockResolvedValue({ docs: [], size: 0 });
+
+			await getWorks({ page: 1, limit: 12 });
+
+			expect(mockOffset).not.toHaveBeenCalled();
 		});
 
 		it("エラー時に空の結果を返す", async () => {
