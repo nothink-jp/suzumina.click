@@ -78,6 +78,8 @@ function toWork(raw: DLsiteApiResponse): WorkDocument {
 		customGenres: extractCustomGenres(raw),
 
 		// === 日付情報 ===
+		// `regist_date` は名前に反して DLsite 作品ページの「販売日」と一致する（RJ01037463 / RJ01059676 /
+		// RJ310271 で照合済み）。よって販売日表示・並び替えの正本として扱ってよい。
 		releaseDate: raw.regist_date,
 		releaseDateISO: raw.regist_date ? toISODate(raw.regist_date) : undefined,
 		releaseDateDisplay: raw.regist_date ? formatDateDisplay(raw.regist_date) : undefined,
@@ -127,6 +129,11 @@ function toWork(raw: DLsiteApiResponse): WorkDocument {
 
 /**
  * 価格情報への変換
+ *
+ * `price` は**割引適用済みのセール価格**で、定価は `official_price` が別に持つ。
+ * `discount_rate` は表示用の付帯情報であり、`price` に再適用してはならない
+ * （再適用すると二重割引になる。価格履歴で実際に発生した: RJ01414353）。
+ * セール中は current=price / original=official_price とし、割引率は計算せず API 値をそのまま使う。
  */
 function toPrice(raw: DLsiteApiResponse): PriceInfo | undefined {
 	const current = raw.price ?? 0;
@@ -428,6 +435,11 @@ function toTranslationInfo(raw: DLsiteApiResponse): TranslationInfo | undefined 
 
 /**
  * 言語別ダウンロード情報の変換
+ *
+ * `language_editions` は作品によって**配列**（一般的）と、数値文字列キーの**オブジェクト**
+ * （例: RJ01129635 の `{"2": {...}, "3": {...}}`）のどちらでも返る。後者に `.map` を呼ぶと
+ * TypeError になるため両形式を受ける。オブジェクト形式の要素は `edition_id` 等を欠くことがある。
+ * shared-types の `DLsiteRawLanguageEditions` は配列のみを表すので、オブジェクト側はここで型を当て直す。
  */
 function toLanguageDownloads(raw: DLsiteApiResponse): LanguageDownload[] {
 	if (!raw.language_editions) return [];
@@ -511,6 +523,10 @@ function toSalesStatus(raw: DLsiteApiResponse): SalesStatus {
 
 /**
  * URL正規化（プロトコル相対URLをHTTPSに）
+ *
+ * API は画像系フィールド（`image_main` / `image_thum` / `image_samples` / `srcset`）を
+ * `//img.dlsite.jp/...` のプロトコル相対 URL で返す。絶対 URL を前提とする消費側
+ * （next/image・JSON-LD・OG 画像）で壊れるため、保存前に `https:` を補う。
  */
 function normalizeUrl(url: string): string {
 	return url.startsWith("//") ? `https:${url}` : url;

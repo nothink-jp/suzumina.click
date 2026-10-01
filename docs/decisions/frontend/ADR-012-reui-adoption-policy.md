@@ -9,477 +9,87 @@
 
 ## コンテキスト
 
-フロントエンド UX 調査（2026-07-23、branch: claude/reui-component-integration）で、
-コンポーネントライブラリ相当を手組みしている箇所が UX の弱点として特定された:
+フロントエンド UX 調査（2026-07-23）で、コンポーネントライブラリ相当を手組みしている箇所が弱点として特定された:
+`custom/tag-input.tsx` の完全手組みコンボボックス（IME・キーボード・aria を自前実装、Portal 無し）、
+price-history-chart の hex 直書き色（トークンと二重管理・ダークモード非対応）、共有 EmptyState の不在、
+`ConfigurableList` のフィルタに個別解除の affordance が無いこと。
 
-- `packages/ui/src/components/custom/tag-input.tsx`（467行）: コンボボックスを完全手組み
-  （デバウンス・キーボードナビ・IME composition・aria を自前実装。Portal 無しでクリップ懸念）
-- `apps/web/src/components/price-history/price-history-chart.tsx`: チャート色が hex 直書きで
-  CSS トークンと二重管理・ダークモード非対応
-- 共有 EmptyState コンポーネントが無く、空表示が各所インライン文字列で散在
-- 一覧フィルタ UI（`ConfigurableList`）にチップ表示・個別解除の affordance が無い
-
-[ReUI](https://reui.io) はこれらに対応するコンポーネントを持つ shadcn 互換ライブラリで、
-性質は次の通り:
-
-- **shadcn CLI レジストリ配布（コピーイン）**。runtime npm package を持たない点は shadcn/ui と同一
-  （＝ADR-011 が確立した「生成物」の扱いがそのまま適用できる）
-- **Base UI / Radix UI の両変種**を提供（primitive-agnostic）。当リポジトリは PR #838 で
-  packages/ui を Base UI へ全面移行済みであり、Base UI 変種と整合する
-- レジストリ URL は `https://reui.io/r/{style}/{name}.json` 形式で、components.json の
-  `registries` 設定を要する。**無料コンポーネントは認証・license key 不要**
-  （premium blocks/icons/templates のみ Bearer license key が必要）
-- MCP サーバ（`https://mcp.reui.io`、OAuth 必須・無料枠 100 req/日）は検索・API 参照・
-  インストールコマンド検証を提供するが、**インストール自体は CLI で完結**する
-
-受け皿となる既存構成:
-
-- packages/ui は shadcn 流コピーイン構成で、保守方針は ADR-011（再生成優先・生成物は手編集しない・
-  カスタマイズはトークンか `components/custom/` の wrapper）が確立済み
-- components.json は packages/ui と apps/web の両方にあるが、**`ui` エイリアスは両方とも
-  `@suzumina.click/ui/components/ui` を指す**（プリミティブの着地先は既に packages/ui に一本化）。
-  Tailwind の css 参照も両方が `packages/ui/src/styles/globals.css` を指す（トークン正本は 1 つ）
+[ReUI](https://reui.io) はこれらに対応する部品を持つ shadcn 互換ライブラリで、shadcn と同じく
+**CLI レジストリ配布（コピーイン・runtime package なし）**、Base UI / Radix の両変種を提供する
+（当リポジトリは PR #838 で packages/ui を Base UI へ移行済み）。受け皿の packages/ui は
+ADR-011（再生成優先・生成物は手編集しない・カスタマイズはトークンか `components/custom/`）が確立済みで、
+packages/ui・apps/web 両方の components.json の `ui` エイリアスは既に packages/ui を指している。
 
 ## 決定
 
-### 1. 導入境界: packages/ui に閉じる
-- ReUI 由来コードの着地先は `packages/ui/src/components/ui/`（生成物）に限定する。
-  apps/web は `@suzumina.click/ui` の exports 経由でのみ消費し、apps/web への直接インストール
-  （`@/components` 側）は行わない
-- `registries` 設定（`"@reui": "https://reui.io/r/{style}/{name}.json"`）は
-  **packages/ui/components.json のみ**に追加する。apps/web/components.json には足さない。
-  これにより「apps/web で `shadcn add @reui/...` を実行しても解決できない」状態を作り、
-  誤着地を構造的に防ぐ
-
-### 2. 変種: Base UI 版のみ
-- Radix 変種は使わない（PR #838 の Base UI 移行との整合。混在は依存の逆行）
-- style 互換（現行 `"style": "base-vega"` が ReUI レジストリの `{style}` として解決できるか）は
-  **導入初回に検証**する。非対応の場合は shadcn 全体の style は変えず、`@reui` レジストリの URL 側に
-  ReUI が提供する Base UI 系 style 名を固定値で埋め込む（例: `https://reui.io/r/<対応style>/{name}.json`）
-
-### 3. 保守: ADR-011 を継承
-- 生成物は手編集しない。更新は `pnpm dlx shadcn@latest add @reui/<name> --overwrite`
-  → `pnpm exec biome check --write` の再生成で行う
-- カスタマイズは theme（globals.css の semantic トークン）または `components/custom/` の
-  薄い wrapper で行う。在file 編集が不可避になった場合のみ、ADR-011 の例外リストと同様に
-  本 ADR へ明記する
-- **出所（provenance）の正本は本 ADR 末尾の導入一覧表**とする。shadcn 公式と ReUI の
-  2 レジストリ体制になるため、「どのファイルをどのコマンドで再生成するか」を表で管理する
-  （生成物へのヘッダコメント追記は再生成で消えるため使わない）
-
-### 4. 採用ゲート: 置換のみ・投機的追加の禁止
-- 導入は「既存手組み実装の置換」か「具体的に特定済みの UX 欠落の充足」に限定する。
-  「ReUI にあるから入れる」は理由にしない（ADR-005 の過剰一般化の禁止と同型）
-- 初期スコープは調査で特定した 4 点のみ:
-  1. **Chart** — price-history-chart の hex 直書き・ツールチップ白背景固定を
-     ChartContainer + CSS 変数テーミングへ置換
-  2. **Autocomplete** — tag-input.tsx の手組みコンボボックスを置換（Portal 化・a11y のライブラリ移管）
-  3. **Empty State / Icon Stack** — 共有 EmptyState コンポーネントを新設し、散在する
-     インライン空表示を統一
-  4. **Filters** — works / videos 一覧のフィルタ UI で試行（チップ表示・個別解除）。
-     consumer サイトには過剰の可能性があるため全一覧への展開は試行結果を見て判断
-- ページレベルのブロック類（Wizard / Dashboard 等の compositions）は packages/ui の対象外。
-  必要になった時に app 層での利用を個別判断する（本 ADR の範囲外＝必要なら追補）
-
-### 5. テーマ: 桜霞 semantic トークンで発色
-- ReUI 付属のトークン・色定義はそのまま持ち込まず、globals.css の既存 semantic トークン
-  （`--primary` = suzuka 等）へマップする。生スケール（`suzuka-500` 等）の直書きで
-  当てない（semantic role で消費する既定に従う）
-- 追加トークンが必要な場合も semantic role として定義し、`pnpm lint:tokens` を通す
-  （定義あり・参照なしの死にトークンを作らない）
-
-### 6. 無料コンポーネントのみ
-- license key 不要の free 範囲に限定する。premium blocks / icons / templates は導入しない
-  （必要が生じたら license 管理（`REUI_LICENSE_KEY` の Secret 化）を含めて別途判断）
-
-### 7. MCP サーバはオプション（開発支援）
-- MCP 接続（`claude mcp add --transport http reui https://mcp.reui.io` + OAuth）は
-  コンポーネント検索・`get_install_command` によるコマンド検証に有用だが、
-  導入フローの必須要素にはしない（インストール・再生成は CLI のみで再現可能に保つ）
+1. **導入境界は packages/ui に閉じる**。着地先は `packages/ui/src/components/ui/` に限定し、apps/web は
+   `@suzumina.click/ui` 経由でのみ消費する。`@reui` の `registries` 設定は **packages/ui/components.json のみ**に置き、
+   apps/web で `shadcn add @reui/...` が解決できない状態にして誤着地を構造的に防ぐ
+2. **Base UI 変種のみ**（Radix 混在は PR #838 への逆行）。style は `base-vega` で解決できることを確認済み
+3. **保守は ADR-011 を継承**。生成物は手編集せず `shadcn add ... --overwrite` → `biome check --write` で再生成する。
+   出所（provenance）の正本は末尾の導入一覧表（生成物へのヘッダコメントは再生成で消えるため使わない）
+4. **採用ゲートは置換のみ**。既存手組みの置換か特定済み UX 欠落の充足に限り、「ReUI にあるから」は理由にしない
+   （ADR-005 の過剰一般化の禁止）。初期スコープは Chart / Autocomplete / Empty State・Icon Stack / Filters の 4 点
+5. **テーマは既存 semantic トークンで発色**。ReUI 付属の色定義は持ち込まず、追加トークンも semantic role として
+   定義し `pnpm lint:tokens` を通す
+6. **無料コンポーネントのみ**。premium は導入しない（必要なら license の Secret 化を含めて別途判断）
+7. **MCP サーバ（mcp.reui.io）は任意の開発支援**。インストール・再生成は CLI のみで再現可能に保つ
 
 ## 検討した代替案
 
-- **B: apps/web へ直接インストール**（`@/components` 側に着地）— 却下。
-  再利用境界（CLAUDE.md §2「再利用コンポーネントは packages/ui」）を破り、
-  プリミティブの供給元が 2 箇所に分裂する
-- **C: npm 依存として利用** — 不可能。ReUI は shadcn 同様 runtime package を持たない
-  レジストリ配布であり、依存化は選択肢として存在しない（ADR-011 コンテキストの再確認）
-- **D: 既存 shadcn 由来コンポーネントも ReUI へ全面移行** — 却下。
-  動いている生成物を別供給元へ差し替える理由が無く、「他で成功したから」の過剰一般化（ADR-005）。
-  ReUI は shadcn 公式レジストリに**無い**ものだけを取る補完位置づけとする
+- **apps/web へ直接インストール** — 却下。再利用境界（再利用コンポーネントは packages/ui）を破り供給元が分裂する
+- **npm 依存として利用** — 不可能。runtime package が存在しない
+- **既存 shadcn 由来コンポーネントも ReUI へ全面移行** — 却下。動いている生成物を差し替える理由が無い。
+  ReUI は shadcn 公式に**無い**ものだけを取る補完位置づけ（＝公式/upstream に有るものはそちらから）
 
 ## 理由
 
-- **軸2（予測可能性）**: 「UI プリミティブは `packages/ui/components/ui/` に居て、出所はレジストリ、
-  色は semantic トークンが決める」という ADR-011 で確立した不変条件を、供給元が増えても維持する。
-  読み手は ReUI 由来かどうかを意識せず同じ規約で読める
-- **軸1（系の劣化）**: 供給元が 2 系統になること自体が新しい劣化ベクトル（どのレジストリで
-  再生成するか分からなくなる）。provenance 一覧の一元化と registries 設定の packages/ui 限定で、
-  この劣化を構造的に抑える
-- **ステートレス LLM 協働（§0）**: 再生成方式の継承により「過去のローカル意図の再構築」を
-  不要に保つ。導入判断の根拠（置換対象・検証項目)を本 ADR に集約し、セッションを跨いだ
-  意図の復元コストを最小化する
+- **軸2（予測可能性）**: 「プリミティブは `packages/ui/components/ui/`・出所はレジストリ・色は semantic トークン」という
+  ADR-011 の不変条件を、供給元が増えても維持する
+- **軸1（系の劣化）**: 供給元 2 系統化は「どのレジストリで再生成するか分からなくなる」劣化ベクトル。
+  provenance の一元化と registries の packages/ui 限定で抑える
 
-## 結果
+## ReUI が使われなかった理由（2026-07〜10）
 
-- **良い点**: 手組み実装 4 領域がライブラリ管理へ移り、保守面積が減る（特に tag-input 467行）。
-  Base UI 移行（PR #838）の投資が ReUI の Base UI 変種でそのまま活きる。
-  境界・保守・テーマの規約が既存 ADR-011 と同型で、新しい運用ルールをほぼ増やさない
-- **悪い点 / 留意**:
-  - **recharts 依存の重複**: chart.tsx（packages/ui）と price-history-chart（apps/web、
-    recharts プリミティブを直接 import）の両方が recharts に依存するため、**両 package.json に
-    同一バージョン（3.9.2）で保持**する。バージョン更新時は両方を揃えること
-    （ズレると pnpm が二重インスタンス化し context 共有が壊れる）
-  - **IME 検証が必須**: Autocomplete 置換では日本語入力の composition 挙動
-    （変換確定 Enter が候補選択に誤爆しないか）を最初に検証する。現行 tag-input は
-    これを明示処理しており、退行させない。検証不合格なら置換を見送り、現行実装を維持する
-  - **style 互換は未検証**: `base-vega` が ReUI レジストリで解決できるかは導入初回の検証項目
-    （決定 2 のフォールバックで吸収）
-  - **無料枠の変動リスク**: ReUI の free/premium 境界は同社の事業判断で変わりうる。
-    コピーインなので導入済みコードは影響を受けないが、再生成が有償化した場合は
-    その時点のコードを凍結し在file 例外へ移す
+- **Chart**: `@reui/chart` 等のプリミティブ単体は license 必須（401）で、無料ブロックの依存先は shadcn 公式の `chart` だった
+  → 公式から導入
+- **Combobox**: 実用途は「複数チップ＋フリーテキスト＋候補」で、単一選択の Autocomplete は形が合わない。
+  `@reui/combobox` は license 必須（401）、一方 `@base-ui/react/combobox` 本体は無料（既存依存）
+  → ReUI を経由せず直接ラップした `combobox.tsx` を新設（Autocomplete は不要に）
 
-### レジストリ実態の検証結果（2026-07-23・Chart 導入時）
+### Icon Stack 撤去の決定
 
-- **style 互換**: `https://reui.io/r/base-vega/<name>.json` は無料ブロック（`c-*` 系）で HTTP 200 解決
-  を確認。決定 2 のフォールバック（style 固定 URL）は不要だった
-- **無料/有償の境界**: `@reui/chart` 等の**プリミティブ単体は license key 必須（401）**。
-  無料なのは `c-chart-1` のような番号付きブロック（example compositions）で、その
-  registryDependencies は **shadcn 公式レジストリの `chart` プリミティブ**を指していた
-- **帰結**: Chart プリミティブは代替案 D の方針（公式に有るものは公式から）どおり
-  **shadcn 公式レジストリから導入**した。ReUI レジストリの実利用は、公式に無い
-  Autocomplete / Filters 等の導入時に改めて無料範囲を確認して判断する
+唯一 ReUI（無料）から入れた Icon Stack は、`EmptyState` の `icon` と `illustrated` が「組み合わせて初めて意味を持つ」
+optional prop 対になり、`illustrated` だけ渡すと無音で何も描画されない罠を型で防げなかった（PR #844 レビュー）。
+装飾は UX 課題（空表示の重複・不揃い）の解決に不要な上乗せだったため、prop ごと撤去した。
+`empty-state` 完成品は ReUI 側で有償のため、EmptyState は手書きの合成コンポーネント
+（未使用だった `ListPageEmptyState` を削除して一本化）。
 
-### Autocomplete → Combobox への計画変更（2026-07-23・実装時の判明事項）
+### Filters の実装
 
-着手前に ReUI `@reui/autocomplete` の無料範囲確認と IME 検証を行ったところ、次が判明した:
+`@reui/filters` は無料だったが、中身は Airtable 的な汎用クエリビルダー（単一ファイル約 72k 文字・依存多数）で、
+欠けていたのは「複数条件のうち 1 つだけ解除する」affordance のみ。無料だから採用するのは Icon Stack と同型の
+過剰一般化になるため、既存 `ConfigurableList` に個別解除チップだけを手書きで足した。
 
-- **プリミティブ自体は無料**（`error` なし・200・license 不要。Chart の `@reui/chart` とは対照的）
-- **しかし形が合わない**: `tag-input.tsx` の実際の用途は「複数チップ＋フリーテキスト追加＋候補提示」で、
-  ReUI/Base UI の `Autocomplete` は単一選択（chips 非対応）。適合するのは
-  **Base UI の `Combobox`**（`multiple`・`Chips`・"Creatable" free-text パターンを標準搭載）
-- ReUI の Combobox ラッパー（`@reui/combobox`）は **license key 必須（401）**。無料ブロック
-  `c-combobox-1` の registryDependencies も有償の `combobox` を指す
-- 一方 `@base-ui/react/combobox` 本体は**無料**（`@base-ui/react` は既存の直接依存）。
-  `Autocomplete.Input` は実は `Combobox` の `ComboboxInput.mjs` を re-export しているだけで、
-  IME composition 安全性の実装は完全に共通
-
-**決定**: Chart と同型の判断（代替案D＝公式/upstream に有るものはそちらから）で、
-**ReUI を経由せず `@base-ui/react/combobox` を直接ラップした `combobox.tsx` を packages/ui に新設**した。
-ADR-012 の初期スコープ「Autocomplete」は実質的に「Combobox」へ置き換わる
-（single-select の探索用途には combobox.tsx がそのまま使えるため、Autocomplete 自体の追加導入は不要）。
-
-### 導入一覧（provenance 正本・実装時に更新）
+## 導入一覧（provenance 正本・実装時に更新）
 
 | コンポーネント | 供給元 | 着地先 | 置換対象 | 再生成コマンド | 状態 |
 |---|---|---|---|---|---|
 | Chart | shadcn 公式 | `packages/ui/src/components/ui/chart.tsx` | price-history-chart の色管理 | `pnpm dlx shadcn@latest add chart --overwrite` | **導入済み**（2026-07-23） |
 | Combobox | `@base-ui/react` 直接（ReUI 非経由） | `packages/ui/src/components/ui/combobox.tsx` | `custom/tag-input.tsx` | 手書き（shadcn/ReUI 生成物ではないため再生成コマンド無し。ADR-011 対象外） | **導入済み**（2026-07-23） |
-| ~~Icon Stack~~ | ReUI（無料） | ~~`packages/ui/src/components/ui/icon-stack.tsx`~~ | — | — | **導入後に撤去**（2026-07-23。理由は下記「Icon Stack 撤去の決定」参照） |
+| ~~Icon Stack~~ | ReUI（無料） | ~~`packages/ui/src/components/ui/icon-stack.tsx`~~ | — | — | **導入後に撤去**（2026-07-23。理由は上記「Icon Stack 撤去の決定」参照） |
 | Empty State | 手書き（合成コンポーネント） | `packages/ui/src/components/custom/empty-state.tsx` | 散在するインライン空表示 + 未使用だった `ListPageEmptyState` | — | **導入済み**（2026-07-23、Icon Stack 撤去後の最終形） |
-| Filters | 手書き（合成コンポーネント。ReUI は不採用） | `packages/ui/src/components/custom/configurable-list/configurable-list-active-filter-chips.tsx` | `ConfigurableList` フィルタ UI の個別解除 affordance 欠落 | — | **導入済み**（2026-07-24。詳細は下記「Filters の実装」参照） |
+| Filters | 手書き（合成コンポーネント。ReUI は不採用） | `packages/ui/src/components/custom/configurable-list/configurable-list-active-filter-chips.tsx` | `ConfigurableList` フィルタ UI の個別解除 affordance 欠落 | — | **導入済み**（2026-07-24。詳細は上記「Filters の実装」参照） |
 
-### Icon Stack / EmptyState 実装ノート（2026-07-23）
+### 再生成・依存の留意
 
-- **無料範囲の検証結果**: `icon-stack` は `error` なし・200・依存ゼロで無料（Chart の教訓どおり毎回確認）。
-  一方 `empty-state` という完成品プリミティブは ReUI 側で**有償**（401）で無料ブロックも無い。
-  つまり「Empty State」は ReUI からそのまま持ってくるものではなく、無料の Icon Stack を土台に
-  packages/ui 側で薄い合成コンポーネントを自作する形になる
-- **既存の未使用コンポーネントとの統合**: `packages/ui/src/components/custom/list-page-layout.tsx` に
-  ほぼ同じ設計（icon/title/description/action）の `ListPageEmptyState` が既にあったが、
-  barrel export（`custom/index.ts`）からも除外されており実質どこからも呼ばれていなかった
-  （story・test 以外に consumer 0）。新規に別物を作らず、**この未使用コンポーネントを削除して
-  `EmptyState` に一本化**した（ADR-005 の重複回避と同型判断）
-- **API（Icon Stack 撤去後の最終形）**: `icon?`/`title`/`description?`/`action?`/`className?`
-  （旧 `ListPageEmptyState` と同一）に加え、`titleAs?: "p" | "h3"`（既定 "p"。見出し階層上の意味を
-  持たせたい呼び出し側向け）と `size?: "sm" | "default"`（コンパクト表示）を追加
-
-### Icon Stack 撤去の決定（2026-07-23・導入直後の方針転換）
-
-導入直後の AI レビュー（PR #844）で次の指摘を受け、**Icon Stack と `illustrated` prop を撤去**した。
-
-- **[nit] `illustrated=true` なのに `icon` を渡し忘れると、装飾ごと無音で何も描画されない**。
-  `EmptyState` の描画は `{icon && (illustrated ? <IconStack>{icon}</IconStack> : <div>{icon}</div>)}`
-  という構造で、`icon`/`illustrated` という独立した2つの optional prop が「組み合わせて初めて
-  意味を持つ」関係になっており、その依存関係を型システムが強制できていなかった
-- **[minor] `user-profile-content.tsx` で見出しが `<h3>` → `<p>` に後退**。`EmptyState` の title は
-  常に `<p>` 固定だったため、旧実装が持っていた見出し階層上の意味が失われていた
-  （こちらは `illustrated` とは独立した別の不具合だが、同じタイミングで発覚したため合わせて対応した）
-
-**判断**: Icon Stack による装飾は、UX 監査が特定した本来の課題（空表示の重複・アイコン/CTA有無の
-不揃い）の解決には不要で、`illustrated` を false 固定にしても機能的に失うものが無い
-（＝これは要件ではなく見た目の好みの上乗せだった）。一方でレビューが見つけた無音の無描画は
-型で防げない実在の罠であり、放置するコストの方が「見た目の少しの向上」という便益より大きいと判断した。
-ADR-005 の「他が成功したから／無料で使えるから」を理由にしない、という過剰一般化の禁止にも合致する。
-
-**対応**:
-1. `illustrated` prop と `packages/ui/src/components/ui/icon-stack.tsx` を削除
-   （撤去後は Icon Stack の consumer が 0 になるため、`ListPageEmptyState` を削除したのと
-   同じ基準——barrel export 外・consumer 0——に自ら該当する。中途半端に残さず削除まで行う）
-2. 見出し後退は `illustrated` の削除と切り離し、`titleAs?: "p" | "h3"` を新設して修正
-   （このプロパティは「削っても機能を失わない装飾」ではなく「無いと a11y 上の後退が起きる
-   実在の要件」なので、prop 削減の方針とは矛盾しない）
-3. 3消費箇所（favorites-list.tsx / related-audio-buttons.tsx / user-profile-content.tsx）から
-   `illustrated` を除去。`user-profile-content.tsx` のみ `titleAs="h3"` を追加
-- **調査結果（UX監査）に基づく分類と対応**:
-  - **Group A**（`ConfigurableList` の `emptyMessage` 経由・検索結果ゼロ、6ファイルでほぼ同一文言）:
-    当初はスコープ外としていたが（`ConfigurableList` の `emptyMessage` は文字列限定で、
-    そのままではアイコン・CTA を持てないため）、Group B で追加した
-    `emptyState?: React.ReactNode` prop を使い後日実装した（詳細は後述の
-    「Group A の実装」参照）
-  - **Group B**（「まだ何もない」＋CTAが妥当）: `favorites-list.tsx`（`ConfigurableList` に新設した
-    `emptyState` prop 経由）・`user-profile-content.tsx`・`related-audio-buttons.tsx` を `illustrated`
-    で統一。3箇所とも実装がバラバラだったのを統一した
-  - **Group C**（詳細ページ内セクションのデータ欠如・CTA不要）: `sample-image-gallery.tsx`・
-    `characteristic-evaluation.tsx`・`price-history.tsx` を `size="sm"` で統一。
-    `price-history-chart.tsx`/`price-statistics.tsx` 自身の空表示分岐は、親（`price-history.tsx`）が
-    既に空データで早期リターンしており到達不能と判明（他に単体で呼ばれる箇所も無い）。
-    「3ファイルに分散重複」に見えたものは実質1箇所のみユーザーに見える表示だった。
-    子2つの分岐は防御的コードとして削除せず残置
-  - **バグ修正**: `featured-audio-buttons-carousel.tsx` が空配列のとき `UI_MESSAGES.LOADING.GENERAL`
-    （「読み込み中...」）を出しっぱなしにしていた（ローディング状態と空状態の混同）。
-    このコンポーネントは既にフェッチ済みデータを props で受け取るだけで自身はローディング状態を
-    持たないため、常に「音声ボタンがありません」を表示すべきだった
-- **`ConfigurableList` への `emptyState?: React.ReactNode` 追加**: 既存の `emptyMessage?: string`
-  （コントロールバーの件数表示欄の要約文字列。維持）とは別に、リスト本体の空表示を差し替える
-  optional prop を追加。未指定時は従来どおり `emptyMessage` をテキストのみで表示するため後方互換。
-  追加した分岐で `ConfigurableList` 本体の cognitive complexity が閾値超過したため、
-  リスト本体（アイテム一覧 or 空表示）の描画を `ConfigurableListBody` という内部コンポーネントへ
-  切り出して吸収した（分岐を関数外へ出すと複雑度メトリクスは新しい関数のスコープで再計算される）
-- **jsdom テストでの lucide-react モック**: `apps/web/vitest.setup.ts` はアイコンをホワイトリスト方式で
-  モックしている。新規アイコン（`Volume2`/`LineChart`/`Image`）を追加していないと
-  `No "X" export is defined on the "lucide-react" mock` で落ちる。EmptyState 導入時は要確認
-
-### Group A（`ConfigurableList` 検索結果ゼロ）の実装（2026-07-24）
-
-Empty State フェーズでスコープ外とした残り6箇所（`audio-buttons-list.tsx` / `creators-list.tsx` /
-`circles-list.tsx` / `video-list.tsx` / `works-list.tsx` / `works-list-for-owner.tsx`）に
-`emptyState` prop を追加した。Group B と異なり CTA が不要（検索条件を変える以外にユーザーが
-取れる行動が無い）ため、6箇所とも `<EmptyState icon={<SearchX />} title={...} />` のみの
-最小構成で統一した。
-
-- **アイコンは `SearchX`（lucide-react）に統一**: 「検索してヒットしなかった」ことを表す
-  Group A 共通の意味に対して、Group B の `Heart`/`Volume2` のような対象別アイコンは不要。
-  6箇所で1種類のアイコンに揃えることで「検索結果ゼロ」という状態自体が視覚的に一貫する
-- **`title` は既存の `emptyMessage` と同一文言に揃える**: `emptyMessage` はコントロールバーの
-  要約表示、`emptyState` はリスト本体の表示で、両者は独立した prop のため文言を別々に書くと
-  矛盾した表現が同時に見える状態になり得る（実際に `video-list.tsx` で最初
-  `emptyState` 側だけ「動画が見つかりませんでした」と書いてしまい、既存の
-  `emptyMessage="動画がありません"` と表現が食い違っていたため、既存文言に合わせて修正した）
-- **バグ修正: `works-list.test.tsx` の `vi.mock` が `EmptyState` を export していなかった**。
-  `@suzumina.click/ui/components/custom` をフルモジュールモックして `ConfigurableList` だけ
-  差し替えている既存テストで、`EmptyState` の実 import が `undefined` になり `WorksList` の
-  JSX 構築時点で React が例外を投げていた。モックに `EmptyState: () => null` を追加して解消。
-  同種のフルモジュールモックを持つ `videos/__tests__/page.test.tsx` は `VideoList` 自体を
-  別途モックしており実コードパスを通らないため無影響だった（要 grep 確認済み・他に該当なし）
-- **バグ修正（PR #845 AI レビュー起因）: コントロールバーが検索語ありのとき `emptyMessage` を
-  無視していた**。`configurable-list-controls.tsx` は `searchQuery` が truthy な 0 件時のみ
-  固定文言「検索結果がありません」を独立して出す分岐を持っており、`emptyState`（本体）と
-  `emptyMessage` を揃えても、検索語ありのケースではコントロールバー側だけこの固定文言に
-  差し替わり両者が食い違う（例: `/works?q=...` で本体「作品が見つかりませんでした」・
-  コントロールバー「検索結果がありません」）。この固定文言分岐自体を削除し、
-  0 件時は searchQuery の有無によらず常に `emptyMessage` を表示するよう単純化した
-  （`searchQuery` prop は本コンポーネントで他に用途が無いため合わせて削除）。
-  文言ソースを `emptyMessage`/`emptyState.title` の 1 つに揃えたことで、
-  Group A（本体・コントロールバーとも同一文言）だけでなく Group B
-  （`favorites-list.tsx` の「お気に入りがまだありません」）でも両者が一致するようになった
-
-### Filters の実装（2026-07-24・ReUI 不採用の判断込み）
-
-初期スコープの最後の1項目。着手前に ReUI `@reui/filters` の無料範囲を確認したところ、
-Chart/Combobox とは逆に**プリミティブ自体が無料**（`https://reui.io/r/base-vega/filters.json` は
-200・license 不要）だった。ただし中身は Airtable/Notion 的な**汎用クエリビルダー**
-（フィールド型ごとの演算子・Zod バリデーション連携・非同期オプション読み込み・フルi18n設定、
-単一ファイル 72,077 文字）で、依存も `button-group`/`dropdown-menu`/`input-group`/`kbd`/
-`scroll-area`/`tooltip`/`class-variance-authority` と多い。
-
-一方、実際に欠けていた affordance は「`ConfigurableList` のフィルタで、複数条件のうち
-1つだけを解除したい」という一点のみ（既存はドロップダウン群＋一括「リセット」のみで、
-個別解除ができなかった）。ReUI の `filters` はこの要件に対して機能的に大幅オーバースペックであり、
-導入すれば Icon Stack と同型の「無料だから採用」という過剰一般化（ADR-005 が禁じるパターン）になる。
-
-**決定**: ReUI は導入せず、既存の `ConfigurableList` フィルタ機構に「個別解除チップ」だけを
-最小追加する自作実装とした。対象は実際に使われている select/tags/boolean の3型のみ
-（range/date/dateRange は現状 consumer が無いため対象外＝ YAGNI）。
-
-- **粒度**: select/boolean は1フィルタキー＝1チップ、tags/multiselect は選択値ごとに1チップ
-  （解除時は該当キーのみデフォルト値に戻す、または配列から該当値だけを除去）
-- **配置**: 既存のドロップダウン行（`configurable-list-header.tsx`）はそのまま残し、
-  その下に新設した `configurable-list-active-filter-chips.tsx` を追加する形にした
-  （ドロップダウン自体の置き換えは行わない＝変更範囲を最小に保つ）
-- **削除ハンドラ**: 新規ハンドラは作らず、既存の `handleFilterChange(key, value)` をそのまま
-  `onRemove` として渡している（シグネチャが偶然一致するため wrapper 不要）
-- **データ導出**: `filter-helpers.ts` に純粋関数 `getActiveFilterChips` を追加。
-  新規 prop は不要（`fetchParams.filters` と `filters` config から導出できるため）
-- **既存の一括「リセット」ボタン**: 個別解除チップと役割が異なる（「1つだけ外す」 vs
-  「全部まとめて外す」）ため両方維持する判断とした
-- **適用範囲**: `ConfigurableList` という共通コンポーネント自体の改修のため、フラグなしで
-  works/videos/creators/circles/audio-buttons 全消費先に自動的に効く
-  （EmptyState 導入時と同じパターン。ADR 初期スコープの「works/videos で試行」という記述は
-  実装方式の変更＝自作の共通コンポーネント改修に伴い、当初想定していたページ単位の試行は行わず、
-  全消費先に一括反映する形に変わった）
-
-**実装中に見つかった不具合と対応**:
-- **`chips[0]` への直接アクセスで TS strict エラー**（テストコード）:
-  配列アクセスの unsafe な添字参照を `toEqual` の配列比較に置き換えて解消
-- **tags 型チップのラベルが冗長 → 最終解は「value を直接表示」（ラベルのパース撤廃）**:
-  `works`/`buttons`/`videos` の tags フィルタは option label に件数を含む
-  （例:「ASMR (39作品)」「タグ名 (12件)」。ドロップダウンの選択肢としては妥当）。
-  これをそのまま解除チップに流用すると「ASMR (39作品) ×」のように野暮ったくなる。
-  当初は `stripCountSuffix`（正規表現で label 末尾の `(数字...)` を除去）で対応したが、
-  CodeQL の "Polynomial regular expression"（ReDoS・high）指摘を**2回**受けた
-  （1回目: 先頭 `\s*` による探索位置×バックトラックの多項式化 → 2回目: 修正版の
-  `\d+`/`[^()]*` が共に数字にマッチできる隣接量指定子の曖昧性）。そもそも
-  「表示用に加工された文字列を後段でヒューリスティックに逆パースする」方式自体が
-  脆く、かつ不要だった — tags/multiselect の value は全 consumer で**タグ文字列そのもの**
-  （URL パラメータにもそのまま載る）であり、チップは `String(value)` を表示すれば
-  パース無しで済む。正規表現を全廃してこの方式に置き換えた（select は value がコード
-  （例: "SOU"）のため従来どおり options の label を引くが、select の label に件数を
-  付ける consumer は存在しないため剥がし処理は不要）。
-  教訓: チップのような「選択済み値の再表示」は、表示用 label から逆算するのではなく
-  値そのもの（正本）から直接導出する
-
-**実ブラウザ検証で踏んだ罠（Playwright ブラウザのプロファイルキャッシュ）**:
-Firestore Emulator + `pnpm dev:local` で `/works?category=SOU&genres=ASMR` を確認したところ、
-in-app Browser pane（Claude Browser）では正しくチップが表示されたが、同じ URL を
-playwright-test MCP のブラウザで開くとチップの DOM 自体が存在しなかった（サーバーログでは
-`getWorks` に正しいパラメータが渡り 200 を返していたため、サーバー側の問題ではなかった）。
-原因は開発サーバーの `/_next/static/:path*` に設定されているカスタム Cache-Control ヘッダ
-（Next.js 自身が起動時に "Setting a custom Cache-Control header can break Next.js development
-behavior" と警告している既知の設定）。playwright-test MCP は永続的なブラウザプロファイルを
-使うため、直近の編集前にフェッチ済みの静的チャンクがキャッシュから返っていたと推測される
-（Claude Browser pane 側は都度新しいタブだったため影響を受けなかった）。
-`?cachebust=<n>` のようなダミークエリを付けて再ナビゲートすることで解消した。
-今後 playwright-test MCP で実ブラウザ確認する際は、直前にコード変更があった場合はまずこの
-キャッシュ回避を試すこと。
-
-### Filters拡張: タグ検索＋全件選択可能化（2026-07-24）
-
-Filters導入（上記）後、works のジャンル絞り込みが実際には292種類（全2,123作品中）あるのに対し
-`getPopularGenres(20)` で上位20件しか選択肢に出ていないことが判明した（ユーザー報告起点）。
-videos（playlistTags 15種）・audioButtons（tags 22種）は同種の上限を持つが規模が小さく、
-実害はworksほど大きくない。本番Firestoreに対しADCで直接集計して実数を確認した上で対応した。
-
-**却下した案**: works専用のモーダルウィンドウ化。videos/audioButtonsには明確にオーバースペックで、
-同じ「タグ絞り込み」が画面ごとに別UIになると軸2（予測可能性）を損なう。GitHub/Linearのラベル
-フィルタと同型の「検索付きポップオーバー」であれば292件でも実用的に扱え、かつ1実装で3一覧に
-適合するため、こちらを採用した。
-
-**実装内容**:
-1. `configurable-list-filters.tsx` の `TagsFilter` に検索ボックス（`useState` によるクライアント側
-   部分一致、Enter確定不要のため IME composition 対策の分岐が不要）を追加。`multiselect` 型は
-   実consumerが存在しないため対象外（YAGNI）
-2. 選択済み option を検索語に関わらず常に先頭にピン留め（`useTagsFilterDisplayOptions`）。
-   検索中でも選択解除ができるようにするための設計
-3. `getPopularGenres` / `getPopularVideoTags` / `getPopularAudioButtonTags`（3action共通の形）は
-   全件スキャン後に `.slice(0, limit)` していたため、`limit` を optional にし未指定時は全件返却する
-   よう変更。**全件スキャン自体は limit の値に関わらず既に発生していたため、Firestore 読み取り
-   コストの増分はゼロ**。3消費先（works-list.tsx / video-list.tsx / audio-buttons-list.tsx）の
-   呼び出しから limit 引数を削除
-
-**実ブラウザ検証で踏んだ罠（playwright-test MCP の `planner_setup_page` が環境固有の理由で失敗）**:
-このセッションのみ `mcp__playwright-test__planner_setup_page` / `generator_setup_page` が
-`page.goto("/")` で "Cannot navigate to invalid URL" を継続的に返し、seed spec 経由のブラウザ
-起動ができなかった（`playwright.config.ts` の `baseURL` 設定自体は正しいことを確認済み・原因は
-MCPドライバ側の環境要因で未特定）。Claude Browser pane 側も Base UI の Popover trigger に対する
-合成クリック（`computer` の座標クリック・`javascript_tool` の `.click()`／`PointerEvent` 手動発火の
-いずれも）が不発だった（既知の制約、上記「Playwright ブラウザのプロファイルキャッシュ」の節とは
-別の問題）。最終的に `apps/web/e2e/`（testDir配下）に一時テストファイルを作成し、
-`npx playwright test` を Bash から直接実行することで検証した（テスト後に削除・リポジトリに残さず）。
-MCP経由のセットアップが両方失敗する場合、この直接実行が最後の手段として機能する。
-
-### combobox.tsx（在file・手書きプリミティブ）実装ノート
-
-- スコープは select.tsx と同等の「単一選択の探索 UI」用途に絞った（Root/Value/InputGroup/Input/
-  Content(Portal+Positioner+Popup)/List/Item/Empty/Status）。`Chips`/`Chip`/`ChipRemove`/`Group`/
-  `GroupLabel`/`Clear`/`Trigger`/`Icon`/`Arrow`/`Backdrop` は現状アプリに用途が無いため未実装
-  （YAGNI。必要になった時点で `@base-ui/react/combobox` から追加 export する）
-- **`open` の明示制御が必須**: `items` が空でも入力するとポップアップが開こうとし、対応する
-  DOM（Portal/Popup）を描画していないと `aria-expanded="true"` だけが残り
-  `aria-required-attr`（axe）違反になる。`enableAutocompletion=false` 相当の場面では
-  `open={false}` を明示すること
-- **single モードは選択後に入力欄へラベルを強制書き戻す**（Base UI 内部 `AriaCombobox.mjs`
-  の `shouldFillInput = ... || (single && !inputInsidePopup)` が prop で無効化不可）。
-  「選択したら入力欄をクリアして次の入力に戻る」トークナイザ的 UX には合わないため、
-  tag-input.tsx では **`multiple` を指定しつつ `Chips` は描画せず、`value` を空配列に固定
-  ‌して選択シグナルの取得だけに使う**（multiple モードはこの強制書き戻しの対象外になる）
-- **`onInputValueChange` の `reason: "item-press"` ガードが必要**: 候補選択時に Base UI が
-  「選択ラベルを入力欄に反映」しようとして `onInputValueChange` を呼ぶことがあり、
-  こちらの明示クリアと競合する。`eventDetails.reason === "item-press"` を無視することで解消
-- **listbox 自体にも `aria-label` が必要**（axe `aria-input-field-name`）。`ComboboxList` に
-  `aria-label` を渡すこと（tag-input.tsx は `"タグ候補"` を設定）
-- **ポップアップは Portal で `document.body` 直下に描画される**。story/テストで候補を
-  `canvasElement` スコープでクエリすると見つからない。`within(document.body)` を使うこと
-- 検証: `pnpm test:storybook` で IME composition（compositionstart/compositionend +
-  keyCode 229 の確定 Enter）と選択→クリアの一連フローを実ブラウザで確認済み。ただし
-  **ヘッドレス自動テストと実ブラウザの手動確認で結果が食い違う場面が実際にあった**
-  （single モードの強制書き戻しが自動テストでは検知されず手動確認で発覚）。
-  Combobox 系の挙動変更は自動テストの green だけで判断せず、Storybook 実描画での
-  目視確認を必ず併用すること
-
-### tag-input.tsx 書き換えの要点
-
-- 外部 API（`TagInputProps`/`TagSuggestion`）・chips 表示（Badge+Button）・バリデーション
-  （必須/文字数/最大数/重複）は無変更。consumer（video-tag-editor.tsx / audio-button-tag-editor.tsx）
-  はゼロ変更で動作
-- 撤去できた自前実装: click-outside の `document.addEventListener('mousedown', ...)`、
-  候補ハイライトの手動 index 管理、Portal 非対応の `absolute` ドロップダウン
-- IME composition の判定は combobox.tsx の教訓どおり `isComposingRef`（compositionstart/end）
-  ＋ `nativeEvent.isComposing`/`keyCode===229` の二重ガードを維持（片方だけでは
-  jsdom テスト環境で `isComposing` が伝播しないケースがあった）
-
-### AI レビュー（PR #843）指摘の検証結果と対応（2026-07-23）
-
-3件の指摘を Base UI ソース読解＋実ブラウザでの再現テストで裏取りした。
-
-- **[major・確認済み・修正] Tab キーでの候補確定が失われていた**: Base UI の Combobox は
-  Tab 押下時に highlighted item を自動コミットしない（`ComboboxInput.mjs`/`AriaCombobox.mjs`
-  に Tab 関連ロジックなし。`grep` で該当ゼロを確認）。旧実装は `Enter`/`Tab` を同一視して
-  確定していたため退行していた。`handleKeyDown` に Tab 専用分岐を追加し、
-  `highlightedRef.current` があれば `addTag()` で確定（`preventDefault` してフィールドに留める）。
-  回帰テスト: `tag-input.stories.tsx` の `TabCommitsHighlightedSuggestion`
-- **[minor・確認済み・修正] フォーカス直後・検索文字数未満で候補ゼロのポップアップが開いていた**:
-  `openOnInputClick`（Base UI 既定 true）によりクリック直後に `items=[]` のままポップアップが開き
-  「候補がありません」が一瞬見える不具合を実ブラウザで再現（`popupVisible: true, hasEmptyText: true`）。
-  `open` を `popupOpen` state で完全制御し、`onOpenChange` で
-  `inputValue.trim().length >= minSearchLength || ロード中` の場合のみ開放を許可するゲートを追加。
-  ゲート判定は React state（`isLoading`）ではなく同期的な `shouldAllowOpenRef`（ref）で行う
-  ——`onOpenChange` が同一 tick 内で `onInputValueChange` より先に評価されると state の
-  バッチ更新が反映されておらず誤判定しうるため。回帰テスト:
-  `tag-input.stories.tsx` の `NoEmptyFlashBeforeSearchLength`
-- **[nit・再現せず・対応不要]** 候補ハイライト中にクエリが変わり候補セットが総入れ替えになっても、
-  古いハイライト参照が Enter に誤反映されるか: 実ブラウザで再現を試みたが、Base UI の
-  `AriaCombobox.mjs`（`syncSelectedIndex`/highlight 同期の effect、`flatFilteredItems` を
-  依存に持つ）が `items` 変更時に確実に `onItemHighlighted(undefined, ...)` を発火し
-  `highlightedRef` を正しく `null` にリセットすることを確認した（フリーテキスト側にだけ
-  追加された）。回帰テスト（再発防止・仕様確認用）:
-  `tag-input.stories.tsx` の `HighlightResetsAcrossQueryChange`
-
-**chart.tsx の再生成時の注意**:
-- registryDependencies に `card` が含まれるため上書き確認が出る → **No で card を除外**する
-  （card 更新は独立に判断）
-- 再生成で lint 手当てが消える: `ChartStyle` の `dangerouslySetInnerHTML` への
-  `biome-ignore lint/security/noDangerouslySetInnerHtml`（理由コメント付き）を再付与する
-  （ADR-011「再生成後の正規化」の一環）
-- `chart.stories.tsx`（custom・在file）は再生成の対象外だが、`ChartConfig` の型シグネチャが
-  変わった場合は追従が必要
-
-**chart.stories.tsx（Storybook・在file・custom 配置）**:
-- 全 ui プリミティブに story を持たせる既存慣行（29/29）に合わせて追加。`Default` は静的参照、
-  `TooltipInteraction` は play 関数で (1) 系列の stroke 色が hex 直書きではなく
-  `hsl(var(--info))` / `hsl(var(--destructive))` の実測値と一致すること（トークン退行の回帰検知）、
-  (2) ホバーでツールチップが表示され `ChartConfig` のラベルが反映されることを検証する
-- `pnpm test:storybook`（Vitest + Playwright provider の実ブラウザ、`vitest.storybook.config.ts`）で実行。
-  **`pnpm verify` には含まれない**別ゲート（CI は Chromatic ワークフローが別途担当）
-- 実装上の注意: recharts のマウス追跡は座標（`clientX`/`clientY`）を実測 rect から計算するため、
-  `userEvent.hover`（要素中心への合成ディスパッチ）ではプロット領域内に座標が解決されず
-  ツールチップが発火しないことがある。`fireEvent.mouseOver`/`mouseMove` に
-  `.recharts-wrapper` の実測 `getBoundingClientRect()` から算出した明示座標を渡すこと
+- recharts は packages/ui（chart.tsx）と apps/web（price-history-chart が直接 import）の両 package.json に依存がある。
+  **同一バージョンに揃える**こと（ズレると pnpm が二重インスタンス化し context 共有が壊れる）
+- chart.tsx の再生成時は registryDependencies の `card` 上書きを No で除外し、`ChartStyle` の `biome-ignore` を再付与する
 
 ## 参考
 
-- [ADR-011: shadcn/ui の保守方針](ADR-011-shadcn-ui-maintenance-policy.md)（再生成優先・生成物は手編集しない・在file 例外の管理方式）
+- [ADR-011: shadcn/ui の保守方針](ADR-011-shadcn-ui-maintenance-policy.md)
 - [ADR-005: Entity実装の教訓](../architecture/ADR-005-entity-implementation-lessons.md)（過剰一般化の禁止）
-- CLAUDE.md §0（ステートレス LLM 協働）/ §1（能動ルール）/ §2（再利用コンポーネントは packages/ui）
-- [ReUI Installation](https://reui.io/docs/installation) / [ReUI MCP Server](https://reui.io/docs/mcp)
+- [ReUI Installation](https://reui.io/docs/installation)
 - PR #838（packages/ui の Base UI 全面移行）

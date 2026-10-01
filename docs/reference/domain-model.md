@@ -31,6 +31,16 @@
 
 > AudioButton / Video は DLsite 作品への直接参照を持たない（AudioButton は `videoId` のみ保持）。
 
+**Work の 3 つの姿と正本**（Video / AudioButton も概ね同じ構図）:
+
+| 姿 | 何の正本か |
+|---|---|
+| Firestore ドキュメント（`works` コレクション） | 永続データの実体 |
+| `WorkDocument`（型 + `WorkDocumentSchema`） | その形と、読み取り境界での検証 |
+| `WorkPlainObject` | RSC 境界（Server → Client）を越える表示用の形。画面側はこれだけを扱う |
+
+変換は Firestore → `WorkDocument`（`safeParse`）→ `WorkPlainObject`（transformer）の一方向。
+
 ## エンティティ間の関係
 
 ```
@@ -43,15 +53,14 @@ creators/{id}/works → Work, Creator  (非正規化関連)
 ※ Work ↔ Video / AudioButton の直接参照は無い
 ```
 
-整合性は cron（`checkDataIntegrity`）が事後修復する（Circle workIds / 孤立 Creator マッピング / Work-Circle 整合）。
-非正規化を増やすとこの負債が増える点に留意（CLAUDE.md 軸1）。
+非正規化（`creators/{id}/works`・Circle の作品一覧など）の整合と負債は CLAUDE.md §0 軸1・§2（`checkDataIntegrity`）。
 
 ## データ表現と変換の正本
 
 - **PlainObject**: [plain-objects/](../../packages/shared-types/src/plain-objects/) — RSC 境界を越えるデータ形の正本。
 - **Transformers**: [transformers/](../../packages/shared-types/src/transformers/) — Firestore ⇔ PlainObject 変換（純関数）。
-  読み取りの入口は各 `fromFirestore`、逆変換は `toFirestore`。barrel（`@suzumina.click/shared-types`）が
-  `workTransformers` / `videoTransformers` / `audioButtonTransformers` として再エクスポートする。
+  読み取りの入口は各 `fromFirestore`（barrel の `workTransformers` / `videoTransformers` / `audioButtonTransformers` 等）。
+  逆変換 `toFirestore` は Video / AudioButton のみで、Work には無い（呼び出しゼロで削除済み）。
 - **Operations**: [operations/](../../packages/shared-types/src/operations/) — PlainObject に対する表示・集計の純関数。
 - **Utilities**: [utilities/](../../packages/shared-types/src/utilities/) — 検証・整形（例: 日付正規化
   [date-optimizer.ts](../../packages/shared-types/src/utilities/formatters/date-optimizer.ts)、
@@ -60,23 +69,20 @@ creators/{id}/works → Work, Creator  (非正規化関連)
 読み取り境界の典型（Zod で検証 → transformer で PlainObject 化）:
 
 ```typescript
-import { WorkDocumentSchema, workTransformers } from "@suzumina.click/shared-types";
-
-const parsed = WorkDocumentSchema.safeParse(raw);            // 読み取り境界の漏斗（default を実効化）
-const data = parsed.success ? parsed.data : (raw as WorkDocument);
-const work = workTransformers.fromFirestore(data);            // WorkPlainObject
+// apps/web/src/app/works/utils/work-converters.ts
+const data = parseWorkDocument({ ...doc.data(), id: doc.id }); // safeParse の漏斗（default を実効化）
+const work = workTransformers.fromFirestore(data);             // WorkPlainObject
 ```
 
-## 設計原則
+- **なぜ blind cast でなく safeParse か（SPR-201）**: Zod の default は parse 時にしか効かず、cast では
+  「required のはずのフィールドが実行時に欠ける」型嘘が残る。失敗時に落とさず warn で観測する理由も含め、
+  正本は [work-converters.ts](../../apps/web/src/app/works/utils/work-converters.ts) `parseWorkDocument` の JSDoc。
+- **merge の sticky フィールド**: Firestore クライアントは `ignoreUndefinedProperties: true` のため、
+  `set(merge)` / `update()` に渡した `undefined` は**削除されず旧値が残る**。不在を表すなら `FieldValue.delete()` に変換する
+  （正本は Functions の [firestore-write.ts](../../apps/functions/src/shared/firestore-write.ts) /
+  works の [dlsite-firestore.ts](../../apps/functions/src/services/dlsite/dlsite-firestore.ts) の JSDoc）。
 
-1. **データ表現の一本化**: 各ドメインは PlainObject 型 + Zod スキーマで定義し、Firestore ⇄ 型の変換は
-   `transformers/` の純関数で行う（クラス Entity・クラス VO は持たない）。
-2. **不変性**: PlainObject は読み取り専用の値として扱い、書き換えず新しい値を作る。
-3. **変換層を増やさない**: Firestore Document ⇄ PlainObject の変換層は RSC 境界の誤り訂正符号
-   （フレームワークに強制された冗長）であり、新たな変換層・抽象を足さない（CLAUDE.md 軸2）。
-4. **読み取り境界で検証**: Firestore 読み取りは Zod `safeParse` を漏斗として通す（実装の正本は
-   [work-converters.ts](../../apps/web/src/app/works/utils/work-converters.ts) の `parseWorkDocument`、SPR-201）。
-5. **型安全性**: TypeScript strict mode + `@suzumina.click/shared-types` の型を使う。
+設計原則（変換層を増やさない・正本の明示など）は CLAUDE.md §0 を参照（ここでは再掲しない）。
 
 ## 型システム基盤
 
@@ -96,26 +102,28 @@ const work = workTransformers.fromFirestore(data);            // WorkPlainObject
 - **Video**: `videoId`（YouTube）・`channelId`（`UC` 始まり）の形式は
   [core/ids.ts](../../packages/shared-types/src/core/ids.ts) のファクトリで検証。
   ライブ判定は `liveBroadcastContent` / `liveStreamingDetails` に基づく（派生は `VideoPlainObject._computed`）。
-- **AudioButton**: 一定長以上のアーカイブ配信に対してのみ作成可（product 制約。実装は app 層）。
+- **AudioButton**: 配信アーカイブ（15 分閾値。[ubiquitous-language.md](ubiquitous-language.md)）に対してのみ作成可。
+  検証は [audio-button-validation.ts](../../apps/web/src/app/buttons/lib/audio-button-validation.ts)。
 
 ## 実装状況・Entity 化の方針
 
 - Work / Video / AudioButton / Circle のデータは PlainObject + Zod + transformers に一本化。
   User / WorkEvaluation / UserWorkEvaluation / Favorite / Contact は Zod スキーマ中心（型定義・検証）。
-- 新規ドメインにクラス Entity を作る前に、**CLAUDE.md「Entity 化のゲート」**
-  （ビジネスルール 5 個以上 / 明確な状態遷移 / 複雑な不変条件のいずれか）を必ず通す。
-  実装手順は [entity-implementation-guide.md](entity-implementation-guide.md)。
+- クラス Entity はゼロ。新規ドメインは先に CLAUDE.md §0「Entity 化のゲート」を通す。
+
+### 新しいドメインを足す手順（ゲートを通らない通常ケース）
+
+1. Zod スキーマと `XxxDocument` 型を定義する（例: `entities/work/work-document-schema.ts`）。
+2. `plain-objects/` に `XxxPlainObject` を定義する（RSC 境界を越えるためプリミティブのみ）。
+3. `transformers/` に `fromFirestore` を書き、barrel から `xxxTransformers` として公開する。
+4. 読み取り境界（Server Action / loader）で `safeParse` を通してから transformer に渡す（上記 SPR-201）。
+5. 書き込み（Plain → Document）の transformer は基本持たない。各 Server Action / 収集パイプラインが Document を直接組む。
+6. テストは Zod スキーマ（parse 成否・default 適用）と transformer（写像）を `__tests__` に置く。
 
 ## 関連ドキュメント
 
-- [entity-implementation-guide.md](entity-implementation-guide.md) — 実装手順（関数型）
 - [ubiquitous-language.md](ubiquitous-language.md) — 用語と命名の正本
 - [database-schema.md](database-schema.md) — Firestore コレクション構成
 - [ADR-001](../decisions/architecture/ADR-001-ddd-implementation-guidelines.md) Entity 化の指針 /
   [ADR-005](../decisions/architecture/ADR-005-entity-implementation-lessons.md) Entity 実装の教訓 /
   [ADR-006](../decisions/architecture/ADR-006-functional-architecture-migration.md) 関数型アーキテクチャ移行
-
----
-
-最終更新: 2026-06-13（SPR-205: domain-object-catalog.md を統合し、フィールド / 型 shape の転記を排してリンク化。
-#654 の関数型「設計原則」と読み取り境界 `parseWorkDocument`（SPR-201）ポインタを取り込み統合）

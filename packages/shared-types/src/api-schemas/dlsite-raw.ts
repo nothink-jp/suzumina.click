@@ -25,6 +25,7 @@ export const DLsiteRawWork = z.object({
 	work_type: z.string().optional(),
 	work_type_string: z.string().optional(),
 	intro_s: z.string().optional(),
+	// price は割引適用済みのセール価格、official_price は定価。discount_rate を price に掛けると二重割引になる
 	price: z.number().optional(),
 	official_price: z.number().optional(),
 	discount_rate: z.number().optional(),
@@ -118,6 +119,9 @@ export const DLsiteRawTranslation = z.object({
 });
 
 // === 言語版情報 ===
+// 実 API の `language_editions` は配列のほか `{"2": {...}}` 形式のオブジェクトでも返り、その要素は
+// edition_id 等を欠くことがある。このスキーマは配列形式のみを表す（＝型は実態より狭い）。
+// 両形式の受け口は functions の work-mapper `toLanguageDownloads`。
 export const DLsiteRawLanguageEdition = z.object({
 	workno: z.string(),
 	edition_id: z.number(),
@@ -191,7 +195,7 @@ export const DLsiteApiResponse = z.object({
 			}),
 		])
 		.optional(),
-	// 多言語価格
+	// 多言語価格（作品により `{ en_US: 9.13, ... }` のオブジェクトと `[{ currency, price }]` の配列の両形式で返る）
 	locale_price: z
 		.union([
 			z.record(z.string(), z.number()),

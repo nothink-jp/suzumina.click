@@ -10,12 +10,10 @@
 
 ## ドメイン・データ
 
-- [domain-model](reference/domain-model.md) — 各概念の正本（型・変換関数）の在処
+- [domain-model](reference/domain-model.md) — 各概念の正本（型・変換関数）の在処とドメイン追加の手順
 - [database-schema](reference/database-schema.md) — Firestore コレクション台帳
 - [ubiquitous-language](reference/ubiquitous-language.md) — 用語集（`works` 改名の経緯を含む）
-- [entity-implementation-guide](reference/entity-implementation-guide.md) — ドメインを関数型で追加する手順
 - [application-architecture](reference/application-architecture.md) — アプリ層の構成・エラー方針
-- [external-apis/dlsite-api](reference/external-apis/dlsite-api.md) — DLsite Individual Info API の解析記録
 
 ## 開発・運用
 
