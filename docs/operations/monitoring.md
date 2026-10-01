@@ -5,17 +5,17 @@
 
 | ファイル | 対象 |
 | --- | --- |
-| [monitoring.tf](../../terraform/monitoring.tf) | 通知チャンネル / web（Cloud Run `suzumina-click-web`）の 5xx 率・インスタンス数急増 |
+| [monitoring.tf](../../terraform/monitoring.tf) | 通知チャンネル / web（Cloud Run `suzumina-click-web`）の 5xx 率・インスタンス数の上限張り付き |
 | [monitoring_performance.tf](../../terraform/monitoring_performance.tf) | web の P95 レイテンシ・CPU・メモリ（Firestore レイテンシは metric 未提供でコメントアウト） |
 | [monitoring_dlsite.tf](../../terraform/monitoring_dlsite.tf) | `fetchDLsiteUnifiedData`: 系統エラー / 作品 ID 収集失敗 / プラットフォーム 5xx / バッチ全滅 / run 不在 / API 失敗率 / スキーマドリフト |
 | [monitoring_youtube.tf](../../terraform/monitoring_youtube.tf) | `fetchYouTubeVideos`: 系統エラー / run 不在 / プラットフォーム 5xx / discovery 未保存 / クォータ不足 / メモリ圧迫 |
 | [monitoring_firestore_reads.tf](../../terraform/monitoring_firestore_reads.tf) | Firestore read レート（予算ペースから逆算した警告・緊急） |
 | [monitoring_firestore_index.tf](../../terraform/monitoring_firestore_index.tf) | 複合インデックス欠落（`requires an index` ログ・SPR-213） |
+| [monitoring_data_integrity.tf](../../terraform/monitoring_data_integrity.tf) | `checkDataIntegrity`（週次の整合性 cron）: エラーログ / 5xx |
 | [logging.tf](../../terraform/logging.tf) | アプリログの GCS シンク（保持はバケットの lifecycle が正本） |
 
 - **通知先はメールのみ**（`google_monitoring_notification_channel.email`、宛先は `var.admin_email`＝CI では secret `ADMIN_EMAIL`）。
 - **ログベースメトリクス**は各 `monitoring_*.tf` 内の `google_logging_metric` に同居している（別ファイルに集約していない）。
-- `checkDataIntegrity` 専用の監視は無い。
 - 外形監視（Uptime check）は無い。web の死活はデプロイ時の `/api/health` 検査（[deploy-web.yml](../../.github/workflows/deploy-web.yml)）と上の 5xx 率で見る。
 
 ## ログを引くときの落とし穴

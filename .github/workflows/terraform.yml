@@ -103,10 +103,16 @@ jobs:
             echo ''
             echo "${NOTE}"
             echo ''
-            echo '```hcl'
-            # job summary 上限対策に末尾を優先表示（plan の Plan: 行は末尾付近）
-            tail -c 60000 /tmp/plan.txt
-            echo '```'
+            # init 等の前段が失敗すると plan.txt は作られない。ここで tail が失敗すると
+            # 「ファイルが無い」という 2 つ目のエラーで本当の原因が埋もれるため、前段の失敗を案内して終える。
+            if [ -f /tmp/plan.txt ]; then
+              echo '```hcl'
+              # job summary 上限対策に末尾を優先表示（plan の Plan: 行は末尾付近）
+              tail -c 60000 /tmp/plan.txt
+              echo '```'
+            else
+              echo 'plan は実行されなかった（Init / workspace 選択など前段のステップのログを確認する）。'
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
 
       # tfplan.bin は入力変数の値（TF_VAR_cloudflare_api_token 等）を平文で含む（sensitive 指定でも同じ）。

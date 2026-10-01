@@ -17,7 +17,6 @@ import type {
 } from "@suzumina.click/shared-types";
 import { optimizeDateFormats } from "@suzumina.click/shared-types";
 
-// 言語エディション項目の型定義
 // 画像オブジェクトの型定義
 interface ImageObject {
 	url?: string;
