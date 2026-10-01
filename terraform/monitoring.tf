@@ -78,9 +78,15 @@ resource "google_monitoring_alert_policy" "cloud_run_scaling" {
       comparison      = "COMPARISON_GT"
       threshold_value = local.current_env.cloud_run_max_instances - 1
 
+      # instance_count は state（active / idle）ラベルと revision ごとに別系列になる。集約しないと
+      # 「active 1 + idle 1」で上限に達していても各系列は 1 のままで発火しない（SPR-234 と同型）。
+      # 合計は revision 単位で取る: max_instances は revision ごとの上限で、service 全体で合計すると
+      # デプロイ直後に旧 revision の idle と新 revision が並ぶたびに誤発火するため。
       aggregations {
-        alignment_period   = "60s"
-        per_series_aligner = "ALIGN_MAX"
+        alignment_period     = "60s"
+        per_series_aligner   = "ALIGN_MAX"
+        cross_series_reducer = "REDUCE_SUM"
+        group_by_fields      = ["resource.label.service_name", "resource.label.revision_name"]
       }
 
       trigger {
