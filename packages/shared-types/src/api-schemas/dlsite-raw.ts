@@ -119,8 +119,8 @@ export const DLsiteRawTranslation = z.object({
 });
 
 // === 言語版情報 ===
-// 実 API の `language_editions` は配列のほか `{"2": {...}}` 形式のオブジェクトでも返り、その要素は
-// edition_id 等を欠くことがある。このスキーマは配列形式のみを表す（＝型は実態より狭い）。
+// 実 API の `language_editions` は作品によって配列と、数値文字列キーのオブジェクト（例: RJ01129635 の
+// `{"2": {...}}`）のどちらでも返る。オブジェクト形式の要素は edition_id 等を欠くことがあるため optional にしている。
 // 両形式の受け口は functions の work-mapper `toLanguageDownloads`。
 export const DLsiteRawLanguageEdition = z.object({
 	workno: z.string(),
@@ -134,6 +134,11 @@ export const DLsiteRawLanguageEdition = z.object({
 });
 
 export const DLsiteRawLanguageEditions = z.array(DLsiteRawLanguageEdition);
+
+export const DLsiteRawLanguageEditionsByKey = z.record(
+	z.string(),
+	DLsiteRawLanguageEdition.partial({ edition_id: true, edition_type: true, display_order: true }),
+);
 
 // === ランキング情報 ===
 export const DLsiteRawRank = z.object({
@@ -176,7 +181,9 @@ export const DLsiteApiResponse = z.object({
 	// 全作品で欠落していた）
 	translation_info: DLsiteRawTranslation.optional(),
 	// 言語版
-	language_editions: DLsiteRawLanguageEditions.optional(),
+	language_editions: z
+		.union([DLsiteRawLanguageEditions, DLsiteRawLanguageEditionsByKey])
+		.optional(),
 	// ランキング
 	rank: DLsiteRawRanks.optional(),
 	// その他
@@ -221,12 +228,4 @@ export const validateApiResponse = (data: unknown): DLsiteApiResponse | null => 
 	} catch (_error) {
 		return null;
 	}
-};
-
-/**
- * プロトコル相対URLの正規化
- */
-export const normalizeUrl = (url?: string): string | undefined => {
-	if (!url) return undefined;
-	return url.startsWith("//") ? `https:${url}` : url;
 };
