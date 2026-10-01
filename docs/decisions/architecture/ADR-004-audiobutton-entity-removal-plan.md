@@ -1,7 +1,10 @@
 # ADR-004: AudioButton Entity完全削除計画
 
 ## ステータス
-提案中 (2025-08-19)
+承認済み・**実施完了**（2026-10-01 追記。元の記載は「提案中 (2025-08-19)」）
+
+> AudioButton Entity クラスは存在せず、`packages/shared-types/src/types/audio-button.ts` と
+> `transformers/audio-button.ts` で構成されている。[ADR-006](ADR-006-functional-architecture-migration.md) の一部として完了。
 
 ## コンテキスト
 

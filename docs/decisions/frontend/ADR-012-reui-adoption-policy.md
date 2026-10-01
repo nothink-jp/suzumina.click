@@ -1,7 +1,11 @@
 # ADR-012: ReUI の導入方針（packages/ui 閉じ込め・Base UI 変種限定・ADR-011 保守方針の継承）
 
 ## ステータス
-承認済み（2026-07-23）
+承認済み（2026-07-23）。**結果として ReUI 由来のコンポーネントは 0 件**（2026-10-01 追記）
+
+> 採用候補 4 点は、Chart = shadcn 公式／Combobox = `@base-ui/react` 直接（ReUI 版は license 必須だった）／
+> EmptyState・Filters = 手書きで着地し、唯一 ReUI から入れた Icon Stack も導入直後に撤去した（下記「導入一覧」が正本）。
+> `packages/ui/components.json` の `@reui` レジストリ設定だけが残っている。
 
 ## コンテキスト
 

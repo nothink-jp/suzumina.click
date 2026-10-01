@@ -1,7 +1,11 @@
 # ADR-002: TypeScript型安全性強化とDDDパターンの統一
 
-## Status
-Accepted and Implemented
+## ステータス
+**置き換え済み**（2026-10-01 追記。元の記載は「Accepted and Implemented」）
+
+> BaseEntity / BaseValueObject による統一は、[ADR-006](ADR-006-functional-architecture-migration.md) の関数型移行で
+> Entity クラスごと撤去された。本文の実装詳細は現状と一致しない（例: Zod は「削除」とあるが shared-types で現役、
+> `core/ids.ts` / `core/branded-types.ts` は index から export されていない、`core/result.ts` は apps から未使用）。
 
 ## Context
 2025年8月時点で、packages/shared-typesのエンティティと値オブジェクトの実装に一貫性がない状況が確認されました。

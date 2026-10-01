@@ -4,6 +4,9 @@
 
 承認済み（FCP/LCP トラックは完了。残課題は SPR-82 に分離）
 
+> 2026-10-01 追記: 本文の `cpu_idle=false` は、その後 SPR-83 で課金増の主因と判明し `true` に戻している
+> （`terraform/locals.tf`。cold start は SPR-221 のエッジキャッシュで不可視化）。
+
 ## コンテキスト
 
 本番計測で **FCP 3.0s / LCP 6.0s（Mobile）** という遅さが顕在化し、[SPR-9](https://linear.app/nothink/issue/SPR-9) を親トラッキングとして perf シリーズ（SPR-2〜82）を開始した。改善は単一の施策ではなく、**インフラ → レンダリング → データ取得 → バンドル → hydration** の各層にわたる多数の小さな決定の積み重ねで進めた。
