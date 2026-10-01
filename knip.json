@@ -2,7 +2,6 @@
 	"$schema": "https://unpkg.com/knip@6/schema.json",
 	"ignore": ["terraform/**", ".design-sync/**"],
 	"ignoreDependencies": [
-		"@secretlint/secretlint-formatter-sarif",
 		"@secretlint/secretlint-rule-pattern",
 		"@secretlint/secretlint-rule-preset-recommend"
 	],

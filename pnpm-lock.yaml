@@ -26,9 +26,6 @@ importers:
       '@biomejs/biome':
         specifier: 2.5.14
         version: 2.5.14
-      '@secretlint/secretlint-formatter-sarif':
-        specifier: ^13.0.6
-        version: 13.0.6
       '@secretlint/secretlint-rule-pattern':
         specifier: ^13.0.6
         version: 13.0.6(supports-color@10.2.2)
@@ -1844,9 +1841,6 @@ packages:
   '@secretlint/resolver@13.0.6':
     resolution: {integrity: sha512-HHTfCjEZvChOFebJ/JBpsqCM/q8hmS6qZq80xbQdVEsdjMmTcTX8E/uvYkOuyozuLCWePpJCnZ6nIxceSvYoog==}
 
-  '@secretlint/secretlint-formatter-sarif@13.0.6':
-    resolution: {integrity: sha512-PgP+pXWbTx6gcy4oqrUvUOhT5jn2IBXX0HVGW/iYmsLNeli8u+m3GYMn2LIB9JLsZZPYKQC664azVGabbnBxkA==}
-
   '@secretlint/secretlint-rule-pattern@13.0.6':
     resolution: {integrity: sha512-SSJvaFIbPdLCeSS1K/GXRNnAiw1+ytv9A3pyetWhQVIdYP90YvjTZeweuV5CVQnYRQMtYRfFIcaQ3M5in2atig==}
     engines: {node: '>=22.0.0'}
@@ -2227,9 +2221,6 @@ packages:
 
   '@types/resolve@1.20.6':
     resolution: {integrity: sha512-A4STmOXPhMUtHH+S6ymgE2GiBSMqf4oTvcQZMcHzokuTLVYzXTB8ttjcgxOVaAp2lGwEdzZ0J+cRbbeevQj1UQ==}
-
-  '@types/sarif@2.1.7':
-    resolution: {integrity: sha512-kRz0VEkJqWLf1LLVN4pT1cg1Z9wAuvI6L97V3m2f5B76Tg8d413ddvLBPTEHAZJlnn4XSvu0FkZtViCQGVyrXQ==}
 
   '@types/send@1.2.1':
     resolution: {integrity: sha512-arsCikDvlU99zl1g69TcAB3mzZPpxgw0UQnaHeC1Nwb015xp8bknZv5rIfri9xTOcMuaVgvabfIRA7PSZVuZIQ==}
@@ -3180,10 +3171,6 @@ packages:
     resolution: {integrity: sha512-Rx/WycZ60HOaqLKAi6cHRKKI7zxWbJ31MhntmtwMoaTeF7XFH9hhBp8vITaMidfljRQ6eYWCKkaTK+ykVJHP2A==}
     engines: {node: '>= 0.8'}
 
-  fs-extra@11.4.0:
-    resolution: {integrity: sha512-EQsFzMUJkCKGr1ePqlYADkIUmHW1s3ZXr5Yqy6wbGrfUCphpl2maM/kyOIRA2HpP3AaFQTZXD4ldjek+nccddA==}
-    engines: {node: '>=14.14'}
-
   fsevents@2.3.3:
     resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
@@ -3898,10 +3885,6 @@ packages:
   node-releases@2.0.54:
     resolution: {integrity: sha512-YHs7BmmcsdAI5Ozuf8JZo6PT0mv2GIWC9vMfvUC3dp65M8hn7Ux8CPL+2oBI7juNuj9d0ndhTcznq2ODBps9cQ==}
     engines: {node: '>=18'}
-
-  node-sarif-builder@4.1.0:
-    resolution: {integrity: sha512-IWqZF6u0EI/07HTBm+zZ+MgXgWl09dnSJRGaDCPBSlOqilDcx6pj3Mpb3HvPN8V2Gr+ISw7ZrMsL7STWs1F++w==}
-    engines: {node: '>=20'}
 
   normalize-package-data@6.0.2:
     resolution: {integrity: sha512-V6gygoYb/5EmNI+MEGrWkC+e6+Rr7mTmfHrxDbLzxQogBkgzo76rkok0Am6thgSF7Mv2nLOajAJj5vDJZEFn7g==}
@@ -5919,10 +5902,6 @@ snapshots:
 
   '@secretlint/resolver@13.0.6': {}
 
-  '@secretlint/secretlint-formatter-sarif@13.0.6':
-    dependencies:
-      node-sarif-builder: 4.1.0
-
   '@secretlint/secretlint-rule-pattern@13.0.6(supports-color@10.2.2)':
     dependencies:
       '@secretlint/tester': 13.0.6(supports-color@10.2.2)
@@ -6328,8 +6307,6 @@ snapshots:
       csstype: 3.2.3
 
   '@types/resolve@1.20.6': {}
-
-  '@types/sarif@2.1.7': {}
 
   '@types/send@1.2.1':
     dependencies:
@@ -7166,12 +7143,6 @@ snapshots:
   forwarded@0.2.0: {}
 
   fresh@2.0.0: {}
-
-  fs-extra@11.4.0:
-    dependencies:
-      graceful-fs: 4.2.11
-      jsonfile: 6.2.1
-      universalify: 2.0.1
 
   fsevents@2.3.3:
     optional: true
@@ -8064,11 +8035,6 @@ snapshots:
       formdata-polyfill: 4.0.10
 
   node-releases@2.0.54: {}
-
-  node-sarif-builder@4.1.0:
-    dependencies:
-      '@types/sarif': 2.1.7
-      fs-extra: 11.4.0
 
   normalize-package-data@6.0.2:
     dependencies:

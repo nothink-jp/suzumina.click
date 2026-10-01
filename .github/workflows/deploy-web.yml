@@ -25,78 +25,14 @@ env:
   IMAGE_NAME: web
 
 jobs:
-  check-pr-status:
-    name: Check PR Status
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    outputs:
-      skip-checks: ${{ steps.check.outputs.skip-checks }}
-    steps:
-      - name: Check if from merged PR
-        id: check
-        env:
-          COMMIT_MSG: ${{ github.event.head_commit.message }}
-        run: |
-          # PRマージによるコミットの場合、すでにPRチェックで検証済み
-          # 最初の行だけを取得して判定（複数行メッセージ対応）
-          # env 経由で受け取ることで script injection を防止
-          COMMIT_FIRST_LINE=$(printf '%s' "$COMMIT_MSG" | head -n1)
-          echo "Commit message: $COMMIT_FIRST_LINE"
-
-          if [[ "$COMMIT_FIRST_LINE" =~ ^Merge\ pull\ request ]] || [[ "$COMMIT_FIRST_LINE" =~ \(#[0-9]+\)$ ]]; then
-            echo "skip-checks=true" >> "$GITHUB_OUTPUT"
-            echo "✅ PR already validated, skipping redundant checks"
-          else
-            echo "skip-checks=false" >> "$GITHUB_OUTPUT"
-            echo "⚠️ Direct push detected, full checks required"
-          fi
-
-  pre-deploy-checks:
-    name: Pre-deploy Checks
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    needs: check-pr-status
-    if: needs.check-pr-status.outputs.skip-checks == 'false'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v7
-      
-      - name: Setup pnpm & install
-        uses: ./.github/actions/setup-pnpm
-      
-      - name: Quick validation
-        run: |
-          echo "🧪 Running quick validation for direct push..."
-
-          # shared-types は no-build（src を直接公開）のため事前ビルド不要
-          # Run critical checks in parallel
-          pnpm --filter @suzumina.click/web typecheck &
-          TYPECHECK_PID=$!
-          
-          pnpm --filter @suzumina.click/web test:critical --run &
-          TEST_PID=$!
-          
-          # Wait for results
-          if wait $TYPECHECK_PID; then
-            echo "✅ TypeScript check passed"
-          else
-            echo "❌ TypeScript check failed"
-            exit 1
-          fi
-          
-          if wait $TEST_PID; then
-            echo "✅ Critical tests passed"
-          else
-            echo "❌ Critical tests failed"
-            exit 1
-          fi
-
+  # デプロイ前の再検査は持たない: main は ruleset で PR 必須（squash のみ・bypass なし）のため、
+  # main に届くコードは pr-check 済み。workflow_dispatch は任意の ref を選べるので main 以外を
+  # 弾く（未検査のブランチを本番に出さない＝旧 pre-deploy-checks が担っていた役割の代替）。
   deploy:
     name: Deploy to Cloud Run
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
     timeout-minutes: 30
-    needs: [check-pr-status, pre-deploy-checks]
-    if: always() && !failure() && !cancelled()
     
     steps:
       - name: Checkout code
@@ -171,28 +107,23 @@ jobs:
           
           echo "✅ Deployment completed successfully"
       
-      # Verify deployment
+      # 公開 URL で /api/health が 200 を返すまで確認し、返らなければ job を落とす。
+      # 以前は警告のみで常に緑だった＝検査の形だけがあった。後続の掃除ステップは if: always() のため
+      # 失敗時も走るが、直近 3 リビジョンは残るのでロールバック先は失われない。
       - name: Verify deployment
         run: |
-          # Get service URL
           SERVICE_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
             --region ${{ env.REGION }} \
             --format 'value(status.url)')
-          
           echo "📍 Service URL: $SERVICE_URL"
-          
-          # Simple health check after deployment
-          echo "🔍 Performing health check..."
-          sleep 10  # Give the service a moment to stabilize
-          
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "${SERVICE_URL}/api/health" || echo "000")
-          
-          if [ "$HTTP_STATUS" = "200" ]; then
-            echo "✅ Health check passed (HTTP $HTTP_STATUS)"
-            echo "🎉 Deployment verified successfully!"
+
+          if curl -fsS -o /dev/null --max-time 30 \
+              --retry 5 --retry-delay 5 --retry-all-errors \
+              "${SERVICE_URL}/api/health"; then
+            echo "✅ /api/health が 200 を返しました"
           else
-            echo "⚠️ Health check returned HTTP $HTTP_STATUS"
-            echo "Note: The deployment may still be successful. Check Cloud Run logs if needed."
+            echo "::error::デプロイ後の /api/health が 200 を返しませんでした（Cloud Run のログを確認）"
+            exit 1
           fi
       
       # Cloud Run リビジョンの掃除

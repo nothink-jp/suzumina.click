@@ -22,7 +22,6 @@
 		"format": "pnpm -r format",
 		"check": "pnpm -r check",
 		"secretlint": "secretlint \"**/*\"",
-		"secretlint:sarif": "secretlint --format @secretlint/secretlint-formatter-sarif --output secretlint-results.sarif \"**/*\"",
 		"typecheck": "pnpm -r typecheck",
 		"typecheck:fast": "pnpm -r typecheck:fast",
 		"test": "pnpm -r test",
@@ -36,7 +35,6 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.5.14",
-		"@secretlint/secretlint-formatter-sarif": "^13.0.6",
 		"@secretlint/secretlint-rule-pattern": "^13.0.6",
 		"@secretlint/secretlint-rule-preset-recommend": "^13.0.6",
 		"@typescript/native-preview": "7.0.0-dev.20260707.2",
