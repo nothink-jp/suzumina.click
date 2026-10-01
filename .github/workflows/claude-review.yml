@@ -32,7 +32,9 @@ jobs:
   claude-review:
     name: Claude review
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # 実測（Sonnet 時代）は 1〜4 分。Opus は 1 ターンが重く、プロンプトで CLAUDE.md 全文の読み込みも求めるため
+    # 余裕を持たせる。超過すると job ごと赤になる（=レビュー未完了のサイン）。
+    timeout-minutes: 20
     # fork からの PR では OAuth Secret を渡さない（漏洩防止）。draft は対象外。
     # Dependabot（bot actor）は対象外: GitHub は pull_request イベントで bot 起因の workflow に
     # Actions Secrets を一切渡さない仕様のため、CLAUDE_CODE_OAUTH_TOKEN が未設定のまま実行され
@@ -106,6 +108,12 @@ jobs:
           #   深いレビューを優先しつつ、ID 直書きによる版ズレ（CLAUDE.md 軸1）を作らない。
           #   代償: CLI 更新で Opus の世代が上がると挙動・ターン消費が変わりうる（max-turns の余裕で吸収）。
           # 行内コメント投稿ツールと gh コマンドを明示許可（これが無いと投稿できない）。
+          #   トップレベルの所見は追跡コメント（mcp__github_comment__update_claude_comment・action が自動許可）に書く。
+          #   組み込みプロンプトが「新しいコメントを作るな」と指示するので `gh pr comment` は許可しない（重複投稿の防止）。
+          # git log / git show: 組み込みプロンプトが `git log origin/main..HEAD` を指示してくるため（git diff と同じ理由）。
+          #   run 35748359937 では permission denial が 6 件出ていた（内訳は show_full_output 無しでは見えないため未特定）。
+          # --disallowedTools: action はタグモードで実装用の git add/commit/rm と push スクリプトを自動許可する。
+          #   レビュアーがコードを書き換えて PR に push できる状態は不要なので、deny で明示的に塞ぐ（deny は allow に優先）。
           # git diff / git status: claude-code-action 組み込みシステムプロンプトが PR 差分確認に
           #   `git diff origin/main...HEAD` / `git status` を使うよう明示的に指示してくる。これを
           #   allowedTools から漏らすと毎回 permission denied → 再試行のループでターンを空費し、
@@ -115,7 +123,8 @@ jobs:
           claude_args: |
             --model opus
             --max-turns 40
-            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(git diff:*),Bash(git status:*)"
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr diff:*),Bash(gh pr view:*),Bash(git diff:*),Bash(git status:*),Bash(git log:*),Bash(git show:*)"
+            --disallowedTools "Edit,Write,MultiEdit,NotebookEdit,Bash(git add:*),Bash(git commit:*),Bash(git rm:*),Bash(git push:*),Bash(/home/runner/work/_actions/anthropics/claude-code-action/v1/scripts/git-push.sh:*)"
 
       # continue-on-error でこのステップ自体は success 扱いになるため、レビューが
       # error_max_turns 等で未完了に終わった場合は job を明示的に fail させて可視化する
