@@ -4,6 +4,10 @@
 
 **承認済み** (2026-06-01) — [ADR-009](ADR-009-deploy-iac-responsibility-split.md) の Phase 2（apply の自動化）の具体設計。SPR-99。Phase 1（SPR-92/96/97/98）完了後に着手。
 
+> 2026-10-01 追記: Stage 1・2 とも実装済み。#991 で plan / apply は 1 本の `.github/workflows/terraform.yml` に統合され、
+> apply は **PR で plan した暗号化 artifact をそのまま適用**する形になった（本文の Stage 分割の記述は導入時の段取り）。
+> 現在の挙動の正本は `terraform.yml`。
+
 ## コンテキスト
 
 ADR-009 で「1リソース・1属性・1正本」を確立し Phase 1 で二重管理を解消した。terraform apply は当面 **手動 `-target` apply**（SPR-91 の慎重方針）で運用してきたが、これは:

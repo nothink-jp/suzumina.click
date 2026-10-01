@@ -22,6 +22,7 @@
 | `ba_user` / `ba_session` / `ba_account` | better-auth の認証データ（認証の正本） | better-auth 採番 | 書き込み元 [firestore-adapter.ts](../../apps/web/src/lib/better-auth/firestore-adapter.ts)（better-auth 標準モデル・prefix `ba_`） | better-auth |
 | `youtubeMetadata` | YouTube 取得処理のメタデータ | `fetch_metadata` | 書き込み元 [fetch-metadata.ts](../../apps/functions/src/endpoints/youtube/fetch-metadata.ts)（`FetchMetadata`） | Cloud Functions |
 | `dlsiteMetadata` | DLsite 収集・整合性チェックのメタデータ | `unified_data_collection_metadata` / `dataIntegrityCheck` | 書き込み元 Cloud Function（[dlsite](../../apps/functions/src/endpoints/dlsite/collection-metadata.ts) / [integrity](../../apps/functions/src/endpoints/data-integrity/run-integrity-check.ts)） | Cloud Functions |
+| `dlsite_failed_works` | Individual Info API で取得に失敗した作品の追跡（失敗回数・理由） | 作品 ID | 書き込み元 [failure-tracker.ts](../../apps/functions/src/services/dlsite/failure-tracker.ts) | Cloud Functions |
 
 > **クリエイター ⇔ 作品の関連はルートコレクションではない**: 旧記載の `creatorWorkMappings` は存在せず、実体は `creators/{creatorId}/works` サブコレクション（下表）。
 > **認証の正本は `ba_*`**: `users` はアプリプロファイル（Discord ID キー）。`ba_user` はログイン時に better-auth が作成するため `users` と件数は一致しない。`_firestore_rules` はシステム生成の内部コレクションで台帳管理外。
@@ -33,8 +34,10 @@
 | `creators/{creatorId}/works` | クリエイター ⇔ 作品の非正規化関連（旧称 `creatorWorkMappings`） | 作品 ID（例 `RJ236867`） | [creator.ts](../../packages/shared-types/src/types/firestore/creator.ts) `CreatorWorkRelation` |
 | `users/{userId}/favorites` | 音声ボタンのお気に入り | 音声ボタン ID | [favorite.ts](../../packages/shared-types/src/entities/favorite.ts) `FirestoreFavoriteData` |
 | `users/{userId}/likes` / `…/dislikes` | 音声ボタンの高評価 / 低評価 | 音声ボタン ID | 書き込み元 [reaction-toggle.ts](../../apps/web/src/actions/reaction-toggle.ts)（`audioButtonId` + `createdAt` 最小スキーマ） |
+| `users/{userId}/buttonDrafts` | 音声ボタンの下書き（配信中マーク。SPR-146） | 自動生成 ID | [audio-button-draft.ts](../../packages/shared-types/src/types/audio-button-draft.ts) `AudioButtonDraftDocument`（書き込み元 [button-drafts.ts](../../apps/web/src/actions/button-drafts.ts)） |
 | `users/{userId}/top10` | 10 選ランキング | `ranking` | [work-evaluation.ts](../../packages/shared-types/src/entities/work-evaluation.ts) `UserTop10List` |
 | `works/{workId}/priceHistory` | 価格履歴（全履歴・多通貨） | `YYYY-MM-DD` | [price-history.ts](../../packages/shared-types/src/utilities/price-history.ts) `PriceHistoryDocument` |
+| `videos/{videoId}/transcriptChunks` | 動画文字起こしのチャンク単位キャッシュ（Gemini 生成の派生データ＝再生成可能） | チャンク番号 | 書き込み元 [video-transcription.ts](../../apps/web/src/actions/video-transcription.ts) |
 | `dlsiteMetadata/dataIntegrityCheck/history` | 整合性チェック実行履歴（最大 10 件） | 実行日時 ISO | 書き込み元 [Cloud Function](../../apps/functions/src/endpoints/data-integrity/run-integrity-check.ts) |
 
 > **削除済み**: `dlsite_timeseries_raw` / `dlsite_timeseries_daily`（統合アーキテクチャへ移行。価格履歴の後継は
@@ -46,13 +49,13 @@
 
 **権限境界**（セキュリティルールの正本: [firestore_rules.tf](../../terraform/firestore_rules.tf)）
 - 公開読み取り: `videos` / `works` / 公開 `audioButtons` / `circles`
-- Cloud Functions のみ書き込み（自動収集）: `videos` / `works` / `circles` / `creators`（+ `creators/{id}/works`） / `priceHistory`
-- Server Actions のみ書き込み（認証済み）: `audioButtons` / `evaluations` / `favorites` / `top10` / `likes` / `dislikes` / `contacts`
+- Cloud Functions のみ書き込み（自動収集）: `videos` / `works` / `circles` / `creators`（+ `creators/{id}/works`） / `priceHistory` / `dlsite_failed_works`
+- Server Actions のみ書き込み（認証済み）: `audioButtons` / `evaluations` / `favorites` / `top10` / `likes` / `dislikes` / `buttonDrafts` / `transcriptChunks` / `contacts`
 - better-auth（サーバーのみ）: `ba_user` / `ba_session` / `ba_account`
 - 本人のみ読み取り: `users` サブコレクション（`favorites` / `top10`）・`evaluations`
 
 **主な product 制約**（実装が正本）
-- `audioButtons`: 参照は最大 5 分 / タイトル 1–100 字 / 説明最大 500 字 / タグ最大 10・各 30 字 / 作成レート 1 日 20 件/ユーザー
+- `audioButtons`: 参照は最大 5 分 / タイトル 1–100 字 / 説明最大 500 字 / タグ最大 10・各 30 字 / 作成の日次上限は基本値 + すずみなふぁみりー所属ボーナス（実効値は [rate-limit-utils.ts](../../apps/web/src/lib/rate-limit-utils.ts) の `calculateDailyLimit`）
 - `evaluations`: 1 作品 1 ユーザー 1 評価・評価タイプ排他・10 選は最大 10
 - `favorites`: ドキュメント ID = 音声ボタン ID により重複登録を構造的に防止
 - `top10`: 1 ユーザー 1 リスト・最大 10・順位重複不可
@@ -85,15 +88,12 @@ cron の正本は Terraform の Cloud Scheduler（[`scheduler.tf`](../../terrafo
 - **新しい `where` + `orderBy` を足すとき**: Emulator は複合インデックスを強制しないため、ローカルで通っても本番で
   `FAILED_PRECONDITION` になりうる。ADC 直結か本番で確認し、必要なら上記 Terraform に追加する
   （CLAUDE.md「ADC 直結に切り替える 3 条件」）。
-- `works` 一覧は全件取得 + クライアントサイドフィルタのため複合インデックス不要。
+- `works` 一覧も複合インデックスを使う: カテゴリ絞り込み + ソートは Firestore クエリ（offset はエミュレーション）で、
+  `category` + 各ソートキーの複合インデックスが Terraform にある（[works/actions.ts](../../apps/web/src/app/works/actions.ts)）。
+  in-memory フィルタになるのは、匿名・年齢未確認（`showR18 === false`＝既定の経路）か、検索・ジャンル・声優・言語を指定したとき。
 
 ## 型定義の場所
 
 - ドメインの正本マップ: [domain-model.md](domain-model.md)（各概念の PlainObject / Firestore・Zod の在処）
 - 共有型: [packages/shared-types/src/](../../packages/shared-types/src/) — `entities/` `plain-objects/` `types/` / 変換 `transformers/` / 検証 `utilities/`
 - Cloud Functions 内部のメタ型: [apps/functions/src/](../../apps/functions/src/)（例 `endpoints/youtube/fetch-metadata.ts` の `FetchMetadata`）
-
----
-
-最終更新: 2026-06-13（SPR-205: 型 shape の inline 転記・live と乖離したインデックス表・日付付き変更ログを撤去し、
-正本——shared-types / Terraform / 書き込み元 Function——へのリンクに集約。1525 行 → 約 90 行）

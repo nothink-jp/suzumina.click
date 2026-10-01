@@ -1,7 +1,11 @@
 # ADR-006: Entity/DDDパターンから関数型アーキテクチャへの完全移行
 
 ## ステータス
-実施中 (2025-08-19開始)
+承認済み・**実施完了**（2026-10-01 追記。元の記載は「実施中 (2025-08-19開始)」）
+
+> shared-types に Entity クラスは無く、Video / Work / AudioButton は PlainObject + transformers + operations の純粋関数になった
+> （SPR-181）。本文のディレクトリ図との差分: `validators/` は作られていない／`entities/` は Zod スキーマ置き場で
+> Entity クラスは無い（名前と中身がずれている）／`entities/work.ts` は @deprecated の re-export として残っている。
 
 ## コンテキスト
 

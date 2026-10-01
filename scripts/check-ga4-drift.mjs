@@ -42,6 +42,15 @@
 //     登録した直後のものを「未登録」と矛盾表示してしまう（drift 検出という名前の約束に反する）
 //   - ADC に直接 analytics スコープを付けるのは Google 側にブロックされるため、
 //     必ず ga4-reader@ の impersonate 経由でトークンを取る
+//
+// 権限と管理境界（CLAUDE.md から移した運用の詳細）:
+//   - GA4 は GCP リソースではなく Marketing Platform 側で、公式 terraform provider に Analytics Admin API の
+//     リソースが無い。GCP 側の identity（SA）は terraform（analytics_ga4.tf）だが、**GA4 プロパティの
+//     アクセス権は GA4 管理画面でしか付与できない**（CI は閲覧者の ga4-ci-reader@・ローカルの --apply は編集者の ga4-reader@）
+//   - **BigQuery リンクの作成・変更は GA4 管理画面のみ**。ga4-reader@ は GCP プロジェクトの IAM ロールを持たないため
+//     API では 403 になる（SPR-283）。export は日次のみ有効（ストリーミングは課金対象なので既定オフ）
+//   - 未登録パラメータの実害の実測: 登録前の web_vitals 113 件は customEvent:metric_name が全て (not set)
+//   - 計器を足しただけでは測れない: カスタムイベントは consent ゲート内で送るため、同意率がそのまま母数になる
 
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";

@@ -1,224 +1,37 @@
-# Monitoring and Alerts
+# 監視とアラート（ポインタ）
 
-This document describes the monitoring setup for suzumina.click.
+アラートポリシー・閾値・ログベースメトリクスの**正本は terraform**。閾値はここに転記しない
+（転記すると必ず drift する）。各ファイルの近接コメントに「その閾値・窓にした理由（実測）」がある。
 
-## Overview
+| ファイル | 対象 |
+| --- | --- |
+| [monitoring.tf](../../terraform/monitoring.tf) | 通知チャンネル / web（Cloud Run `suzumina-click-web`）の 5xx 率・インスタンス数急増 |
+| [monitoring_performance.tf](../../terraform/monitoring_performance.tf) | web の P95 レイテンシ・CPU・メモリ（Firestore レイテンシは metric 未提供でコメントアウト） |
+| [monitoring_dlsite.tf](../../terraform/monitoring_dlsite.tf) | `fetchDLsiteUnifiedData`: 系統エラー / 作品 ID 収集失敗 / プラットフォーム 5xx / バッチ全滅 / run 不在 / API 失敗率 / スキーマドリフト |
+| [monitoring_youtube.tf](../../terraform/monitoring_youtube.tf) | `fetchYouTubeVideos`: 系統エラー / run 不在 / プラットフォーム 5xx / discovery 未保存 / クォータ不足 / メモリ圧迫 |
+| [monitoring_firestore_reads.tf](../../terraform/monitoring_firestore_reads.tf) | Firestore read レート（予算ペースから逆算した警告・緊急） |
+| [monitoring_firestore_index.tf](../../terraform/monitoring_firestore_index.tf) | 複合インデックス欠落（`requires an index` ログ・SPR-213） |
+| [logging.tf](../../terraform/logging.tf) | アプリログの GCS シンク（保持はバケットの lifecycle が正本） |
 
-We use Google Cloud Monitoring for observability, with alerts configured for critical issues.
+- **通知先はメールのみ**（`google_monitoring_notification_channel.email`、宛先は `var.admin_email`＝CI では secret `ADMIN_EMAIL`）。
+- **ログベースメトリクス**は各 `monitoring_*.tf` 内の `google_logging_metric` に同居している（別ファイルに集約していない）。
+- `checkDataIntegrity` 専用の監視は無い。
+- 外形監視（Uptime check）は無い。web の死活はデプロイ時の `/api/health` 検査（[deploy-web.yml](../../.github/workflows/deploy-web.yml)）と上の 5xx 率で見る。
 
-## Monitoring Stack
+## ログを引くときの落とし穴
 
-- **Metrics**: Cloud Monitoring
-- **Logs**: Cloud Logging
-- **Traces**: Cloud Trace
-- **Error Tracking**: Sentry (planned)
-- **Uptime Checks**: Cloud Monitoring Uptime Checks
+Functions は Gen2（Cloud Run 上で実行）なので、ログは `resource.type="cloud_run_revision"` +
+`resource.labels.service_name="fetchdlsiteunifieddata"`（**小文字**）で出る。Gen1 形式の
+`resource.type="cloud_function"` でフィルタすると一切マッチせず、メトリクスは発火しない（SPR-234）。
+付加フィールド無しの logger 呼び出しは `message` が `textPayload` に昇格するため、フィルタは
+`jsonPayload.message` / `textPayload` の両張りにする。
 
-## Key Metrics
+## 判断の背景（コードから復元しにくいもの）
 
-### Application Metrics
-
-| Metric | Target | Alert Threshold |
-|--------|--------|-----------------|
-| Response Time (p95) | < 200ms | > 500ms |
-| Error Rate | < 0.1% | > 1% |
-| Availability | > 99.9% | < 99.5% |
-| Memory Usage | < 80% | > 90% |
-
-### Cloud Functions Metrics
-
-| Metric | Target | Alert Threshold |
-|--------|--------|-----------------|
-| Execution Time | < 30s | > 60s |
-| Error Rate | < 1% | > 5% |
-| Cold Start Rate | < 10% | > 20% |
-
-### Firestore Metrics
-
-| Metric | Target | Alert Threshold |
-|--------|--------|-----------------|
-| Read Latency | < 50ms | > 100ms |
-| Write Latency | < 100ms | > 200ms |
-| Daily Reads | < 50M | > 45M |
-| Daily Writes | < 20M | > 18M |
-
-## Alert Configuration
-
-### Critical Alerts (Page immediately)
-
-1. **Site Down**
-   - Uptime check fails for 2 consecutive checks
-   - Response: Check Cloud Run logs, verify deployment
-
-2. **High Error Rate**
-   - Error rate > 5% for 5 minutes
-   - Response: Check recent deployments, rollback if needed
-
-3. **Database Issues**
-   - Firestore unavailable or high latency
-   - Response: Check GCP status, contact support
-
-### Warning Alerts (Notify via Discord)
-
-1. **High Memory Usage**
-   - Memory > 80% for 10 minutes
-   - Response: Investigate memory leaks, scale up if needed
-
-2. **Slow Response Times**
-   - p95 latency > 500ms for 10 minutes
-   - Response: Check slow queries, optimize code
-
-3. **High Cold Start Rate**
-   - Cold starts > 20% for functions
-   - Response: Consider minimum instances
-
-## Dashboard Access
-
-### Cloud Console Dashboards
-
-1. **Main Dashboard**: [Cloud Console](https://console.cloud.google.com/monitoring)
-2. **Custom Dashboards**:
-   - Application Performance
-   - Function Performance
-   - Database Metrics
-   - Cost Analysis
-
-### Key Graphs to Monitor
-
-1. **Traffic Patterns**
-   - Requests per second
-   - Geographic distribution
-   - Device types
-
-2. **Performance Metrics**
-   - Response time distribution
-   - Memory usage trends
-   - CPU utilization
-
-3. **Business Metrics**
-   - Active users
-   - Audio button plays
-   - Search queries
-
-## Log Analysis
-
-### Useful Log Queries
-
-```sql
--- High latency requests
-resource.type="cloud_run_revision"
-severity>=WARNING
-httpRequest.latency>1s
-
--- Failed audio button plays
-resource.type="cloud_run_revision"
-jsonPayload.action="play_audio_button"
-jsonPayload.success=false
-
--- Authentication errors
-resource.type="cloud_run_revision"
-jsonPayload.error=~".*auth.*"
-```
-
-### Log Retention
-
-- **Application logs**: 30 days
-- **Audit logs**: 400 days
-- **Access logs**: 30 days
-
-## Incident Response
-
-### Severity Levels
-
-1. **SEV1 (Critical)**: Site completely down
-2. **SEV2 (Major)**: Core functionality broken
-3. **SEV3 (Minor)**: Non-critical features affected
-4. **SEV4 (Low)**: Cosmetic issues
-
-### Response Procedures
-
-1. **Acknowledge alert** within 5 minutes
-2. **Assess impact** and assign severity
-3. **Communicate status** (if user-facing)
-4. **Investigate and fix**
-5. **Post-mortem** for SEV1/SEV2
-
-### Runbooks
-
-Common issues and solutions:
-
-1. **High Memory Usage**
-   ```bash
-   # Check memory usage
-   gcloud run services describe web --region asia-northeast1
-   
-   # Scale up if needed
-   gcloud run services update web --memory 1Gi
-   ```
-
-2. **Function Timeouts**
-   ```bash
-   # Check function logs（関数名は fetchYouTubeVideos / fetchDLsiteUnifiedData /
-   # checkDataIntegrity。正本は .github/workflows/deploy-functions.yml）
-   gcloud functions logs read fetchDLsiteUnifiedData --region asia-northeast1
-   ```
-
-   タイムアウトは 3 関数とも既に 540s（正本は deploy-functions.yml）。
-   `fetchDLsiteUnifiedData` はアプリ側でも `MAX_EXECUTION_TIME=480s` で打ち切っており
-   （[process-batch.ts](../../apps/functions/src/endpoints/dlsite/process-batch.ts)）、
-   超過後はリクエスト外実行で CPU が絞られ Individual Info API がタイムアウトを連発する
-   （SPR-318）。超過が続く場合は timeout ではなくバッチサイズ・並列度を見直す。
-
-## Performance Optimization
-
-### Regular Reviews
-
-Weekly:
-- Review p95/p99 latencies
-- Check error rates
-- Monitor cost trends
-
-Monthly:
-- Analyze traffic patterns
-- Review cold start rates
-- Optimize slow queries
-
-### Optimization Checklist
-
-- [ ] Enable Cloud CDN for static assets
-- [ ] Implement request coalescing
-- [ ] Optimize Firestore queries
-- [ ] Review function memory allocation
-- [ ] Enable response compression
-
-## Cost Monitoring
-
-### Budget Alerts
-
-- **Monthly budget**: ¥3,000（billing budget「希望予算」。正本は GCP Billing）
-- **Alert at**: 50%, 90%, 100%
-
-予算アラートは「使い切ってから」しか鳴らない（SPR-311 では月の18日目に 100% 到達メールで気づいた）。
-使用量そのものを見るアラートが `terraform/monitoring_firestore_reads.tf` にあり、こちらが先に鳴る。
-
-### Cost Optimization
-
-1. **Use Firestore efficiently**
-   - Batch reads/writes
-   - Use proper indexes
-   - Cache frequently accessed data
-
-2. **Optimize Cloud Run**
-   - Set appropriate concurrency
-   - Use minimum instances wisely
-   - Enable CPU throttling
-
-3. **Manage Storage**
-   - Set lifecycle policies
-   - Compress large files
-   - Clean up old data
-
----
-
-**Last Updated**: 2025-07-28  
-**Review Schedule**: Monthly
+- **予算アラートは「使い切ってから」しか鳴らない**。SPR-311 では月額予算 ¥3,000 を Firestore read 単独で使い切り、
+  検知できたのは予算 100% 到達メール（月の 18 日目）だった。read 量そのものを見るアラートが無かったのが問題で、
+  `monitoring_firestore_reads.tf` がそれを塞ぐ（実データでは予算メールより 3 日早く発火）。予算本体は GCP Billing 側で、terraform 管理外。
+- **DLsite のタイムアウトは延ばさず、バッチ側を直す（SPR-318）**。関数 timeout は 540s（deploy-functions.yml が正本）、
+  アプリは [process-batch.ts](../../apps/functions/src/endpoints/dlsite/process-batch.ts) の `MAX_EXECUTION_TIME`（480s・run 起動時点基準）で打ち切る。
+  上限を超えた後もコンテナの JS は走り続けるが、リクエスト外＝CPU が絞られ、平常 0.1〜0.4 秒で返る Individual Info API が
+  15 秒タイムアウトを連発する（失敗率アラートの実発火要因だった）。超過が続くなら timeout ではなくバッチサイズ・並列度を見直す。

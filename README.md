@@ -19,8 +19,6 @@
 - **音声ボタンシステム** - YouTube動画の特定箇所を参照・再生
 - **お気に入り機能** - 音声ボタンのお気に入り登録・管理
 - **DLsite作品情報** - 涼花みなせさんの音声作品情報表示
-- **統合検索** - 全コンテンツの横断検索・フィルタリング
-- **管理機能** - ユーザー・コンテンツ管理（管理者用）
 
 ## 技術スタック
 
@@ -80,7 +78,7 @@ pnpm --filter @suzumina.click/web dev          # 本番 Firestore に直接接�
 ## 開発コマンド
 
 ```bash
-# 一括検証（lint + typecheck + test。CI と同一判定）
+# 一括検証（lint:* + lint + typecheck + test。手元の完全版ゲートで、CI とは scope が異なる）
 pnpm verify
 
 # 個別
@@ -93,7 +91,7 @@ pnpm build
 
 - **開発ガイド**: [docs/guides/development.md](docs/guides/development.md)
 - **技術仕様**: [CLAUDE.md](CLAUDE.md)
-- **アーキテクチャ**: [docs/reference/architecture.md](docs/reference/architecture.md)
+- **ドキュメント索引**: [docs/README.md](docs/README.md)
 - **データベース**: [docs/reference/database-schema.md](docs/reference/database-schema.md)
 
 ## ライセンス

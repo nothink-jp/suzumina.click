@@ -4,6 +4,11 @@
 
 **承認済み** (2026-06-01) — SPR-91（drift 棚卸し）の整合方針の決定。実装は Phase 別 sub-issue（SPR-92/95/96/97/98/99）に委譲。
 
+> 2026-10-01 追記: Phase 1・2 とも実施済み（Phase 2 は [ADR-010](ADR-010-terraform-ci-plan-apply.md)）。
+> **原則 3（GC は terraform に一本化）に例外が 1 つある**: web イメージ（`docker_repo`）は cleanup_policies が
+> 実効しないため（SPR-220）、`deploy-web.yml` の post-deploy ステップが digest 単位で自前削除している（SPR-247）。
+> 経緯の正本は `terraform/artifact_registry.tf` 冒頭コメント。
+
 ## コンテキスト
 
 本プロジェクトのインフラは Terraform（IaC）と GitHub Actions（CI/CD）の2系統で GCP リソースを操作している。この構成は2025年に整えられたが、当時から運用形態が変わり、現在は Claude Code による複数 worktree の並列開発（[ADR-008](../architecture/ADR-008-git-worktree-friendly-monorepo.md)）が前提になっている。

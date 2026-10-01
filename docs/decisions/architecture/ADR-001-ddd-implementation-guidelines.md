@@ -1,7 +1,11 @@
 # ADR-001: DDD (Domain-Driven Design) 実装ガイドライン
 
 ## ステータス
-承認済み (2025-01-29)
+承認済み (2025-01-29)。**判定条件は CLAUDE.md へ昇格済み**（2026-10-01 追記）
+
+> Entity 化の判定条件の**正本は CLAUDE.md §0「Entity化のゲート」**（3 条件の **OR**）。本 ADR の条件式は当時のもので、正本とは一致しない（本 ADR は AND 条件）。前提の「Video Entity の成功」も、その後 SPR-181 で Entity クラスは全廃され
+> `packages/shared-types/src/operations/video.ts` の純粋関数になっている（[ADR-006](ADR-006-functional-architecture-migration.md)）。
+> 本 ADR の価値は「過剰な DDD 適用でコード量が 25 倍になった」という失敗の記録にある。
 
 ## コンテキスト
 

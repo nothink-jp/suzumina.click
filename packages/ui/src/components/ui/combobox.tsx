@@ -1,5 +1,19 @@
 "use client";
 
+/**
+ * `@base-ui/react/combobox` の手書きラッパー（shadcn / ReUI の生成物ではないため ADR-011 の再生成対象外。経緯は ADR-012）。
+ *
+ * - 単一選択の探索 UI に必要な部品だけを export している。Chips / Group / Clear などは用途が無いため未実装
+ *   （YAGNI。必要になったら `@base-ui/react/combobox` から足す）
+ * - `items` が空でも入力でポップアップが開こうとし、`aria-expanded="true"` だけが残って axe の
+ *   `aria-required-attr` 違反になる。候補を出さない場面では `open={false}` を明示する
+ * - listbox にも名前が要る（axe `aria-input-field-name`）。`ComboboxList` に `aria-label` を渡す
+ * - single モードは選択後に入力欄へラベルを強制的に書き戻す（prop で無効化不可）。トークナイザ的な UX の回避策は
+ *   `custom/tag-input.tsx` のコメント参照
+ * - ポップアップは Portal で `document.body` 直下に描画される。テストでは `within(document.body)` でクエリする
+ * - ヘッドレスの自動テストでは検知できず、実ブラウザでだけ発覚した不具合がある。挙動を変えたら Storybook の実描画でも確認する
+ */
+
 import { Combobox as ComboboxPrimitive } from "@base-ui/react/combobox";
 import { cn } from "@suzumina.click/ui/lib/utils";
 import { CheckIcon } from "lucide-react";
