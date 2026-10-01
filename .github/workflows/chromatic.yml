@@ -137,7 +137,10 @@ jobs:
         if: steps.debounce.outputs.stale != 'true'
         uses: pnpm/setup@v3
         with:
-          cache: true
+          # pnpm store はキャッシュしない。v3 は保存キーに runId+UUID を含み、ヒット時もジョブ毎に
+          # 約 450MB を保存して GHA の 10GB 共有プール（docker build cache と共用）を食い潰すため。
+          # lockfile の supply-chain 検証結果のキャッシュは cache: false でも有効。
+          cache: false
           install: false
 
       - name: Install dependencies
