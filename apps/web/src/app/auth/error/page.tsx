@@ -20,7 +20,6 @@ interface ErrorInfo {
 	title: string;
 	description: string;
 	showRetry: boolean;
-	showDiscordInfo: boolean;
 }
 
 function getErrorMessage(error: string | undefined): ErrorInfo {
@@ -30,15 +29,16 @@ function getErrorMessage(error: string | undefined): ErrorInfo {
 				title: "設定エラー",
 				description: "認証設定に問題があります。管理者にお問い合わせください。",
 				showRetry: false,
-				showDiscordInfo: false,
 			};
 		case "AccessDenied":
 			return {
 				title: "アクセス拒否",
+				// Discord サーバー（Guild）への参加はログインの条件ではない（ファミリー判定は投稿の日次上限と
+				// バッジ表示にだけ使う: lib/rate-limit-utils.ts）。「メンバー限定」と案内すると実装と食い違うため、
+				// 認可画面での拒否として案内する（SPR-326）。
 				description:
-					"このサイトは「すずみなふぁみりー」Discordサーバーのメンバー限定です。先にDiscordサーバーにご参加してからお試しください。",
+					"Discord でのログインが許可されませんでした。Discord の認可画面で「認証」を選んで、もう一度お試しください。",
 				showRetry: true,
-				showDiscordInfo: true,
 			};
 		case "AccountDisabled":
 			return {
@@ -46,21 +46,18 @@ function getErrorMessage(error: string | undefined): ErrorInfo {
 				description:
 					"このアカウントは現在ご利用いただけません。心当たりがない場合はお問い合わせください。",
 				showRetry: false,
-				showDiscordInfo: false,
 			};
 		case "Verification":
 			return {
 				title: "認証エラー",
 				description: "認証プロセスでエラーが発生しました。時間をおいてから再度お試しください。",
 				showRetry: true,
-				showDiscordInfo: false,
 			};
 		default:
 			return {
 				title: "ログインエラー",
 				description: "ログイン中にエラーが発生しました。もう一度お試しください。",
 				showRetry: true,
-				showDiscordInfo: false,
 			};
 	}
 }
@@ -82,17 +79,6 @@ async function ErrorContent({ searchParams }: AuthErrorPageProps) {
 						<h1 className="text-2xl font-bold text-foreground">{errorInfo.title}</h1>
 						<p className="text-muted-foreground">{errorInfo.description}</p>
 					</div>
-
-					{errorInfo.showDiscordInfo && (
-						<div className="p-4 bg-muted border border-border rounded-lg text-left">
-							<p className="text-sm font-medium text-foreground mb-1">
-								すずみなふぁみりー Discord サーバーについて
-							</p>
-							<p className="text-sm text-muted-foreground">
-								涼花みなせさんのファンコミュニティサーバーです。参加方法は涼花みなせさんの配信やSNSでご確認ください。
-							</p>
-						</div>
-					)}
 
 					<div className="space-y-3">
 						{errorInfo.showRetry && (
