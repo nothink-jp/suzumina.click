@@ -18,17 +18,6 @@ import type {
 import { optimizeDateFormats } from "@suzumina.click/shared-types";
 
 // 言語エディション項目の型定義
-interface LanguageEditionItem {
-	workno: string;
-	label: string;
-	lang: string;
-	dl_count?: string;
-	display_label?: string;
-	edition_id?: number;
-	edition_type?: string;
-	display_order?: number;
-}
-
 // 画像オブジェクトの型定義
 interface ImageObject {
 	url?: string;
@@ -438,8 +427,8 @@ function toTranslationInfo(raw: DLsiteApiResponse): TranslationInfo | undefined 
  *
  * `language_editions` は作品によって**配列**（一般的）と、数値文字列キーの**オブジェクト**
  * （例: RJ01129635 の `{"2": {...}, "3": {...}}`）のどちらでも返る。後者に `.map` を呼ぶと
- * TypeError になるため両形式を受ける。オブジェクト形式の要素は `edition_id` 等を欠くことがある。
- * shared-types の `DLsiteRawLanguageEditions` は配列のみを表すので、オブジェクト側はここで型を当て直す。
+ * TypeError になるため両形式を受ける。オブジェクト形式の要素は `edition_id` 等を欠くことがある
+ * （shared-types の `DLsiteRawLanguageEditionsByKey`）。
  */
 function toLanguageDownloads(raw: DLsiteApiResponse): LanguageDownload[] {
 	if (!raw.language_editions) return [];
@@ -459,18 +448,16 @@ function toLanguageDownloads(raw: DLsiteApiResponse): LanguageDownload[] {
 	}
 
 	// オブジェクト形式の場合
-	return Object.values(raw.language_editions as Record<string, LanguageEditionItem>).map(
-		(edition) => ({
-			workno: edition.workno,
-			label: edition.label,
-			lang: edition.lang,
-			dlCount: edition.dl_count || "",
-			displayLabel: edition.display_label || edition.label,
-			editionId: edition.edition_id,
-			editionType: edition.edition_type,
-			displayOrder: edition.display_order,
-		}),
-	);
+	return Object.values(raw.language_editions).map((edition) => ({
+		workno: edition.workno,
+		label: edition.label,
+		lang: edition.lang,
+		dlCount: edition.dl_count || "",
+		displayLabel: edition.display_label || edition.label,
+		editionId: edition.edition_id,
+		editionType: edition.edition_type,
+		displayOrder: edition.display_order,
+	}));
 }
 
 /**

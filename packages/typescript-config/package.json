@@ -9,7 +9,6 @@
 	"files": [
 		"base.json",
 		"nextjs.json",
-		"react-library.json",
-		"vitest.json"
+		"react-library.json"
 	]
 }
