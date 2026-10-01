@@ -32,7 +32,9 @@ jobs:
   claude-review:
     name: Claude review
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # 実測（Sonnet 時代）は 1〜4 分。Opus は 1 ターンが重く、プロンプトで CLAUDE.md 全文の読み込みも求めるため
+    # 余裕を持たせる。超過すると job ごと赤になる（=レビュー未完了のサイン）。
+    timeout-minutes: 20
     # fork からの PR では OAuth Secret を渡さない（漏洩防止）。draft は対象外。
     # Dependabot（bot actor）は対象外: GitHub は pull_request イベントで bot 起因の workflow に
     # Actions Secrets を一切渡さない仕様のため、CLAUDE_CODE_OAUTH_TOKEN が未設定のまま実行され
@@ -60,44 +62,69 @@ jobs:
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
 
-            あなたはこのリポジトリの PR レビュアーです。リポジトリ直下の CLAUDE.md が「能動ルールの単一ソース」です。
-            必ず CLAUDE.md を読み、その §0 の評価軸と §1 の能動ルールに沿ってレビューしてください。
+            あなたはこのリポジトリの PR レビュアーです。
+            レビュー基準の正本はリポジトリ直下の CLAUDE.md です。最初に**全文**を読み、§0 の評価軸・§1 の能動ルール・
+            §1 セルフマージ・ポリシー・§2 の実装の既定をすべて基準にしてください。
+            このプロンプトは CLAUDE.md のルールを書き写しません（転記はずれるため）。ここにあるのは「レビューの進め方」だけです。
 
             # 出力言語
             すべて日本語で書く（技術用語は原語のまま）。
 
-            # 最優先で見る観点（CLAUDE.md §0 の評価軸）
-            - 軸3（最優先）: 名前・型の約束と実際の振る舞いのズレ。get/find 系の隠れた副作用、責務の広狭、
-              Firestore コレクション名の混同（正本は `works`）、正本が曖昧な箇所。
-            - 軸2: 命名と挙動の予測可能性。新しい変換層・抽象の追加は原則指摘（Entity/PlainObject 変換層は尊重）。
-            - 軸1: 系の劣化。非正規化の追加（整合性 cron `checkDataIntegrity` の保守負債を増やす）、版ズレ。
-            - §1 の能動ルール違反: pnpm 以外/npm 混入、テスト配置（__tests__ 外）、shared-types を使わない型定義、
-              不要コメント、自動生成ドキュメント、Entity 化ゲート未通過の新規 Entity。
+            # 見る価値の配分
+            ## 指摘しないもの（CI が機械的に検出する）
+            lint / format / typecheck / テスト失敗、ファイル命名（Biome）、`pnpm lint:docs` / `lint:tokens` / `lint:ga4` が
+            弾く内容。これらは CI が赤くするので、AI が重ねて指摘してもノイズにしかならない。
 
-            # セルフマージ・ポリシー判定（このリポジトリ用）
-            レビュー冒頭に必ず「Door 判定」を 1 行で出す。基準は「容易にやり直せるか」。
-            - **One-Way Door（人間レビュー必須・自己マージ非推奨）**: Firestore スキーマ/非正規化, 整合性 cron,
-              better-auth/Discord 認証・認可, Terraform/GCP インフラ, .github/workflows（CI/CD）, packages/shared-types
-              の破壊的変更, 新規 Entity 追加。これらを含むなら「⚠️ One-Way Door: 人間レビュー必須」と明示。
-            - **Two-Way Door（AI レビューのみで自己マージ可の候補）**: 上記に該当せず、戻せる UI/表示/軽微なロジック変更。
-              「✅ Two-Way Door: 重大所見が無ければ自己マージ可」と明示。
+            ## 重点的に見るもの（CI・Firestore Emulator・ユニットテストをすり抜けて本番で初めて壊れる）
+            該当する変更があれば、CLAUDE.md の該当ルールに照らして必ず確認する。
+            - 一覧の読み取りコスト（§1）: 1 画面の read が何に比例するか。page 番号比例・オフセット・エミュレーションは major 以上
+            - Firestore 複合インデックス（§1）: クエリ追加・変更に対し、同じ PR で terraform の index が足されているか／旧 index が撤去されているか。
+              `FAILED_PRECONDITION` を catch で握りつぶしていないか
+            - Firestore 時刻フィールド（§1）: 新規コレクション・新規フィールドの日時の保存型
+            - 書き込み系の認可ゲート（§2）: Server Action の try/catch 内で redirect 系を使っていないか、null チェック・isActive の扱い
+            - 軸3・軸2（§0）: 名前・型の約束と振る舞いのズレ、正本の曖昧さ、新しい変換層・抽象の追加
+            - 軸1（§0）: 非正規化の追加（整合性 cron の負債）、版ズレ
+            - PR 本文の主張と diff の一致（本文が「〜しない」「〜だけ」と言っている箇所を裏取りする）
 
-            # 所見の出し方
-            - 具体的な行に対しては inline review comment（mcp__github_inline_comment__create_inline_comment）で指摘する。
-            - 全体所見はトップレベルコメントにまとめ、重大度（blocker / major / minor / nit）を付ける。
-            - 確信が持てない指摘は「要確認」と明示し、断定しない（ノイズを最小化）。
-            - 問題が無ければ「重大所見なし」とはっきり書く。
-          # モデルは固定しない（版ズレ回避: CLAUDE.md 軸1）。action 既定の最新モデルに任せる。
+            # 削除・簡略化の提案は慎重に
+            冗長に見えるコード（二重チェック、重複フィルタ、到達しなさそうな分岐）を削る提案をする前に、
+            それが fail-safe・防御・安全網として意図的に置かれていないか（近接コメント、失敗方向が fail-closed か）を確認する。
+            意図が読めない場合は削除を勧めず、「意図をコメントで明記すべき」と指摘する。
+
+            # Door 判定
+            レビュー冒頭に必ず 1 行で出す。判定基準は CLAUDE.md §1 セルフマージ・ポリシー（One-Way Door の列挙はそちらが正本）。
+            - 該当あり: 「⚠️ One-Way Door: 人間レビュー必須」＋該当した項目
+            - 該当なし: 「✅ Two-Way Door: 重大所見が無ければ自己マージ可」
+
+            # 出力の形
+            1. Door 判定（1 行）
+            2. 所見: 重大度（blocker / major / minor / nit）の高い順。無ければ「重大所見なし」とはっきり書く
+            3. 裏取りした内容: 主張をどのコードで確認したかを短く（所見の根拠になるものだけ）
+            - 特定の行に紐づく blocker / major は inline review comment（mcp__github_inline_comment__create_inline_comment）でも投稿する
+            - 確信が持てない指摘は「要確認」と明示し、断定しない
+            - 定型の免責文（「このレビューでは pnpm verify を再実行していません」等）や、観点ごとの「確認しました」チェックリストは書かない
+            - 再レビュー（追加コミット）では前回レビュー以降の差分に絞り、変化が無い観点は繰り返さない
+          # モデルは `opus` エイリアスで「常に最新の Opus」を追う（--model）。action 既定（Sonnet 系）より
+          #   深いレビューを優先しつつ、ID 直書きによる版ズレ（CLAUDE.md 軸1）を作らない。
+          #   代償: CLI 更新で Opus の世代が上がると挙動・ターン消費が変わりうる（max-turns の余裕で吸収）。
           # 行内コメント投稿ツールと gh コマンドを明示許可（これが無いと投稿できない）。
+          #   トップレベルの所見は追跡コメント（mcp__github_comment__update_claude_comment・action が自動許可）に書く。
+          #   組み込みプロンプトが「新しいコメントを作るな」と指示するので `gh pr comment` は許可しない（重複投稿の防止）。
+          # git log / git show: 組み込みプロンプトが `git log origin/main..HEAD` を指示してくるため（git diff と同じ理由）。
+          #   run 35748359937 では permission denial が 6 件出ていた（内訳は show_full_output 無しでは見えないため未特定）。
+          # --disallowedTools: action はタグモードで実装用の git add/commit/rm と push スクリプトを自動許可する。
+          #   レビュアーがコードを書き換えて PR に push できる状態は不要なので、deny で明示的に塞ぐ（deny は allow に優先）。
           # git diff / git status: claude-code-action 組み込みシステムプロンプトが PR 差分確認に
           #   `git diff origin/main...HEAD` / `git status` を使うよう明示的に指示してくる。これを
           #   allowedTools から漏らすと毎回 permission denied → 再試行のループでターンを空費し、
           #   「コンテキスト取得」段階のまま max-turns で強制終了する（run 29632314677 で確認・PR #810）。
-          # max-turns 40: CLI 更新で既定モデルが変わるとターン消費が増える（sonnet-4-6→5 で 5-15→21+ に増加し
-          #   20 では枯渇＝レビュー未投稿。run 28672455307）。モデル非固定の方針を維持するため余裕を持たせる。
+          # max-turns 40: モデルが変わるとターン消費が増える（sonnet-4-6→5 で 5-15→21+ に増加し
+          #   20 では枯渇＝レビュー未投稿。run 28672455307）。モデル変更時の揺れを吸収するため余裕を持たせる。
           claude_args: |
+            --model opus
             --max-turns 40
-            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(git diff:*),Bash(git status:*)"
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr diff:*),Bash(gh pr view:*),Bash(git diff:*),Bash(git status:*),Bash(git log:*),Bash(git show:*)"
+            --disallowedTools "Edit,Write,MultiEdit,NotebookEdit,Bash(git add:*),Bash(git commit:*),Bash(git rm:*),Bash(git push:*),Bash(/home/runner/work/_actions/anthropics/claude-code-action/v1/scripts/git-push.sh:*)"
 
       # continue-on-error でこのステップ自体は success 扱いになるため、レビューが
       # error_max_turns 等で未完了に終わった場合は job を明示的に fail させて可視化する
