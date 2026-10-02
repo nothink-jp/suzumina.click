@@ -73,15 +73,17 @@ resource "google_monitoring_alert_policy" "cloud_run_scaling" {
     display_name = "インスタンス数が上限 (${local.current_env.cloud_run_max_instances}) に張り付き"
 
     condition_threshold {
-      filter          = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"suzumina-click-web\" AND metric.type=\"run.googleapis.com/container/instance_count\""
+      filter          = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"suzumina-click-web\" AND metric.type=\"run.googleapis.com/container/instance_count\" AND metric.labels.state=\"active\""
       duration        = "300s"
       comparison      = "COMPARISON_GT"
       threshold_value = local.current_env.cloud_run_max_instances - 1
 
-      # instance_count は state（active / idle）ラベルと revision ごとに別系列になる。集約しないと
-      # 「active 1 + idle 1」で上限に達していても各系列は 1 のままで発火しない（SPR-234 と同型）。
+      # 数えるのは active のみ。idle を含めると、数分の突発でスケールアウトした 2 台目が
+      # Cloud Run の idle 保持（約 15 分）で残るだけで 5 分を超え、張り付いていないのに鳴り続ける
+      # （#995 適用後 32 時間で 13 回発火・429/5xx は 0。active=2 の最長連続は 2 分だった）。
+      # idle が残っている間は受け皿があるので「上限に張り付き」ではない。
       # 合計は revision 単位で取る: max_instances は revision ごとの上限で、service 全体で合計すると
-      # デプロイ直後に旧 revision の idle と新 revision が並ぶたびに誤発火するため。
+      # デプロイ直後に旧 revision と新 revision が並ぶたびに誤発火するため。
       aggregations {
         alignment_period     = "60s"
         per_series_aligner   = "ALIGN_MAX"
