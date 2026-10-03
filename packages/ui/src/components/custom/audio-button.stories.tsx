@@ -18,7 +18,6 @@ type Story = StoryObj<typeof meta>;
 const mockAudioButton: AudioButtonType = {
 	id: "1",
 	buttonText: "おはよう！",
-	description: "朝の挨拶音声",
 	tags: ["挨拶", "朝"],
 	videoId: "dQw4w9WgXcQ",
 	videoTitle: "涼花みなせ 朝配信 2024/06/26",
@@ -81,7 +80,6 @@ export const WithSearchHighlight: Story = {
 		audioButton: {
 			...mockAudioButton,
 			buttonText: "おはよう！今日もがんばって",
-			description: "朝の挨拶音声です。がんばって",
 			tags: ["挨拶", "朝", "がんばって"],
 		},
 		onPlay: fn(),

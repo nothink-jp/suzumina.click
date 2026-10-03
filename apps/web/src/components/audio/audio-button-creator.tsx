@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { deleteButtonDraft } from "@/actions/button-drafts";
 import { createAudioButton } from "@/app/buttons/actions";
-import { useAudioButtonEditor } from "@/hooks/use-audio-button-editor";
+import { useAudioButtonCreator } from "@/hooks/use-audio-button-creator";
 import { refreshDraftCount } from "@/hooks/use-draft-count";
 import { useVideoTranscript } from "@/hooks/use-video-transcript";
 import { CREATE_ENTRY, type CreateEntry } from "@/lib/analytics/create-entry";
@@ -74,8 +74,8 @@ export function AudioButtonCreator({
 	const router = useRouter();
 	const user = useSession();
 
-	// 共通の音声ボタン編集ロジック
-	const editor = useAudioButtonEditor({
+	// 作成ロジック（範囲調整・試聴・I/O キー）
+	const editor = useAudioButtonCreator({
 		videoId,
 		videoTitle,
 		videoDuration,
@@ -84,14 +84,8 @@ export function AudioButtonCreator({
 
 	const { state, setState, youtubeManager, timeAdjustment, timeHandlers, audition, validation } =
 		editor;
-	const { buttonText, description, tags, isProcessing: isCreating, error } = state;
-	const {
-		setButtonText,
-		setDescription,
-		setTags,
-		setIsProcessing: setIsCreating,
-		setError,
-	} = setState;
+	const { buttonText, tags, isProcessing: isCreating, error } = state;
+	const { setButtonText, setTags, setIsProcessing: setIsCreating, setError } = setState;
 	const isValid = validation.isValid;
 
 	// 連続仕上げの状態（SPR-266 第2段）。activeDraftId が「今仕上げている下書き」の正本で、
@@ -126,7 +120,6 @@ export function AudioButtonCreator({
 			const end = Math.min(start + 10, duration);
 			setActiveDraftId(next.id);
 			setButtonText("");
-			setDescription("");
 			setTags([]);
 			setError("");
 			setStartTime(start);
@@ -137,7 +130,6 @@ export function AudioButtonCreator({
 			playerDuration,
 			videoDuration,
 			setButtonText,
-			setDescription,
 			setTags,
 			setError,
 			setStartTime,
@@ -224,14 +216,13 @@ export function AudioButtonCreator({
 				setActiveDraftId(undefined);
 				setLastCreated({ id: createdId, buttonText: createdText });
 				setButtonText("");
-				setDescription("");
 				setTags([]);
 				setIsCreating(false);
 				return;
 			}
 			window.location.href = `/buttons/${createdId}`;
 		},
-		[remainingDrafts, advanceToDraft, setIsCreating, setButtonText, setDescription, setTags],
+		[remainingDrafts, advanceToDraft, setIsCreating, setButtonText, setTags],
 	);
 
 	// 作成処理。continueAfter=true は「作成して次を切り抜く」（SPR-290）
@@ -305,7 +296,6 @@ export function AudioButtonCreator({
 				validation.errors.timeRange ??
 				validation.errors.duration ??
 				validation.errors.tags ??
-				validation.errors.description ??
 				null);
 
 	return (
@@ -414,10 +404,8 @@ export function AudioButtonCreator({
 
 							<BasicInfoPanel
 								title={buttonText}
-								description={description}
 								tags={tags}
 								onTitleChange={setButtonText}
-								onDescriptionChange={setDescription}
 								onTagsChange={setTags}
 								disabled={isCreating}
 								metaSuggestion={

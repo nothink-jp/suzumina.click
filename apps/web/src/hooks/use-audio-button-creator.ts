@@ -1,4 +1,3 @@
-import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { matchShortcutKey } from "@/lib/keyboard-shortcut";
 import { useAudioButtonValidation } from "./use-audio-button-validation";
@@ -13,21 +12,19 @@ const EDGE_AUDITION_SECONDS = 2;
 /** 境界調整→プレイヤー追従シークの trailing throttle */
 const FOLLOW_SEEK_DELAY_MS = 200;
 
-export interface AudioButtonEditorState {
+export interface AudioButtonCreatorState {
 	buttonText: string;
-	description: string;
 	tags: string[];
 	isProcessing: boolean;
 	error: string;
 }
 
-export interface AudioButtonEditorConfig {
+export interface AudioButtonCreatorConfig {
 	videoId: string;
 	videoTitle?: string;
 	videoDuration?: number;
 	initialStartTime?: number;
 	initialEndTime?: number;
-	audioButton?: AudioButtonPlainObject; // 編集モードの場合に提供
 }
 
 /** 試聴（ループ再生・境界試聴・プリロール）の状態とアクション */
@@ -40,12 +37,11 @@ export interface AuditionState {
 	onTogglePreroll: () => void;
 }
 
-export interface AudioButtonEditorResult {
+export interface AudioButtonCreatorResult {
 	// 基本状態
-	state: AudioButtonEditorState;
+	state: AudioButtonCreatorState;
 	setState: {
 		setButtonText: (buttonText: string) => void;
-		setDescription: (description: string) => void;
 		setTags: (tags: string[]) => void;
 		setIsProcessing: (processing: boolean) => void;
 		setError: (error: string) => void;
@@ -65,28 +61,23 @@ export interface AudioButtonEditorResult {
 
 	// バリデーション
 	validation: ReturnType<typeof useAudioButtonValidation>;
-
-	// 変更検出（編集モードの場合）
-	hasChanges: boolean;
 }
 
 /**
- * 音声ボタン作成・編集の共通ロジックを提供するフック
+ * 音声ボタン作成のロジック（切り抜き範囲の調整・試聴・I/O キー）を提供するフック。
+ * 範囲は作成後に変更できないため、編集画面（AudioButtonEditor）はこのフックを使わない
  */
-export function useAudioButtonEditor(config: AudioButtonEditorConfig): AudioButtonEditorResult {
+export function useAudioButtonCreator(config: AudioButtonCreatorConfig): AudioButtonCreatorResult {
 	const {
 		videoId,
 		videoTitle: _videoTitle,
 		videoDuration = 600,
 		initialStartTime = 0,
 		initialEndTime,
-		audioButton,
 	} = config;
 
-	// 基本情報の状態（編集モードの場合は既存データで初期化）
-	const [buttonText, setButtonText] = useState(audioButton?.buttonText || "");
-	const [description, setDescription] = useState(audioButton?.description || "");
-	const [tags, setTags] = useState<string[]>(audioButton?.tags || []);
+	const [buttonText, setButtonText] = useState("");
+	const [tags, setTags] = useState<string[]>([]);
 	const [isProcessing, setIsProcessing] = useState(false);
 	const [error, setError] = useState("");
 
@@ -100,15 +91,13 @@ export function useAudioButtonEditor(config: AudioButtonEditorConfig): AudioButt
 			videoDuration: youtubeManager.videoDuration || videoDuration,
 			currentTime: youtubeManager.currentTime,
 			youtubePlayerRef: youtubeManager.youtubePlayerRef,
-			initialStartTime: audioButton?.startTime || initialStartTime,
-			initialEndTime: audioButton?.endTime || initialEndTime || initialStartTime + 10,
+			initialStartTime,
+			initialEndTime: initialEndTime || initialStartTime + 10,
 		}),
 		[
 			youtubeManager.videoDuration,
 			videoDuration,
 			youtubeManager.youtubePlayerRef,
-			audioButton?.endTime,
-			audioButton?.startTime,
 			initialEndTime,
 			initialStartTime,
 			youtubeManager.currentTime,
@@ -208,7 +197,6 @@ export function useAudioButtonEditor(config: AudioButtonEditorConfig): AudioButt
 		startTime: timeAdjustment.startTime,
 		endTime: timeAdjustment.endTime,
 		tags,
-		description,
 	});
 
 	// I/O キーで再生位置を開始/終了時間に設定（SPR-266 区間指定UX）。ガードの正本は matchShortcutKey。
@@ -243,26 +231,6 @@ export function useAudioButtonEditor(config: AudioButtonEditorConfig): AudioButt
 		return () => document.removeEventListener("keydown", onKeyDown);
 	}, [isProcessing]);
 
-	// 変更があるかチェック（編集モードの場合）
-	const hasChanges = useMemo(() => {
-		if (!audioButton) return false;
-
-		return (
-			buttonText !== audioButton.buttonText ||
-			description !== (audioButton.description || "") ||
-			JSON.stringify(tags) !== JSON.stringify(audioButton.tags || []) ||
-			timeAdjustment.startTime !== audioButton.startTime ||
-			timeAdjustment.endTime !== audioButton.endTime
-		);
-	}, [
-		audioButton,
-		buttonText,
-		description,
-		tags,
-		timeAdjustment.startTime,
-		timeAdjustment.endTime,
-	]);
-
 	useEffect(() => {
 		return () => {
 			// Cleanup handled by YouTube manager
@@ -272,14 +240,12 @@ export function useAudioButtonEditor(config: AudioButtonEditorConfig): AudioButt
 	return {
 		state: {
 			buttonText,
-			description,
 			tags,
 			isProcessing,
 			error,
 		},
 		setState: {
 			setButtonText,
-			setDescription,
 			setTags,
 			setIsProcessing,
 			setError,
@@ -289,6 +255,5 @@ export function useAudioButtonEditor(config: AudioButtonEditorConfig): AudioButt
 		timeHandlers,
 		audition,
 		validation,
-		hasChanges,
 	};
 }

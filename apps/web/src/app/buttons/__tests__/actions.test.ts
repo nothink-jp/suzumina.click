@@ -385,7 +385,6 @@ describe("Audio Button Server Actions", () => {
 					data: () => ({
 						id: "audio-ref-1",
 						buttonText: "音声ボタン1",
-						description: "説明1",
 						tags: ["挨拶"],
 						videoId: "dQw4w9WgXcQ",
 						videoTitle: "動画タイトル1",
@@ -411,7 +410,6 @@ describe("Audio Button Server Actions", () => {
 					data: () => ({
 						id: "audio-ref-2",
 						buttonText: "音声ボタン2",
-						description: "説明2",
 						tags: ["BGM"],
 						videoId: "dQw4w9WgXcQ",
 						videoTitle: "動画タイトル2",
@@ -466,8 +464,9 @@ describe("Audio Button Server Actions", () => {
 
 			expect(result.success).toBe(true);
 			expect(mockWhere).toHaveBeenCalledWith("isPublic", "==", true);
-			// タグ絞り込みも全件取得側に件数上限を掛けない（SPR-322）
-			expect(mockLimit.mock.calls).toEqual([[20]]);
+			// タグ絞り込みは全件取得 + in-memory。件数上限を掛けず（SPR-322）、基本経路の count・ページ取得も走らせない
+			expect(mockLimit).not.toHaveBeenCalled();
+			expect(mockCollection.mock.results[0]?.value.count).not.toHaveBeenCalled();
 		});
 
 		it("検索パラメータが正しく処理される", async () => {
@@ -477,7 +476,6 @@ describe("Audio Button Server Actions", () => {
 					data: () => ({
 						id: "audio-1",
 						buttonText: "テスト音声",
-						description: "検索キーワードを含む説明",
 						tags: ["テスト"],
 						videoId: "video-1",
 						videoTitle: "動画1",
@@ -516,9 +514,54 @@ describe("Audio Button Server Actions", () => {
 				expect(result.data.audioButtons.map((b) => b.id)).toEqual(["audio-1"]);
 				expect(result.data.totalCount).toBe(1);
 			}
-			// 検索はメモリ上で行うため、全件取得側に件数上限を掛けない（掛けると超過分が黙って欠ける＝SPR-322）。
-			// limit は基本経路のページサイズ 1 回のみ
-			expect(mockLimit.mock.calls).toEqual([[20]]);
+			// 検索はメモリ上で行うため件数上限を掛けない（掛けると超過分が黙って欠ける＝SPR-322）
+			expect(mockLimit).not.toHaveBeenCalled();
+		});
+
+		it("検索の 2 ページ目は全件取得の結果を切り出し、ページ位置に比例した読み捨てをしない", async () => {
+			const doc = (id: string) => ({
+				id,
+				data: () => ({
+					buttonText: `テスト音声${id}`,
+					tags: [],
+					videoId: "video-1",
+					videoTitle: "動画1",
+					startTime: 0,
+					endTime: 10,
+					duration: 10,
+					creatorId: "user-1",
+					creatorName: "User 1",
+					isPublic: true,
+					stats: {
+						playCount: 0,
+						likeCount: 0,
+						dislikeCount: 0,
+						favoriteCount: 0,
+						engagementRate: 0,
+					},
+					createdAt: "2024-01-01T00:00:00Z",
+					updatedAt: "2024-01-01T00:00:00Z",
+				}),
+			});
+			mockGet.mockResolvedValue({ docs: [doc("a"), doc("b"), doc("c")] });
+
+			const result = await getAudioButtonsList({
+				search: "テスト音声",
+				limit: 2,
+				page: 2,
+				sortBy: "newest",
+				onlyPublic: true,
+			});
+
+			expect(result.success).toBe(true);
+			if (result.success) {
+				expect(result.data.audioButtons.map((b) => b.id)).toEqual(["c"]);
+				expect(result.data.totalCount).toBe(3);
+				expect(result.data.hasMore).toBe(false);
+			}
+			expect(mockGet).toHaveBeenCalledTimes(1);
+			expect(mockLimit).not.toHaveBeenCalled();
+			expect(mockStartAfter).not.toHaveBeenCalled();
 		});
 
 		it("無効なクエリでエラーが返される", async () => {
@@ -540,7 +583,6 @@ describe("Audio Button Server Actions", () => {
 			const mockDocData = {
 				id: "test-audio-ref-id",
 				title: "テスト音声ボタン",
-				description: "テスト用の説明",
 				tags: ["テスト"],
 				sourceVideoId: "dQw4w9WgXcQ",
 				sourceVideoTitle: "テスト動画",
@@ -593,7 +635,6 @@ describe("Audio Button Server Actions", () => {
 				id: "private-audio-ref",
 				data: () => ({
 					buttonText: "非公開音声ボタン",
-					description: "非公開説明",
 					tags: ["非公開"],
 					videoId: "private-video",
 					videoTitle: "非公開動画",

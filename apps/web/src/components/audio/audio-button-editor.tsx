@@ -1,55 +1,44 @@
 "use client";
 
-import type { AudioButtonPlainObject, UpdateAudioButtonInput } from "@suzumina.click/shared-types";
-import { YouTubePlayer } from "@suzumina.click/ui/components/custom/youtube-player";
+import {
+	type AudioButtonPlainObject,
+	formatTimestamp,
+	type UpdateAudioButtonInput,
+} from "@suzumina.click/shared-types";
+import { PlayHero } from "@suzumina.click/ui/components/custom/play-hero";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Loader2, Save } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback } from "react";
+import { useState } from "react";
 import { updateAudioButton } from "@/app/buttons/actions";
-import { useAudioButtonEditor } from "@/hooks/use-audio-button-editor";
+import { validateTags, validateTitle } from "@/hooks/use-audio-button-validation";
 import { BasicInfoPanel } from "./basic-info-panel";
-import { TimeControlPanel } from "./time-control-panel";
-import { UsageGuide } from "./usage-guide";
 
 interface AudioButtonEditorProps {
 	audioButton: AudioButtonPlainObject;
-	videoDuration?: number;
 }
 
-export function AudioButtonEditor({ audioButton, videoDuration = 600 }: AudioButtonEditorProps) {
+/**
+ * 音声ボタンの編集画面。編集できるのはタイトルとタグだけ。
+ * 切り抜き範囲は作成後に変更できない（いいね・お気に入りは「その音」に付くため。正本は UpdateAudioButtonInput）。
+ * 範囲は確認用に表示し、試聴しても再生数には数えない（PlayHero に onPlay を渡さない）。
+ * 再生ボタンの見出しは入力中のタイトルで「保存後の見た目」を示す（空欄のあいだは保存済みのタイトル）
+ */
+export function AudioButtonEditor({ audioButton }: AudioButtonEditorProps) {
 	const router = useRouter();
+	const [buttonText, setButtonText] = useState(audioButton.buttonText);
+	const [tags, setTags] = useState<string[]>(audioButton.tags || []);
+	const [isUpdating, setIsUpdating] = useState(false);
+	const [error, setError] = useState("");
 
-	// 共通の音声ボタン編集ロジック（編集モード）
-	const editor = useAudioButtonEditor({
-		videoId: audioButton.videoId,
-		videoTitle: audioButton.videoTitle,
-		videoDuration,
-		audioButton,
-	});
+	const isValid = validateTitle(buttonText) === null && validateTags(tags) === null;
+	const hasChanges =
+		buttonText !== audioButton.buttonText ||
+		JSON.stringify(tags) !== JSON.stringify(audioButton.tags || []);
+	const duration = audioButton.endTime - audioButton.startTime;
+	const preview = { ...audioButton, buttonText: buttonText.trim() || audioButton.buttonText };
 
-	const {
-		state,
-		setState,
-		youtubeManager,
-		timeAdjustment,
-		timeHandlers,
-		audition,
-		validation,
-		hasChanges,
-	} = editor;
-	const { buttonText, description, tags, isProcessing: isUpdating, error } = state;
-	const {
-		setButtonText,
-		setDescription,
-		setTags,
-		setIsProcessing: setIsUpdating,
-		setError,
-	} = setState;
-	const isValid = validation.isValid;
-
-	// 更新処理
-	const handleUpdate = useCallback(async () => {
+	const handleUpdate = async () => {
 		if (!isValid || !hasChanges) return;
 
 		setIsUpdating(true);
@@ -75,106 +64,76 @@ export function AudioButtonEditor({ audioButton, videoDuration = 600 }: AudioBut
 		} finally {
 			setIsUpdating(false);
 		}
-	}, [isValid, hasChanges, audioButton.id, buttonText, tags, setError, setIsUpdating]);
-
-	// 時間調整用のハンドラーは共通フックから取得
+	};
 
 	return (
 		<div className="min-h-screen bg-background">
 			<div className="container mx-auto px-4 py-6">
-				<div className="mb-6">
-					<h1 className="text-2xl font-bold mb-2">音声ボタンを編集</h1>
-					<p className="text-muted-foreground text-sm">動画: {audioButton.videoTitle}</p>
-				</div>
-
-				{error && (
-					<div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-						<p className="text-sm text-destructive">{error}</p>
+				<div className="max-w-2xl mx-auto">
+					<div className="mb-6">
+						<h1 className="text-2xl font-bold mb-2">音声ボタンを編集</h1>
+						<p className="text-muted-foreground text-sm">動画: {audioButton.videoTitle}</p>
 					</div>
-				)}
 
-				<div className="max-w-7xl mx-auto">
-					<div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-						<div className="lg:col-span-1 xl:col-span-2">
-							<div className="aspect-video bg-muted rounded-lg overflow-hidden shadow-lg">
-								<YouTubePlayer
-									videoId={youtubeManager.videoId}
-									onReady={(player) => {
-										youtubeManager.youtubePlayerRef.current = player;
-										youtubeManager.onPlayerReady();
-									}}
-									onStateChange={youtubeManager.onPlayerStateChange}
-									startTime={audioButton.startTime}
-									controls={true}
-								/>
-							</div>
+					{error && (
+						<div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+							<p className="text-sm text-destructive">{error}</p>
+						</div>
+					)}
 
-							{/* トリムレーンは幅が要るためプレイヤー直下（左カラム）に置く（SPR-288） */}
-							<div className="mt-4 bg-card border rounded-lg p-3 sm:p-4 shadow-sm">
-								<TimeControlPanel
-									startTime={timeAdjustment.startTime}
-									endTime={timeAdjustment.endTime}
-									currentTime={youtubeManager.currentTime}
-									videoDuration={youtubeManager.videoDuration || videoDuration}
-									startTimeInput={timeAdjustment.startTimeInput}
-									endTimeInput={timeAdjustment.endTimeInput}
-									isEditingStartTime={timeAdjustment.isEditingStartTime}
-									isEditingEndTime={timeAdjustment.isEditingEndTime}
-									{...timeHandlers}
-									onSeek={youtubeManager.seekTo}
-									audition={audition}
-									isCreating={isUpdating}
-								/>
-							</div>
-
-							<UsageGuide />
+					<div className="space-y-4">
+						<div className="bg-card border rounded-lg p-4 shadow-sm text-center">
+							<PlayHero audioButton={preview} size="M" />
+							<p className="mt-3 text-sm text-muted-foreground">
+								切り抜き範囲 {formatTimestamp(audioButton.startTime)} 〜{" "}
+								{formatTimestamp(audioButton.endTime)}（{duration.toFixed(1)}秒）
+							</p>
+							<p className="mt-1 text-xs text-muted-foreground">
+								切り抜き範囲は作成後に変更できません
+							</p>
 						</div>
 
-						<div className="lg:col-span-1 xl:col-span-1 space-y-4">
-							<BasicInfoPanel
-								title={buttonText}
-								description={description}
-								tags={tags}
-								onTitleChange={setButtonText}
-								onDescriptionChange={setDescription}
-								onTagsChange={setTags}
+						<BasicInfoPanel
+							title={buttonText}
+							tags={tags}
+							onTitleChange={setButtonText}
+							onTagsChange={setTags}
+							disabled={isUpdating}
+						/>
+					</div>
+
+					<div className="flex flex-col gap-4 mt-6 pt-6 border-t">
+						<div className="flex flex-col sm:flex-row gap-3 w-full sm:justify-end">
+							<Button
+								variant="outline"
+								onClick={() => router.back()}
 								disabled={isUpdating}
-							/>
+								className="w-full sm:w-auto min-h-[44px] order-2 sm:order-1"
+							>
+								キャンセル
+							</Button>
+							<Button
+								onClick={handleUpdate}
+								disabled={!isValid || !hasChanges || isUpdating}
+								className="w-full sm:w-auto min-h-[44px] h-11 sm:h-12 px-6 sm:px-8 order-1 sm:order-2"
+								size="lg"
+							>
+								{isUpdating ? (
+									<>
+										<Loader2 className="h-4 w-4 mr-2 animate-spin" />
+										更新中...
+									</>
+								) : (
+									<>
+										<Save className="h-4 w-4 mr-2" />
+										変更を保存
+									</>
+								)}
+							</Button>
 						</div>
-
-						<div className="col-span-full flex flex-col gap-4 mt-6 pt-6 border-t">
-							<div className="flex flex-col sm:flex-row gap-3 w-full lg:justify-end">
-								<Button
-									variant="outline"
-									onClick={() => router.back()}
-									disabled={isUpdating}
-									className="w-full sm:w-auto min-h-[44px] order-2 sm:order-1"
-								>
-									キャンセル
-								</Button>
-								<Button
-									onClick={handleUpdate}
-									disabled={!isValid || !hasChanges || isUpdating}
-									className="w-full sm:w-auto min-h-[44px] h-11 sm:h-12 px-6 sm:px-8 order-1 sm:order-2"
-									size="lg"
-								>
-									{isUpdating ? (
-										<>
-											<Loader2 className="h-4 w-4 mr-2 animate-spin" />
-											更新中...
-										</>
-									) : (
-										<>
-											<Save className="h-4 w-4 mr-2" />
-											変更を保存
-										</>
-									)}
-								</Button>
-							</div>
-							{!hasChanges && (
-								<p className="text-sm text-muted-foreground text-center">変更がありません</p>
-							)}
-						</div>
+						{!hasChanges && (
+							<p className="text-sm text-muted-foreground text-center">変更がありません</p>
+						)}
 					</div>
 				</div>
 			</div>

@@ -23,7 +23,6 @@ vi.mock("../actions", () => ({
 				{
 					id: "audio-1",
 					title: "テスト音声ボタン1",
-					description: "説明1",
 					tags: ["テスト"],
 					sourceVideoId: "video-1",
 					sourceVideoTitle: "テスト動画1",
@@ -44,7 +43,6 @@ vi.mock("../actions", () => ({
 				{
 					id: "audio-2",
 					title: "テスト音声ボタン2",
-					description: "説明2",
 					tags: ["音楽"],
 					sourceVideoId: "video-2",
 					sourceVideoTitle: "テスト動画2",
@@ -74,7 +72,6 @@ vi.mock("@suzumina.click/ui/components/custom/audio-button", () => ({
 	AudioButton: ({ audioButton }: any) => (
 		<div data-testid="audio-button">
 			<h3>{audioButton.title}</h3>
-			<p>{audioButton.description}</p>
 			<span>Tags: {audioButton.tags?.join(", ")}</span>
 		</div>
 	),

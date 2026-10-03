@@ -49,14 +49,13 @@ describe("applySorting", () => {
 
 describe("filterBySearch", () => {
 	const buttons = [
-		button({ buttonText: "おはよう", description: "朝の挨拶" }),
-		button({ buttonText: "Good night", description: undefined }),
+		button({ buttonText: "おはよう", tags: ["挨拶"] }),
+		button({ buttonText: "Good night" }),
 	];
-	it("buttonText / description を大小無視で部分一致", () => {
-		expect(filterBySearch(buttons, "おは")).toHaveLength(1);
+	it("buttonText を大小無視で部分一致", () => {
+		expect(filterBySearch(buttons, "おは")[0]?.buttonText).toBe("おはよう");
 		expect(filterBySearch(buttons, "night")).toHaveLength(1);
 		expect(filterBySearch(buttons, "NIGHT")).toHaveLength(1); // 大文字でもヒット（大小無視の実証）
-		expect(filterBySearch(buttons, "挨拶")[0]?.buttonText).toBe("おはよう");
 		expect(filterBySearch(buttons, "該当なし")).toHaveLength(0);
 	});
 });

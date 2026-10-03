@@ -2,6 +2,7 @@
 
 import type {
 	AudioButton,
+	AudioButtonDocument,
 	CreateAudioButtonInput,
 	UpdateAudioButtonInput,
 } from "@suzumina.click/shared-types";
@@ -52,6 +53,24 @@ export async function getRecentAudioButtons(limit = 10): Promise<AudioButton[]> 
 	}
 }
 
+/** 一覧表示に要るフィールドだけを読む（AudioButtonDocument のうち一覧で使うもの） */
+const AUDIO_BUTTON_LIST_FIELDS = [
+	"buttonText",
+	"tags",
+	"videoId",
+	"videoTitle",
+	"videoThumbnailUrl",
+	"startTime",
+	"endTime",
+	"duration",
+	"creatorId",
+	"creatorName",
+	"isPublic",
+	"stats",
+	"createdAt",
+	"updatedAt",
+] as const satisfies readonly (keyof AudioButtonDocument)[];
+
 /**
  * 音声ボタンリストを取得（ConfigurableList用）
  */
@@ -98,47 +117,46 @@ export async function getAudioButtonsList(
 				onlyPublic = true,
 				videoId,
 				search,
+				tags = [],
 			} = validatedQuery;
 
 			const firestore = getFirestore();
-			let queryRef = firestore
-				.collection("audioButtons")
-				.select(
-					"id",
-					"buttonText",
-					"description",
-					"tags",
-					"videoId",
-					"videoTitle",
-					"videoThumbnailUrl",
-					"startTime",
-					"endTime",
-					"duration",
-					"creatorId",
-					"creatorName",
-					"isPublic",
-					"stats",
-					"createdAt",
-					"updatedAt",
-				);
+			const listQueryRef = applySorting(
+				applyFilters(
+					firestore.collection("audioButtons").select(...AUDIO_BUTTON_LIST_FIELDS),
+					onlyPublic,
+					videoId,
+				),
+				sortBy,
+			);
 
-			// フィルタとソートを適用
-			queryRef = applyFilters(queryRef, onlyPublic, videoId);
-			queryRef = applySorting(queryRef, sortBy);
+			// タグ/検索は Firestore で絞れないため全件取得 + in-memory。件数で打ち切ると
+			// 超過分が黙って結果から欠けるので上限は掛けない（SPR-322。read は公開ボタン件数に比例）
+			if (tags.length > 0 || search) {
+				const allButtons = await fetchAndConvertButtons(listQueryRef);
+				const tagFiltered = tags.length > 0 ? filterByTags(allButtons, tags) : allButtons;
+				const filteredButtons = search ? filterBySearch(tagFiltered, search) : tagFiltered;
 
-			// 総件数を取得するためのクエリ
-			const countQueryRef = applyFilters(firestore.collection("audioButtons"), onlyPublic, videoId);
+				const startIdx = (page - 1) * limit;
+				const endIdx = startIdx + limit;
+				return {
+					audioButtons: filteredButtons.slice(startIdx, endIdx),
+					totalCount: filteredButtons.length,
+					hasMore: endIdx < filteredButtons.length,
+				};
+			}
 
-			// 総件数を取得
-			const countSnapshot = await countQueryRef.count().get();
+			const countSnapshot = await applyFilters(
+				firestore.collection("audioButtons"),
+				onlyPublic,
+				videoId,
+			)
+				.count()
+				.get();
 			const totalCount = countSnapshot.data().count;
 
-			// ページネーション計算
 			const offset = (page - 1) * limit;
-			const hasMore = offset + limit < totalCount;
-
-			// データ取得（offsetを使用）
-			queryRef = queryRef.limit(limit) as typeof queryRef;
+			let queryRef = listQueryRef.limit(limit) as typeof listQueryRef;
 			if (offset > 0) {
 				const skipSnapshot = await queryRef.limit(offset).get();
 				if (skipSnapshot.docs.length > 0) {
@@ -147,94 +165,10 @@ export async function getAudioButtonsList(
 				}
 			}
 
-			const frontendButtons = await fetchAndConvertButtons(queryRef);
-
-			// 検索テキストでフィルタリング（メモリ内検索）
-			let finalButtons = frontendButtons;
-			let finalTotal = totalCount;
-			let finalHasMore = hasMore;
-
-			// タグフィルタリング
-			if (validatedQuery.tags && validatedQuery.tags.length > 0) {
-				let allQueryRef = firestore
-					.collection("audioButtons")
-					.select(
-						"id",
-						"buttonText",
-						"description",
-						"tags",
-						"videoId",
-						"videoTitle",
-						"videoThumbnailUrl",
-						"startTime",
-						"endTime",
-						"duration",
-						"creatorId",
-						"creatorName",
-						"isPublic",
-						"stats",
-						"createdAt",
-						"updatedAt",
-					);
-
-				allQueryRef = applyFilters(allQueryRef, onlyPublic, videoId);
-				allQueryRef = applySorting(allQueryRef, sortBy);
-
-				const allButtons = await fetchAndConvertButtons(allQueryRef);
-				const filteredButtons = filterByTags(allButtons, validatedQuery.tags);
-				const searchFiltered = search ? filterBySearch(filteredButtons, search) : filteredButtons;
-
-				const filteredTotal = searchFiltered.length;
-				const startIdx = (page - 1) * limit;
-				const endIdx = startIdx + limit;
-				const paginatedButtons = searchFiltered.slice(startIdx, endIdx);
-
-				finalButtons = paginatedButtons;
-				finalTotal = filteredTotal;
-				finalHasMore = endIdx < filteredTotal;
-			} else if (search) {
-				// 検索の場合は全データを取得してフィルタリング
-				let allQueryRef = firestore
-					.collection("audioButtons")
-					.select(
-						"id",
-						"buttonText",
-						"description",
-						"tags",
-						"videoId",
-						"videoTitle",
-						"videoThumbnailUrl",
-						"startTime",
-						"endTime",
-						"duration",
-						"creatorId",
-						"creatorName",
-						"isPublic",
-						"stats",
-						"createdAt",
-						"updatedAt",
-					);
-
-				allQueryRef = applyFilters(allQueryRef, onlyPublic, videoId);
-				allQueryRef = applySorting(allQueryRef, sortBy);
-
-				const allButtons = await fetchAndConvertButtons(allQueryRef);
-				const filteredButtons = filterBySearch(allButtons, search);
-
-				const filteredTotal = filteredButtons.length;
-				const startIdx = (page - 1) * limit;
-				const endIdx = startIdx + limit;
-				const paginatedButtons = filteredButtons.slice(startIdx, endIdx);
-
-				finalButtons = paginatedButtons;
-				finalTotal = filteredTotal;
-				finalHasMore = endIdx < filteredTotal;
-			}
-
 			return {
-				audioButtons: finalButtons,
-				totalCount: finalTotal,
-				hasMore: finalHasMore,
+				audioButtons: await fetchAndConvertButtons(queryRef),
+				totalCount,
+				hasMore: offset + limit < totalCount,
 			};
 		},
 		{

@@ -13,7 +13,6 @@ function createMockAudioButton(
 	const defaultData = {
 		id: "test-button-123",
 		title: "テスト音声ボタン",
-		description: "これはテスト用の音声ボタンです",
 		tags: ["タグ1", "タグ2", "タグ3"],
 		sourceVideoId: "dQw4w9WgXcQ",
 		sourceVideoTitle: "テスト動画タイトル",
