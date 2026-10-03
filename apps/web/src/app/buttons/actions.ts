@@ -179,7 +179,6 @@ export async function getAudioButtonsList(
 
 				allQueryRef = applyFilters(allQueryRef, onlyPublic, videoId);
 				allQueryRef = applySorting(allQueryRef, sortBy);
-				allQueryRef = allQueryRef.limit(1000) as typeof allQueryRef;
 
 				const allButtons = await fetchAndConvertButtons(allQueryRef);
 				const filteredButtons = filterByTags(allButtons, validatedQuery.tags);
@@ -218,7 +217,6 @@ export async function getAudioButtonsList(
 
 				allQueryRef = applyFilters(allQueryRef, onlyPublic, videoId);
 				allQueryRef = applySorting(allQueryRef, sortBy);
-				allQueryRef = allQueryRef.limit(1000) as typeof allQueryRef;
 
 				const allButtons = await fetchAndConvertButtons(allQueryRef);
 				const filteredButtons = filterBySearch(allButtons, search);
