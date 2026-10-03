@@ -466,6 +466,8 @@ describe("Audio Button Server Actions", () => {
 
 			expect(result.success).toBe(true);
 			expect(mockWhere).toHaveBeenCalledWith("isPublic", "==", true);
+			// タグ絞り込みも全件取得側に件数上限を掛けない（SPR-322）
+			expect(mockLimit.mock.calls).toEqual([[20]]);
 		});
 
 		it("検索パラメータが正しく処理される", async () => {
@@ -503,15 +505,20 @@ describe("Audio Button Server Actions", () => {
 			});
 
 			const result = await getAudioButtonsList({
-				search: "検索キーワード",
+				search: "テスト音声",
 				limit: 20,
 				sortBy: "newest",
 				onlyPublic: true,
 			});
 
 			expect(result.success).toBe(true);
-			// 検索はメモリ上で行われるため、全データを取得するlimitが使用される
-			expect(mockLimit).toHaveBeenCalledWith(1000);
+			if (result.success) {
+				expect(result.data.audioButtons.map((b) => b.id)).toEqual(["audio-1"]);
+				expect(result.data.totalCount).toBe(1);
+			}
+			// 検索はメモリ上で行うため、全件取得側に件数上限を掛けない（掛けると超過分が黙って欠ける＝SPR-322）。
+			// limit は基本経路のページサイズ 1 回のみ
+			expect(mockLimit.mock.calls).toEqual([[20]]);
 		});
 
 		it("無効なクエリでエラーが返される", async () => {
