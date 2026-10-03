@@ -1,6 +1,6 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { useAudioButtonEditor } from "../use-audio-button-editor";
+import { useAudioButtonCreator } from "../use-audio-button-creator";
 
 // I/O ショートカットの検証対象は「現在再生位置を開始/終了に設定する」動作のため、
 // プレイヤー由来の currentTime を固定値で返すモックにする（jsdom に実プレイヤーは無い）
@@ -36,7 +36,7 @@ function pressKey(key: string, options: KeyboardEventInit = {}) {
 	});
 }
 
-describe("useAudioButtonEditor の I/O ショートカット（SPR-266）", () => {
+describe("useAudioButtonCreator の I/O ショートカット（SPR-266）", () => {
 	const config = { videoId: "dQw4w9WgXcQ", videoTitle: "テスト動画", videoDuration: 600 };
 
 	beforeEach(() => {
@@ -45,7 +45,7 @@ describe("useAudioButtonEditor の I/O ショートカット（SPR-266）", () =
 	});
 
 	it("I キーで現在再生位置が開始時間になる", () => {
-		const { result } = renderHook(() => useAudioButtonEditor(config));
+		const { result } = renderHook(() => useAudioButtonCreator(config));
 
 		pressKey("i");
 
@@ -53,7 +53,7 @@ describe("useAudioButtonEditor の I/O ショートカット（SPR-266）", () =
 	});
 
 	it("O キーで現在再生位置が終了時間になる（大文字も可）", () => {
-		const { result } = renderHook(() => useAudioButtonEditor(config));
+		const { result } = renderHook(() => useAudioButtonCreator(config));
 
 		pressKey("O");
 
@@ -61,7 +61,7 @@ describe("useAudioButtonEditor の I/O ショートカット（SPR-266）", () =
 	});
 
 	it("入力欄フォーカス中は無視される", () => {
-		const { result } = renderHook(() => useAudioButtonEditor(config));
+		const { result } = renderHook(() => useAudioButtonCreator(config));
 		const input = document.createElement("input");
 		document.body.appendChild(input);
 
@@ -74,7 +74,7 @@ describe("useAudioButtonEditor の I/O ショートカット（SPR-266）", () =
 	});
 
 	it("修飾キー付き・キーリピートは無視される", () => {
-		const { result } = renderHook(() => useAudioButtonEditor(config));
+		const { result } = renderHook(() => useAudioButtonCreator(config));
 
 		pressKey("i", { metaKey: true });
 		pressKey("i", { ctrlKey: true });
@@ -86,7 +86,7 @@ describe("useAudioButtonEditor の I/O ショートカット（SPR-266）", () =
 	});
 
 	it("処理中（作成/更新中）は無効化される", () => {
-		const { result } = renderHook(() => useAudioButtonEditor(config));
+		const { result } = renderHook(() => useAudioButtonCreator(config));
 
 		act(() => {
 			result.current.setState.setIsProcessing(true);
@@ -97,7 +97,7 @@ describe("useAudioButtonEditor の I/O ショートカット（SPR-266）", () =
 	});
 });
 
-describe("useAudioButtonEditor の試聴（SPR-288）", () => {
+describe("useAudioButtonCreator の試聴（SPR-288）", () => {
 	const config = {
 		videoId: "dQw4w9WgXcQ",
 		videoTitle: "テスト動画",
@@ -111,7 +111,7 @@ describe("useAudioButtonEditor の試聴（SPR-288）", () => {
 	});
 
 	it("ループ再生はプリロール込みの範囲で始まる（既定 ON）", () => {
-		const { result } = renderHook(() => useAudioButtonEditor(config));
+		const { result } = renderHook(() => useAudioButtonCreator(config));
 
 		act(() => {
 			result.current.audition.onToggleLoop();
@@ -122,7 +122,7 @@ describe("useAudioButtonEditor の試聴（SPR-288）", () => {
 	});
 
 	it("プリロール OFF では開始位置ちょうどから鳴る", () => {
-		const { result } = renderHook(() => useAudioButtonEditor(config));
+		const { result } = renderHook(() => useAudioButtonCreator(config));
 
 		act(() => {
 			result.current.audition.onTogglePreroll();
@@ -137,7 +137,7 @@ describe("useAudioButtonEditor の試聴（SPR-288）", () => {
 
 	it("ループ中のトグルは停止になる", () => {
 		mockClipPlayback = { isActive: true, isLoop: true };
-		const { result } = renderHook(() => useAudioButtonEditor(config));
+		const { result } = renderHook(() => useAudioButtonCreator(config));
 
 		act(() => {
 			result.current.audition.onToggleLoop();
@@ -148,7 +148,7 @@ describe("useAudioButtonEditor の試聴（SPR-288）", () => {
 	});
 
 	it("頭を聴く: 開始境界の前後を1回再生", () => {
-		const { result } = renderHook(() => useAudioButtonEditor(config));
+		const { result } = renderHook(() => useAudioButtonCreator(config));
 
 		act(() => {
 			result.current.audition.onPlayHead();
@@ -159,7 +159,7 @@ describe("useAudioButtonEditor の試聴（SPR-288）", () => {
 	});
 
 	it("末尾を聴く: 終了境界の手前を1回再生して境界で止める", () => {
-		const { result } = renderHook(() => useAudioButtonEditor(config));
+		const { result } = renderHook(() => useAudioButtonCreator(config));
 
 		act(() => {
 			result.current.audition.onPlayTail();
@@ -170,7 +170,7 @@ describe("useAudioButtonEditor の試聴（SPR-288）", () => {
 	});
 
 	it("境界を調整するとプレイヤーが追従シークする（trailing throttle）", async () => {
-		const { result } = renderHook(() => useAudioButtonEditor(config));
+		const { result } = renderHook(() => useAudioButtonCreator(config));
 
 		act(() => {
 			result.current.timeAdjustment.adjustStartTime(1);
@@ -183,7 +183,7 @@ describe("useAudioButtonEditor の試聴（SPR-288）", () => {
 
 	it("ループ試聴中の境界調整は範囲の正本にも即時反映される", () => {
 		mockClipPlayback = { isActive: true, isLoop: true };
-		const { result } = renderHook(() => useAudioButtonEditor(config));
+		const { result } = renderHook(() => useAudioButtonCreator(config));
 
 		act(() => {
 			result.current.timeAdjustment.adjustEndTime(2);

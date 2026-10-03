@@ -74,12 +74,12 @@ export interface CreateAudioButtonInput {
 }
 
 /**
- * Input type for updating an existing AudioButton
+ * Input type for updating an existing AudioButton.
+ * 切り抜き範囲（startTime / endTime）は持たない＝作成後に変更できない。
+ * いいね・お気に入りは「その音」に付くため、あとから音を差し替えられないようにしている
  */
 export interface UpdateAudioButtonInput {
 	buttonText?: string;
-	startTime?: number;
-	endTime?: number;
 	tags?: string[];
 	isPublic?: boolean;
 }

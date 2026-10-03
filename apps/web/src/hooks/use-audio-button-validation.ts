@@ -47,7 +47,7 @@ export function useAudioButtonValidation({
 	}, [title, startTime, endTime, tags]);
 }
 
-function validateTitle(title: string): string | null {
+export function validateTitle(title: string): string | null {
 	const trimmedTitle = title.trim();
 	if (trimmedTitle.length === 0) {
 		return "タイトルを入力してください";
@@ -75,7 +75,7 @@ function validateDuration(duration: number): string | null {
 	return null;
 }
 
-function validateTags(tags: string[]): string | null {
+export function validateTags(tags: string[]): string | null {
 	if (tags.length > 10) {
 		return "タグは10個まで設定できます";
 	}

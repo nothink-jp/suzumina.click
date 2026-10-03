@@ -1,7 +1,5 @@
-import { parseDurationToSeconds } from "@suzumina.click/shared-types";
 import { notFound, redirect } from "next/navigation";
 import { getAudioButtonById } from "@/app/buttons/actions";
-import { getVideoById } from "@/app/videos/actions";
 import { AudioButtonEditor } from "@/components/audio/audio-button-editor";
 import { getCurrentUser } from "@/lib/auth/server";
 
@@ -36,11 +34,7 @@ export default async function AudioButtonEditPage({ params }: AudioButtonEditPag
 		notFound();
 	}
 
-	// 動画情報を取得して実際の動画長を取得
-	const video = await getVideoById(audioButton.videoId);
-	const videoDuration = video ? parseDurationToSeconds(video.duration) : 600; // 取得できない場合は600秒をデフォルト値に
-
-	return <AudioButtonEditor audioButton={audioButton} videoDuration={videoDuration} />;
+	return <AudioButtonEditor audioButton={audioButton} />;
 }
 
 export async function generateMetadata({ params }: AudioButtonEditPageProps) {

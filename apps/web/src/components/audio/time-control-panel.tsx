@@ -206,7 +206,7 @@ function BoundaryNudgeRow({
 /**
  * 切り抜き範囲の操作パネル（SPR-288 で全面刷新）。
  * トリムレーン（ズーム可能な拡大タイムライン）＋境界微調整＋ループ試聴を1枚にまとめる。
- * キーボード: I/O は use-audio-button-editor 側、←→/Space/[ ] はこのパネルが持つ。
+ * キーボード: I/O は use-audio-button-creator 側、←→/Space/[ ] はこのパネルが持つ。
  */
 export function TimeControlPanel({
 	startTime,

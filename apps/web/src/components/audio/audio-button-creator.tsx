@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { deleteButtonDraft } from "@/actions/button-drafts";
 import { createAudioButton } from "@/app/buttons/actions";
-import { useAudioButtonEditor } from "@/hooks/use-audio-button-editor";
+import { useAudioButtonCreator } from "@/hooks/use-audio-button-creator";
 import { refreshDraftCount } from "@/hooks/use-draft-count";
 import { useVideoTranscript } from "@/hooks/use-video-transcript";
 import { CREATE_ENTRY, type CreateEntry } from "@/lib/analytics/create-entry";
@@ -74,8 +74,8 @@ export function AudioButtonCreator({
 	const router = useRouter();
 	const user = useSession();
 
-	// 共通の音声ボタン編集ロジック
-	const editor = useAudioButtonEditor({
+	// 作成ロジック（範囲調整・試聴・I/O キー）
+	const editor = useAudioButtonCreator({
 		videoId,
 		videoTitle,
 		videoDuration,
