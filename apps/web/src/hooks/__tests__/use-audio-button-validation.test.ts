@@ -11,7 +11,6 @@ describe("useAudioButtonValidation", () => {
 					startTime: 10,
 					endTime: 20,
 					tags: ["tag1", "tag2"],
-					description: "有効な説明",
 				}),
 			);
 
@@ -21,7 +20,6 @@ describe("useAudioButtonValidation", () => {
 			expect(result.current.errors.timeRange).toBe(null);
 			expect(result.current.errors.duration).toBe(null);
 			expect(result.current.errors.tags).toBe(null);
-			expect(result.current.errors.description).toBe(null);
 		});
 
 		it("最小値で有効な場合", () => {
@@ -31,7 +29,6 @@ describe("useAudioButtonValidation", () => {
 					startTime: 0,
 					endTime: 1,
 					tags: [],
-					description: "",
 				}),
 			);
 
@@ -46,7 +43,6 @@ describe("useAudioButtonValidation", () => {
 					startTime: 0,
 					endTime: 60,
 					tags: Array.from({ length: 10 }, (_, i) => `tag${i}`),
-					description: "a".repeat(500),
 				}),
 			);
 
@@ -193,22 +189,6 @@ describe("useAudioButtonValidation", () => {
 
 			expect(result.current.isValid).toBe(false);
 			expect(result.current.errors.tags).toBe("タグは1〜30文字で入力してください");
-		});
-	});
-
-	describe("説明のバリデーション", () => {
-		it("500文字を超える説明はエラーになる", () => {
-			const { result } = renderHook(() =>
-				useAudioButtonValidation({
-					title: "有効なタイトル",
-					startTime: 10,
-					endTime: 20,
-					description: "a".repeat(501),
-				}),
-			);
-
-			expect(result.current.isValid).toBe(false);
-			expect(result.current.errors.description).toBe("説明は500文字以下で入力してください");
 		});
 	});
 

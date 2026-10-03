@@ -15,7 +15,6 @@ const FOLLOW_SEEK_DELAY_MS = 200;
 
 export interface AudioButtonEditorState {
 	buttonText: string;
-	description: string;
 	tags: string[];
 	isProcessing: boolean;
 	error: string;
@@ -45,7 +44,6 @@ export interface AudioButtonEditorResult {
 	state: AudioButtonEditorState;
 	setState: {
 		setButtonText: (buttonText: string) => void;
-		setDescription: (description: string) => void;
 		setTags: (tags: string[]) => void;
 		setIsProcessing: (processing: boolean) => void;
 		setError: (error: string) => void;
@@ -85,7 +83,6 @@ export function useAudioButtonEditor(config: AudioButtonEditorConfig): AudioButt
 
 	// 基本情報の状態（編集モードの場合は既存データで初期化）
 	const [buttonText, setButtonText] = useState(audioButton?.buttonText || "");
-	const [description, setDescription] = useState(audioButton?.description || "");
 	const [tags, setTags] = useState<string[]>(audioButton?.tags || []);
 	const [isProcessing, setIsProcessing] = useState(false);
 	const [error, setError] = useState("");
@@ -208,7 +205,6 @@ export function useAudioButtonEditor(config: AudioButtonEditorConfig): AudioButt
 		startTime: timeAdjustment.startTime,
 		endTime: timeAdjustment.endTime,
 		tags,
-		description,
 	});
 
 	// I/O キーで再生位置を開始/終了時間に設定（SPR-266 区間指定UX）。ガードの正本は matchShortcutKey。
@@ -249,19 +245,11 @@ export function useAudioButtonEditor(config: AudioButtonEditorConfig): AudioButt
 
 		return (
 			buttonText !== audioButton.buttonText ||
-			description !== (audioButton.description || "") ||
 			JSON.stringify(tags) !== JSON.stringify(audioButton.tags || []) ||
 			timeAdjustment.startTime !== audioButton.startTime ||
 			timeAdjustment.endTime !== audioButton.endTime
 		);
-	}, [
-		audioButton,
-		buttonText,
-		description,
-		tags,
-		timeAdjustment.startTime,
-		timeAdjustment.endTime,
-	]);
+	}, [audioButton, buttonText, tags, timeAdjustment.startTime, timeAdjustment.endTime]);
 
 	useEffect(() => {
 		return () => {
@@ -272,14 +260,12 @@ export function useAudioButtonEditor(config: AudioButtonEditorConfig): AudioButt
 	return {
 		state: {
 			buttonText,
-			description,
 			tags,
 			isProcessing,
 			error,
 		},
 		setState: {
 			setButtonText,
-			setDescription,
 			setTags,
 			setIsProcessing,
 			setError,

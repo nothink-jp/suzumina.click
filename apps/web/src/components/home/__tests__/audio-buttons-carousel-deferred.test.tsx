@@ -23,7 +23,6 @@ const buildAudioButton = (id: string, title: string): AudioButtonPlainObject =>
 	({
 		id,
 		buttonText: title,
-		description: "",
 		tags: [],
 		sourceVideoId: "video-1",
 		sourceVideoTitle: "video title",

@@ -27,7 +27,6 @@ vi.mock("../../lib/youtube-player-pool", () => ({
 const mockAudioButton: AudioButtonType = {
 	id: "test-audio-button",
 	buttonText: "テスト音声ボタン",
-	description: "テスト用の音声ボタンです",
 	tags: ["テスト"],
 	videoId: "test-video-id",
 	videoTitle: "テスト動画",

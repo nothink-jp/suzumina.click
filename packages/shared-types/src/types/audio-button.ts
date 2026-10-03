@@ -10,7 +10,6 @@
  */
 export interface AudioButtonDocument {
 	buttonText: string; // What the button displays
-	description?: string; // Optional description
 	videoId: string; // YouTube video ID
 	videoTitle: string; // Video title for reference
 	videoThumbnailUrl?: string;

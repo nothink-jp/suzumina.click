@@ -48,11 +48,7 @@ export function applySorting(
  */
 export function filterBySearch(buttons: AudioButton[], search: string): AudioButton[] {
 	const searchLower = search.toLowerCase();
-	return buttons.filter((button) => {
-		const titleMatch = button.buttonText.toLowerCase().includes(searchLower);
-		const descriptionMatch = button.description?.toLowerCase().includes(searchLower) || false;
-		return titleMatch || descriptionMatch;
-	});
+	return buttons.filter((button) => button.buttonText.toLowerCase().includes(searchLower));
 }
 
 /**

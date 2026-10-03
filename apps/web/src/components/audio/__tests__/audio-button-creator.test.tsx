@@ -137,9 +137,8 @@ describe("AudioButtonCreator - Refactored Architecture", () => {
 			expect(screen.getByText("開始時間に設定")).toBeInTheDocument();
 			expect(screen.getByText("終了時間に設定")).toBeInTheDocument();
 
-			// Basic Info Panel（説明は既定で折りたたまれている・SPR-290）
+			// Basic Info Panel
 			expect(screen.getByPlaceholderText("例: おはようございます")).toBeInTheDocument();
-			expect(screen.getByRole("button", { name: /説明を追加/ })).toBeInTheDocument();
 
 			// Usage Guide
 			expect(screen.getByText("動画を見ながら範囲を決めてください")).toBeInTheDocument();

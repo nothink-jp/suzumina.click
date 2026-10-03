@@ -84,14 +84,8 @@ export function AudioButtonCreator({
 
 	const { state, setState, youtubeManager, timeAdjustment, timeHandlers, audition, validation } =
 		editor;
-	const { buttonText, description, tags, isProcessing: isCreating, error } = state;
-	const {
-		setButtonText,
-		setDescription,
-		setTags,
-		setIsProcessing: setIsCreating,
-		setError,
-	} = setState;
+	const { buttonText, tags, isProcessing: isCreating, error } = state;
+	const { setButtonText, setTags, setIsProcessing: setIsCreating, setError } = setState;
 	const isValid = validation.isValid;
 
 	// 連続仕上げの状態（SPR-266 第2段）。activeDraftId が「今仕上げている下書き」の正本で、
@@ -126,7 +120,6 @@ export function AudioButtonCreator({
 			const end = Math.min(start + 10, duration);
 			setActiveDraftId(next.id);
 			setButtonText("");
-			setDescription("");
 			setTags([]);
 			setError("");
 			setStartTime(start);
@@ -137,7 +130,6 @@ export function AudioButtonCreator({
 			playerDuration,
 			videoDuration,
 			setButtonText,
-			setDescription,
 			setTags,
 			setError,
 			setStartTime,
@@ -224,14 +216,13 @@ export function AudioButtonCreator({
 				setActiveDraftId(undefined);
 				setLastCreated({ id: createdId, buttonText: createdText });
 				setButtonText("");
-				setDescription("");
 				setTags([]);
 				setIsCreating(false);
 				return;
 			}
 			window.location.href = `/buttons/${createdId}`;
 		},
-		[remainingDrafts, advanceToDraft, setIsCreating, setButtonText, setDescription, setTags],
+		[remainingDrafts, advanceToDraft, setIsCreating, setButtonText, setTags],
 	);
 
 	// 作成処理。continueAfter=true は「作成して次を切り抜く」（SPR-290）
@@ -305,7 +296,6 @@ export function AudioButtonCreator({
 				validation.errors.timeRange ??
 				validation.errors.duration ??
 				validation.errors.tags ??
-				validation.errors.description ??
 				null);
 
 	return (
@@ -414,10 +404,8 @@ export function AudioButtonCreator({
 
 							<BasicInfoPanel
 								title={buttonText}
-								description={description}
 								tags={tags}
 								onTitleChange={setButtonText}
-								onDescriptionChange={setDescription}
 								onTagsChange={setTags}
 								disabled={isCreating}
 								metaSuggestion={

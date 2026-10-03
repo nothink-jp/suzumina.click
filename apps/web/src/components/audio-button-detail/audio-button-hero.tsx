@@ -9,7 +9,7 @@ import { formatJSTDateSlash } from "@/utils/date-format";
 import { useAudioButtonHeroState } from "./use-audio-button-hero-state";
 
 /**
- * 詳細ページのヒーロー本体（SPR-255）。再生ヒーロー L + メタピル行 + description + アクションピル行。
+ * 詳細ページのヒーロー本体（SPR-255）。再生ヒーロー L + メタピル行 + アクションピル行。
  * per-user 状態（お気に入り/高評価）は SSR に焼かず client で自己解決する（純公開 shell・SPR-223）。
  * 再生回数は再生開始時に楽観的に +1 表示する（デザインの「N 回目の再生中…」）。
  */
@@ -61,12 +61,6 @@ export function AudioButtonHero({ audioButton }: AudioButtonHeroProps) {
 					isPlaying={isPlaying}
 				/>
 			</div>
-
-			{audioButton.description?.trim() && (
-				<p className="mx-auto mt-4 max-w-[560px] text-[13.5px] leading-[1.7] text-muted-foreground line-clamp-2">
-					{audioButton.description}
-				</p>
-			)}
 
 			<div className="mt-[18px] sm:mt-[22px]">
 				<div className="hidden sm:block">

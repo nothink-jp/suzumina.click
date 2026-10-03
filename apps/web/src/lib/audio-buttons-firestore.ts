@@ -80,7 +80,6 @@ export function convertToAudioButtonPlainObject(
 	return {
 		id: data.id || "",
 		buttonText: data.buttonText,
-		description: data.description,
 		tags: data.tags || [],
 		videoId: data.videoId,
 		videoTitle: data.videoTitle,

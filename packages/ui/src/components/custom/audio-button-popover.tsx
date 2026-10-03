@@ -53,28 +53,7 @@ function PopoverTitle({
 	);
 }
 
-function PopoverDescription({
-	description,
-	searchQuery,
-	highlightClassName,
-}: {
-	description: string | undefined;
-	searchQuery?: string;
-	highlightClassName?: string;
-}) {
-	if (!description) return null;
-	return (
-		<p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-			<PopoverTitle
-				text={description}
-				searchQuery={searchQuery}
-				highlightClassName={highlightClassName}
-			/>
-		</p>
-	);
-}
-
-// 見出し層: タイトル + 秒数/再生数チップ + 説明
+// 見出し層: タイトル + 秒数/再生数チップ
 function PopoverHeader({
 	audioButton,
 	duration,
@@ -102,11 +81,6 @@ function PopoverHeader({
 				</span>
 				<span>再生 {audioButton.stats.playCount}回</span>
 			</div>
-			<PopoverDescription
-				description={audioButton.description}
-				searchQuery={searchQuery}
-				highlightClassName={highlightClassName}
-			/>
 		</div>
 	);
 }

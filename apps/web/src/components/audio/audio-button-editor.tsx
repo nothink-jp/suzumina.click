@@ -38,14 +38,8 @@ export function AudioButtonEditor({ audioButton, videoDuration = 600 }: AudioBut
 		validation,
 		hasChanges,
 	} = editor;
-	const { buttonText, description, tags, isProcessing: isUpdating, error } = state;
-	const {
-		setButtonText,
-		setDescription,
-		setTags,
-		setIsProcessing: setIsUpdating,
-		setError,
-	} = setState;
+	const { buttonText, tags, isProcessing: isUpdating, error } = state;
+	const { setButtonText, setTags, setIsProcessing: setIsUpdating, setError } = setState;
 	const isValid = validation.isValid;
 
 	// 更新処理
@@ -133,10 +127,8 @@ export function AudioButtonEditor({ audioButton, videoDuration = 600 }: AudioBut
 						<div className="lg:col-span-1 xl:col-span-1 space-y-4">
 							<BasicInfoPanel
 								title={buttonText}
-								description={description}
 								tags={tags}
 								onTitleChange={setButtonText}
-								onDescriptionChange={setDescription}
 								onTagsChange={setTags}
 								disabled={isUpdating}
 							/>

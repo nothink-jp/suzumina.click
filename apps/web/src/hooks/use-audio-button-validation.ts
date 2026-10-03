@@ -5,7 +5,6 @@ export interface AudioButtonValidationProps {
 	startTime: number;
 	endTime: number;
 	tags?: string[];
-	description?: string;
 }
 
 export interface AudioButtonValidationResult {
@@ -16,7 +15,6 @@ export interface AudioButtonValidationResult {
 		timeRange: string | null;
 		duration: string | null;
 		tags: string | null;
-		description: string | null;
 	};
 }
 
@@ -28,7 +26,6 @@ export function useAudioButtonValidation({
 	startTime,
 	endTime,
 	tags = [],
-	description = "",
 }: AudioButtonValidationProps): AudioButtonValidationResult {
 	return useMemo(() => {
 		const duration = Math.round((endTime - startTime) * 10) / 10;
@@ -38,7 +35,6 @@ export function useAudioButtonValidation({
 			timeRange: validateTimeRange(startTime, endTime),
 			duration: validateDuration(duration),
 			tags: validateTags(tags),
-			description: validateDescription(description),
 		};
 
 		const isValid = Object.values(errors).every((error) => error === null);
@@ -48,7 +44,7 @@ export function useAudioButtonValidation({
 			duration,
 			errors,
 		};
-	}, [title, startTime, endTime, tags, description]);
+	}, [title, startTime, endTime, tags]);
 }
 
 function validateTitle(title: string): string | null {
@@ -89,12 +85,5 @@ function validateTags(tags: string[]): string | null {
 		return "タグは1〜30文字で入力してください";
 	}
 
-	return null;
-}
-
-function validateDescription(description: string): string | null {
-	if (description.length > 500) {
-		return "説明は500文字以下で入力してください";
-	}
 	return null;
 }
