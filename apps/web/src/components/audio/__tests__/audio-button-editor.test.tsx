@@ -16,7 +16,7 @@ vi.mock("next/navigation", () => ({
 
 const mockPlayHero = vi.fn();
 vi.mock("@suzumina.click/ui/components/custom/play-hero", () => ({
-	PlayHero: (props: { onPlay?: () => void }) => {
+	PlayHero: (props: { onPlay?: () => void; audioButton: { buttonText: string } }) => {
 		mockPlayHero(props);
 		return <div data-testid="play-hero" />;
 	},
@@ -74,6 +74,19 @@ describe("AudioButtonEditor", () => {
 
 		expect(screen.getByTestId("play-hero")).toBeInTheDocument();
 		expect(mockPlayHero.mock.calls[0]?.[0].onPlay).toBeUndefined();
+	});
+
+	it("再生ボタンの見出しは入力中のタイトルを映し、空欄なら保存済みのタイトルに戻る", async () => {
+		const user = userEvent.setup();
+		render(<AudioButtonEditor audioButton={audioButton} />);
+		const titleInput = screen.getByPlaceholderText("例: おはようございます");
+		const lastTitle = () => mockPlayHero.mock.calls.at(-1)?.[0].audioButton.buttonText;
+
+		await user.clear(titleInput);
+		expect(lastTitle()).toBe("おはよう");
+
+		await user.type(titleInput, "こんばんは");
+		expect(lastTitle()).toBe("こんばんは");
 	});
 
 	it("変更が無いと保存できない", () => {

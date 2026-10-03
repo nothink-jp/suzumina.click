@@ -21,7 +21,8 @@ interface AudioButtonEditorProps {
 /**
  * 音声ボタンの編集画面。編集できるのはタイトルとタグだけ。
  * 切り抜き範囲は作成後に変更できない（いいね・お気に入りは「その音」に付くため。正本は UpdateAudioButtonInput）。
- * 範囲は確認用に表示し、試聴しても再生数には数えない（PlayHero に onPlay を渡さない）
+ * 範囲は確認用に表示し、試聴しても再生数には数えない（PlayHero に onPlay を渡さない）。
+ * 再生ボタンの見出しは入力中のタイトルで「保存後の見た目」を示す（空欄のあいだは保存済みのタイトル）
  */
 export function AudioButtonEditor({ audioButton }: AudioButtonEditorProps) {
 	const router = useRouter();
@@ -35,6 +36,7 @@ export function AudioButtonEditor({ audioButton }: AudioButtonEditorProps) {
 		buttonText !== audioButton.buttonText ||
 		JSON.stringify(tags) !== JSON.stringify(audioButton.tags || []);
 	const duration = audioButton.endTime - audioButton.startTime;
+	const preview = { ...audioButton, buttonText: buttonText.trim() || audioButton.buttonText };
 
 	const handleUpdate = async () => {
 		if (!isValid || !hasChanges) return;
@@ -81,7 +83,7 @@ export function AudioButtonEditor({ audioButton }: AudioButtonEditorProps) {
 
 					<div className="space-y-4">
 						<div className="bg-card border rounded-lg p-4 shadow-sm text-center">
-							<PlayHero audioButton={audioButton} size="M" />
+							<PlayHero audioButton={preview} size="M" />
 							<p className="mt-3 text-sm text-muted-foreground">
 								切り抜き範囲 {formatTimestamp(audioButton.startTime)} 〜{" "}
 								{formatTimestamp(audioButton.endTime)}（{duration.toFixed(1)}秒）
