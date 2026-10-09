@@ -38,7 +38,7 @@
 		"@suzumina.click/ui": "workspace:*",
 		"better-auth": "^1.6.33",
 		"lucide-react": "^1.48.0",
-		"next": "16.3.7",
+		"next": "16.3.8",
 		"react": "^19.3.0",
 		"react-dom": "^19.3.0",
 		"react-hook-form": "^7.89.0",

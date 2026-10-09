@@ -71,7 +71,9 @@ overrides:
   # 「引き上げ」ではなく floor の明示に変わっている。上限は置かない: 解決値が floor に張り付いていないので
   # 上限で検知する必要がなく（fast-uri / nanoid と事情が違う）、next が将来 ^0.36 を要求したときに
   # override が逆に上限として噛んで壊れる方が害が大きい。
-  sharp: ">=0.35.4"
+  # < 0.35.5: 同梱 librsvg の脆弱性（GHSA-wq5f-xc86-pv6w / CVE-2026-96889）。0.35.5 で修正。
+  # next 16.3.8 も ^0.35.4 のままで、lockfile の解決値が 0.35.4 に留まるため floor を引き上げ。
+  sharp: ">=0.35.5"
   # browserslist <=4.28.6: 信頼できない browserslist-stats.json の custom stats を normalizeStats が
   # 検証せずクラッシュ / prototype へ書き込む（GHSA-73wf-gq98-2v4g）、および query 結果キャッシュに
   # eviction が無く別クエリを重ねると OOM に至る（GHSA-c83g-rgw3-j3cx）。4.28.7 で修正。
@@ -87,6 +89,17 @@ overrides:
   # 1.14.5 で修正。依存元 google-gax（Firestore 経由＝本番ランタイム）は ^1.x を要求し範囲内だが、
   # 自然解決が 1.14.4 に留まるため引き上げ（以前は追従済みとして撤去していた override の復活）。
   "@grpc/grpc-js": ">=1.14.5"
+  # proxy-addr >=1.1.0 <2.0.8: IPv4-mapped IPv6 アドレスが trust の IPv4 サブネットに一致し、
+  # X-Forwarded-For の偽装でクライアント IP を詐称できる（GHSA-jqcg-44mw-7w3h, critical）。2.0.8 で修正。
+  # 依存元 express@5（functions-framework 経由＝本番ランタイム）は ^2.0.7 を要求し範囲内だが、
+  # 自然解決が 2.0.7 に留まるため引き上げ。
+  proxy-addr: ">=2.0.8"
+  # source-map-js >=1.0.0 <1.2.2: indexed source map の sections による event loop の DoS（GHSA-68fv-2mgg-jv7q）。
+  # 1.2.2 で修正。依存元 postcss は ^1.2.1 を要求し範囲内だが、自然解決が 1.2.1 に留まるため引き上げ。
+  source-map-js: ">=1.2.2"
+  # smol-toml <=1.8.0: parseKey が文書末尾まで再走査する二乗時間の parse（GHSA-r4xh-jqrq-34v2）。
+  # 1.9.0 で修正。依存元 knip は ^1.8.0 を要求し範囲内だが、自然解決が 1.8.0 に留まるため引き上げ。
+  smol-toml: ">=1.9.0"
 
 allowBuilds:
   esbuild: true
@@ -103,3 +116,13 @@ minimumReleaseAgeExclude:
   - '@typescript/native-preview-win32-arm64@7.0.0-dev.20260609.1'
   - '@typescript/native-preview-win32-x64@7.0.0-dev.20260609.1'
   - '@typescript/native-preview@7.0.0-dev.20260609.1'
+
+# audit ゲート（security-scan.yml）から外す advisory。修正版が存在せず override で逃がせないものだけを置く。
+# `--ignore-unfixable` で一括に外さないのは、将来の「修正版のない本番経路の脆弱性」まで黙らせないため。
+auditConfig:
+  ignoreGhsas:
+    # braces <=3.0.3: 深くネストしたパターンによるスタック枯渇 DoS。patched なし（最新が 3.0.3）。
+    # 唯一の経路は devDependency の @secretlint/secretlint-rule-pattern > micromatch（^3.0.3 を要求）で本番に入らない。
+    # micromatch に渡るのは .secretlintrc の filePathGlobs（未設定）だけで外部入力が届かない。
+    # braces に修正版が出たら override で引き上げ、ここから外す。
+    - GHSA-vfj7-8cjw-p6xm
