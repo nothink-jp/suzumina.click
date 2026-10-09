@@ -44,8 +44,9 @@ jobs:
         uses: ./.github/actions/setup-pnpm
       
       # PR を止めるゲート（moderate 以上）。該当があれば一覧はこのステップのログに出る。
-      # audit の結果は lockfile だけで決まるので、lockfile を変える PR はこの workflow の paths で
-      # 過不足なく拾える（PR タイトルの文字列で判定するより確実）。schedule / main push でも赤くなる＝新規 CVE の通知になる。
+      # audit の結果は lockfile と pnpm-workspace.yaml の auditConfig.ignoreGhsas（除外する advisory の正本）で決まる。
+      # どちらもこの workflow の paths に入っているので、結果を変える PR は過不足なく拾える
+      # （PR タイトルの文字列で判定するより確実）。schedule / main push でも赤くなる＝新規 CVE の通知になる。
       - name: Audit gate (moderate+)
         run: pnpm audit --audit-level moderate
 
