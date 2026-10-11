@@ -69,8 +69,8 @@ importers:
         specifier: ^5.0.5
         version: 5.0.5(supports-color@10.2.2)
       '@googleapis/youtube':
-        specifier: ^39.0.1
-        version: 39.0.1(supports-color@10.2.2)
+        specifier: ^40.0.0
+        version: 40.0.0(supports-color@10.2.2)
     devDependencies:
       '@suzumina.click/shared-types':
         specifier: workspace:*
@@ -840,8 +840,8 @@ packages:
     engines: {node: '>=10.0.0'}
     hasBin: true
 
-  '@googleapis/youtube@39.0.1':
-    resolution: {integrity: sha512-k6G0U/EeCrhzC18tguCLL9xMiEM/Z/xOOsOha+BC9oo30njyX6TaODZEHjz93DdYa1ouW32QZSybqvZadxYDiw==}
+  '@googleapis/youtube@40.0.0':
+    resolution: {integrity: sha512-t6arIbY75ZxbryTCMkKiV2jCcRzHaUk/dS1RjR6HAewkbI3HobnlaSWqaxiQKRCxqswXq02aeBS8/I+dW10qvw==}
     engines: {node: '>=22.0.0'}
 
   '@grpc/grpc-js@1.14.5':
@@ -5266,7 +5266,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@googleapis/youtube@39.0.1(supports-color@10.2.2)':
+  '@googleapis/youtube@40.0.0(supports-color@10.2.2)':
     dependencies:
       googleapis-common: 9.1.0(supports-color@10.2.2)
     transitivePeerDependencies:
