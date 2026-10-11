@@ -21,12 +21,12 @@
 		"chromatic": "chromatic --build-script-name=build-storybook --only-changed"
 	},
 	"dependencies": {
-		"@base-ui/react": "^1.8.0",
+		"@base-ui/react": "^1.9.0",
 		"@suzumina.click/shared-types": "workspace:*",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
 		"embla-carousel-react": "8.6.0",
-		"lucide-react": "^1.52.0",
+		"lucide-react": "^1.54.0",
 		"recharts": "3.10.1",
 		"sonner": "^2.0.8",
 		"tailwind-merge": "^3.7.0",
