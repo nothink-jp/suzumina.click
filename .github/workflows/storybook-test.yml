@@ -22,6 +22,7 @@ jobs:
   changes:
     name: Detect Changes
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       ui: ${{ steps.changes.outputs.ui }}
     steps:

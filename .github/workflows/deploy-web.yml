@@ -4,10 +4,18 @@ on:
   push:
     branches:
       - main
+    # イメージの中身に効くものを入れる。lockfile / pnpm-workspace.yaml（overrides の正本）/
+    # ルート package.json だけを変える依存の修正（#1001 の脆弱性 override 等）でもイメージを作り直すため。
+    # typescript-config は全パッケージの tsconfig が extends し、.dockerignore はビルドコンテキストを決める。
     paths:
       - 'apps/web/**'
       - 'packages/shared-types/**'
       - 'packages/ui/**'
+      - 'packages/typescript-config/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - '.dockerignore'
       - '.github/workflows/deploy-web.yml'
   
   # Manual triggering
@@ -16,6 +24,15 @@ on:
 permissions:
   contents: read
   id-token: write
+
+# 連続マージで run が並行すると、gcloud run deploy の完了順しだいで古いコミットのイメージが
+# 最後に載り本番が巻き戻る（2026-10-13 に #1006 / #1005 が並行実行。このときは偶然順序どおり）。
+# deploy-functions.yml と同じく直列化する。cancel-in-progress: false は実行中の run を打ち切らない
+# （デプロイ途中での中断を避ける）。待機中の run は後続 push で置き換わるが、最後に main の最新が
+# デプロイされればよいので問題ない。
+concurrency:
+  group: deploy-web-${{ github.ref }}
+  cancel-in-progress: false
 
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}

@@ -49,6 +49,7 @@ jobs:
     # push(main) だけ paths-filter で絞る。PR はラベル、workflow_dispatch は常時実行なので判定不要。
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       ui: ${{ steps.changes.outputs.ui }}
     steps:

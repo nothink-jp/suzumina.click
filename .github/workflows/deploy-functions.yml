@@ -4,9 +4,16 @@ on:
   push:
     branches:
       - main
+    # ビルド成果物と本番依存に効くものを入れる。pnpm deploy が切り出す lockfile には overrides が
+    # 解決済みで載るため、lockfile / pnpm-workspace.yaml / ルート package.json だけを変える依存の修正でも
+    # 再デプロイが要る（#1001 の proxy-addr override は functions に触れず、デプロイが起動しなかった）。
     paths:
       - 'apps/functions/**'
       - 'packages/shared-types/**'
+      - 'packages/typescript-config/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
       - '.github/workflows/deploy-functions.yml'
   workflow_dispatch:
 
