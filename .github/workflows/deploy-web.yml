@@ -17,6 +17,15 @@ permissions:
   contents: read
   id-token: write
 
+# 連続マージで run が並行すると、gcloud run deploy の完了順しだいで古いコミットのイメージが
+# 最後に載り本番が巻き戻る（2026-10-13 に #1006 / #1005 が並行実行。このときは偶然順序どおり）。
+# deploy-functions.yml と同じく直列化する。cancel-in-progress: false は実行中の run を打ち切らない
+# （デプロイ途中での中断を避ける）。待機中の run は後続 push で置き換わるが、最後に main の最新が
+# デプロイされればよいので問題ない。
+concurrency:
+  group: deploy-web-${{ github.ref }}
+  cancel-in-progress: false
+
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   REGION: asia-northeast1
