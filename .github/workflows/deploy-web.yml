@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-    # Docker ビルドが読むものは全部入れる。lockfile / pnpm-workspace.yaml（overrides の正本）/
+    # イメージの中身に効くものを入れる。lockfile / pnpm-workspace.yaml（overrides の正本）/
     # ルート package.json だけを変える依存の修正（#1001 の脆弱性 override 等）でもイメージを作り直すため。
     # typescript-config は全パッケージの tsconfig が extends し、.dockerignore はビルドコンテキストを決める。
     paths:
