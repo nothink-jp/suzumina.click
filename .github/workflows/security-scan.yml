@@ -25,6 +25,12 @@ on:
       - main
     paths: *scan-paths
 
+# PR の古い run は打ち切り、main（push / schedule）の run は打ち切らない（chromatic.yml と同じ方式）。
+# main のスキャン結果は SARIF として Security タブに残るため、途中で切ると記録が欠ける。
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 permissions:
   contents: read
   security-events: write
