@@ -367,6 +367,47 @@ resource "google_project_iam_member" "terraform_apply_sa_roles" {
 }
 
 # ------------------------------------------------------------------------------
+# Claude Code クラウドセッション用 read-only サービスアカウント
+# ------------------------------------------------------------------------------
+# アラート調査（メトリクス・ログ・Cloud Run の状態確認）をクラウドセッションから行うための identity。
+# クラウドセッションは WIF で assume できないため、この SA だけは**キー認証**になる。
+#
+# キーは terraform 管理外（google_service_account_key を使わない）: tfstate に秘密鍵が平文で残るため。
+# `gcloud iam service-accounts keys create` で手動発行し、Claude の環境設定（Default 環境）に登録する。
+# Default 環境は全セッションで共有されキーがどのセッションからも見えるので、ロールは viewer 系に限る。
+# Firestore（datastore.*）・Secret Manager の読み取りは付けない（roles/viewer を避けているのもこのため）。
+
+# 手動作成された既存 SA を管理下へ取り込む（ga4_reader と同じ扱い）。
+import {
+  to = google_service_account.claude_readonly
+  id = "projects/${var.gcp_project_id}/serviceAccounts/claude-readonly@${var.gcp_project_id}.iam.gserviceaccount.com"
+}
+
+resource "google_service_account" "claude_readonly" {
+  project      = var.gcp_project_id
+  account_id   = "claude-readonly"
+  display_name = "Claude cloud session (read-only)"
+  description  = "Claude Code クラウドセッションからのアラート調査用。キーは手動発行・terraform 管理外"
+}
+
+locals {
+  claude_readonly_roles = [
+    "roles/monitoring.viewer", # アラートポリシー・時系列メトリクス
+    "roles/logging.viewer",    # リクエストログ・アプリログ
+    "roles/run.viewer",        # Cloud Run サービス・revision の設定と状態
+  ]
+}
+
+resource "google_project_iam_member" "claude_readonly_roles" {
+  for_each = toset(local.claude_readonly_roles)
+  project  = var.gcp_project_id
+  role     = each.value
+  member   = "serviceAccount:${google_service_account.claude_readonly.email}"
+
+  depends_on = [google_service_account.claude_readonly]
+}
+
+# ------------------------------------------------------------------------------
 # fetchYouTubeVideos関数用のサービスアカウントとIAM権限設定
 # ------------------------------------------------------------------------------
 
