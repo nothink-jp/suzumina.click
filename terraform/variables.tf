@@ -135,13 +135,6 @@ variable "better_auth_secret" {
   sensitive   = true
 }
 
-variable "suzumina_guild_id" {
-  description = "すずみなふぁみりー Discord Guild ID"
-  type        = string
-  default     = "959095494456537158"
-  sensitive   = false # Guild IDは公開情報
-}
-
 # ==========================================================
 # メール設定用変数
 # ==========================================================

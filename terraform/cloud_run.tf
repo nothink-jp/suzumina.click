@@ -80,7 +80,10 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
         container_port = 8080
       }
 
-      # 環境変数
+      # 環境変数: 正本は deploy-web.yml の `--set-env-vars` / `--set-secrets`（毎デプロイで全置換）。
+      # ここの値は lifecycle.ignore_changes で live に反映されず、bootstrap（サービス新規作成）時の
+      # 初期値にしか使われない。env を足す・変えるときは deploy-web.yml を直す
+      # （ここにだけ足しても次のデプロイで消える＝SPR-339 の ALLOWED_HOSTS）。
       env {
         name  = "NODE_ENV"
         value = var.environment == "development" ? "development" : "production"
@@ -100,7 +103,6 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
       }
 
       # better-auth のベース URL（SPR-158 で移行）
-      # 注: env は lifecycle.ignore_changes 対象で、実値は GitHub Actions の gcloud deploy が管理する。
       env {
         name  = "BETTER_AUTH_URL"
         value = var.environment == "production" && var.custom_domain != "" ? "https://${var.custom_domain}" : "auto"
@@ -151,12 +153,6 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
         }
       }
 
-      # すずみなふぁみりー Guild ID
-      env {
-        name  = "SUZUMINA_GUILD_ID"
-        value = var.suzumina_guild_id
-      }
-
       # Google Analytics Measurement ID
       env {
         name  = "NEXT_PUBLIC_GA_MEASUREMENT_ID"
@@ -202,7 +198,7 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
         }
       }
 
-      # 許可されたホスト名（デフォルトURL制御用）
+      # 許可するホスト名。run.app への直アクセスを proxy.ts が 404 にする（/api/health は除外）
       env {
         name  = "ALLOWED_HOSTS"
         value = var.environment == "production" && var.custom_domain != "" ? var.custom_domain : ""
@@ -249,7 +245,7 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
   }
 
   # 環境変数は GitHub Actions の `gcloud run deploy --set-env-vars/--set-secrets` が
-  # 管理するため Terraform は無視する。
+  # 管理するため Terraform は無視する（config の env は bootstrap 時の初期値のみ・ADR-009）。
   # client / client_version は gcloud run deploy が毎回付与する識別子メタデータで、
   # Terraform config では未設定（null）。恒久的な "gcloud" -> null 差分を避けるため無視する。
   # image は ignore せず data source で live を追従する（SPR-67 恒久対策）。
