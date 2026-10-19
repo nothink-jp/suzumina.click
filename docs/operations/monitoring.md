@@ -12,6 +12,7 @@
 | [monitoring_firestore_reads.tf](../../terraform/monitoring_firestore_reads.tf) | Firestore read レート（予算ペースから逆算した警告・緊急） |
 | [monitoring_firestore_index.tf](../../terraform/monitoring_firestore_index.tf) | 複合インデックス欠落（`requires an index` ログ・SPR-213） |
 | [monitoring_data_integrity.tf](../../terraform/monitoring_data_integrity.tf) | `checkDataIntegrity`（週次の整合性 cron）: エラーログ / 5xx |
+| [monitoring_origin_bypass.tf](../../terraform/monitoring_origin_bypass.tf) | web への Cloudflare 迂回アクセス（requests ログの `remoteIp` が Cloudflare の IP 帯の外・SPR-366） |
 | [logging.tf](../../terraform/logging.tf) | アプリログの GCS シンク（保持はバケットの lifecycle が正本） |
 
 - **通知先はメールのみ**（`google_monitoring_notification_channel.email`、宛先は `var.admin_email`＝CI では secret `ADMIN_EMAIL`）。
