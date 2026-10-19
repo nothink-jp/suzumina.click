@@ -114,12 +114,15 @@ jobs:
           # Terraform が正本（cloud_run.tf）。ADR-009/SPR-97 に基づき deploy からは外し、二重管理を解消する。
           # gcloud run deploy は update セマンティクスで、指定しないフラグは既存 revision の値を保持するため、
           # ここでは image / env / secret のみ更新する（spec は terraform apply 時のみ変更）。
+          # env の正本はここ。--set-env-vars / --set-secrets は既存 env を全置換するため、ここに無い env は
+          # live から消える（cloud_run.tf の env は ignore_changes で bootstrap 時の初期値のみ）。
+          # ALLOWED_HOSTS が無いと proxy.ts の host 検証が素通しになり、run.app へ直アクセスできる（SPR-339）。
           gcloud run deploy ${{ env.SERVICE_NAME }} \
             --image $IMAGE_TAG \
             --region ${{ env.REGION }} \
             --platform managed \
             --service-account="cloud-run-nextjs@${{ env.PROJECT_ID }}.iam.gserviceaccount.com" \
-            --set-env-vars="NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1,GOOGLE_CLOUD_PROJECT=${{ env.PROJECT_ID }},BETTER_AUTH_URL=https://suzumina.click,NEXT_PUBLIC_GA_MEASUREMENT_ID=G-9SYZ48LBPH,NEXT_PUBLIC_GTM_ID=GTM-W7QT5PCR" \
+            --set-env-vars="NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1,GOOGLE_CLOUD_PROJECT=${{ env.PROJECT_ID }},BETTER_AUTH_URL=https://suzumina.click,NEXT_PUBLIC_GA_MEASUREMENT_ID=G-9SYZ48LBPH,NEXT_PUBLIC_GTM_ID=GTM-W7QT5PCR,ALLOWED_HOSTS=suzumina.click" \
             --set-secrets="DISCORD_CLIENT_ID=DISCORD_CLIENT_ID:latest,DISCORD_CLIENT_SECRET=DISCORD_CLIENT_SECRET:latest,BETTER_AUTH_SECRET=BETTER_AUTH_SECRET:latest,YOUTUBE_API_KEY=YOUTUBE_API_KEY:latest,GEMINI_API_KEY=GEMINI_API_KEY:latest,RESEND_API_KEY=RESEND_API_KEY:latest,CONTACT_EMAIL_RECIPIENTS=CONTACT_EMAIL_RECIPIENTS:latest"
           
           echo "✅ Deployment completed successfully"
@@ -140,6 +143,18 @@ jobs:
             echo "✅ /api/health が 200 を返しました"
           else
             echo "::error::デプロイ後の /api/health が 200 を返しませんでした（Cloud Run のログを確認）"
+            exit 1
+          fi
+
+          # run.app への直アクセス（/api/health 以外）が 404 であること＝ALLOWED_HOSTS が効いていること。
+          # env が消えても表示は正常なままで気づけないため、ここで検査する（SPR-339）。
+          # --retry は 5xx 等の一時エラーだけを再試行し、404/200 は再試行しない。
+          DIRECT_STATUS=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 30 \
+              --retry 3 --retry-delay 5 "${SERVICE_URL}/" || true)
+          if [ "$DIRECT_STATUS" = "404" ]; then
+            echo "✅ run.app への直アクセスは 404 です"
+          else
+            echo "::error::run.app への直アクセスが ${DIRECT_STATUS} を返しました（404 であるべき。ALLOWED_HOSTS を確認）"
             exit 1
           fi
       
