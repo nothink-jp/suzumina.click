@@ -47,14 +47,16 @@ resource "google_logging_metric" "origin_bypass_requests" {
   name    = "web_origin_bypass_requests"
   project = var.gcp_project_id
 
-  # /api/health はデプロイの Verify（run.app を直接叩く）と probe なので除く。
+  # /api/health はデプロイの Verify（run.app を直接叩く）と probe なので除く。部分一致（`:`）だと
+  # クエリに "/api/health" を含めるだけで除外されるため、パスで判定する（`\?` は HCL と Logging の
+  # エスケープ解釈が絡むので `[?]` で書く）。
   # status<400 で、ALLOWED_HOSTS により 404 になる run.app への直アクセス（塞がっているもの）を除く。
   # proxy.ts の matcher 外で 200 になる run.app の /_next/image などは数える。
   filter = <<-EOT
     resource.type="cloud_run_revision"
     resource.labels.service_name="${google_cloud_run_v2_service.nextjs_app.name}"
     LOG_ID("run.googleapis.com/requests")
-    NOT httpRequest.requestUrl:"/api/health"
+    NOT httpRequest.requestUrl=~"^https?://[^/]+/api/health([?]|$)"
     httpRequest.status<400
     NOT (${join(" OR ", [for range in local.cloudflare_ip_ranges : "ip_in_net(httpRequest.remoteIp, \"${range}\")"])})
   EOT
