@@ -24,7 +24,9 @@ import { type FetchMode, fetchYouTubeVideosLogic } from "./run-video-fetch";
 export const fetchYouTubeVideos = async (
 	event: CloudEvent<MessagePublishedData>,
 ): Promise<void> => {
-	logger.info("fetchYouTubeVideos 関数を開始しました (GCFv2 CloudEvent Handler)");
+	logger.info("fetchYouTubeVideos 関数を開始しました (GCFv2 CloudEvent Handler)", {
+		eventId: event.id,
+	});
 
 	// SPR-277: メモリ使用量ログ（finally）でモード別に集計するため try の外で保持する
 	let fetchMode: FetchMode = "normal";
