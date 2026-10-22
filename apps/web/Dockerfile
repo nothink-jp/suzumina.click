@@ -13,16 +13,27 @@ RUN apk upgrade --no-cache && apk add --no-cache libc6-compat tini
 # https://pnpm.io/errors#err_pnpm_aborted_remove_modules_dir_no_tty
 ENV CI=true
 
-# Install dependencies only when needed
-FROM base AS deps
+# deps / builder が共有する pnpm 入りのステージ
+FROM base AS pnpm
 WORKDIR /app
 
-# Install pnpm (use latest version 12 to match engines)
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable pnpm && corepack use pnpm@12
+# pnpm の版の正本はルート package.json の packageManager（sha512 付き）。corepack install はそれを入れる。
+# pnpm 12 は corepack 経由だと初回起動時にネイティブバイナリを自前で取得し、そのメタデータ取得は
+# 30 秒で打ち切られて再試行しない。ここで起動して再試行付きで取りきり、後段の pnpm 実行で落ちないようにする
+COPY package.json ./
+RUN corepack enable pnpm && corepack install \
+    && for attempt in 1 2 3; do \
+         pnpm --version && break; \
+         [ "$attempt" = 3 ] && exit 1; \
+         sleep 5; \
+       done
 # Ensure yarn is disabled to prevent conflicts
 RUN npm config delete prefix 2>/dev/null || true
+
+# Install dependencies only when needed
+FROM pnpm AS deps
 
 # Copy package files from project root
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
@@ -37,15 +48,7 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm \
     pnpm install --frozen-lockfile
 
 # Rebuild the source code only when needed
-FROM base AS builder
-WORKDIR /app
-
-# Install pnpm
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable pnpm && corepack use pnpm@12
-# Ensure yarn is disabled to prevent conflicts
-RUN npm config delete prefix 2>/dev/null || true
+FROM pnpm AS builder
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/packages ./packages
