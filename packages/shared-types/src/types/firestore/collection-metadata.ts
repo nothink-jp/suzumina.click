@@ -52,6 +52,12 @@ export interface CollectionMetadata {
 	 * 継続中サイクルとの衝突で週次フルスイープがその週丸ごと無音で消えるのを防ぐ）。
 	 */
 	pendingFullSweep?: boolean;
+	/**
+	 * SPR-368: 直近に run を開始した CloudEvent の id（= Pub/Sub messageId）。新しい順・件数上限あり。
+	 * Pub/Sub の重複配信（同じ id の再 push）で run を走らせ直さないための判定に使う。
+	 * サイクルの完了でクリアしない（サイクルをまたいで届く重複も弾くため）。
+	 */
+	recentEventIds?: string[];
 }
 
 /**

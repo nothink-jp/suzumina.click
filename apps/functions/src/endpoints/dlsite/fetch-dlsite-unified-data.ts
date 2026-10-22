@@ -1,7 +1,7 @@
 /**
  * DLsite 統合データ収集エンドポイント（薄いハンドラ）
  *
- * CloudEvent の unwrap（mode 判定）→ オーケストレータ呼び出し → 結果ログのみを担う。
+ * CloudEvent の unwrap（mode 判定）→ 重複配信の判定 → オーケストレータ呼び出し → 結果ログのみを担う。
  * 本処理は run-unified-data-collection.ts の `runUnifiedDataCollection`。
  */
 
@@ -9,11 +9,15 @@ import type { CloudEvent } from "@google-cloud/functions-framework";
 import { Timestamp } from "../../infrastructure/database/firestore";
 import * as logger from "../../shared/logger";
 import { decodePubsubMode, type MessagePublishedData } from "../../shared/pubsub-utils";
-import { updateUnifiedMetadata } from "./collection-metadata";
+import { claimUnifiedRunEvent, updateUnifiedMetadata } from "./collection-metadata";
 import { runUnifiedDataCollection } from "./run-unified-data-collection";
 
 /**
  * Cloud Functions エントリーポイント
+ *
+ * 同じメッセージの重複配信（同じ event.id）では run を走らせず、正常終了（= ack）する（SPR-368）。
+ * 「統合データ収集開始」は run を実際に始めたときだけ出す（ログベースメトリクス
+ * `dlsite_run_started` が数える＝重複を run として数えない）。
  */
 export async function fetchDLsiteUnifiedData(
 	event: CloudEvent<MessagePublishedData>,
@@ -21,15 +25,21 @@ export async function fetchDLsiteUnifiedData(
 	const mode = decodePubsubMode(event.data);
 	const isWeeklyFullSweep = mode === "weekly_full_sweep";
 
-	logger.info("統合データ収集開始", {
-		eventType: event.type,
-		mode,
-		週次フルスイープ: isWeeklyFullSweep,
-		timestamp: new Date().toISOString(),
-		timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-	});
-
 	try {
+		if (!(await claimUnifiedRunEvent(event.id))) {
+			logger.warn("重複配信のため統合データ収集をスキップ", { eventId: event.id, mode });
+			return;
+		}
+
+		logger.info("統合データ収集開始", {
+			eventId: event.id,
+			eventType: event.type,
+			mode,
+			週次フルスイープ: isWeeklyFullSweep,
+			timestamp: new Date().toISOString(),
+			timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+		});
+
 		const result = await runUnifiedDataCollection(isWeeklyFullSweep);
 
 		if (result.error) {
