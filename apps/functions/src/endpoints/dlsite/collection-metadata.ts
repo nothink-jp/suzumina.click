@@ -58,12 +58,15 @@ const unifiedMetadataStore = createRunMetadataStore<CollectionMetadata>({
  * ack 期限（約 600 秒）を超えると再送が連鎖する。記録を run の終了時でなく開始時に行うのは、
  * 元の run の処理中に届いた重複も弾くため。関数タイムアウト等で落ちた run の再配信もスキップされるが、
  * 次の定期 run（2 時間後）が継続カーソルから再開するので取りこぼしにはならない。
+ * `isInProgress` では代わりにならない: 順番待ちの重複は元の run が終わってから処理されるため、
+ * その時点で `isInProgress` はもう false になっている。
  *
  * 判定と記録は 1 トランザクションで行う（max-instances は一時的に超えることがあるため）。
  * 副作用: メタデータ doc が無ければ初期値で作成する。
  *
  * @returns 初めて見る id なら true（記録済み）。記録済みの id（重複配信）なら false。
  *   id が空なら判定できないので記録せずに true（空文字を記録すると以後の空 id を全部弾くため）
+ * @throws Firestore のエラーはそのまま投げる（失敗時の扱いはハンドラが決める）
  */
 export async function claimUnifiedRunEvent(eventId: string): Promise<boolean> {
 	if (!eventId) {

@@ -432,14 +432,30 @@ describe("fetchDLsiteUnifiedData（エントリポイント統合）", () => {
 			);
 		});
 
-		it("重複判定が失敗したら run を走らせず、例外を投げずにエラーを記録する", async () => {
-			runTransactionMock.mockRejectedValueOnce(new Error("firestore unavailable"));
+		it("重複の判定が失敗したら、判定せずに run を走らせる（fail-open・週次フルスイープを消さない）", async () => {
+			runTransactionMock.mockRejectedValueOnce(new Error("ABORTED: too much contention"));
+			vi.mocked(collectWorkIdsForProduction).mockResolvedValue(["RJ001"]);
+			vi.mocked(batchFetchIndividualInfo).mockResolvedValue({
+				results: new Map([["RJ001", makeApiResponse("RJ001")]]),
+				failedWorkIds: [],
+			});
 
-			await expect(fetchDLsiteUnifiedData(pubsubEvent())).resolves.toBeUndefined();
+			await expect(
+				fetchDLsiteUnifiedData(pubsubEvent({ mode: "weekly_full_sweep" })),
+			).resolves.toBeUndefined();
 
-			expect(collectWorkIdsForProduction).not.toHaveBeenCalled();
-			expect(updateMock).toHaveBeenCalledWith(
-				expect.objectContaining({ isInProgress: false, lastError: "firestore unavailable" }),
+			expect(logger.warn).toHaveBeenCalledWith(
+				"重複配信の判定に失敗したため、判定せずに統合データ収集を実行",
+				expect.objectContaining({ eventId: "message-1", error: "ABORTED: too much contention" }),
+			);
+			expect(logger.info).toHaveBeenCalledWith(
+				"統合データ収集開始",
+				expect.objectContaining({ eventId: "message-1", 週次フルスイープ: true }),
+			);
+			expect(collectWorkIdsForProduction).toHaveBeenCalledTimes(1);
+			// catch-all（isInProgress=false / lastError の書き込み）には入らない
+			expect(updateMock).not.toHaveBeenCalledWith(
+				expect.objectContaining({ lastError: expect.any(String) }),
 			);
 		});
 	});
