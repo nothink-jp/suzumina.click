@@ -83,7 +83,9 @@ resource "google_monitoring_alert_policy" "data_integrity_function_error" {
 # プラットフォーム障害（5xx）
 # タイムアウト（540s。正本は deploy-functions.yml）やプロセスのクラッシュはアプリの ERROR ログを
 # 出さずに終わるため、上のエラーログでは拾えない。アプリ内の失敗も rethrow で 5xx になるので、
-# その場合は両方が同時に鳴る（--retry 無しで deploy しているため再試行による連発は無い）。
+# その場合は両方が同時に鳴る。
+# 関数は --retry 無し（RETRY_POLICY_DO_NOT_RETRY）だが、購読の retryPolicy（10〜600 秒・保持 24 時間）で
+# 5xx の push は再送される（SPR-369）。ハンドラが event.id で重複を弾く（再送は run せず ack）ので連発は無い。
 resource "google_monitoring_alert_policy" "data_integrity_function_failure" {
   display_name = "Data Integrity Function Platform Failure (5xx)"
   project      = var.gcp_project_id

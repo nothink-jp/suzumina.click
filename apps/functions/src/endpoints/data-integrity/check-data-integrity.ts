@@ -1,21 +1,30 @@
 /**
  * データ整合性検証エンドポイント（薄いハンドラ）
  *
- * CloudEvent の受領 → オーケストレータ呼び出し → 結果ログのみを担う。
+ * CloudEvent の受領 → 重複配信の判定 → オーケストレータ呼び出し → 結果ログのみを担う。
  * 本処理は run-integrity-check.ts の `runIntegrityCheck`。
  */
 
 import type { CloudEvent } from "@google-cloud/functions-framework";
 import * as logger from "../../shared/logger";
-import { runIntegrityCheck } from "./run-integrity-check";
+import { claimRunEventFailOpen } from "../../shared/run-metadata";
+import { integrityCheckRunEventClaim, runIntegrityCheck } from "./run-integrity-check";
 
 /**
  * Cloud Functions エントリーポイント
  *
  * 本番スケジュール実行用。常に dryRun=false（修正を書き込む）。
+ * 同じメッセージの重複配信・再送（同じ event.id）では run を走らせず、正常終了（= ack）する（SPR-369）。
+ * 落ちた run の再送も弾くので、同じ週にやり直すときはトピック（data-integrity-check-trigger）へ
+ * 手動で publish する（新しい messageId になる）か、`tools/core/run-data-integrity-check.ts` を使う。
  */
 export async function checkDataIntegrity(event: CloudEvent<unknown>): Promise<void> {
-	logger.info("データ整合性チェックを開始", { eventType: event.type });
+	if (!(await claimRunEventFailOpen(event.id, integrityCheckRunEventClaim))) {
+		logger.warn("重複配信のためデータ整合性チェックをスキップ", { eventId: event.id });
+		return;
+	}
+
+	logger.info("データ整合性チェックを開始", { eventId: event.id, eventType: event.type });
 
 	try {
 		const result = await runIntegrityCheck();

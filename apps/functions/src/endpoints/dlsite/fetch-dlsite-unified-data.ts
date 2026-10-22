@@ -9,28 +9,9 @@ import type { CloudEvent } from "@google-cloud/functions-framework";
 import { Timestamp } from "../../infrastructure/database/firestore";
 import * as logger from "../../shared/logger";
 import { decodePubsubMode, type MessagePublishedData } from "../../shared/pubsub-utils";
-import { claimUnifiedRunEvent, updateUnifiedMetadata } from "./collection-metadata";
+import { claimRunEventFailOpen } from "../../shared/run-metadata";
+import { unifiedRunEventClaim, updateUnifiedMetadata } from "./collection-metadata";
 import { runUnifiedDataCollection } from "./run-unified-data-collection";
-
-/**
- * SPR-368: event.id を記録して run を始めてよいかを返す。判定そのものが失敗したら、判定せずに true（fail-open）
- *
- * 判定の失敗で run を止めると、変更前なら走っていた run が消える（週次フルスイープなら
- * pendingFullSweep を立てる前なので、その週の分がまるごと）。throw（nack）にしないのは、
- * 「エントリポイントは catch-all で 2xx・5xx はプラットフォームの強制終了だけ」という
- * 監視の役割分担（monitoring_dlsite.tf の dlsite_function_failure・SPR-234）を崩さないため。
- */
-async function claimUnifiedRunEventFailOpen(eventId: string): Promise<boolean> {
-	try {
-		return await claimUnifiedRunEvent(eventId);
-	} catch (error) {
-		logger.warn("重複配信の判定に失敗したため、判定せずに統合データ収集を実行", {
-			eventId,
-			error: error instanceof Error ? error.message : String(error),
-		});
-		return true;
-	}
-}
 
 /**
  * Cloud Functions エントリーポイント
@@ -46,7 +27,7 @@ export async function fetchDLsiteUnifiedData(
 	const isWeeklyFullSweep = mode === "weekly_full_sweep";
 
 	try {
-		if (!(await claimUnifiedRunEventFailOpen(event.id))) {
+		if (!(await claimRunEventFailOpen(event.id, unifiedRunEventClaim))) {
 			logger.warn("重複配信のため統合データ収集をスキップ", { eventId: event.id, mode });
 			return;
 		}

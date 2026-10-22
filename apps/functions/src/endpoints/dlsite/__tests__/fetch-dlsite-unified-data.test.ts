@@ -1,6 +1,6 @@
 /**
  * DLsite 統合データ収集エンドポイントのテスト（SPR-229: computeDueWorkIds / resolveCycleInfo /
- * fetchDLsiteUnifiedData 中心・SPR-368: 重複配信の判定 claimUnifiedRunEvent）
+ * fetchDLsiteUnifiedData 中心・SPR-368: 重複配信の判定。判定そのものは shared/__tests__/run-metadata.test.ts）
  *
  * レビュー指摘（この専用エンドポイントに直接のテストが無い）への対応。
  * computeDueWorkIds/resolveCycleInfoの単体テストに加え、fetchDLsiteUnifiedDataの
@@ -20,7 +20,7 @@ vi.mock("../../../infrastructure/database/firestore", () => {
 	const getMock = vi.fn().mockResolvedValue({ exists: false });
 	const docRef = { update: updateMock, get: getMock, create: vi.fn() };
 	const collection = vi.fn(() => ({ doc: vi.fn(() => docRef) }));
-	// SPR-368: claimUnifiedRunEvent が使うトランザクション
+	// SPR-368: claimRunEvent（shared/run-metadata）が使うトランザクション
 	const transaction = { get: vi.fn(), update: vi.fn(), set: vi.fn() };
 	const runTransaction = vi.fn(async (fn: (tx: typeof transaction) => unknown) => fn(transaction));
 
@@ -77,7 +77,6 @@ vi.mock("../../../shared/logger", () => ({
 }));
 
 const { fetchDLsiteUnifiedData } = await import("../fetch-dlsite-unified-data");
-const { claimUnifiedRunEvent } = await import("../collection-metadata");
 const logger = vi.mocked(await import("../../../shared/logger"));
 const { computeDueWorkIds, resolveCycleInfo } = await import("../run-unified-data-collection");
 const { bulkCheckPriceHistoryExistsToday } = await import("../../../services/price-history");
@@ -445,7 +444,7 @@ describe("fetchDLsiteUnifiedData（エントリポイント統合）", () => {
 			).resolves.toBeUndefined();
 
 			expect(logger.warn).toHaveBeenCalledWith(
-				"重複配信の判定に失敗したため、判定せずに統合データ収集を実行",
+				"重複配信の判定に失敗したため、判定せずに run を実行",
 				expect.objectContaining({ eventId: "message-1", error: "ABORTED: too much contention" }),
 			);
 			expect(logger.info).toHaveBeenCalledWith(
@@ -458,57 +457,5 @@ describe("fetchDLsiteUnifiedData（エントリポイント統合）", () => {
 				expect.objectContaining({ lastError: expect.any(String) }),
 			);
 		});
-	});
-});
-
-describe("claimUnifiedRunEvent（SPR-368）", () => {
-	beforeEach(() => {
-		vi.clearAllMocks();
-	});
-
-	it("初めて見る id は新しい順の先頭に足し、直近 5 件だけを残す", async () => {
-		transactionMock.get.mockResolvedValue(metadataSnapshot(["m5", "m4", "m3", "m2", "m1"]));
-
-		await expect(claimUnifiedRunEvent("m6")).resolves.toBe(true);
-
-		expect(transactionMock.update).toHaveBeenCalledWith(expect.anything(), {
-			recentEventIds: ["m6", "m5", "m4", "m3", "m2"],
-		});
-	});
-
-	it("記録済みの id なら false を返し、何も書き込まない", async () => {
-		transactionMock.get.mockResolvedValue(metadataSnapshot(["m2", "m1"]));
-
-		await expect(claimUnifiedRunEvent("m1")).resolves.toBe(false);
-
-		expect(transactionMock.update).not.toHaveBeenCalled();
-		expect(transactionMock.set).not.toHaveBeenCalled();
-	});
-
-	it("recentEventIds を持たない既存 doc では、その id だけを記録する", async () => {
-		transactionMock.get.mockResolvedValue(metadataSnapshot(undefined));
-
-		await expect(claimUnifiedRunEvent("m1")).resolves.toBe(true);
-
-		expect(transactionMock.update).toHaveBeenCalledWith(expect.anything(), {
-			recentEventIds: ["m1"],
-		});
-	});
-
-	it("メタデータ doc が無ければ初期値と一緒に作成する", async () => {
-		transactionMock.get.mockResolvedValue({ exists: false });
-
-		await expect(claimUnifiedRunEvent("m1")).resolves.toBe(true);
-
-		expect(transactionMock.set).toHaveBeenCalledWith(
-			expect.anything(),
-			expect.objectContaining({ isInProgress: false, recentEventIds: ["m1"] }),
-		);
-	});
-
-	it("id が空なら判定できないので、記録せずに true を返す", async () => {
-		await expect(claimUnifiedRunEvent("")).resolves.toBe(true);
-
-		expect(runTransactionMock).not.toHaveBeenCalled();
 	});
 });

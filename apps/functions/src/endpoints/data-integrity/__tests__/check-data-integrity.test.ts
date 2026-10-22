@@ -9,12 +9,21 @@ import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
 vi.mock("../../../infrastructure/database/firestore", () => {
 	const mockCollection = vi.fn();
 	const mockBatch = vi.fn();
+	// SPR-369: claimRunEvent（shared/run-metadata）が使うトランザクション。既定は「初めて見る id」
+	const transaction = {
+		get: vi.fn().mockResolvedValue({ exists: false }),
+		update: vi.fn(),
+		set: vi.fn(),
+	};
+	const runTransaction = vi.fn(async (fn: (tx: typeof transaction) => unknown) => fn(transaction));
 
 	return {
 		default: {
 			collection: mockCollection,
 			batch: mockBatch,
+			runTransaction,
 		},
+		__transaction: transaction,
 		Timestamp: {
 			now: vi.fn(() => ({
 				toDate: () => new Date(),
@@ -445,5 +454,54 @@ describe("checkDataIntegrity", () => {
 		// 書き込み系は一切呼ばれない（commit / 結果保存の set）
 		expect(mockCommit).not.toHaveBeenCalled();
 		expect(mockSet).not.toHaveBeenCalled();
+	});
+});
+
+const transactionMock = (
+	vi.mocked(await import("../../../infrastructure/database/firestore")) as unknown as {
+		__transaction: Record<"get" | "update" | "set", ReturnType<typeof vi.fn>>;
+	}
+).__transaction;
+const logger = vi.mocked(await import("../../../shared/logger"));
+
+describe("checkDataIntegrity: 重複配信（SPR-369）", () => {
+	function eventWithId(id: string): CloudEvent<unknown> {
+		return { specversion: "1.0", type: "google.pubsub.topic.publish", source: "test", id };
+	}
+
+	beforeEach(() => {
+		vi.clearAllMocks();
+		mockCollection.mockImplementation(() => ({ doc: vi.fn(() => ({})) }));
+	});
+
+	it("記録済みの event.id なら全件スキャンを走らせず、例外も投げずに正常終了する（= ack）", async () => {
+		transactionMock.get.mockResolvedValueOnce({
+			exists: true,
+			data: () => ({ recentEventIds: ["message-dup"] }),
+		});
+
+		await expect(checkDataIntegrity(eventWithId("message-dup"))).resolves.toBeUndefined();
+
+		expect(mockCollection).not.toHaveBeenCalledWith("circles");
+		expect(mockCollection).not.toHaveBeenCalledWith("works");
+		expect(logger.warn).toHaveBeenCalledWith("重複配信のためデータ整合性チェックをスキップ", {
+			eventId: "message-dup",
+		});
+	});
+
+	it("初めて見る event.id なら dataIntegrityCheck doc に記録してから run を始める", async () => {
+		transactionMock.get.mockResolvedValueOnce({ exists: false });
+
+		// 記録後の本処理は既存テストが検証済み。ここでは記録と開始ログまでを見る
+		await checkDataIntegrity(eventWithId("message-new")).catch(() => undefined);
+
+		expect(mockCollection).toHaveBeenCalledWith("dlsiteMetadata");
+		expect(transactionMock.set).toHaveBeenCalledWith(expect.anything(), {
+			recentEventIds: ["message-new"],
+		});
+		expect(logger.info).toHaveBeenCalledWith(
+			"データ整合性チェックを開始",
+			expect.objectContaining({ eventId: "message-new" }),
+		);
 	});
 });

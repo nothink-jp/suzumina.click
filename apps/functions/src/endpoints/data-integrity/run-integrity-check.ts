@@ -12,6 +12,7 @@
 
 import firestore, { Timestamp } from "../../infrastructure/database/firestore";
 import * as logger from "../../shared/logger";
+import type { RunEventClaimOptions } from "../../shared/run-metadata";
 import {
 	checkCircleWorkCounts,
 	checkOrphanedCreators,
@@ -27,6 +28,19 @@ export { FIRESTORE_BATCH_LIMIT, type IntegrityCheckResult } from "./integrity-ch
 // メタデータ保存用の定数
 const INTEGRITY_CHECK_COLLECTION = "dlsiteMetadata";
 const INTEGRITY_CHECK_DOC_ID = "dataIntegrityCheck";
+
+/**
+ * SPR-369: 重複配信の判定（`claimRunEventFailOpen`）に使う doc と保持件数
+ *
+ * 保持 5 件: publish は週 1 通なので約 5 週分。結果 doc（latest / history）と同じ doc に
+ * `recentEventIds` を同居させる。タイムアウトや rethrow の 5xx の後の再送（購読の retryPolicy・
+ * 最大 24 時間）で全件スキャンを繰り返さないための判定で、やり直しは翌週の定期 run が担う。
+ */
+export const integrityCheckRunEventClaim: RunEventClaimOptions = {
+	collection: INTEGRITY_CHECK_COLLECTION,
+	docId: INTEGRITY_CHECK_DOC_ID,
+	limit: 5,
+};
 
 /**
  * 整合性チェックの実行オプション

@@ -14,9 +14,13 @@ vi.mock("../../../infrastructure/database/firestore", () => {
 	const createMock = vi.fn().mockResolvedValue(undefined);
 	const docRef = { update: updateMock, get: getMock, create: createMock };
 	const collection = vi.fn(() => ({ doc: vi.fn(() => docRef) }));
+	// SPR-369: claimRunEvent（shared/run-metadata）が使うトランザクション
+	const transaction = { get: vi.fn(), update: vi.fn(), set: vi.fn() };
+	const runTransaction = vi.fn(async (fn: (tx: typeof transaction) => unknown) => fn(transaction));
 
 	return {
-		default: { collection, getAll: vi.fn() },
+		default: { collection, getAll: vi.fn(), runTransaction },
+		__transaction: transaction,
 		Timestamp: { now: vi.fn(() => ({ seconds: 0, nanoseconds: 0 })) },
 		__updateMock: updateMock,
 		__getMock: getMock,
@@ -63,6 +67,11 @@ const getMetadataMock = (firestoreMock as unknown as { __getMock: ReturnType<typ
 	.__getMock;
 const createMetadataMock = (firestoreMock as unknown as { __createMock: ReturnType<typeof vi.fn> })
 	.__createMock;
+const transactionMock = (
+	firestoreMock as unknown as {
+		__transaction: Record<"get" | "update" | "set", ReturnType<typeof vi.fn>>;
+	}
+).__transaction;
 
 const dummyClient = {} as youtube_v3.Youtube;
 
@@ -70,8 +79,10 @@ const dummyClient = {} as youtube_v3.Youtube;
 // 組み立てる。平坦形（event.data.data直下）でモックするとテストだけ通って本番で
 // mode検出が縮退する（SPR-229/230の週次フルスイープ未発火の回帰）。
 // 既定ペイロードは毎時ジョブと同じ `{}`（terraform/scheduler.tf の base64encode("{}")）。
-function pubsubEvent(payload: Record<string, unknown> = {}) {
+// id は Pub/Sub の messageId（重複配信では同じ id が再び届く・SPR-369）。
+function pubsubEvent(payload: Record<string, unknown> = {}, id = "message-1") {
 	return {
+		id,
 		type: "google.cloud.pubsub.topic.v1.messagePublished",
 		data: {
 			message: {
@@ -85,6 +96,7 @@ beforeEach(() => {
 	vi.clearAllMocks();
 
 	getMetadataMock.mockResolvedValue({ exists: false });
+	transactionMock.get.mockResolvedValue({ exists: false });
 	vi.mocked(youtubeApi.initializeYouTubeClient).mockReturnValue([dummyClient, undefined]);
 	vi.mocked(youtubeApi.fetchUploadsPlaylistId).mockResolvedValue("UUxxxx");
 	vi.mocked(youtubeApi.fetchUploadsPlaylistPage).mockResolvedValue({
@@ -761,5 +773,35 @@ describe("fetchYouTubeVideos: Pub/Subペイロードのデコード", () => {
 		await fetchYouTubeVideos(event);
 
 		expect(youtubeApi.fetchUploadsPlaylistPage).toHaveBeenCalled();
+	});
+});
+
+describe("fetchYouTubeVideos: 重複配信（SPR-369）", () => {
+	it("初めて見る event.id なら fetch_metadata に記録してから run を走らせる", async () => {
+		await fetchYouTubeVideos(pubsubEvent({}, "message-new"));
+
+		expect(transactionMock.set).toHaveBeenCalledWith(
+			expect.anything(),
+			expect.objectContaining({ isInProgress: false, recentEventIds: ["message-new"] }),
+		);
+		expect(youtubeApi.initializeYouTubeClient).toHaveBeenCalled();
+	});
+
+	it("記録済みの event.id なら run を走らせず、スキップをログに残して正常終了する（= ack）", async () => {
+		transactionMock.get.mockResolvedValue({
+			exists: true,
+			data: () => ({ isInProgress: false, recentEventIds: ["message-dup"] }),
+		});
+
+		await expect(
+			fetchYouTubeVideos(pubsubEvent({ mode: "fast_recheck" }, "message-dup")),
+		).resolves.toBeUndefined();
+
+		expect(youtubeApi.initializeYouTubeClient).not.toHaveBeenCalled();
+		expect(getMetadataMock).not.toHaveBeenCalled();
+		expect(logger.warn).toHaveBeenCalledWith("重複配信のため YouTube 動画取得をスキップ", {
+			eventId: "message-dup",
+			mode: "fast_recheck",
+		});
 	});
 });
