@@ -369,7 +369,7 @@ resource "google_project_iam_member" "terraform_apply_sa_roles" {
 # ------------------------------------------------------------------------------
 # Claude Code クラウドセッション用 read-only サービスアカウント
 # ------------------------------------------------------------------------------
-# アラート調査（メトリクス・ログ・Cloud Run の状態確認）をクラウドセッションから行うための identity。
+# アラート調査（メトリクス・ログ・Cloud Run / Pub/Sub / Eventarc の状態確認）をクラウドセッションから行うための identity。
 # クラウドセッションは WIF で assume できないため、この SA だけは**キー認証**になる。
 #
 # キーは terraform 管理外（google_service_account_key を使わない）: tfstate に秘密鍵が平文で残るため。
@@ -395,6 +395,8 @@ locals {
     "roles/monitoring.viewer", # アラートポリシー・時系列メトリクス
     "roles/logging.viewer",    # リクエストログ・アプリログ
     "roles/run.viewer",        # Cloud Run サービス・revision の設定と状態
+    "roles/pubsub.viewer",     # topic・subscription の設定（ackDeadline / retryPolicy 等）。メッセージの pull・publish は含まない
+    "roles/eventarc.viewer",   # Eventarc trigger の設定（宛先・retryPolicy 等）。messageBuses.use 等の非閲覧権限を含むが、create 系が無いので使えない（Eventarc Advanced を導入したら見直す）
   ]
 }
 
