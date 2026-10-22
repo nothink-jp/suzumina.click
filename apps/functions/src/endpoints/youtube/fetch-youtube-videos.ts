@@ -1,7 +1,7 @@
 /**
  * YouTube 動画取得エンドポイント（薄いハンドラ）
  *
- * CloudEvent の unwrap（mode 判定）→ オーケストレータ呼び出し → 結果ログのみを担う。
+ * CloudEvent の unwrap（mode 判定）→ 重複配信の判定 → オーケストレータ呼び出し → 結果ログのみを担う。
  * 本処理は run-video-fetch.ts の `fetchYouTubeVideosLogic`。
  */
 
@@ -9,11 +9,14 @@ import type { CloudEvent } from "@google-cloud/functions-framework";
 import * as logger from "../../shared/logger";
 import { logRunMemoryUsage } from "../../shared/memory-diagnostics";
 import { decodePubsubMode, type MessagePublishedData } from "../../shared/pubsub-utils";
-import { updateMetadata } from "./fetch-metadata";
+import { claimRunEventFailOpen } from "../../shared/run-metadata";
+import { updateMetadata, videoFetchRunEventClaim } from "./fetch-metadata";
 import { type FetchMode, fetchYouTubeVideosLogic } from "./run-video-fetch";
 
 /**
  * YouTubeから涼花みなせチャンネルの動画情報を取得し、Firestoreに保存する関数（Pub/Sub向け）
+ *
+ * 同じメッセージの重複配信・再送（同じ event.id）では run を走らせず、正常終了（= ack）する（SPR-369）。
  *
  * @param event - Pub/SubトリガーからのCloudEvent
  * @returns Promise<void> - 非同期処理の完了を表すPromise
@@ -45,6 +48,14 @@ export const fetchYouTubeVideos = async (
 			logger.info("週次フルスイープトリガーを検出しました");
 		} else if (fetchMode === "fast_recheck") {
 			logger.info("配信中/配信予定の高速反映（fast_recheck）トリガーを検出しました");
+		}
+
+		if (!(await claimRunEventFailOpen(event.id, videoFetchRunEventClaim))) {
+			logger.warn("重複配信のため YouTube 動画取得をスキップ", {
+				eventId: event.id,
+				mode: fetchMode,
+			});
+			return;
 		}
 
 		// 共通のロジックを実行

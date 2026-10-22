@@ -1,5 +1,5 @@
 /**
- * run-metadata.ts のテスト（SPR-231 段階①・TOCTOU対応）
+ * run-metadata.ts のテスト（SPR-231 段階①・TOCTOU対応 / SPR-368・369: 重複配信の判定）
  *
  * get-or-create の骨格・sanitizeUpdate 注入・並行 create 競合（ALREADY_EXISTS）の
  * 解決を検証する。endpoint 側の等価性は endpoints/__tests__ の既存テストが担保する。
@@ -13,9 +13,12 @@ vi.mock("../../infrastructure/database/firestore", () => {
 	const createMock = vi.fn().mockResolvedValue(undefined);
 	const docMock = vi.fn(() => ({ update: updateMock, get: getMock, create: createMock }));
 	const collection = vi.fn(() => ({ doc: docMock }));
+	const transaction = { get: vi.fn(), update: vi.fn(), set: vi.fn() };
+	const runTransaction = vi.fn(async (fn: (tx: typeof transaction) => unknown) => fn(transaction));
 
 	return {
-		default: { collection },
+		default: { collection, runTransaction },
+		__transaction: transaction,
 		__updateMock: updateMock,
 		__getMock: getMock,
 		__createMock: createMock,
@@ -24,13 +27,33 @@ vi.mock("../../infrastructure/database/firestore", () => {
 	};
 });
 
-const { createRunMetadataStore } = await import("../run-metadata");
+vi.mock("../logger", () => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }));
+
+const { claimRunEvent, claimRunEventFailOpen, createRunMetadataStore } = await import(
+	"../run-metadata"
+);
+const logger = vi.mocked(await import("../logger"));
 const firestoreMock = (await import("../../infrastructure/database/firestore")) as unknown as {
 	__updateMock: ReturnType<typeof vi.fn>;
 	__getMock: ReturnType<typeof vi.fn>;
 	__createMock: ReturnType<typeof vi.fn>;
 	__docMock: ReturnType<typeof vi.fn>;
 	__collectionMock: ReturnType<typeof vi.fn>;
+	__transaction: Record<"get" | "update" | "set", ReturnType<typeof vi.fn>>;
+	default: { runTransaction: ReturnType<typeof vi.fn> };
+};
+const transactionMock = firestoreMock.__transaction;
+
+/** トランザクション内で読まれるメタデータ doc（recentEventIds の判定対象） */
+function metadataSnapshot(recentEventIds?: unknown) {
+	return { exists: true, data: () => ({ isInProgress: false, recentEventIds }) };
+}
+
+const claimOptions = {
+	collection: "testMetadata",
+	docId: "test_doc",
+	limit: 5,
+	createInitial: () => ({ isInProgress: false }),
 };
 
 interface TestMetadata {
@@ -147,5 +170,94 @@ describe("createRunMetadataStore", () => {
 				sanitized: true,
 			});
 		});
+	});
+});
+
+describe("claimRunEvent（SPR-368 / SPR-369）", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	it("初めて見る id は新しい順の先頭に足し、limit 件だけを残す", async () => {
+		transactionMock.get.mockResolvedValue(metadataSnapshot(["m5", "m4", "m3", "m2", "m1"]));
+
+		await expect(claimRunEvent("m6", claimOptions)).resolves.toBe(true);
+
+		expect(firestoreMock.__collectionMock).toHaveBeenCalledWith("testMetadata");
+		expect(firestoreMock.__docMock).toHaveBeenCalledWith("test_doc");
+		expect(transactionMock.update).toHaveBeenCalledWith(expect.anything(), {
+			recentEventIds: ["m6", "m5", "m4", "m3", "m2"],
+		});
+	});
+
+	it("記録済みの id なら false を返し、何も書き込まない", async () => {
+		transactionMock.get.mockResolvedValue(metadataSnapshot(["m2", "m1"]));
+
+		await expect(claimRunEvent("m1", claimOptions)).resolves.toBe(false);
+
+		expect(transactionMock.update).not.toHaveBeenCalled();
+		expect(transactionMock.set).not.toHaveBeenCalled();
+	});
+
+	it("recentEventIds が無い（配列でない）既存 doc では、その id だけを記録する", async () => {
+		transactionMock.get.mockResolvedValue(metadataSnapshot(undefined));
+
+		await expect(claimRunEvent("m1", claimOptions)).resolves.toBe(true);
+
+		expect(transactionMock.update).toHaveBeenCalledWith(expect.anything(), {
+			recentEventIds: ["m1"],
+		});
+	});
+
+	it("doc が無ければ createInitial の値と一緒に作成する", async () => {
+		transactionMock.get.mockResolvedValue({ exists: false });
+
+		await expect(claimRunEvent("m1", claimOptions)).resolves.toBe(true);
+
+		expect(transactionMock.set).toHaveBeenCalledWith(expect.anything(), {
+			isInProgress: false,
+			recentEventIds: ["m1"],
+		});
+	});
+
+	it("createInitial が無ければ、doc を recentEventIds だけで作成する", async () => {
+		transactionMock.get.mockResolvedValue({ exists: false });
+
+		await claimRunEvent("m1", { collection: "testMetadata", docId: "test_doc", limit: 5 });
+
+		expect(transactionMock.set).toHaveBeenCalledWith(expect.anything(), {
+			recentEventIds: ["m1"],
+		});
+	});
+
+	it("id が空なら判定できないので、記録せずに true を返す", async () => {
+		await expect(claimRunEvent("", claimOptions)).resolves.toBe(true);
+
+		expect(firestoreMock.default.runTransaction).not.toHaveBeenCalled();
+	});
+});
+
+describe("claimRunEventFailOpen（SPR-368 / SPR-369）", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	it("判定が成功したら claimRunEvent の結果をそのまま返す", async () => {
+		transactionMock.get.mockResolvedValue(metadataSnapshot(["m1"]));
+
+		await expect(claimRunEventFailOpen("m1", claimOptions)).resolves.toBe(false);
+		expect(logger.warn).not.toHaveBeenCalled();
+	});
+
+	it("判定そのものが失敗したら、warn を残して true を返す（fail-open）", async () => {
+		firestoreMock.default.runTransaction.mockRejectedValueOnce(
+			new Error("ABORTED: too much contention"),
+		);
+
+		await expect(claimRunEventFailOpen("m1", claimOptions)).resolves.toBe(true);
+		expect(logger.warn).toHaveBeenCalledWith(
+			"重複配信の判定に失敗したため、判定せずに run を実行",
+			{ eventId: "m1", docId: "test_doc", error: "ABORTED: too much contention" },
+		);
 	});
 });

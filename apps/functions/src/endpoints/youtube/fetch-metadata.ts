@@ -3,12 +3,12 @@
  *
  * メタデータ doc（youtubeMetadata/fetch_metadata）の取得/更新と、
  * isInProgress ロック（prepareExecution）・キャッシュ済み uploads playlist ID の
- * 読み取り専用アクセスを担う。
+ * 読み取り専用アクセス、重複配信の判定に使う doc の指定（recentEventIds・SPR-369）を担う。
  */
 
 import firestore, { Timestamp } from "../../infrastructure/database/firestore";
 import * as logger from "../../shared/logger";
-import { createRunMetadataStore } from "../../shared/run-metadata";
+import { createRunMetadataStore, type RunEventClaimOptions } from "../../shared/run-metadata";
 
 // メタデータ保存用のドキュメントID
 const METADATA_DOC_ID = "fetch_metadata";
@@ -34,6 +34,12 @@ export interface FetchMetadata {
 	lastSuccessfulCompleteFetch?: Timestamp;
 	/** SPR-230: uploads playlist ID（チャンネル固定のため一度取得したらキャッシュする） */
 	uploadsPlaylistId?: string;
+	/**
+	 * SPR-369: 直近に run を開始した CloudEvent の id（新しい順・件数上限あり）。
+	 * 全モード（normal / fast_recheck / weekly_full_sweep）が書く。fast_recheck が共有メタデータで
+	 * 書くのはこのフィールドだけ（isInProgress ロックや lastFetchedAt には触れない）
+	 */
+	recentEventIds?: string[];
 }
 
 /**
@@ -59,16 +65,20 @@ export interface FetchResult {
  * dlsite 側（undefined → FieldValue.delete()）との非対称は意図的に統一しない
  * （Firestore に残る値が変わる＝挙動変更のため。shared/run-metadata.ts 参照）。
  */
+function createInitialFetchMetadata(): FetchMetadata {
+	return {
+		lastFetchedAt: Timestamp.now(),
+		isInProgress: false,
+	};
+}
+
 const fetchMetadataStore = createRunMetadataStore<FetchMetadata>({
 	collection: METADATA_COLLECTION,
 	docId: METADATA_DOC_ID,
-	createInitial: () => ({
-		lastFetchedAt: Timestamp.now(),
-		isInProgress: false,
-	}),
+	createInitial: createInitialFetchMetadata,
 	sanitizeUpdate: (updates) => {
 		// undefined値を持つプロパティをnullに変換する（テストに合わせるため）
-		const sanitizedUpdates: Record<string, Timestamp | boolean | string | null> = {
+		const sanitizedUpdates: Record<string, Timestamp | boolean | string | string[] | null> = {
 			lastFetchedAt: Timestamp.now(), // 常に最終実行時間を更新
 		};
 
@@ -84,6 +94,21 @@ const fetchMetadataStore = createRunMetadataStore<FetchMetadata>({
 		return sanitizedUpdates;
 	},
 });
+
+/**
+ * SPR-369: 重複配信の判定（`claimRunEventFailOpen`）に使う doc と保持件数
+ *
+ * 保持 20 件: publish は 1 時間に約 5 通（hourly 1 + fast_recheck 4）なので約 4 時間分。
+ * 重複は数十秒〜十数分遅れて届く（DLsite の実測で最大 16 分）ため、十分に覆える。
+ * isInProgress ロックでは代わりにならない: 処理が約 1 秒で終わるので、重複が届く頃には
+ * ロックはもう外れている（fast_recheck はそもそもロックを持たない）。
+ */
+export const videoFetchRunEventClaim: RunEventClaimOptions = {
+	collection: METADATA_COLLECTION,
+	docId: METADATA_DOC_ID,
+	limit: 20,
+	createInitial: createInitialFetchMetadata,
+};
 
 /**
  * メタデータの取得または初期化
