@@ -58,13 +58,6 @@ export interface FetchResult {
 	error?: string;
 }
 
-/**
- * メタデータのストア（SPR-231: 骨格は shared/run-metadata に集約）
- *
- * update 時は undefined 値を null に変換し、lastFetchedAt を常時注入する（現行挙動の温存）。
- * dlsite 側（undefined → FieldValue.delete()）との非対称は意図的に統一しない
- * （Firestore に残る値が変わる＝挙動変更のため。shared/run-metadata.ts 参照）。
- */
 function createInitialFetchMetadata(): FetchMetadata {
 	return {
 		lastFetchedAt: Timestamp.now(),
@@ -72,6 +65,13 @@ function createInitialFetchMetadata(): FetchMetadata {
 	};
 }
 
+/**
+ * メタデータのストア（SPR-231: 骨格は shared/run-metadata に集約）
+ *
+ * update 時は undefined 値を null に変換し、lastFetchedAt を常時注入する（現行挙動の温存）。
+ * dlsite 側（undefined → FieldValue.delete()）との非対称は意図的に統一しない
+ * （Firestore に残る値が変わる＝挙動変更のため。shared/run-metadata.ts 参照）。
+ */
 const fetchMetadataStore = createRunMetadataStore<FetchMetadata>({
 	collection: METADATA_COLLECTION,
 	docId: METADATA_DOC_ID,

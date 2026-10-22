@@ -15,6 +15,8 @@ import { integrityCheckRunEventClaim, runIntegrityCheck } from "./run-integrity-
  *
  * 本番スケジュール実行用。常に dryRun=false（修正を書き込む）。
  * 同じメッセージの重複配信・再送（同じ event.id）では run を走らせず、正常終了（= ack）する（SPR-369）。
+ * 落ちた run の再送も弾くので、同じ週にやり直すときはトピック（data-integrity-check-trigger）へ
+ * 手動で publish する（新しい messageId になる）か、`tools/core/run-data-integrity-check.ts` を使う。
  */
 export async function checkDataIntegrity(event: CloudEvent<unknown>): Promise<void> {
 	if (!(await claimRunEventFailOpen(event.id, integrityCheckRunEventClaim))) {
