@@ -396,7 +396,7 @@ locals {
     "roles/logging.viewer",    # リクエストログ・アプリログ
     "roles/run.viewer",        # Cloud Run サービス・revision の設定と状態
     "roles/pubsub.viewer",     # topic・subscription の設定（ackDeadline / retryPolicy 等）。メッセージの pull・publish は含まない
-    "roles/eventarc.viewer",   # Eventarc trigger の設定（宛先・retryPolicy 等）
+    "roles/eventarc.viewer",   # Eventarc trigger の設定（宛先・retryPolicy 等）。messageBuses.use 等の非閲覧権限を含むが、create 系が無いので使えない（Eventarc Advanced を導入したら見直す）
   ]
 }
 
