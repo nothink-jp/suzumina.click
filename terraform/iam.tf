@@ -413,7 +413,7 @@ resource "google_project_iam_member" "claude_readonly_roles" {
 # tfstate バケットに TF_VAR の秘密値（API キー・client secret 等）が平文で載っているため。
 resource "google_storage_bucket_iam_member" "claude_readonly_functions_deployment_viewer" {
   bucket = google_storage_bucket.functions_deployment.name
-  role   = "roles/storage.objectViewer" # オブジェクトの list / get。デプロイ zip の残存確認用
+  role   = "roles/storage.objectViewer" # オブジェクトの list / get のみ。デプロイ zip（中身・残存）の恒常的な調査用
   member = "serviceAccount:${google_service_account.claude_readonly.email}"
 }
 
