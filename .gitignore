@@ -75,7 +75,6 @@ debug-output/
 service-account-key.json
 firebase-debug.log
 firestore-debug.log
-terraform/function-source-dummy.zip
 
 # Claude Code worktrees（各 worktree は独立チェックアウト / ADR-008）
 .claude/worktrees/
