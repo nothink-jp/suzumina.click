@@ -12,22 +12,34 @@ import { z } from "zod";
  * HTMLから抽出される作品種別に対応
  */
 export const WorkCategorySchema = z.enum([
-	"ADV", // アドベンチャー
-	"SOU", // ボイス・ASMR
-	"RPG", // ロールプレイング
-	"MOV", // 動画
-	"MNG", // マンガ
-	"GAM", // ゲーム
-	"CG", // CG・イラスト
-	"TOL", // ツール・アクセサリ
-	"ET3", // その他・3D
-	"SLN", // シミュレーション
-	"ACN", // アクション
-	"PZL", // パズル
-	"QIZ", // クイズ
-	"TBL", // テーブル
-	"DNV", // デジタルノベル
-	"etc", // その他
+	// DLsite の work_type（検索ファセットの 25 種。表示名の正本は WORK_CATEGORY_DISPLAY_NAMES）
+	"ACN",
+	"QIZ",
+	"ADV",
+	"RPG",
+	"TBL",
+	"DNV",
+	"SLN",
+	"TYP",
+	"STG",
+	"PZL",
+	"ETC",
+	"MNG",
+	"SCM",
+	"WBT",
+	"ICG",
+	"NRE",
+	"KSV",
+	"MOV",
+	"SOU",
+	"MUS",
+	"TOL",
+	"IMT",
+	"AMT",
+	"ET3",
+	"VCM",
+	// DLsite のコードではない。work-mapper が work_type 空のときに入れるフォールバック
+	"etc",
 ]);
 
 /**
