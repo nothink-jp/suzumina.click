@@ -12,6 +12,10 @@
 > main で動く任意の `id-token: write` job から承認なしで assume できた。現在は subject
 > `repo:nothink-jp/suzumina.click:environment:production`（Environment を参照する job だけ）に限定しており、
 > main 限定は Environment の deployment branch policy が担う。条件の正本は [iam.tf](../../../terraform/iam.tf) の `terraform_apply_sa_wif`。
+>
+> 2026-10-24 追記（SPR-374）: 下の「機密の扱い」の `ignore_changes = [secret_data]` では、bootstrap 時の値が tfstate に平文で残り続けた
+> （plan SA は任意ブランチから state を読める）。`secret_versions` は `removed`（`destroy = false`）で terraform の管理から外し、
+> app 機密の `TF_VAR_*` placeholder と変数定義も撤去した。値の正本は Secret Manager。
 
 ## コンテキスト
 

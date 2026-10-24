@@ -9,9 +9,6 @@ project_number = "123456789012"          # GCPプロジェクト番号（コン�
 # GCPリージョン（デフォルト: asia-northeast1）
 region = "asia-northeast1"             # 東京リージョン
 
-# YouTube APIキー
-youtube_api_key = "your-youtube-data-api-key"   # YouTubeデータAPI用のキー
-
 # 環境設定（staging, production）  
 environment = "staging"
 
@@ -23,31 +20,8 @@ admin_email = "your-email@example.com"           # 監視アラート通知先�
 # カスタムドメイン設定（オプション）
 custom_domain = "suzumina.click"                # カスタムドメイン名
 
-# ===========================================
-# 認証関連設定（Discord OAuth）
-# ===========================================
-
-# Discord OAuth Application設定
-# Discord Developer Portal (https://discord.com/developers/applications) で作成
-discord_client_id = "1234567890123456789"      # Discord Application Client ID
-discord_client_secret = "your-discord-client-secret-here"  # Discord Application Client Secret
-
-
-# better-auth Secret（session/cookie 署名用）
-# 生成方法: openssl rand -base64 32
-better_auth_secret = "your-better-auth-secret-base64-encoded"
-
-# ===========================================
-# メール設定（Resend）
-# ===========================================
-
-# Resend API キー
-# https://resend.com/api-keys から取得
-resend_api_key = "re_your_resend_api_key_here"
-
-# お問い合わせフォーム通知先メールアドレス
-# カンマ区切りで複数指定可能
-contact_email_recipients = "your-email@example.com,another-email@example.com"
+# アプリの機密（Discord / better-auth / Resend / YouTube / Gemini）は terraform 変数ではない。
+# 値は Secret Manager に直接入れる（gcloud secrets versions add）。secrets.tf を参照。
 
 # ===========================================
 # Cloudflare設定

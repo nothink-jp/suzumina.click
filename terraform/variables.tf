@@ -36,18 +36,6 @@ variable "project_number" {
   type        = string
 }
 
-variable "youtube_api_key" {
-  description = "YouTube Data API キー"
-  type        = string
-  sensitive   = true
-}
-
-variable "gemini_api_key" {
-  description = "Gemini API キー（音声ボタンのメタ入力候補生成 SPR-148）"
-  type        = string
-  sensitive   = true
-}
-
 
 variable "environment" {
   # staging は実体のない死蔵環境（state 0 リソース）だったため SPR-100 で廃止。production を唯一の環境とする。
@@ -110,45 +98,6 @@ variable "enable_detailed_scraping" {
   description = "DLsite詳細スクレイピング機能の有効化"
   type        = bool
   default     = true
-}
-
-# ==========================================================
-# 認証関連変数
-# ==========================================================
-
-variable "discord_client_id" {
-  description = "Discord OAuth Application Client ID"
-  type        = string
-  sensitive   = false # Client IDは公開情報のためsensitiveではない
-}
-
-variable "discord_client_secret" {
-  description = "Discord OAuth Application Client Secret"
-  type        = string
-  sensitive   = true
-}
-
-
-variable "better_auth_secret" {
-  description = "better-auth secret for session/cookie signing (generate with: openssl rand -base64 32)"
-  type        = string
-  sensitive   = true
-}
-
-# ==========================================================
-# メール設定用変数
-# ==========================================================
-
-variable "resend_api_key" {
-  description = "Resend API key for email sending"
-  type        = string
-  sensitive   = true
-}
-
-variable "contact_email_recipients" {
-  description = "Email recipients for contact form notifications (comma-separated)"
-  type        = string
-  sensitive   = true
 }
 
 # ==========================================================
