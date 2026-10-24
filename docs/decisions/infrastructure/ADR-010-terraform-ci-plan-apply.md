@@ -16,6 +16,10 @@
 > 2026-10-24 追記（SPR-374）: 下の「機密の扱い」の `ignore_changes = [secret_data]` では、bootstrap 時の値が tfstate に平文で残り続けた
 > （plan SA は任意ブランチから state を読める）。`secret_versions` は `removed`（`destroy = false`）で terraform の管理から外し、
 > app 機密の `TF_VAR_*` placeholder と変数定義も撤去した。値の正本は Secret Manager。
+>
+> 2026-10-24 追記（SPR-375）: 下の「例外」の `cloudflare_api_token` は、workflow 全体の env で PR の plan job にも書き込みトークンが渡っていた。
+> 現在は terraform 変数をやめて provider が環境変数 `CLOUDFLARE_API_TOKEN` を直接読む。plan は読み取り専用トークン（repo secret
+> `CLOUDFLARE_API_TOKEN_READONLY`）、apply は書き込みトークン（Environment(production) の secret `CLOUDFLARE_API_TOKEN`）を使う。
 
 ## コンテキスト
 

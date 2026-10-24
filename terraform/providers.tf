@@ -30,6 +30,7 @@ provider "google-beta" {
   region  = var.region
 }
 
-provider "cloudflare" {
-  api_token = var.cloudflare_api_token
-}
+# トークンは環境変数 CLOUDFLARE_API_TOKEN から provider が直接読む（SPR-375）。terraform の変数にすると
+# plan ファイルに値が入り、保存した plan を apply すると plan 時のトークンがそのまま使われる。env なら
+# plan は読み取り専用トークン、apply は書き込みトークン（Environment(production) の secret）に分けられる。
+provider "cloudflare" {}

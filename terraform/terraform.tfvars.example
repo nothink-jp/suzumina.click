@@ -27,8 +27,9 @@ custom_domain = "suzumina.click"                # カスタムドメイン名
 # Cloudflare設定
 # ===========================================
 
-# Cloudflare APIトークン
-# https://dash.cloudflare.com/profile/api-tokens から作成
-# 必要な権限: Zone:Read, Zone Settings:Edit, Cache Rules:Edit, DNS:Edit
-cloudflare_api_token = "your-cloudflare-api-token-here"
+# Cloudflare APIトークンは terraform 変数ではなく環境変数で渡す（providers.tf）
+# https://dash.cloudflare.com/profile/api-tokens から作成（対象ゾーンは suzumina.click に絞る）
+#   plan だけ: Zone:Read, Zone Settings:Read, Cache Rules:Read, DNS:Read
+#   apply も:  Zone:Read, Zone Settings:Edit, Cache Rules:Edit, DNS:Edit
+# export CLOUDFLARE_API_TOKEN="your-cloudflare-api-token-here"
 
