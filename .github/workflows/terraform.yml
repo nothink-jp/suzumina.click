@@ -43,9 +43,10 @@ env:
   TF_VAR_custom_domain: suzumina.click
   TF_VAR_domain_name: suzumina.click
   # --- 実値が必要な変数 ---
-  # cloudflare provider 認証（plan の cloudflare refresh に必須）/ monitoring 通知先
-  TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+  # monitoring 通知先
   TF_VAR_admin_email: ${{ secrets.ADMIN_EMAIL }}
+  # Cloudflare のトークンは workflow 全体に渡さない。plan は読み取り専用、apply は書き込み用を、
+  # それぞれのステップだけに env で渡す（SPR-375・providers.tf）。
   # app 機密（Secret Manager の値）は terraform の変数にしない。値の正本は Secret Manager（secrets.tf・SPR-374）。
 
 defaults:
@@ -80,6 +81,10 @@ jobs:
         run: terraform workspace select production
 
       - name: Plan (save to file)
+        env:
+          # 読み取り専用（Zone / Zone Settings / Cache Rules / DNS の Read）。PR の job にも渡るので書き込み権限は持たせない。
+          # main の plan もこれで作る。トークンは plan ファイルに入らず、apply は apply job の env のトークンを使う。
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_READONLY }}
         run: |
           set -o pipefail
           # read-only SA は lock 書き込み不可のため plan は -lock=false。apply job 側で lock する。
@@ -107,7 +112,7 @@ jobs:
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
-      # tfplan.bin は入力変数の値（TF_VAR_cloudflare_api_token 等）を平文で含む（sensitive 指定でも同じ）。
+      # tfplan.bin は入力変数の値（TF_VAR_admin_email 等）と plan 時点の state を平文で含む（sensitive 指定でも同じ）。
       # public repo の artifact はログインした誰でもダウンロードできるため、暗号化してから渡す。
       # パスフレーズは argv に載せず env で渡す（openssl -pass env:）。agent 不要で runner に標準搭載。
       - name: Encrypt plan
@@ -180,4 +185,9 @@ jobs:
             -pass env:TF_PLAN_PASSPHRASE -in tfplan.bin.enc -out tfplan.bin
 
       - name: Apply saved plan
+        env:
+          # 書き込み用。Environment(production) の secret にだけ置く（repo の secret は PR の job からも参照できる）。
+          # repo の secret と名前を分けておけば、repo 側に同名が登録されても参照されず、Environment に無ければ
+          # 空のトークンで apply が失敗する（気づける）。同名にすると Environment 側が黙って優先される。
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_WRITE }}
         run: terraform apply -input=false tfplan.bin

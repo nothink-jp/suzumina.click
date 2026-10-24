@@ -400,7 +400,7 @@ resource "google_project_iam_member" "claude_readonly_roles" {
 }
 
 # GCS の閲覧はバケット単位で付ける。project 単位の roles/storage.objectViewer は不可:
-# tfstate は project の全構成と通知先メール等を含み、cloudflare_api_token は plan ファイルに載る。
+# tfstate は project の全構成と通知先メール等を含む。
 # アプリ機密（secret_data）は SPR-374 で state から外したが、閲覧の範囲は必要なバケットに絞る方針を保つ。
 resource "google_storage_bucket_iam_member" "claude_readonly_functions_deployment_viewer" {
   bucket = google_storage_bucket.functions_deployment.name
