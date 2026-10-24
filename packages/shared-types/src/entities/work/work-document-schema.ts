@@ -106,7 +106,7 @@ export const DLsiteWorkBaseSchema = z.object({
 	/** ファイル形式表示名 - Individual Info API `file_type_string` */
 	fileTypeString: z.string().optional(),
 	/** 特殊ファイル形式 - Individual Info API `file_type_special` */
-	fileTypeSpecial: z.string().optional(),
+	fileTypeSpecial: z.string().nullish(),
 	/** 作品オプション - Individual Info API `options` */
 	options: z.string().optional(),
 	/** 作品属性 - Individual Info API `work_attributes` */
@@ -114,7 +114,7 @@ export const DLsiteWorkBaseSchema = z.object({
 	/** ファイル日付 - Individual Info API `file_date` */
 	fileDate: z.string().optional(),
 	/** ファイルサイズ - Individual Info API `file_size` */
-	fileSize: z.number().optional(),
+	fileSize: z.number().nullish(),
 
 	// === Individual Info API準拠画像情報 ===
 	/** メイン画像 - Individual Info API `image_main` */
