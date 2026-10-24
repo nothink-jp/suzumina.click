@@ -71,6 +71,7 @@ Gen2 のため実体は Cloud Run サービス（名前は小文字: `fetchyoutu
   `datastore.*` の書き込み権限が要るので、owner 権限で人が実行する（Claude の read-only SA には付いていない）。
   破壊的操作を Emulator で先に試す方針は変わらない（CLAUDE.md §2）。
   1. 戻したい時点を決める。7 日以内なら PITR、それより前ならバックアップを使う。
+     どちらも有効化（apply）した時点より前には戻れない。
   2. 作業用のバケットを作る（同じプロジェクト・同じリージョン。作業が終わったら消す）。
      ```bash
      gcloud storage buckets create gs://suzumina-click-firestore-restore --location=asia-northeast1

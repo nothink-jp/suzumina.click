@@ -14,7 +14,7 @@ resource "google_firestore_database" "database" {
   location_id = var.region         # 他のリソースと同じリージョン
   type        = "FIRESTORE_NATIVE" # Firestoreネイティブモードを使用
 
-  # 直近 7 日間を 1 分単位で読み戻せる（復元は別 DB へ clone してから必要な doc だけ戻す）。
+  # 直近 7 日間を 1 分単位で読み戻せる（復元は過去の時点を export し、必要なコレクションだけ import で戻す）。
   # 料金は DB サイズ × PITR 単価（Tokyo $0.195/GiB 月）。DB は SPR-323 で約 1 GiB に縮小済み。
   point_in_time_recovery_enablement = "POINT_IN_TIME_RECOVERY_ENABLED"
 
