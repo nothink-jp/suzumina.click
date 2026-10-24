@@ -66,8 +66,40 @@ Gen2 のため実体は Cloud Run サービス（名前は小文字: `fetchyoutu
   ```
   次の通常デプロイでトラフィックは最新 revision に戻るため、恒久対応は revert PR で行う。
 - **functions**: revert PR を main にマージして再デプロイするのが基本（各関数も直近 3 revision を保持）。
-- **Firestore**: terraform にバックアップ / PITR の定義は無い（`firestore_database.tf`）。データの巻き戻し手段は用意されていない前提で、
-  破壊的操作は Emulator で試す（CLAUDE.md §2）。
+- **Firestore**: PITR（直近 7 日・1 分単位）と日次バックアップ（保持 14 日）がある（定義は `firestore_database.tf`・SPR-342）。
+  どちらも **`(default)` を上書きする復元はできない**。過去の時点を別の場所に取り出し、必要なコレクションだけ `(default)` へ戻す。
+  `datastore.*` の書き込み権限が要るので、owner 権限で人が実行する（Claude の read-only SA には付いていない）。
+  破壊的操作を Emulator で先に試す方針は変わらない（CLAUDE.md §2）。
+  1. 戻したい時点を決める。7 日以内なら PITR、それより前ならバックアップを使う。
+  2. 作業用のバケットを作る（同じプロジェクト・同じリージョン。作業が終わったら消す）。
+     ```bash
+     gcloud storage buckets create gs://suzumina-click-firestore-restore --location=asia-northeast1
+     ```
+  3. 過去の時点のデータを export する。
+     - **PITR**: `--snapshot-time` は 1 分単位の UTC 時刻で、7 日以内に限る。
+       ```bash
+       gcloud firestore export gs://suzumina-click-firestore-restore/<作業名> \
+         --database='(default)' --snapshot-time=2026-10-24T01:23:00Z --collection-ids=audioButtons
+       ```
+     - **バックアップ**: 一時 DB に restore し、そこから export する。
+       ```bash
+       gcloud firestore backups list --location=asia-northeast1
+       gcloud firestore databases restore --destination-database=restore-<日付> \
+         --source-backup=projects/suzumina-click/locations/asia-northeast1/backups/<backup id>
+       gcloud firestore export gs://suzumina-click-firestore-restore/<作業名> \
+         --database=restore-<日付> --collection-ids=audioButtons
+       ```
+     `--collection-ids` は collection group 単位で、`users` 配下（favorites 等）も名前で指定する。
+  4. `(default)` へ import する。**同じ ID の doc は上書きされ、export に無い doc は消えずに残る**。
+     消えた doc を戻す用途ならこれで足りるが、壊れた doc の「後から増えた分」は消えない点に注意する。
+     ```bash
+     gcloud firestore import gs://suzumina-click-firestore-restore/<作業名> --database='(default)'
+     ```
+     戻したコレクションと他のコレクションの非正規化（Circle workIds 等）は揃わないことがある。戻した後に `checkDataIntegrity` の結果で確かめる。
+  5. 片付ける。一時 DB（`gcloud firestore databases delete --database=restore-<日付>`）と作業用バケットを消す。
+     どちらも terraform 管理外なので、残すと課金が続く。
+
+  `(default)` は削除保護が有効なので、DB ごと消すには先に terraform で `delete_protection_state` を外す必要がある。
 
 ## デプロイ後の確認
 
