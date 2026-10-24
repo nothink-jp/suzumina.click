@@ -52,7 +52,11 @@ overrides:
   # serialize で未検証の port による authority 注入（GHSA-qw65-cvwx-89v3, <4.1.4）/ authority の閉じ括弧欠落による
   # ホスト混同（GHSA-58mr-gqgx-xq4g, =4.1.3）/ percent-encoded octet のホスト大文字小文字正規化の不一致
   # （GHSA-hrr3-gc8f-f4qj, <4.1.5）/ mailto の field-name desync によるヘッダ注入（GHSA-jvvf-x445-j334, <4.1.5）。
-  fast-uri: ">=4.1.5 <4.1.6"
+  # 同じく 4.1.5 が次の 4 件で赤くなったため floor/上限とも 4.2.3 へ引き上げ（いずれも <4.2.3）:
+  # percent-encoded scheme の decode による scheme spoofing（GHSA-w74x-v6f9-j3xg）/ WHATWG ホスト正規化の
+  # 未検証によるホスト混同（GHSA-wjr9-j795-jxcr）/ 相対参照の正規化での path 同値判定の誤り（GHSA-xhq7-xmqj-769h, low）/
+  # suffix 参照の先頭セグメントの未エスケープ colon による scheme injection（GHSA-333x-w4r6-6crp, low）。
+  fast-uri: ">=4.2.3 <4.2.4"
   # nanoid < 3.3.18: custom generator に size=0 を渡すと無限ループする DoS（GHSA-2v37-7h3g-55p8）。
   # 唯一の依存元 postcss は `^3.3.16` を要求し自然解決が 3.3.16 に留まるため引き上げる。
   # 当初この advisory の patched は 3.3.17 で、3.3.18 が公開直後（minimumReleaseAge に掛かる）
