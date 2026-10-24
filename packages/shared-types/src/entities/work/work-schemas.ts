@@ -26,7 +26,7 @@ export const WorkCategorySchema = z.enum([
 	"PZL", // パズル
 	"QIZ", // クイズ
 	"TBL", // テーブル
-	"DGT", // デジタルノベル
+	"DNV", // デジタルノベル
 	"etc", // その他
 ]);
 

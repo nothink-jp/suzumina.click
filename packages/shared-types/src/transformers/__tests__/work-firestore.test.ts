@@ -121,3 +121,14 @@ describe("work-firestore fromFirestore の translationInfo", () => {
 		expect(fromFirestore(createWorkDocument()).translationInfo).toBeUndefined();
 	});
 });
+
+// SPR-376: DLsite API は file_size に null を返し、Firestore にもそのまま入っている
+describe("work-firestore fromFirestore の fileSize", () => {
+	it("null は undefined に落とす（PlainObject の fileSize?: number に合わせる）", () => {
+		expect(fromFirestore(createWorkDocument({ fileSize: null })).fileSize).toBeUndefined();
+	});
+
+	it("数値はそのまま", () => {
+		expect(fromFirestore(createWorkDocument({ fileSize: 1024 })).fileSize).toBe(1024);
+	});
+});

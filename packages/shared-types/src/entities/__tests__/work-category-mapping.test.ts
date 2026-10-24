@@ -32,7 +32,7 @@ describe("Work Category Mapping", () => {
 				PZL: "パズル",
 				QIZ: "クイズ",
 				TBL: "テーブル",
-				DGT: "デジタルノベル",
+				DNV: "デジタルノベル",
 				etc: "その他",
 			};
 
@@ -72,7 +72,7 @@ describe("Work Category Mapping", () => {
 				"PZL",
 				"QIZ",
 				"TBL",
-				"DGT",
+				"DNV",
 				"etc",
 			];
 

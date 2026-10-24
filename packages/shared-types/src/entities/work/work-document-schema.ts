@@ -320,10 +320,10 @@ export const WorkDocumentSchema = z.object({
 	fileType: z.string().optional(),
 	/** ファイルタイプ表示名 - Individual Info API `file_type_string` */
 	fileTypeString: z.string().optional(),
-	/** 特殊ファイルタイプ - Individual Info API `file_type_special` */
-	fileTypeSpecial: z.string().optional(),
-	/** ファイルサイズ - Individual Info API `file_size` */
-	fileSize: z.number().optional(),
+	/** 特殊ファイルタイプ - Individual Info API `file_type_special`（API が null を返し、そのまま保存されている） */
+	fileTypeSpecial: z.string().nullish(),
+	/** ファイルサイズ - Individual Info API `file_size`（API が null を返し、そのまま保存されている） */
+	fileSize: z.number().nullish(),
 
 	/** サンプル画像 */
 	sampleImages: z

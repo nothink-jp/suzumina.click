@@ -53,6 +53,11 @@ describe("parseWorkDocument", () => {
 		expect(logger.warn).not.toHaveBeenCalled();
 	});
 
+	it("本番の実データの形（fileSize / fileTypeSpecial が null・category が DNV）は warn しない（SPR-376）", () => {
+		parseWorkDocument({ ...validRaw, category: "DNV", fileSize: null, fileTypeSpecial: null });
+		expect(logger.warn).not.toHaveBeenCalled();
+	});
+
 	it("検証失敗時は warn して raw を非破壊で返す（落とさない）", () => {
 		const raw = { productId: "RJ999", title: "必須欠落" };
 		const result = parseWorkDocument(raw);
