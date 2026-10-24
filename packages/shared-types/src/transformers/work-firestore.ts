@@ -229,7 +229,7 @@ export function fromFirestore(doc: WorkDocument): WorkPlainObject {
 
 			// Business logic
 			isAdultContent: doc.ageRating?.includes("18") || doc.ageCategory === 3 || false,
-			isVoiceWork: doc.category === "SOU" || doc.workType === "SOU" || false,
+			isVoiceWork: doc.category === "SOU" || doc.workType === "SOU",
 			isGameWork: (GAME_CATEGORY_CODES as readonly string[]).includes(doc.category),
 			isMangaWork: (MANGA_CATEGORY_CODES as readonly string[]).includes(doc.category),
 			hasDiscount: (doc.price?.current || 0) < (doc.price?.original || doc.price?.current || 0),
