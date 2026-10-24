@@ -118,9 +118,17 @@ function logMessage(level: LogLevel, message: string, optionsOrError?: LogOption
 		}
 	}
 
-	// 本番環境では構造化ログを出力（Cloud Runが自動的にCloud Loggingに転送）
-	// 開発環境では読みやすい形式で出力
+	writeLogEntry(logEntry);
+}
+
+/**
+ * ログエントリを console に書き出す
+ * 本番は Cloud Logging が拾う 1 行 JSON、開発は読みやすい形式
+ */
+function writeLogEntry(logEntry: Record<string, unknown>): void {
 	if (process.env.NODE_ENV === "production") {
+		// ブラウザの console は Cloud Logging に届かず、閲覧者に内部情報を見せるだけなので出さない
+		if (typeof window !== "undefined") return;
 		// biome-ignore lint/suspicious/noConsole: Cloud Loggingとの統合に必要
 		console.log(JSON.stringify(logEntry));
 	} else {

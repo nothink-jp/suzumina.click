@@ -14,11 +14,9 @@ const nextConfig = {
 	// Server ComponentsでのみGoogle Cloud SDKを使用するための設定
 	serverExternalPackages: ["@google-cloud/firestore", "@google-cloud/storage", "resend"],
 
-	// コンパイラー最適化
-	compiler: {
-		// 本番環境でのコンソール除去
-		removeConsole: process.env.NODE_ENV === "production",
-	},
+	// compiler.removeConsole は使わない（SPR-338）。サーバーバンドルにも効き、logger.ts の
+	// 構造化ログ（console.log）まで本番で消えて Cloud Logging・ログベースのアラートが空になっていた。
+	// ブラウザ側の出力は logger.ts 側で抑える。
 
 	// React Compiler（Next.js 16対応）
 	reactCompiler: true,

@@ -47,12 +47,23 @@ describe("logger（開発環境: severity 別 console）", () => {
 describe("logger（本番環境: JSON 構造化ログ）", () => {
 	beforeEach(() => setEnv("production"));
 
-	it("severity 付き JSON を console.log に出力", () => {
+	it("サーバーでは severity 付き JSON を console.log に出力", () => {
+		vi.stubGlobal("window", undefined);
 		error("本番エラー");
 		const json = JSON.parse(logSpy.mock.calls[0]?.[0] as string);
 		expect(json.severity).toBe(LogLevel.ERROR);
 		expect(json.message).toBe("本番エラー");
 		expect(json.timestamp).toBeDefined();
+		vi.unstubAllGlobals();
+	});
+
+	it("ブラウザでは何も出力しない", () => {
+		error("本番エラー");
+		warn("本番警告");
+		info("本番情報");
+		expect(logSpy).not.toHaveBeenCalled();
+		expect(warnSpy).not.toHaveBeenCalled();
+		expect(errorSpy).not.toHaveBeenCalled();
 	});
 });
 
