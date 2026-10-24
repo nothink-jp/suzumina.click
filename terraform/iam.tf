@@ -67,9 +67,11 @@ resource "google_project_iam_member" "cloud_functions_deployer_log_writer" {
 # Cloud Build の既定ビルド SA である compute default SA。deploy-functions.yml の --service-account を足したらここにも足す。
 locals {
   cloud_functions_deployer_act_as_sas = {
-    fetch_youtube_videos           = google_service_account.fetch_youtube_videos_sa.name
-    fetch_dlsite_individual_api    = google_service_account.fetch_dlsite_individual_api_sa.name
-    data_integrity_check           = google_service_account.data_integrity_check_sa.name
+    fetch_youtube_videos        = google_service_account.fetch_youtube_videos_sa.name
+    fetch_dlsite_individual_api = google_service_account.fetch_dlsite_individual_api_sa.name
+    data_integrity_check        = google_service_account.data_integrity_check_sa.name
+    functions_build             = google_service_account.functions_build_sa.name
+    # deploy-functions.yml を --build-service-account に切り替えたら外す（SPR-373 の後半）
     compute_default_build_identity = "projects/${var.gcp_project_id}/serviceAccounts/${data.google_project.project.number}-compute@developer.gserviceaccount.com"
   }
 }
@@ -79,6 +81,56 @@ resource "google_service_account_iam_member" "cloud_functions_deployer_act_as" {
   service_account_id = each.value
   role               = "roles/iam.serviceAccountUser"
   member             = "serviceAccount:${google_service_account.cloud_functions_deployer_sa.email}"
+}
+
+# ------------------------------------------------------------------------------
+# Cloud Functions のビルド専用サービスアカウント（SPR-373）
+# ------------------------------------------------------------------------------
+# 既定のビルド SA は compute default SA で、project 全体の secretAccessor などを持つ。デプロイ SA はビルドを
+# 通じてその権限でコードを動かせたため、ビルドだけに要る権限を持つ専用 SA に分ける。
+# 必要な権限は Cloud Functions のドキュメント（カスタムビルド SA）どおり: ログの書き込み・gcf-artifacts への
+# イメージの push・ソースバケットの読み取り。deploy-functions.yml の --build-service-account で指定する。
+
+resource "google_service_account" "functions_build_sa" {
+  project      = var.gcp_project_id
+  account_id   = "functions-build-sa"
+  display_name = "Cloud Functions build SA"
+  description  = "Cloud Functions（gen2）のビルド専用。compute default SA の代わりに使う（SPR-373）"
+}
+
+resource "google_project_iam_member" "functions_build_log_writer" {
+  project = var.gcp_project_id
+  role    = "roles/logging.logWriter"
+  member  = "serviceAccount:${google_service_account.functions_build_sa.email}"
+}
+
+resource "google_artifact_registry_repository_iam_member" "functions_build_gcf_artifacts_writer" {
+  project    = var.gcp_project_id
+  location   = google_artifact_registry_repository.gcf_artifacts.location
+  repository = google_artifact_registry_repository.gcf_artifacts.name
+  role       = "roles/artifactregistry.writer"
+  member     = "serviceAccount:${google_service_account.functions_build_sa.email}"
+}
+
+# ソースの読み取り。デプロイ zip を置くバケットと、Cloud Functions が自動で作るソース用バケット
+# （gcf-v2-sources-* / gcf-v2-uploads-* / run-sources-*。terraform 管理外なので名前の前方一致で絞る）。
+# project 単位の無条件の objectViewer にはしない（tfstate バケットまで読めてしまう）。
+resource "google_storage_bucket_iam_member" "functions_build_deployment_viewer" {
+  bucket = google_storage_bucket.functions_deployment.name
+  role   = "roles/storage.objectViewer"
+  member = "serviceAccount:${google_service_account.functions_build_sa.email}"
+}
+
+resource "google_project_iam_member" "functions_build_gcf_sources_viewer" {
+  project = var.gcp_project_id
+  role    = "roles/storage.objectViewer"
+  member  = "serviceAccount:${google_service_account.functions_build_sa.email}"
+
+  condition {
+    title       = "gcf-source-buckets-only"
+    description = "Cloud Functions が自動で作るソース用バケットだけ"
+    expression  = "resource.name.startsWith(\"projects/_/buckets/gcf-v2-sources-\") || resource.name.startsWith(\"projects/_/buckets/gcf-v2-uploads-\") || resource.name.startsWith(\"projects/_/buckets/run-sources-\")"
+  }
 }
 
 # Cloud Build Service Account権限（デプロイ用）
