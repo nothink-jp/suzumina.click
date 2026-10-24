@@ -27,13 +27,14 @@ resource "google_service_account" "cloud_functions_deployer_sa" {
   description  = "GitHub ActionsからCloud Functionsの更新のみを実行する最小権限サービスアカウント"
 }
 
-# サービスアカウントとWorkload Identity Poolの連携
+# WIF 連携: main ブランチ限定（SPR-344）。使うのは deploy-functions.yml（push(main) / workflow_dispatch(main)）だけで、
+# PR から assume する理由が無い。repo 限定は provider の attribute_condition が担う。
 resource "google_service_account_iam_binding" "cloud_functions_sa_binding" {
   service_account_id = google_service_account.cloud_functions_deployer_sa.name
   role               = "roles/iam.workloadIdentityUser"
 
   members = [
-    "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_pool.name}/attribute.repository/nothink-jp/suzumina.click"
+    "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_pool.name}/attribute.ref/refs/heads/main"
   ]
 
   depends_on = [
@@ -61,13 +62,23 @@ resource "google_project_iam_member" "cloud_functions_deployer_log_writer" {
   depends_on = [google_service_account.cloud_functions_deployer_sa]
 }
 
-# サービスアカウント利用者権限
-resource "google_project_iam_member" "cloud_functions_deployer_sa_user" {
-  project = var.gcp_project_id
-  role    = "roles/iam.serviceAccountUser"
-  member  = "serviceAccount:${google_service_account.cloud_functions_deployer_sa.email}"
+# actAs は実際に使う SA にだけ付ける（SPR-344）。project 単位だと terraform-apply-sa を含む全 SA に actAs できた。
+# 対象は監査ログ（UpdateFunction の authorizationInfo）の実測: 各関数の runtime SA（= Eventarc trigger SA も兼ねる）と、
+# Cloud Build の既定ビルド SA である compute default SA。deploy-functions.yml の --service-account を足したらここにも足す。
+locals {
+  cloud_functions_deployer_act_as_sas = {
+    fetch_youtube_videos           = google_service_account.fetch_youtube_videos_sa.name
+    fetch_dlsite_individual_api    = google_service_account.fetch_dlsite_individual_api_sa.name
+    data_integrity_check           = google_service_account.data_integrity_check_sa.name
+    compute_default_build_identity = "projects/${var.gcp_project_id}/serviceAccounts/${data.google_project.project.number}-compute@developer.gserviceaccount.com"
+  }
+}
 
-  depends_on = [google_service_account.cloud_functions_deployer_sa]
+resource "google_service_account_iam_member" "cloud_functions_deployer_act_as" {
+  for_each           = local.cloud_functions_deployer_act_as_sas
+  service_account_id = each.value
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${google_service_account.cloud_functions_deployer_sa.email}"
 }
 
 # Cloud Build Service Account権限（デプロイ用）
@@ -88,23 +99,10 @@ resource "google_project_iam_member" "cloud_functions_deployer_viewer" {
   depends_on = [google_service_account.cloud_functions_deployer_sa]
 }
 
-# Storage管理権限（Functions用zipファイルアップロードに必要）
-resource "google_project_iam_member" "cloud_functions_deployer_storage_admin" {
-  project = var.gcp_project_id
-  role    = "roles/storage.admin"
-  member  = "serviceAccount:${google_service_account.cloud_functions_deployer_sa.email}"
-
-  depends_on = [google_service_account.cloud_functions_deployer_sa]
-}
-
-# IAMポリシー設定権限（デプロイ用）
-resource "google_project_iam_member" "cloud_functions_deployer_iam_admin" {
-  project = var.gcp_project_id
-  role    = "roles/resourcemanager.projectIamAdmin"
-  member  = "serviceAccount:${google_service_account.cloud_functions_deployer_sa.email}"
-
-  depends_on = [google_service_account.cloud_functions_deployer_sa]
-}
+# zip のアップロード権限は functions_deployment バケット単位で付けている（storage.tf）。
+# 以前ここにあった project 単位の roles/storage.admin（tfstate バケットの IAM まで変えられた）と
+# roles/resourcemanager.projectIamAdmin（自分に owner を付けられた）は SPR-344 で撤去した。
+# 監査ログ上、この SA の SetIamPolicy 呼び出しは保持期間（約13か月）内に一度も無い。
 
 # GitHubリポジトリにWorkload Identity連携を設定
 resource "google_iam_workload_identity_pool" "github_pool" {
@@ -145,28 +143,19 @@ resource "google_iam_workload_identity_pool_provider" "github_provider" {
   }
 }
 
-# サービスアカウントとWorkload Identity Poolの連携
+# WIF 連携: main ブランチ限定（SPR-344）。使うのは deploy-web.yml（push(main) / workflow_dispatch(main)）だけ。
 resource "google_service_account_iam_binding" "github_sa_binding" {
   service_account_id = google_service_account.github_actions_sa.name
   role               = "roles/iam.workloadIdentityUser"
 
   members = [
-    "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_pool.name}/attribute.repository/nothink-jp/suzumina.click"
+    "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_pool.name}/attribute.ref/refs/heads/main"
   ]
 
   depends_on = [
     google_service_account.github_actions_sa,
     google_iam_workload_identity_pool.github_pool
   ]
-}
-
-# GitHub Actions用サービスアカウントにCloud Build起動権限を付与
-resource "google_project_iam_member" "github_actions_cloudbuild_invoker" {
-  project = var.gcp_project_id
-  role    = "roles/cloudbuild.builds.editor"
-  member  = "serviceAccount:${google_service_account.github_actions_sa.email}"
-
-  depends_on = [google_service_account.github_actions_sa]
 }
 
 # GitHub Actions用サービスアカウントにログ閲覧権限を付与
@@ -232,24 +221,17 @@ resource "google_project_iam_member" "github_actions_artifact_registry_manager" 
   ]
 }
 
-# GitHub Actions用サービスアカウントにサービスアカウント利用者権限を付与
-resource "google_project_iam_member" "github_actions_service_account_user" {
-  project = var.gcp_project_id
-  role    = "roles/iam.serviceAccountUser"
-  member  = "serviceAccount:${google_service_account.github_actions_sa.email}"
-
-  depends_on = [google_service_account.github_actions_sa]
+# actAs は Cloud Run の runtime SA（cloud-run-nextjs）にだけ付ける（SPR-344）。project 単位だと
+# terraform-apply-sa を runtime SA にした revision を deploy でき、その権限でコードを動かせた。
+resource "google_service_account_iam_member" "github_actions_act_as_cloud_run" {
+  service_account_id = google_service_account.cloud_run_service_account.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${google_service_account.github_actions_sa.email}"
 }
 
-
-# GitHub Actions用サービスアカウントにCloud Run IAM管理権限を付与
-resource "google_project_iam_member" "github_actions_run_admin" {
-  project = var.gcp_project_id
-  role    = "roles/run.admin"
-  member  = "serviceAccount:${google_service_account.github_actions_sa.email}"
-
-  depends_on = [google_service_account.github_actions_sa]
-}
+# roles/run.admin（run.developer との差分は setIamPolicy）と roles/cloudbuild.builds.editor は SPR-344 で撤去した。
+# invoker は terraform が正本（cloud_run.tf）で deploy から --allow-unauthenticated を外して以降
+# run.services.setIamPolicy の呼び出しは無い（最終 2026-05-31）。Cloud Build は deploy-web がランナー上の buildx でビルドするため使っていない。
 
 # ------------------------------------------------------------------------------
 # Terraform CI: plan 用 read-only サービスアカウント（ADR-010 / SPR-99 Stage 1）
