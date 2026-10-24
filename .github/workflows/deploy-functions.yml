@@ -121,6 +121,10 @@ jobs:
           echo "DEPLOYMENT_SOURCE=gs://$BUCKET_NAME/$ARCHIVE_NAME" >> $GITHUB_ENV
 
       - name: Deploy functions in parallel
+        env:
+          # ビルドは専用 SA で行う（SPR-373）。未指定だと compute default SA（editor / 全 secret の読み取りを持つ）が
+          # ビルドを実行し、デプロイ SA はその actAs を通じて同じ権限でコードを動かせた。権限は iam.tf の functions_build_sa。
+          BUILD_SERVICE_ACCOUNT: projects/${{ secrets.GCP_PROJECT_ID }}/serviceAccounts/functions-build-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com
         run: |
           echo "🚀 Deploying functions in parallel..."
           
@@ -146,6 +150,7 @@ jobs:
             --timeout 540s \
             --max-instances 3 \
             --service-account fetch-youtube-videos-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
+            --build-service-account "$BUILD_SERVICE_ACCOUNT" \
             --quiet &
           deploy_pids["fetchYouTubeVideos"]=$!
           
@@ -167,6 +172,7 @@ jobs:
             --timeout 540s \
             --max-instances 1 \
             --service-account fetch-dlsite-individual-api-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
+            --build-service-account "$BUILD_SERVICE_ACCOUNT" \
             --quiet &
           deploy_pids["fetchDLsiteUnifiedData"]=$!
           
@@ -184,6 +190,7 @@ jobs:
             --timeout 540s \
             --max-instances 1 \
             --service-account data-integrity-check-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
+            --build-service-account "$BUILD_SERVICE_ACCOUNT" \
             --ingress-settings internal-only \
             --quiet &
           deploy_pids["checkDataIntegrity"]=$!

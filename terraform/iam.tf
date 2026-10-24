@@ -63,16 +63,15 @@ resource "google_project_iam_member" "cloud_functions_deployer_log_writer" {
 }
 
 # actAs は実際に使う SA にだけ付ける（SPR-344）。project 単位だと terraform-apply-sa を含む全 SA に actAs できた。
-# 対象は監査ログ（UpdateFunction の authorizationInfo）の実測: 各関数の runtime SA（= Eventarc trigger SA も兼ねる）と、
-# Cloud Build の既定ビルド SA である compute default SA。deploy-functions.yml の --service-account を足したらここにも足す。
+# 対象は deploy-functions.yml で指定する SA: 各関数の runtime SA（--service-account・Eventarc trigger SA も兼ねる）と
+# ビルド SA（--build-service-account）。どちらかを足したらここにも足す。以前は既定のビルド SA である compute default SA
+# にも actAs していたが、ビルドを functions_build_sa に分けて外した（SPR-373）。
 locals {
   cloud_functions_deployer_act_as_sas = {
     fetch_youtube_videos        = google_service_account.fetch_youtube_videos_sa.name
     fetch_dlsite_individual_api = google_service_account.fetch_dlsite_individual_api_sa.name
     data_integrity_check        = google_service_account.data_integrity_check_sa.name
     functions_build             = google_service_account.functions_build_sa.name
-    # deploy-functions.yml を --build-service-account に切り替えたら外す（SPR-373 の後半）
-    compute_default_build_identity = "projects/${var.gcp_project_id}/serviceAccounts/${data.google_project.project.number}-compute@developer.gserviceaccount.com"
   }
 }
 
@@ -137,14 +136,11 @@ resource "google_project_iam_member" "functions_build_gcf_sources_viewer" {
   }
 }
 
-# Cloud Build Service Account権限（デプロイ用）
-resource "google_project_iam_member" "cloud_functions_deployer_cloudbuild_builder" {
-  project = var.gcp_project_id
-  role    = "roles/cloudbuild.builds.builder"
-  member  = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com"
-
-  depends_on = [data.google_project.project]
-}
+# compute default SA に付けていた roles/cloudbuild.builds.builder（既定のビルド SA 用）と project 全体の
+# roles/secretmanager.secretAccessor は、ビルドを functions_build_sa に分けたので SPR-373 で撤去した。
+# compute SA で動くサービスは無い（Cloud Run は全て専用 SA）。自動で付いた roles/editor は terraform 管理外で、手で外す。
+# 手で gcloud functions deploy するときも --build-service-account（functions_build_sa）が必須。付けないと既定の
+# compute SA でビルドしようとして、権限が無く失敗する（デプロイ SA なら compute SA への actAs が無く、ビルド前に失敗する）。
 
 # プロジェクト閲覧権限（Cloud Resource Manager API使用に必要）
 resource "google_project_iam_member" "cloud_functions_deployer_viewer" {
@@ -631,14 +627,6 @@ resource "google_project_iam_member" "eventarc_run_invoker" {
 # ------------------------------------------------------------------------------
 # 出力値
 # ------------------------------------------------------------------------------
-
-# Compute Engine デフォルトサービスアカウントにSecret Manager アクセス権限を付与
-# (手動デプロイとの互換性のため - 将来的には専用SAに移行予定)
-resource "google_project_iam_member" "compute_engine_secret_accessor" {
-  project = var.gcp_project_id
-  role    = "roles/secretmanager.secretAccessor"
-  member  = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com"
-}
 
 # プロジェクト番号を出力（GitHub Actionsで使用）
 output "project_number" {
