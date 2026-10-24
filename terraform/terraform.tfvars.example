@@ -4,15 +4,12 @@
 
 # GCPプロジェクトの識別子
 gcp_project_id = "your-gcp-project-id"   # あなたのGCPプロジェクトID
-project_number = "123456789012"          # GCPプロジェクト番号（コンソールのプロジェクト情報から確認可能）
 
 # GCPリージョン（デフォルト: asia-northeast1）
 region = "asia-northeast1"             # 東京リージョン
 
-# 環境設定（staging, production）  
-environment = "staging"
-
-# DLsite詳細データ取得設定
+# 環境設定（production のみ。staging は SPR-100 で廃止）
+environment = "production"
 
 # 監視・アラート設定
 admin_email = "your-email@example.com"           # 監視アラート通知先メールアドレス

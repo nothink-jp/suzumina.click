@@ -16,7 +16,7 @@ resource "google_service_account" "github_actions_sa" {
 }
 
 # ------------------------------------------------------------------------------
-# 最小権限サービスアカウント - Cloud Run専用デプロイアカウント
+# Cloud Functions デプロイ用サービスアカウント（deploy-functions.yml）
 # ------------------------------------------------------------------------------
 
 # Cloud Functions専用デプロイ用のサービスアカウント
@@ -43,8 +43,7 @@ resource "google_service_account_iam_binding" "cloud_functions_sa_binding" {
   ]
 }
 
-# Cloud Functions専用サービスアカウントに必要最小限の権限を付与
-# Cloud Functions管理者権限
+# 関数の作成・更新（roles/cloudfunctions.developer。管理者ロールではない）
 resource "google_project_iam_member" "cloud_functions_deployer_developer" {
   project = var.gcp_project_id
   role    = "roles/cloudfunctions.developer"
@@ -162,15 +161,6 @@ resource "google_iam_workload_identity_pool" "github_pool" {
   workload_identity_pool_id = "github-pool"
   display_name              = "GitHub Actions ID Pool" # 表示名を短く変更
   description               = "GitHubからの認証用のID Pool"
-
-  # 初回作成後に保護設定を有効化する
-  # lifecycle {
-  #   prevent_destroy = true
-  #   ignore_changes = [
-  #     description,
-  #     display_name
-  #   ]
-  # }
 }
 
 # GitHubプロバイダを設定
@@ -381,7 +371,7 @@ resource "google_service_account_iam_binding" "terraform_apply_sa_wif" {
 
 # curated strong: terraform が管理する全リソース＋その IAM をカバーする選定セット（roles/owner は回避）。
 # editor だけでは setIamPolicy（bucket/topic/secret/run/project/SA）・KMS・WIF・サービス有効化が不足するため
-# サービス別 admin を併用する。billing budget は billing.tf でコメントアウト済みのため billing 権限は不要。
+# サービス別 admin を併用する。terraform で billing（予算）は管理していないため billing 権限は不要。
 locals {
   terraform_apply_sa_roles = [
     "roles/editor",                          # 大半のリソース CRUD（run/scheduler/firestore/monitoring/logging/pubsub/AR/functions 等）
@@ -503,7 +493,7 @@ resource "google_project_iam_member" "fetch_youtube_videos_log_writer" {
   depends_on = [google_service_account.fetch_youtube_videos_sa]
 }
 
-# ADDED: 関数のサービスアカウントにRun Invokerロールを付与
+# 関数のサービスアカウントにRun Invokerロールを付与
 resource "google_project_iam_member" "fetch_youtube_videos_run_invoker" {
   project = var.gcp_project_id
   role    = "roles/run.invoker"
@@ -570,16 +560,6 @@ resource "google_pubsub_topic_iam_member" "scheduler_pubsub_publisher" {
 }
 
 
-# Cloud Schedulerが時系列データ収集トピックにメッセージを発行する権限 (非推奨・削除済み)
-# ⚠️ 統合アーキテクチャにより廃止: fetchDLsiteUnifiedData が時系列データ収集も統合実行
-# resource "google_pubsub_topic_iam_member" "scheduler_timeseries_pubsub_publisher" {
-#   project = google_pubsub_topic.dlsite_timeseries_collect_trigger.project
-#   topic   = google_pubsub_topic.dlsite_timeseries_collect_trigger.name
-#   role    = "roles/pubsub.publisher"
-#   member  = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-cloudscheduler.iam.gserviceaccount.com"
-#   depends_on = [google_pubsub_topic.dlsite_timeseries_collect_trigger, data.google_project.project]
-# }
-
 # Pub/Sub Service AgentにYouTube関数のサービスアカウントのToken Creatorロールを付与
 # Pub/SubがEventarc経由で認証された関数呼び出しのためにOIDCトークンを作成できるようにする
 resource "google_service_account_iam_member" "pubsub_token_creator" {
@@ -606,10 +586,8 @@ resource "google_project_iam_member" "eventarc_event_receiver" {
   ]
 }
 
-# Eventarc Service AgentにプロジェクトのRun Invokerロールを付与（理想的には、特定の関数のRunサービスに制限）
-# Eventarcが関数の基盤となるCloud Runサービスを呼び出せるようにする
-# 注: プロジェクトレベルにバインドするのは必要以上に広範ですが、この例では簡単にするためです。
-# より厳密なセキュリティのためには、関数に関連する特定のCloud Runサービスにバインドします。
+# Eventarc Service AgentにプロジェクトのRun Invokerロールを付与
+# Eventarcが関数の基盤となるCloud Runサービスを呼び出せるようにする。project 単位で広い（関数の Cloud Run サービス単位に絞れる）。
 resource "google_project_iam_member" "eventarc_run_invoker" {
   project = var.gcp_project_id
   role    = "roles/run.invoker"
@@ -619,9 +597,6 @@ resource "google_project_iam_member" "eventarc_run_invoker" {
     data.google_project.project,
   ]
 }
-
-# 注: Pub/Sub -> Cloud Functions v2（Eventarcトリガー）のバインディングは通常、event_triggerブロックが定義されている場合、google_cloudfunctions2_functionリソースによって自動的に処理されます。
-# これらの明示的なバインディングは、堅牢性を高めるために追加されています。
 
 
 # ------------------------------------------------------------------------------
