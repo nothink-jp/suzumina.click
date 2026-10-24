@@ -3,8 +3,8 @@ name: Terraform
 # ADR-010 / SPR-99: terraform の plan と apply を 1 本で持つ（TF_VAR と plan 手順を二重管理しない）。
 # - pull_request: read-only SA で plan して Job Summary に出すだけ（apply しない）
 # - push(main) / workflow_dispatch(main): plan → GitHub Environment(production) 承認 → 保存した plan を apply
-# 二重ゲート: (1) WIF は terraform-apply-sa を main ブランチからのみ assume 可（iam.tf）。
-#            (2) apply job は Environment(production) の required reviewer 承認が必須。
+# ゲート: terraform-apply-sa の WIF は Environment(production) の job だけを信頼する（iam.tf・SPR-372）。
+#         承認（required reviewer）と main 限定（deployment branch policy）は Environment の protection rules が担う。
 # main 以外の ref で workflow_dispatch した場合は plan のみ（apply job は ref で弾く）。
 
 on:
@@ -46,15 +46,7 @@ env:
   # cloudflare provider 認証（plan の cloudflare refresh に必須）/ monitoring 通知先
   TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
   TF_VAR_admin_email: ${{ secrets.ADMIN_EMAIL }}
-  # --- app 機密は Terraform 管理外（secrets.tf の ignore_changes=[secret_data]）---
-  # placeholder で plan/apply 可能（diff に出ない）。実値は out-of-band 管理。
-  TF_VAR_youtube_api_key: 'ci-placeholder'
-  TF_VAR_gemini_api_key: 'ci-placeholder'
-  TF_VAR_discord_client_id: 'ci-placeholder'
-  TF_VAR_discord_client_secret: 'ci-placeholder'
-  TF_VAR_better_auth_secret: 'ci-placeholder'
-  TF_VAR_resend_api_key: 'ci-placeholder'
-  TF_VAR_contact_email_recipients: 'ci-placeholder@example.com'
+  # app 機密（Secret Manager の値）は terraform の変数にしない。値の正本は Secret Manager（secrets.tf・SPR-374）。
 
 defaults:
   run:

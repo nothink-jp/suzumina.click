@@ -15,7 +15,7 @@
 - Cloud Run の spec（cpu / memory / instances / timeout）と invoker は terraform（[locals.tf](../../terraform/locals.tf) / `cloud_run.tf`）が正本。
   deploy-web は image / env / secret だけを更新する（[ADR-009](../decisions/infrastructure/ADR-009-deploy-iac-responsibility-split.md)）。
 - アプリの機密（Discord / better-auth / YouTube / Gemini / Resend 等）は Secret Manager。terraform はシークレットの器だけを持ち
-  値は管理しない（`secrets.tf` の `ignore_changes=[secret_data]`）＝値の更新は out-of-band で `gcloud secrets versions add`。
+  値は管理しない（secret バージョンは `secrets.tf` の `removed` で state から外した＝SPR-374）＝値の更新は out-of-band で `gcloud secrets versions add`。
 - エッジ（DNS / キャッシュルール）は Cloudflare（`terraform/cloudflare*.tf`）。
 
 ## Functions とトピック

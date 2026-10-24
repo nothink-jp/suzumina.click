@@ -100,28 +100,16 @@ resource "google_secret_manager_secret" "secrets" {
   depends_on = [google_project_service.secretmanager]
 }
 
-# シークレットバージョンの作成
-resource "google_secret_manager_secret_version" "secret_versions" {
-  for_each = {
-    "DISCORD_CLIENT_ID"        = var.discord_client_id
-    "DISCORD_CLIENT_SECRET"    = var.discord_client_secret
-    "BETTER_AUTH_SECRET"       = var.better_auth_secret
-    "YOUTUBE_API_KEY"          = var.youtube_api_key
-    "GEMINI_API_KEY"           = var.gemini_api_key
-    "RESEND_API_KEY"           = var.resend_api_key
-    "CONTACT_EMAIL_RECIPIENTS" = var.contact_email_recipients
-  }
+# secret の値（バージョン）は terraform の管理外。正本は Secret Manager 自体で、更新は console /
+# `gcloud secrets versions add` で out-of-band に行う（ADR-010）。terraform はコンテナ（上）と IAM だけを持つ。
+# 以前は google_secret_manager_secret_version で bootstrap 値を管理しており、ignore_changes でも secret_data が
+# tfstate に平文で残っていた（任意ブランチの plan SA から読めた＝SPR-374）。destroy = false で state からだけ外し、
+# Secret Manager 上のバージョンは消さない。
+removed {
+  from = google_secret_manager_secret_version.secret_versions
 
-  secret      = google_secret_manager_secret.secrets[each.key].id
-  secret_data = each.value
-
-  depends_on = [google_secret_manager_secret.secrets]
-
-  # secret 値は Terraform 管理外（bootstrap 一回化）＝ADR-010 / SPR-99。
-  # CI apply で TF_VAR が live と食い違っても誤ローテーションしないよう var 変更を無視する。
-  # 値の更新は console / `gcloud secrets versions add` で out-of-band 実施する（CI は placeholder で plan/apply 可能）。
   lifecycle {
-    ignore_changes = [secret_data]
+    destroy = false
   }
 }
 
