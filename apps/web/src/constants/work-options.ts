@@ -2,25 +2,31 @@
  * 作品関連の共通定数
  */
 
-// カテゴリオプション
-export const WORK_CATEGORY_OPTIONS = [
-	{ value: "SOU", label: "ボイス・ASMR" },
-	{ value: "ADV", label: "アドベンチャー" },
-	{ value: "RPG", label: "ロールプレイング" },
-	{ value: "MOV", label: "動画" },
-	{ value: "MNG", label: "マンガ" },
-	{ value: "GAM", label: "ゲーム" },
-	{ value: "CG", label: "CG・イラスト" },
-	{ value: "TOL", label: "ツール・アクセサリ" },
-	{ value: "ET3", label: "その他・3D" },
-	{ value: "SLN", label: "シミュレーション" },
-	{ value: "ACN", label: "アクション" },
-	{ value: "PZL", label: "パズル" },
-	{ value: "QIZ", label: "クイズ" },
-	{ value: "TBL", label: "テーブル" },
-	{ value: "DNV", label: "デジタルノベル" },
-	{ value: "etc", label: "その他" },
-];
+import { WORK_CATEGORY_DISPLAY_NAMES, type WorkCategory } from "@suzumina.click/shared-types";
+
+/** 作品一覧の絞り込みに出すカテゴリ（このサイトの作品に出てくる種別に絞る。表示名の正本は shared-types） */
+const WORK_CATEGORY_FILTER_CODES = [
+	"SOU",
+	"ADV",
+	"RPG",
+	"MOV",
+	"MNG",
+	"ICG",
+	"TOL",
+	"ET3",
+	"SLN",
+	"ACN",
+	"PZL",
+	"QIZ",
+	"TBL",
+	"DNV",
+	"etc",
+] as const satisfies readonly WorkCategory[];
+
+export const WORK_CATEGORY_OPTIONS = WORK_CATEGORY_FILTER_CODES.map((value) => ({
+	value,
+	label: WORK_CATEGORY_DISPLAY_NAMES[value],
+}));
 
 // 言語オプション
 export const WORK_LANGUAGE_OPTIONS = [

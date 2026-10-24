@@ -8,25 +8,36 @@
 import type { WorkCategory, WorkLanguage } from "./work-types";
 
 /**
- * DLsite作品カテゴリコードから日本語表示名へのマッピング
+ * DLsite作品カテゴリコードから日本語表示名へのマッピング（カテゴリ表示名の正本）
+ * 表示名は DLsite の検索ファセットの表記に合わせる
  */
 export const WORK_CATEGORY_DISPLAY_NAMES: Record<WorkCategory, string> = {
-	ADV: "アドベンチャー",
-	SOU: "ボイス・ASMR",
-	RPG: "ロールプレイング",
-	MOV: "動画",
-	MNG: "マンガ",
-	GAM: "ゲーム",
-	CG: "CG・イラスト",
-	TOL: "ツール・アクセサリ",
-	ET3: "その他・3D",
-	SLN: "シミュレーション",
 	ACN: "アクション",
-	PZL: "パズル",
 	QIZ: "クイズ",
+	ADV: "アドベンチャー",
+	RPG: "ロールプレイング",
 	TBL: "テーブル",
 	DNV: "デジタルノベル",
-	etc: "その他",
+	SLN: "シミュレーション",
+	TYP: "タイピング",
+	STG: "シューティング",
+	PZL: "パズル",
+	ETC: "その他ゲーム",
+	MNG: "マンガ",
+	SCM: "劇画",
+	WBT: "タテヨミ",
+	ICG: "CG・イラスト",
+	NRE: "ノベル",
+	KSV: "官能小説",
+	MOV: "動画",
+	SOU: "ボイス・ASMR",
+	MUS: "音楽",
+	TOL: "ツール/アクセサリ",
+	IMT: "画像素材",
+	AMT: "音素材",
+	ET3: "その他",
+	VCM: "ボイスコミック",
+	etc: "未分類",
 } as const;
 
 /**
@@ -74,16 +85,28 @@ export const AGE_CATEGORY_STRING_LABELS: Record<string, string> = {
  * ゲーム系作品カテゴリコード
  */
 export const GAME_CATEGORY_CODES = [
-	"GAM",
-	"RPG",
 	"ACN",
-	"SLN",
-	"ADV",
-	"PZL",
 	"QIZ",
+	"ADV",
+	"RPG",
 	"TBL",
 	"DNV",
-] as const;
+	"SLN",
+	"TYP",
+	"STG",
+	"PZL",
+	"ETC",
+] as const satisfies readonly WorkCategory[];
+
+/**
+ * マンガ・イラスト系作品カテゴリコード
+ */
+export const MANGA_CATEGORY_CODES = [
+	"MNG",
+	"SCM",
+	"WBT",
+	"ICG",
+] as const satisfies readonly WorkCategory[];
 
 /**
  * サポートされている言語コード

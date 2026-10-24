@@ -115,24 +115,7 @@ const validFirestoreWork: WorkDocument = {
 
 describe("WorkCategorySchema", () => {
 	it("有効な作品カテゴリを検証できる", () => {
-		const validCategories = [
-			"ADV",
-			"SOU",
-			"RPG",
-			"MOV",
-			"MNG",
-			"GAM",
-			"CG",
-			"TOL",
-			"ET3",
-			"SLN",
-			"ACN",
-			"PZL",
-			"QIZ",
-			"TBL",
-			"DNV",
-			"etc",
-		];
+		const validCategories = ["SOU", "RPG", "ADV", "SLN", "DNV", "ICG", "VCM", "ET3", "etc"];
 
 		validCategories.forEach((category) => {
 			expect(WorkCategorySchema.safeParse(category).success).toBe(true);
@@ -141,6 +124,10 @@ describe("WorkCategorySchema", () => {
 
 	it("無効な作品カテゴリでエラーが発生する", () => {
 		expect(WorkCategorySchema.safeParse("INVALID").success).toBe(false);
+		// DLsite に存在しないコード（SPR-376 / SPR-377 で撤去）
+		expect(WorkCategorySchema.safeParse("DGT").success).toBe(false);
+		expect(WorkCategorySchema.safeParse("GAM").success).toBe(false);
+		expect(WorkCategorySchema.safeParse("CG").success).toBe(false);
 		expect(WorkCategorySchema.safeParse(123).success).toBe(false);
 		expect(WorkCategorySchema.safeParse(null).success).toBe(false);
 	});

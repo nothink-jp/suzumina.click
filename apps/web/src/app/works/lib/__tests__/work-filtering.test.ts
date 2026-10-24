@@ -26,7 +26,7 @@ const works: WorkDocument[] = [
 		productId: "w2",
 		title: "ゲーム実況",
 		circle: "C2",
-		category: "GAM",
+		category: "RPG",
 		creators: { voice_by: [{ name: "声優B" }] } as never,
 		genres: ["ゲーム"],
 		price: { current: 2000 } as never,

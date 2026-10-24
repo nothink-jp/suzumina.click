@@ -17,23 +17,34 @@ describe("Work Category Mapping", () => {
 	});
 	describe("WORK_CATEGORY_DISPLAY_NAMES", () => {
 		it("すべての定義済みカテゴリに対応する日本語名が存在する", () => {
+			// DLsite の検索ファセットの表記（25 種）+ フォールバックの etc
 			const expectedMappings = {
-				ADV: "アドベンチャー",
-				SOU: "ボイス・ASMR",
-				RPG: "ロールプレイング",
-				MOV: "動画",
-				MNG: "マンガ",
-				GAM: "ゲーム",
-				CG: "CG・イラスト",
-				TOL: "ツール・アクセサリ",
-				ET3: "その他・3D",
-				SLN: "シミュレーション",
 				ACN: "アクション",
-				PZL: "パズル",
 				QIZ: "クイズ",
+				ADV: "アドベンチャー",
+				RPG: "ロールプレイング",
 				TBL: "テーブル",
 				DNV: "デジタルノベル",
-				etc: "その他",
+				SLN: "シミュレーション",
+				TYP: "タイピング",
+				STG: "シューティング",
+				PZL: "パズル",
+				ETC: "その他ゲーム",
+				MNG: "マンガ",
+				SCM: "劇画",
+				WBT: "タテヨミ",
+				ICG: "CG・イラスト",
+				NRE: "ノベル",
+				KSV: "官能小説",
+				MOV: "動画",
+				SOU: "ボイス・ASMR",
+				MUS: "音楽",
+				TOL: "ツール/アクセサリ",
+				IMT: "画像素材",
+				AMT: "音素材",
+				ET3: "その他",
+				VCM: "ボイスコミック",
+				etc: "未分類",
 			};
 
 			expect(WORK_CATEGORY_DISPLAY_NAMES).toEqual(expectedMappings);
@@ -57,24 +68,7 @@ describe("Work Category Mapping", () => {
 		});
 
 		it("すべての定義済みカテゴリで正しい値を返す", () => {
-			const categories: WorkCategory[] = [
-				"ADV",
-				"SOU",
-				"RPG",
-				"MOV",
-				"MNG",
-				"GAM",
-				"CG",
-				"TOL",
-				"ET3",
-				"SLN",
-				"ACN",
-				"PZL",
-				"QIZ",
-				"TBL",
-				"DNV",
-				"etc",
-			];
+			const categories = Object.keys(WORK_CATEGORY_DISPLAY_NAMES) as WorkCategory[];
 
 			categories.forEach((category) => {
 				const displayName = getWorkCategoryDisplayName(category);
@@ -89,7 +83,7 @@ describe("Work Category Mapping", () => {
 		it("有効なカテゴリコードに対して正しい日本語名を返す", () => {
 			expect(getWorkCategoryDisplayNameSafe("SOU")).toBe("ボイス・ASMR");
 			expect(getWorkCategoryDisplayNameSafe("ADV")).toBe("アドベンチャー");
-			expect(getWorkCategoryDisplayNameSafe("etc")).toBe("その他");
+			expect(getWorkCategoryDisplayNameSafe("etc")).toBe("未分類");
 		});
 
 		it("無効なカテゴリコードに対してそのままの値を返す", () => {

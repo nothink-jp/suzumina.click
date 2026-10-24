@@ -6,34 +6,10 @@
  */
 
 import { detectWorkLanguage, getSupportedLanguages } from "../entities/work/language-detection";
+import { GAME_CATEGORY_CODES, MANGA_CATEGORY_CODES } from "../entities/work/work-constants";
 import type { WorkDocument } from "../entities/work/work-document-schema";
+import { getWorkCategoryDisplayNameSafe } from "../entities/work/work-utils";
 import type { WorkPlainObject } from "../plain-objects/work-plain";
-
-/**
- * Get display name for work category
- */
-function getCategoryDisplay(category: string): string {
-	const categoryMap: Record<string, string> = {
-		SOU: "ボイス・ASMR",
-		MNG: "マンガ",
-		GAM: "ゲーム",
-		ICG: "CG・イラスト",
-		MOV: "動画",
-		RPG: "RPG",
-		ADV: "アドベンチャー",
-		ACN: "アクション",
-		SLN: "シミュレーション",
-		PZL: "パズル",
-		QIZ: "クイズ",
-		TBL: "テーブル",
-		DNV: "デジタル",
-		CG: "CG",
-		TOL: "ツール",
-		ET3: "その他",
-		etc: "その他",
-	};
-	return categoryMap[category] || category;
-}
 
 /**
  * genre / customGenre フィールドを文字列配列に正規化する。
@@ -246,7 +222,7 @@ export function fromFirestore(doc: WorkDocument): WorkPlainObject {
 			// Display-related
 			displayTitle: doc.titleMasked || doc.title || "",
 			displayCircle: doc.circle || "",
-			displayCategory: getCategoryDisplay(doc.category),
+			displayCategory: getWorkCategoryDisplayNameSafe(doc.category),
 			displayAgeRating: doc.ageRating || "全年齢",
 			displayReleaseDate: doc.releaseDateDisplay || doc.releaseDate || "",
 			relativeUrl: `/works/${doc.productId}`,
@@ -254,10 +230,8 @@ export function fromFirestore(doc: WorkDocument): WorkPlainObject {
 			// Business logic
 			isAdultContent: doc.ageRating?.includes("18") || doc.ageCategory === 3 || false,
 			isVoiceWork: doc.category === "SOU" || doc.workType === "SOU" || false,
-			isGameWork:
-				["GAM", "RPG", "ACN", "SLN", "ADV", "PZL", "QIZ", "TBL", "DNV"].includes(doc.category) ||
-				false,
-			isMangaWork: ["MNG", "ICG"].includes(doc.category) || false,
+			isGameWork: (GAME_CATEGORY_CODES as readonly string[]).includes(doc.category),
+			isMangaWork: (MANGA_CATEGORY_CODES as readonly string[]).includes(doc.category),
 			hasDiscount: (doc.price?.current || 0) < (doc.price?.original || doc.price?.current || 0),
 			isNewRelease: (() => {
 				if (!doc.releaseDate && !doc.releaseDateISO && !doc.registDate) return false;
