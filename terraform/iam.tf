@@ -139,6 +139,8 @@ resource "google_project_iam_member" "functions_build_gcf_sources_viewer" {
 # compute default SA に付けていた roles/cloudbuild.builds.builder（既定のビルド SA 用）と project 全体の
 # roles/secretmanager.secretAccessor は、ビルドを functions_build_sa に分けたので SPR-373 で撤去した。
 # compute SA で動くサービスは無い（Cloud Run は全て専用 SA）。自動で付いた roles/editor は terraform 管理外で、手で外す。
+# 手で gcloud functions deploy するときも --build-service-account（functions_build_sa）が必須。付けないと既定の
+# compute SA でビルドしようとして、権限が無く失敗する（デプロイ SA なら compute SA への actAs が無く、ビルド前に失敗する）。
 
 # プロジェクト閲覧権限（Cloud Resource Manager API使用に必要）
 resource "google_project_iam_member" "cloud_functions_deployer_viewer" {
