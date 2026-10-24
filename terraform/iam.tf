@@ -110,6 +110,10 @@ resource "google_artifact_registry_repository_iam_member" "functions_build_gcf_a
   repository = google_artifact_registry_repository.gcf_artifacts.name
   role       = "roles/artifactregistry.writer"
   member     = "serviceAccount:${google_service_account.functions_build_sa.email}"
+
+  # apply SA がリポジトリの IAM を変える権限（artifactregistry.admin）を得てから付与する。
+  # IAM の反映には時間差があるので、初回の apply がこの付与だけ 403 で失敗したら、apply を再実行する。
+  depends_on = [google_project_iam_member.terraform_apply_sa_roles["roles/artifactregistry.admin"]]
 }
 
 # ソースの読み取り。デプロイ zip を置くバケットと、Cloud Functions が自動で作るソース用バケット
@@ -395,6 +399,7 @@ locals {
     "roles/secretmanager.admin",             # secret 本体 + secret IAM
     "roles/cloudkms.admin",                  # KMS keyring/key/IAM（editor 対象外）
     "roles/run.admin",                       # Cloud Run service IAM binding（public_access）
+    "roles/artifactregistry.admin",          # AR repository IAM（functions_build_gcf_artifacts_writer）。editor には setIamPolicy が無い（SPR-373）
     "roles/serviceusage.serviceUsageAdmin",  # google_project_service の有効/無効化
   ]
 }
