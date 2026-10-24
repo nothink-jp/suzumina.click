@@ -293,7 +293,8 @@ resource "google_storage_bucket_iam_member" "terraform_plan_state_viewer" {
 # Terraform CI: apply 用 強権限サービスアカウント（ADR-010 / SPR-99 Stage 2）
 # ------------------------------------------------------------------------------
 # main へ merge された terraform 変更を、GitHub Environment(production) の required reviewer 承認後に apply する。
-# WIF 連携は Environment(production) の job だけに限定し、承認を GCP 側でも強制する（SPR-372）。
+# WIF 連携は Environment(production) を参照する job のトークンだけに限定する（SPR-372）。GCP が見るのは
+# Environment 名だけで、承認と main 限定は Environment の protection rules（IaC 外）が担う。
 # read-only の plan SA とは権限を分離する。
 
 resource "google_service_account" "terraform_apply_sa" {
@@ -307,6 +308,9 @@ resource "google_service_account" "terraform_apply_sa" {
 # 以前の attribute.ref/refs/heads/main は承認を見ておらず、main で動く id-token: write の job（deploy・drift 系の
 # schedule 等）なら承認なしで assume できた。Environment を参照する job は承認を通らないと起動しないので、
 # トークンを得た時点で承認済みになる。main 限定は Environment(production) の deployment branch policy が担う。
+# したがって required reviewer と deployment branch policy（main のみ）は外さないこと。外すとこの束縛は変わらないままゲートが消える。
+# Environment 名 `production` がこの SA を引き受けられる境界になる。apply job 以外に `environment: production` を付けないこと
+# （deploy 系に Environment secrets 目的で付けると、その job も apply SA を引き受けられる）。
 # sub の形式は GitHub の既定（include_claim_keys で sub をカスタマイズすると assume できなくなる）。
 # 値は監査ログの serviceAccountDelegationInfo.principalSubject で実測済み。
 resource "google_service_account_iam_binding" "terraform_apply_sa_wif" {
