@@ -292,8 +292,8 @@ resource "google_storage_bucket_iam_member" "terraform_plan_state_viewer" {
 # ------------------------------------------------------------------------------
 # Terraform CI: apply 用 強権限サービスアカウント（ADR-010 / SPR-99 Stage 2）
 # ------------------------------------------------------------------------------
-# main へ merge された terraform 変更を apply する。WIF 連携は main ブランチからの assume のみに限定し、
-# さらに GitHub Environment(production) の required reviewer 承認を必須にする（二重ゲート）。
+# main へ merge された terraform 変更を、GitHub Environment(production) の required reviewer 承認後に apply する。
+# WIF 連携は Environment(production) の job だけに限定し、承認を GCP 側でも強制する（SPR-372）。
 # read-only の plan SA とは権限を分離する。
 
 resource "google_service_account" "terraform_apply_sa" {
@@ -303,14 +303,18 @@ resource "google_service_account" "terraform_apply_sa" {
   description  = "main からの terraform apply を Environment 承認下で実行する CI SA（ADR-010 Stage 2）"
 }
 
-# WIF 連携: repo 限定（provider の attribute_condition）かつ main ブランチ限定（attribute.ref == refs/heads/main）。
-# PR ブランチ（refs/pull/*/merge）からは assume できない。
+# WIF 連携: `environment: production` を持つ job の subject（google.subject = assertion.sub）だけに限定する（SPR-372）。
+# 以前の attribute.ref/refs/heads/main は承認を見ておらず、main で動く id-token: write の job（deploy・drift 系の
+# schedule 等）なら承認なしで assume できた。Environment を参照する job は承認を通らないと起動しないので、
+# トークンを得た時点で承認済みになる。main 限定は Environment(production) の deployment branch policy が担う。
+# sub の形式は GitHub の既定（include_claim_keys で sub をカスタマイズすると assume できなくなる）。
+# 値は監査ログの serviceAccountDelegationInfo.principalSubject で実測済み。
 resource "google_service_account_iam_binding" "terraform_apply_sa_wif" {
   service_account_id = google_service_account.terraform_apply_sa.name
   role               = "roles/iam.workloadIdentityUser"
 
   members = [
-    "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_pool.name}/attribute.ref/refs/heads/main"
+    "principal://iam.googleapis.com/${google_iam_workload_identity_pool.github_pool.name}/subject/repo:nothink-jp/suzumina.click:environment:production"
   ]
 
   depends_on = [

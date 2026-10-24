@@ -7,6 +7,11 @@
 > 2026-10-01 追記: Stage 1・2 とも実装済み。#991 で plan / apply は 1 本の `.github/workflows/terraform.yml` に統合され、
 > apply は **PR で plan した暗号化 artifact をそのまま適用**する形になった（本文の Stage 分割の記述は導入時の段取り）。
 > 現在の挙動の正本は `terraform.yml`。
+>
+> 2026-10-24 追記（SPR-372）: 下表の `terraform-apply-sa` の WIF 条件（`attribute.ref == refs/heads/main`）は承認を見ておらず、
+> main で動く任意の `id-token: write` job から承認なしで assume できた。現在は subject
+> `repo:nothink-jp/suzumina.click:environment:production`（Environment を参照する job だけ）に限定しており、
+> main 限定は Environment の deployment branch policy が担う。条件の正本は [iam.tf](../../../terraform/iam.tf) の `terraform_apply_sa_wif`。
 
 ## コンテキスト
 
