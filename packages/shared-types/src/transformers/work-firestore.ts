@@ -26,7 +26,7 @@ function getCategoryDisplay(category: string): string {
 		PZL: "パズル",
 		QIZ: "クイズ",
 		TBL: "テーブル",
-		DGT: "デジタル",
+		DNV: "デジタル",
 		CG: "CG",
 		TOL: "ツール",
 		ET3: "その他",
@@ -193,7 +193,7 @@ export function fromFirestore(doc: WorkDocument): WorkPlainObject {
 		fileFormat: doc.fileFormat,
 		fileType: doc.fileType,
 		fileTypeString: doc.fileTypeString,
-		fileSize: doc.fileSize,
+		fileSize: doc.fileSize ?? undefined,
 		genres: normalizeGenres(doc.genres),
 		customGenres: normalizeGenres(doc.customGenres),
 		sampleImages:
@@ -255,7 +255,7 @@ export function fromFirestore(doc: WorkDocument): WorkPlainObject {
 			isAdultContent: doc.ageRating?.includes("18") || doc.ageCategory === 3 || false,
 			isVoiceWork: doc.category === "SOU" || doc.workType === "SOU" || false,
 			isGameWork:
-				["GAM", "RPG", "ACN", "SLN", "ADV", "PZL", "QIZ", "TBL", "DGT"].includes(doc.category) ||
+				["GAM", "RPG", "ACN", "SLN", "ADV", "PZL", "QIZ", "TBL", "DNV"].includes(doc.category) ||
 				false,
 			isMangaWork: ["MNG", "ICG"].includes(doc.category) || false,
 			hasDiscount: (doc.price?.current || 0) < (doc.price?.original || doc.price?.current || 0),

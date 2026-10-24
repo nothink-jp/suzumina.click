@@ -25,7 +25,7 @@ export const WORK_CATEGORY_DISPLAY_NAMES: Record<WorkCategory, string> = {
 	PZL: "パズル",
 	QIZ: "クイズ",
 	TBL: "テーブル",
-	DGT: "デジタルノベル",
+	DNV: "デジタルノベル",
 	etc: "その他",
 } as const;
 
@@ -82,7 +82,7 @@ export const GAME_CATEGORY_CODES = [
 	"PZL",
 	"QIZ",
 	"TBL",
-	"DGT",
+	"DNV",
 ] as const;
 
 /**

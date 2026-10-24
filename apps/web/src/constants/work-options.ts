@@ -18,7 +18,7 @@ export const WORK_CATEGORY_OPTIONS = [
 	{ value: "PZL", label: "パズル" },
 	{ value: "QIZ", label: "クイズ" },
 	{ value: "TBL", label: "テーブル" },
-	{ value: "DGT", label: "デジタルノベル" },
+	{ value: "DNV", label: "デジタルノベル" },
 	{ value: "etc", label: "その他" },
 ];
 

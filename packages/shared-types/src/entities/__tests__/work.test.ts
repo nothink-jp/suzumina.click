@@ -130,7 +130,7 @@ describe("WorkCategorySchema", () => {
 			"PZL",
 			"QIZ",
 			"TBL",
-			"DGT",
+			"DNV",
 			"etc",
 		];
 
