@@ -19,7 +19,7 @@
 >
 > 2026-10-24 追記（SPR-375）: 下の「例外」の `cloudflare_api_token` は、workflow 全体の env で PR の plan job にも書き込みトークンが渡っていた。
 > 現在は terraform 変数をやめて provider が環境変数 `CLOUDFLARE_API_TOKEN` を直接読む。plan は読み取り専用トークン（repo secret
-> `CLOUDFLARE_API_TOKEN_READONLY`）、apply は書き込みトークン（Environment(production) の secret `CLOUDFLARE_API_TOKEN`）を使う。
+> `CLOUDFLARE_API_TOKEN_READONLY`）、apply は書き込みトークン（Environment(production) の secret `CLOUDFLARE_API_TOKEN_WRITE`）を使う。
 
 ## コンテキスト
 

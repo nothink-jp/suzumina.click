@@ -186,7 +186,8 @@ jobs:
 
       - name: Apply saved plan
         env:
-          # 書き込み用。Environment(production) の secret に置き、repo の secret には置かない
-          # （repo の secret は PR の job からも参照できる。Environment の secret はこの job だけに渡る）。
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          # 書き込み用。Environment(production) の secret にだけ置く（repo の secret は PR の job からも参照できる）。
+          # repo の secret と名前を分けておけば、repo 側に同名が登録されても参照されず、Environment に無ければ
+          # 空のトークンで apply が失敗する（気づける）。同名にすると Environment 側が黙って優先される。
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_WRITE }}
         run: terraform apply -input=false tfplan.bin
