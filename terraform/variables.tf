@@ -7,7 +7,6 @@ variable "gcp_project_id" {
   type        = string
 }
 
-
 variable "domain_name" {
   description = "ドメイン名"
   type        = string
@@ -19,23 +18,6 @@ variable "region" {
   type        = string
   default     = "asia-northeast1"
 }
-
-variable "zone" {
-  description = "Google Cloud ゾーン"
-  type        = string
-  default     = "asia-northeast1-a"
-}
-
-
-# ==========================================================
-# プロジェクト設定用変数
-# ==========================================================
-
-variable "project_number" {
-  description = "Google Cloud プロジェクト番号"
-  type        = string
-}
-
 
 variable "environment" {
   # staging は実体のない死蔵環境（state 0 リソース）だったため SPR-100 で廃止。production を唯一の環境とする。
@@ -89,16 +71,6 @@ variable "admin_email" {
   type        = string
 }
 
-
-# ==========================================================
-# DLsite機能設定変数
-# ==========================================================
-
-variable "enable_detailed_scraping" {
-  description = "DLsite詳細スクレイピング機能の有効化"
-  type        = bool
-  default     = true
-}
 
 # ==========================================================
 # Google Analytics 設定変数

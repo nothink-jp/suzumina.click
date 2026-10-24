@@ -86,10 +86,8 @@ resource "google_secret_manager_secret" "secrets" {
     }
   }
 
-  # リソース削除のため、prevent_destroyを無効化
   lifecycle {
-    # prevent_destroy = true  # 削除保護を解除（コメントアウト）
-    # シークレットの内容（バージョン）は他の方法で管理されるため無視
+    # labels / annotations は console 等での手動変更を drift として扱わない（値＝バージョンは下の removed のとおり管理外）
     ignore_changes = [
       labels,
       annotations
