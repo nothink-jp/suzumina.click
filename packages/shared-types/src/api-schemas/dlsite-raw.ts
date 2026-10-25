@@ -218,14 +218,3 @@ export const DLsiteApiResponse = z.object({
 });
 
 export type DLsiteApiResponse = z.infer<typeof DLsiteApiResponse>;
-
-/**
- * APIレスポンスのバリデーション
- */
-export const validateApiResponse = (data: unknown): DLsiteApiResponse | null => {
-	try {
-		return DLsiteApiResponse.parse(data);
-	} catch (_error) {
-		return null;
-	}
-};

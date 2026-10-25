@@ -6,9 +6,7 @@
  */
 
 import { detectWorkLanguage, getSupportedLanguages } from "../entities/work/language-detection";
-import { GAME_CATEGORY_CODES, MANGA_CATEGORY_CODES } from "../entities/work/work-constants";
 import type { WorkDocument } from "../entities/work/work-document-schema";
-import { getWorkCategoryDisplayNameSafe } from "../entities/work/work-utils";
 import type { WorkPlainObject } from "../plain-objects/work-plain";
 
 /**
@@ -222,7 +220,6 @@ export function fromFirestore(doc: WorkDocument): WorkPlainObject {
 			// Display-related
 			displayTitle: doc.titleMasked || doc.title || "",
 			displayCircle: doc.circle || "",
-			displayCategory: getWorkCategoryDisplayNameSafe(doc.category),
 			displayAgeRating: doc.ageRating || "全年齢",
 			displayReleaseDate: doc.releaseDateDisplay || doc.releaseDate || "",
 			relativeUrl: `/works/${doc.productId}`,
@@ -230,8 +227,6 @@ export function fromFirestore(doc: WorkDocument): WorkPlainObject {
 			// Business logic
 			isAdultContent: doc.ageRating?.includes("18") || doc.ageCategory === 3 || false,
 			isVoiceWork: doc.category === "SOU" || doc.workType === "SOU",
-			isGameWork: (GAME_CATEGORY_CODES as readonly string[]).includes(doc.category),
-			isMangaWork: (MANGA_CATEGORY_CODES as readonly string[]).includes(doc.category),
 			hasDiscount: (doc.price?.current || 0) < (doc.price?.original || doc.price?.current || 0),
 			isNewRelease: (() => {
 				if (!doc.releaseDate && !doc.releaseDateISO && !doc.registDate) return false;
