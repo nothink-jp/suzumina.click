@@ -14,6 +14,14 @@ export interface RateLimitCheckResult {
 	isFamilyMember: boolean;
 }
 
+const USER_NOT_FOUND_RESULT: RateLimitCheckResult = {
+	canCreate: false,
+	current: 0,
+	limit: 0,
+	remaining: 0,
+	isFamilyMember: false,
+};
+
 /**
  * レート制限をチェック（必要に応じてリセット）
  *
@@ -22,26 +30,9 @@ export interface RateLimitCheckResult {
 export async function checkRateLimit(userId: string): Promise<RateLimitCheckResult> {
 	const firestore = getFirestore();
 	const userDoc = await firestore.collection("users").doc(userId).get();
-
-	if (!userDoc.exists) {
-		return {
-			canCreate: false,
-			current: 0,
-			limit: 0,
-			remaining: 0,
-			isFamilyMember: false,
-		};
-	}
-
-	const userData = userDoc.data();
+	const userData = userDoc.exists ? userDoc.data() : undefined;
 	if (!userData) {
-		return {
-			canCreate: false,
-			current: 0,
-			limit: 0,
-			remaining: 0,
-			isFamilyMember: false,
-		};
+		return { ...USER_NOT_FOUND_RESULT };
 	}
 
 	const today = getJSTDateString();
@@ -60,12 +51,15 @@ export async function checkRateLimit(userId: string): Promise<RateLimitCheckResu
 		};
 	}
 
-	// 同日の場合
+	// 同日の場合。欠けたフィールドは新規作成時と同じ値で補う（上限の正本は calculateDailyLimit）
+	const current = dailyLimit.count || 0;
+	const limit = dailyLimit.limit || calculateDailyLimit(flags);
+	const remaining = Math.max(0, limit - current);
 	return {
-		canCreate: dailyLimit.count < dailyLimit.limit,
-		current: dailyLimit.count || 0,
-		limit: dailyLimit.limit || 10,
-		remaining: Math.max(0, (dailyLimit.limit || 10) - (dailyLimit.count || 0)),
+		canCreate: remaining > 0,
+		current,
+		limit,
+		remaining,
 		isFamilyMember: flags?.isFamilyMember || false,
 	};
 }
@@ -104,7 +98,7 @@ export async function incrementButtonCount(userId: string): Promise<boolean> {
 		}
 
 		// 上限チェック
-		if ((dailyLimit.count || 0) >= (dailyLimit.limit || 10)) {
+		if ((dailyLimit.count || 0) >= (dailyLimit.limit || calculateDailyLimit(flags))) {
 			return false;
 		}
 
