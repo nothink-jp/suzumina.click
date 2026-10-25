@@ -155,6 +155,40 @@ describe("button-rate-limit", () => {
 				isFamilyMember: true,
 			});
 		});
+
+		it("同日で count が欠けていても remaining と canCreate が食い違わないこと", async () => {
+			mockGet.mockResolvedValue({
+				exists: true,
+				data: () => ({
+					dailyButtonLimit: { date: "2024-01-01", limit: 10 },
+					flags: { isFamilyMember: false },
+				}),
+			});
+
+			const result = await checkRateLimit("test-user");
+
+			expect(result).toEqual({
+				canCreate: true,
+				current: 0,
+				limit: 10,
+				remaining: 10,
+				isFamilyMember: false,
+			});
+		});
+
+		it("同日で limit が欠けていたら calculateDailyLimit の値で補うこと", async () => {
+			mockGet.mockResolvedValue({
+				exists: true,
+				data: () => ({
+					dailyButtonLimit: { date: "2024-01-01", count: 50 },
+					flags: { isFamilyMember: true },
+				}),
+			});
+
+			const result = await checkRateLimit("test-user");
+
+			expect(result).toMatchObject({ canCreate: true, limit: 110, remaining: 60 });
+		});
 	});
 
 	describe("incrementButtonCount", () => {
@@ -186,6 +220,27 @@ describe("button-rate-limit", () => {
 			expect(result).toBe(true);
 			expect(mockTransaction.update).toHaveBeenCalledWith(expect.anything(), {
 				"dailyButtonLimit.count": 4,
+			});
+		});
+
+		it("同日で limit が欠けていても checkRateLimit と同じ上限で判定すること", async () => {
+			const mockTransaction = {
+				get: vi.fn().mockResolvedValue({
+					exists: true,
+					data: () => ({
+						dailyButtonLimit: { date: "2024-01-01", count: 50 },
+						flags: { isFamilyMember: true },
+					}),
+				}),
+				update: vi.fn(),
+			};
+			mockRunTransaction.mockImplementation(async (callback) => callback(mockTransaction));
+
+			const result = await incrementButtonCount("test-user");
+
+			expect(result).toBe(true);
+			expect(mockTransaction.update).toHaveBeenCalledWith(expect.anything(), {
+				"dailyButtonLimit.count": 51,
 			});
 		});
 
