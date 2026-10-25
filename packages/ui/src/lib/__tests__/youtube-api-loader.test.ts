@@ -23,7 +23,7 @@ describe("loadYouTubeIframeAPI (SPR-188)", () => {
 	});
 
 	it("API が既に準備済みなら onReady を即時実行する", () => {
-		w.YT = { Player: () => {} };
+		w.YT = { Player: vi.fn() };
 		const onReady = vi.fn();
 		loadYouTubeIframeAPI(onReady);
 		expect(onReady).toHaveBeenCalledTimes(1);
