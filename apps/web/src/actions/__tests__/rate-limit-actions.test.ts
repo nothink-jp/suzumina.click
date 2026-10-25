@@ -1,312 +1,58 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { checkRateLimit, getUserRateLimitInfo, incrementButtonCount } from "../rate-limit-actions";
+import type { UserSession } from "@suzumina.click/shared-types";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { getCurrentUser } from "@/lib/auth/server";
+import { checkRateLimit } from "@/lib/button-rate-limit";
+import { getUserRateLimitInfo } from "../rate-limit-actions";
 
-// Firestoreのモック
-const mockGet = vi.fn();
-const mockUpdate = vi.fn();
-const mockRunTransaction = vi.fn();
-
-vi.mock("@/lib/firestore", () => ({
-	getFirestore: () => ({
-		collection: () => ({
-			doc: () => ({
-				get: mockGet,
-				update: mockUpdate,
-			}),
-		}),
-		runTransaction: mockRunTransaction,
-	}),
+vi.mock("@/lib/auth/server");
+vi.mock("@/lib/button-rate-limit", () => ({
+	checkRateLimit: vi.fn(),
 }));
 
-// rate-limit-utilsのモック
-vi.mock("@/lib/rate-limit-utils", () => ({
-	getJSTDateString: vi.fn(() => "2024-01-01"),
-	calculateDailyLimit: vi.fn((flags) => (flags?.isFamilyMember ? 110 : 10)),
-}));
+const rateLimitResult = {
+	canCreate: true,
+	current: 3,
+	limit: 10,
+	remaining: 7,
+	isFamilyMember: false,
+};
 
-describe("rate-limit-actions", () => {
+describe("getUserRateLimitInfo", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		vi.mocked(checkRateLimit).mockResolvedValue(rateLimitResult);
 	});
 
-	afterEach(() => {
-		vi.restoreAllMocks();
+	it("ログイン中ユーザー本人の制限情報を返すこと", async () => {
+		vi.mocked(getCurrentUser).mockResolvedValue({ discordId: "self" } as UserSession);
+
+		const result = await getUserRateLimitInfo();
+
+		expect(result).toEqual(rateLimitResult);
+		expect(checkRateLimit).toHaveBeenCalledWith("self");
 	});
 
-	describe("checkRateLimit", () => {
-		it("ユーザーが存在しない場合は制限情報を返すこと", async () => {
-			mockGet.mockResolvedValue({ exists: false });
+	it("引数で他人の userId を渡されてもセッション本人の分しか参照しないこと", async () => {
+		vi.mocked(getCurrentUser).mockResolvedValue({ discordId: "self" } as UserSession);
 
-			const result = await checkRateLimit("test-user");
+		// Server Action は任意の引数で POST できるため、型を外して攻撃者の呼び出しを再現する
+		await (getUserRateLimitInfo as (...args: unknown[]) => Promise<unknown>)("other-user");
 
-			expect(result).toEqual({
-				canCreate: false,
-				current: 0,
-				limit: 0,
-				remaining: 0,
-				isFamilyMember: false,
-			});
-		});
-
-		it("日付が変わっていたら自動リセットされること", async () => {
-			mockGet.mockResolvedValue({
-				exists: true,
-				data: () => ({
-					dailyButtonLimit: {
-						date: "2023-12-31",
-						count: 5,
-						limit: 10,
-						guildChecked: true,
-					},
-					flags: {
-						isFamilyMember: false,
-					},
-				}),
-			});
-
-			const result = await checkRateLimit("test-user");
-
-			expect(result).toEqual({
-				canCreate: true,
-				current: 0,
-				limit: 10,
-				remaining: 10,
-				isFamilyMember: false,
-			});
-		});
-
-		it("同日の場合は現在の状態を返すこと", async () => {
-			mockGet.mockResolvedValue({
-				exists: true,
-				data: () => ({
-					dailyButtonLimit: {
-						date: "2024-01-01",
-						count: 3,
-						limit: 10,
-						guildChecked: false,
-					},
-					flags: {
-						isFamilyMember: false,
-					},
-				}),
-			});
-
-			const result = await checkRateLimit("test-user");
-
-			expect(result).toEqual({
-				canCreate: true,
-				current: 3,
-				limit: 10,
-				remaining: 7,
-				isFamilyMember: false,
-			});
-		});
-
-		it("上限に達している場合はcanCreateがfalseになること", async () => {
-			mockGet.mockResolvedValue({
-				exists: true,
-				data: () => ({
-					dailyButtonLimit: {
-						date: "2024-01-01",
-						count: 10,
-						limit: 10,
-						guildChecked: false,
-					},
-					flags: {
-						isFamilyMember: false,
-					},
-				}),
-			});
-
-			const result = await checkRateLimit("test-user");
-
-			expect(result).toEqual({
-				canCreate: false,
-				current: 10,
-				limit: 10,
-				remaining: 0,
-				isFamilyMember: false,
-			});
-		});
-
-		it("ファミリーメンバーの場合は正しい制限が適用されること", async () => {
-			mockGet.mockResolvedValue({
-				exists: true,
-				data: () => ({
-					dailyButtonLimit: {
-						date: "2024-01-01",
-						count: 50,
-						limit: 110,
-						guildChecked: true,
-					},
-					flags: {
-						isFamilyMember: true,
-					},
-				}),
-			});
-
-			const result = await checkRateLimit("test-user");
-
-			expect(result).toEqual({
-				canCreate: true,
-				current: 50,
-				limit: 110,
-				remaining: 60,
-				isFamilyMember: true,
-			});
-		});
+		expect(checkRateLimit).toHaveBeenCalledTimes(1);
+		expect(checkRateLimit).toHaveBeenCalledWith("self");
 	});
 
-	describe("incrementButtonCount", () => {
-		it("カウントが正常に増加すること", async () => {
-			const mockTransaction = {
-				get: vi.fn().mockResolvedValue({
-					exists: true,
-					data: () => ({
-						dailyButtonLimit: {
-							date: "2024-01-01",
-							count: 3,
-							limit: 10,
-							guildChecked: false,
-						},
-						flags: {
-							isFamilyMember: false,
-						},
-					}),
-				}),
-				update: vi.fn(),
-			};
+	it("未ログインなら null を返し Firestore を読まないこと", async () => {
+		vi.mocked(getCurrentUser).mockResolvedValue(null);
 
-			mockRunTransaction.mockImplementation(async (callback) => {
-				return await callback(mockTransaction);
-			});
-
-			const result = await incrementButtonCount("test-user");
-
-			expect(result).toBe(true);
-			expect(mockTransaction.update).toHaveBeenCalledWith(expect.anything(), {
-				"dailyButtonLimit.count": 4,
-			});
-		});
-
-		it("日付が変わっていたらリセットして1にすること", async () => {
-			const mockTransaction = {
-				get: vi.fn().mockResolvedValue({
-					exists: true,
-					data: () => ({
-						dailyButtonLimit: {
-							date: "2023-12-31",
-							count: 5,
-							limit: 10,
-							guildChecked: true,
-						},
-						flags: {
-							isFamilyMember: false,
-						},
-					}),
-				}),
-				update: vi.fn(),
-			};
-
-			mockRunTransaction.mockImplementation(async (callback) => {
-				return await callback(mockTransaction);
-			});
-
-			const result = await incrementButtonCount("test-user");
-
-			expect(result).toBe(true);
-			expect(mockTransaction.update).toHaveBeenCalledWith(expect.anything(), {
-				dailyButtonLimit: {
-					date: "2024-01-01",
-					count: 1,
-					limit: 10,
-					guildChecked: false,
-				},
-			});
-		});
-
-		it("上限に達している場合はfalseを返すこと", async () => {
-			const mockTransaction = {
-				get: vi.fn().mockResolvedValue({
-					exists: true,
-					data: () => ({
-						dailyButtonLimit: {
-							date: "2024-01-01",
-							count: 10,
-							limit: 10,
-							guildChecked: false,
-						},
-						flags: {
-							isFamilyMember: false,
-						},
-					}),
-				}),
-				update: vi.fn(),
-			};
-
-			mockRunTransaction.mockImplementation(async (callback) => {
-				return await callback(mockTransaction);
-			});
-
-			const result = await incrementButtonCount("test-user");
-
-			expect(result).toBe(false);
-			expect(mockTransaction.update).not.toHaveBeenCalled();
-		});
-
-		it("ユーザーが存在しない場合はfalseを返すこと", async () => {
-			const mockTransaction = {
-				get: vi.fn().mockResolvedValue({
-					exists: false,
-				}),
-				update: vi.fn(),
-			};
-
-			mockRunTransaction.mockImplementation(async (callback) => {
-				return await callback(mockTransaction);
-			});
-
-			const result = await incrementButtonCount("test-user");
-
-			expect(result).toBe(false);
-			expect(mockTransaction.update).not.toHaveBeenCalled();
-		});
+		await expect(getUserRateLimitInfo()).resolves.toBeNull();
+		expect(checkRateLimit).not.toHaveBeenCalled();
 	});
 
-	describe("getUserRateLimitInfo", () => {
-		it("正常にレート制限情報を取得できること", async () => {
-			mockGet.mockResolvedValue({
-				exists: true,
-				data: () => ({
-					dailyButtonLimit: {
-						date: "2024-01-01",
-						count: 3,
-						limit: 10,
-						guildChecked: false,
-					},
-					flags: {
-						isFamilyMember: false,
-					},
-				}),
-			});
+	it("取得に失敗したら null を返すこと", async () => {
+		vi.mocked(getCurrentUser).mockResolvedValue({ discordId: "self" } as UserSession);
+		vi.mocked(checkRateLimit).mockRejectedValue(new Error("Firestore error"));
 
-			const result = await getUserRateLimitInfo("test-user");
-
-			expect(result).toEqual({
-				canCreate: true,
-				current: 3,
-				limit: 10,
-				remaining: 7,
-				isFamilyMember: false,
-			});
-		});
-
-		it("エラーが発生した場合はnullを返すこと", async () => {
-			mockGet.mockRejectedValue(new Error("Firestore error"));
-
-			const result = await getUserRateLimitInfo("test-user");
-
-			expect(result).toBe(null);
-		});
+		await expect(getUserRateLimitInfo()).resolves.toBeNull();
 	});
 });

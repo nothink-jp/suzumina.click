@@ -34,6 +34,7 @@ import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { useAgeVerification } from "@/contexts/age-verification-context";
 import { getCurrentConsentState, resetAllConsent } from "@/lib/consent/google-consent-mode";
+import { FAMILY_DAILY_BUTTON_LIMIT, GENERAL_DAILY_BUTTON_LIMIT } from "@/lib/rate-limit-utils";
 import { updateUserProfile } from "../actions";
 
 interface UnifiedSettingsContentProps {
@@ -360,7 +361,7 @@ export function UnifiedSettingsContent({ user }: UnifiedSettingsContentProps) {
 														すずみなふぁみりー
 													</span>
 													<span className="text-sm text-muted-foreground">
-														1日110個まで音声ボタン作成可能
+														1日{FAMILY_DAILY_BUTTON_LIMIT}個まで音声ボタン作成可能
 													</span>
 												</>
 											) : (
@@ -370,7 +371,7 @@ export function UnifiedSettingsContent({ user }: UnifiedSettingsContentProps) {
 														一般ユーザー
 													</span>
 													<span className="text-sm text-muted-foreground">
-														1日10個まで音声ボタン作成可能
+														1日{GENERAL_DAILY_BUTTON_LIMIT}個まで音声ボタン作成可能
 													</span>
 												</>
 											)}

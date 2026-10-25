@@ -130,23 +130,23 @@ describe("YouTubePlayer", () => {
 	});
 });
 
-describe("useYouTubePlayer Hook", () => {
-	// フック用の簡単なテストコンポーネント
-	function TestComponent() {
-		const { isPlaying, controls } = useYouTubePlayer();
-		return (
-			<div>
-				<span data-testid="playing-state">{isPlaying ? "playing" : "not-playing"}</span>
-				<button type="button" onClick={controls.play} data-testid="play-btn">
-					Play
-				</button>
-				<button type="button" onClick={controls.pause} data-testid="pause-btn">
-					Pause
-				</button>
-			</div>
-		);
-	}
+// フック用の簡単なテストコンポーネント
+function TestComponent() {
+	const { isPlaying, controls } = useYouTubePlayer();
+	return (
+		<div>
+			<span data-testid="playing-state">{isPlaying ? "playing" : "not-playing"}</span>
+			<button type="button" onClick={controls.play} data-testid="play-btn">
+				Play
+			</button>
+			<button type="button" onClick={controls.pause} data-testid="pause-btn">
+				Pause
+			</button>
+		</div>
+	);
+}
 
+describe("useYouTubePlayer Hook", () => {
 	it("provides player controls and state", () => {
 		render(<TestComponent />);
 

@@ -3,27 +3,23 @@
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Progress } from "@suzumina.click/ui/components/ui/progress";
 import { useEffect, useState } from "react";
-import { getUserRateLimitInfo, type RateLimitCheckResult } from "@/actions/rate-limit-actions";
-import { formatTimeUntilReset } from "@/lib/rate-limit-utils";
-
-interface CreateButtonLimitProps {
-	userId: string;
-}
+import { getUserRateLimitInfo } from "@/actions/rate-limit-actions";
+import type { RateLimitCheckResult } from "@/lib/button-rate-limit";
+import { FAMILY_DAILY_BUTTON_LIMIT, formatTimeUntilReset } from "@/lib/rate-limit-utils";
 
 /**
- * ボタン作成の残り回数を表示するコンポーネント
+ * ログイン中ユーザー本人のボタン作成の残り回数を表示するコンポーネント
  */
-export function CreateButtonLimit({ userId }: CreateButtonLimitProps) {
+export function CreateButtonLimit() {
 	const [limit, setLimit] = useState<RateLimitCheckResult | null>(null);
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
 		const fetchLimit = async () => {
 			try {
-				const result = await getUserRateLimitInfo(userId);
-				setLimit(result);
+				setLimit(await getUserRateLimitInfo());
 			} catch (_error) {
-				// エラーは無視（UIに影響しない）
+				// サーバ側の失敗は null で返る。ここに来るのは Action 呼び出し自体の失敗（通信断・デプロイ直後の ID 不一致）で、表示を出さないだけにする
 			} finally {
 				setLoading(false);
 			}
@@ -33,7 +29,7 @@ export function CreateButtonLimit({ userId }: CreateButtonLimitProps) {
 		// 1分ごとに更新
 		const interval = setInterval(fetchLimit, 60000);
 		return () => clearInterval(interval);
-	}, [userId]);
+	}, []);
 
 	if (loading || !limit) {
 		return null;
@@ -79,7 +75,7 @@ export function CreateButtonLimit({ userId }: CreateButtonLimitProps) {
 
 			{!limit.isFamilyMember && (
 				<p className="mt-3 text-xs text-muted-foreground">
-					💡 すずみなふぁみりーに参加すると1日110個まで作成できます
+					💡 すずみなふぁみりーに参加すると1日{FAMILY_DAILY_BUTTON_LIMIT}個まで作成できます
 				</p>
 			)}
 		</div>
