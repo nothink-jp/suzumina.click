@@ -92,7 +92,6 @@ function createBaseLogEntry(level: LogLevel, message: string): Record<string, un
 		message,
 		timestamp: new Date().toISOString(),
 		environment: process.env.NODE_ENV,
-		...(process.env.VERCEL_URL && { vercelUrl: process.env.VERCEL_URL }),
 	};
 }
 

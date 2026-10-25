@@ -9,7 +9,7 @@ import { z } from "zod";
 
 /**
  * DLsite作品カテゴリの型定義
- * HTMLから抽出される作品種別に対応
+ * Individual Info API の `work_type` に対応（work-mapper が検証せずに保存し、空なら `etc`）
  */
 export const WorkCategorySchema = z.enum([
 	// DLsite の work_type（検索ファセットの 25 種。表示名の正本は WORK_CATEGORY_DISPLAY_NAMES）
