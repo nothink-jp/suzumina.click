@@ -5,9 +5,7 @@ import { Progress } from "@suzumina.click/ui/components/ui/progress";
 import { useEffect, useState } from "react";
 import { getUserRateLimitInfo } from "@/actions/rate-limit-actions";
 import type { RateLimitCheckResult } from "@/lib/button-rate-limit";
-import { calculateDailyLimit, formatTimeUntilReset } from "@/lib/rate-limit-utils";
-
-const FAMILY_DAILY_LIMIT = calculateDailyLimit({ isFamilyMember: true });
+import { FAMILY_DAILY_BUTTON_LIMIT, formatTimeUntilReset } from "@/lib/rate-limit-utils";
 
 /**
  * ログイン中ユーザー本人のボタン作成の残り回数を表示するコンポーネント
@@ -77,7 +75,7 @@ export function CreateButtonLimit() {
 
 			{!limit.isFamilyMember && (
 				<p className="mt-3 text-xs text-muted-foreground">
-					💡 すずみなふぁみりーに参加すると1日{FAMILY_DAILY_LIMIT}個まで作成できます
+					💡 すずみなふぁみりーに参加すると1日{FAMILY_DAILY_BUTTON_LIMIT}個まで作成できます
 				</p>
 			)}
 		</div>

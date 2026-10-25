@@ -223,6 +223,27 @@ describe("button-rate-limit", () => {
 			});
 		});
 
+		it("同日で limit が欠けていても checkRateLimit と同じ上限で判定すること", async () => {
+			const mockTransaction = {
+				get: vi.fn().mockResolvedValue({
+					exists: true,
+					data: () => ({
+						dailyButtonLimit: { date: "2024-01-01", count: 50 },
+						flags: { isFamilyMember: true },
+					}),
+				}),
+				update: vi.fn(),
+			};
+			mockRunTransaction.mockImplementation(async (callback) => callback(mockTransaction));
+
+			const result = await incrementButtonCount("test-user");
+
+			expect(result).toBe(true);
+			expect(mockTransaction.update).toHaveBeenCalledWith(expect.anything(), {
+				"dailyButtonLimit.count": 51,
+			});
+		});
+
 		it("日付が変わっていたらリセットして1にすること", async () => {
 			const mockTransaction = {
 				get: vi.fn().mockResolvedValue({

@@ -23,14 +23,16 @@ export function getNextJSTMidnight(): string {
 	return jstMidnight.toISOString();
 }
 
+/** 1日の音声ボタン作成上限（全ユーザー）。表示文言もここから出す＝上限値の正本 */
+export const GENERAL_DAILY_BUTTON_LIMIT = 10;
+/** 1日の音声ボタン作成上限（すずみなふぁみりー）。基本値 + ファミリーボーナス 100 */
+export const FAMILY_DAILY_BUTTON_LIMIT = GENERAL_DAILY_BUTTON_LIMIT + 100;
+
 /**
  * ユーザーの1日の上限を計算
  */
 export function calculateDailyLimit(flags: UserFlags | undefined): number {
-	const base = 10; // 基本値：全ユーザー
-	const familyBonus = flags?.isFamilyMember ? 100 : 0; // ファミリーボーナス
-
-	return base + familyBonus;
+	return flags?.isFamilyMember ? FAMILY_DAILY_BUTTON_LIMIT : GENERAL_DAILY_BUTTON_LIMIT;
 }
 
 /**

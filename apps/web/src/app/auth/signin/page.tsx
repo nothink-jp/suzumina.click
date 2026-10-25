@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { signInAction } from "@/app/auth/actions";
 import { LoginErrorTracker } from "@/components/analytics/login-error-tracker";
 import { DiscordSignInButton } from "@/components/user/discord-signin-button";
+import { FAMILY_DAILY_BUTTON_LIMIT, GENERAL_DAILY_BUTTON_LIMIT } from "@/lib/rate-limit-utils";
 
 interface SignInPageProps {
 	searchParams: Promise<{ callbackUrl?: string; error?: string }>;
@@ -49,8 +50,8 @@ async function SignInForm({ searchParams }: SignInPageProps) {
 								<h4 className="font-semibold text-info text-sm">一般公開スタート！</h4>
 								<p className="text-foreground text-xs leading-relaxed">
 									すずみなくりっく！は全てのDiscordユーザーに公開されました。
-									<br />• 一般ユーザー：1日10個まで音声ボタン作成可能
-									<br />• ふぁみりーメンバー：1日110個まで音声ボタン作成可能
+									<br />• 一般ユーザー：1日{GENERAL_DAILY_BUTTON_LIMIT}個まで音声ボタン作成可能
+									<br />• ふぁみりーメンバー：1日{FAMILY_DAILY_BUTTON_LIMIT}個まで音声ボタン作成可能
 								</p>
 								<div className="pt-2">
 									<a

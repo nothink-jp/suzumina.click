@@ -23,6 +23,22 @@ const USER_NOT_FOUND_RESULT: RateLimitCheckResult = {
 };
 
 /**
+ * 同日分の dailyButtonLimit から現在数と上限を解決する。欠けたフィールドは新規作成時と同じ値で補う
+ *
+ * 表示（checkRateLimit）と書き込み（incrementButtonCount）が同じ補い方をするための単一の正本。
+ * ずれると「表示では作れるのにトランザクションで拒否」が起きる
+ */
+function resolveSameDayLimit(
+	dailyLimit: { count?: number; limit?: number },
+	flags: UserFlags | undefined,
+): { current: number; limit: number } {
+	return {
+		current: dailyLimit.count || 0,
+		limit: dailyLimit.limit || calculateDailyLimit(flags),
+	};
+}
+
+/**
  * レート制限をチェック（必要に応じてリセット）
  *
  * userId を検証しないため server-only。client へは本人限定の `getUserRateLimitInfo` 経由で出す（SPR-333）
@@ -51,9 +67,8 @@ export async function checkRateLimit(userId: string): Promise<RateLimitCheckResu
 		};
 	}
 
-	// 同日の場合。欠けたフィールドは新規作成時と同じ値で補う（上限の正本は calculateDailyLimit）
-	const current = dailyLimit.count || 0;
-	const limit = dailyLimit.limit || calculateDailyLimit(flags);
+	// 同日の場合
+	const { current, limit } = resolveSameDayLimit(dailyLimit, flags);
 	const remaining = Math.max(0, limit - current);
 	return {
 		canCreate: remaining > 0,
@@ -98,13 +113,14 @@ export async function incrementButtonCount(userId: string): Promise<boolean> {
 		}
 
 		// 上限チェック
-		if ((dailyLimit.count || 0) >= (dailyLimit.limit || calculateDailyLimit(flags))) {
+		const { current, limit } = resolveSameDayLimit(dailyLimit, flags);
+		if (current >= limit) {
 			return false;
 		}
 
 		// カウントを増やす
 		transaction.update(userRef, {
-			"dailyButtonLimit.count": (dailyLimit.count || 0) + 1,
+			"dailyButtonLimit.count": current + 1,
 		});
 
 		return true;
