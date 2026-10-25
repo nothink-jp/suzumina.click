@@ -462,10 +462,11 @@ export async function getAudioButtonCount(videoId: string): Promise<number> {
 }
 
 /**
- * 人気タグリストを取得（一覧ページのタグ絞り込みUI用）
+ * 人気タグリストを全件取得（一覧ページのタグ絞り込みUI用）
+ *
+ * limit を引数に取らない: limit は unstable_cache のキーなので、外から値を変えて POST されると
+ * 毎回キャッシュを外して audioButtons を全件 .get() させられる（SPR-333）
  */
-export async function getPopularAudioButtonTags(
-	limit?: number,
-): Promise<Array<{ tag: string; count: number }>> {
-	return getPopularTags(limit);
+export async function getPopularAudioButtonTags(): Promise<Array<{ tag: string; count: number }>> {
+	return getPopularTags();
 }
