@@ -3,24 +3,21 @@
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Progress } from "@suzumina.click/ui/components/ui/progress";
 import { useEffect, useState } from "react";
-import { getUserRateLimitInfo, type RateLimitCheckResult } from "@/actions/rate-limit-actions";
+import { getUserRateLimitInfo } from "@/actions/rate-limit-actions";
+import type { RateLimitCheckResult } from "@/lib/button-rate-limit";
 import { formatTimeUntilReset } from "@/lib/rate-limit-utils";
 
-interface CreateButtonLimitProps {
-	userId: string;
-}
-
 /**
- * ボタン作成の残り回数を表示するコンポーネント
+ * ログイン中ユーザー本人のボタン作成の残り回数を表示するコンポーネント
  */
-export function CreateButtonLimit({ userId }: CreateButtonLimitProps) {
+export function CreateButtonLimit() {
 	const [limit, setLimit] = useState<RateLimitCheckResult | null>(null);
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
 		const fetchLimit = async () => {
 			try {
-				const result = await getUserRateLimitInfo(userId);
+				const result = await getUserRateLimitInfo();
 				setLimit(result);
 			} catch (_error) {
 				// エラーは無視（UIに影響しない）
@@ -33,7 +30,7 @@ export function CreateButtonLimit({ userId }: CreateButtonLimitProps) {
 		// 1分ごとに更新
 		const interval = setInterval(fetchLimit, 60000);
 		return () => clearInterval(interval);
-	}, [userId]);
+	}, []);
 
 	if (loading || !limit) {
 		return null;

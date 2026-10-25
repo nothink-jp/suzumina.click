@@ -1,4 +1,4 @@
-"use server";
+import "server-only";
 
 import * as logger from "@/lib/logger";
 

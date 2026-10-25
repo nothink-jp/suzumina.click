@@ -6,8 +6,8 @@ import type {
 	CreateAudioButtonInput,
 	UpdateAudioButtonInput,
 } from "@suzumina.click/shared-types";
-import { checkRateLimit, incrementButtonCount } from "@/actions/rate-limit-actions";
 import { getCurrentUser } from "@/lib/auth/server";
+import { checkRateLimit, incrementButtonCount } from "@/lib/button-rate-limit";
 import { getFirestore } from "@/lib/firestore";
 import { updateCounter } from "@/lib/firestore-helpers";
 import * as logger from "@/lib/logger";
@@ -24,15 +24,15 @@ import {
 	filterBySearch,
 	filterByTags,
 } from "./lib/audio-button-filters";
-import { getAudioButtonCount as getButtonCount } from "./lib/audio-button-stats";
+import {
+	getAudioButtonCount as getButtonCount,
+	getPopularAudioButtonTags as getPopularTags,
+} from "./lib/audio-button-stats";
 import { updateVideoButtonCount, validateVideoForAudioButton } from "./lib/audio-button-validation";
 import {
 	convertFirestoreToAudioButton,
 	fetchAndConvertButtons,
 } from "./utils/audio-button-converters";
-
-// Note: getPopularAudioButtonTags is available in ./lib/audio-button-stats.ts
-// It cannot be re-exported from a "use server" file
 
 /**
  * Entityを使用した新着音声ボタンの取得
@@ -459,4 +459,14 @@ export async function updateAudioButtonTags(
  */
 export async function getAudioButtonCount(videoId: string): Promise<number> {
 	return getButtonCount(videoId);
+}
+
+/**
+ * 人気タグリストを全件取得（一覧ページのタグ絞り込みUI用）
+ *
+ * limit を引数に取らない: limit は unstable_cache のキーなので、外から値を変えて POST されると
+ * 毎回キャッシュを外して audioButtons を全件 .get() させられる（SPR-333）
+ */
+export async function getPopularAudioButtonTags(): Promise<Array<{ tag: string; count: number }>> {
+	return getPopularTags();
 }
