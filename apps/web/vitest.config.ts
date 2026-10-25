@@ -70,6 +70,8 @@ export default defineConfig({
 	resolve: {
 		alias: {
 			"@": path.resolve(__dirname, "./src"),
+			// server-only は react-server 条件以外で import すると throw する。テストは RSC 外で走るため空モジュールに逃がす
+			"server-only": path.resolve(__dirname, "./node_modules/server-only/empty.js"),
 			"@suzumina.click/shared-types": path.resolve(
 				__dirname,
 				"../../packages/shared-types/src/index.ts",

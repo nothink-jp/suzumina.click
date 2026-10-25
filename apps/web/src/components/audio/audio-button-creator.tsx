@@ -427,7 +427,7 @@ export function AudioButtonCreator({
 							/>
 
 							{/* ヘッダーから移した作成上限と、この動画からのサマリー（SPR-289/290） */}
-							{user?.discordId && <CreateButtonLimit userId={user.discordId} />}
+							{user?.discordId && <CreateButtonLimit />}
 							<div className="rounded-lg border bg-minase-100 p-3 text-minase-900">
 								<div className="mb-1 text-xs font-semibold">この動画からの作成</div>
 								<div className="text-xs">

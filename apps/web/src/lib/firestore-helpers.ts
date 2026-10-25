@@ -1,4 +1,4 @@
-"use server";
+import "server-only";
 
 import { getFirestore } from "@/lib/firestore";
 import * as logger from "@/lib/logger";
