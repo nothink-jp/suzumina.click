@@ -101,7 +101,6 @@ export interface WorkComputedProperties {
 	// Display-related
 	displayTitle: string;
 	displayCircle: string;
-	displayCategory: string;
 	displayAgeRating: string;
 	displayReleaseDate: string;
 	relativeUrl: string;
@@ -109,8 +108,6 @@ export interface WorkComputedProperties {
 	// Business logic
 	isAdultContent: boolean;
 	isVoiceWork: boolean;
-	isGameWork: boolean;
-	isMangaWork: boolean;
 	hasDiscount: boolean;
 	isNewRelease: boolean;
 	isPopular: boolean;

@@ -48,8 +48,6 @@ vi.mock("@suzumina.click/shared-types", () => ({
 						relativeUrl: `/works/${data.productId}`,
 						isAdultContent: false,
 						isVoiceWork: data.category === "SOU",
-						isGameWork: false,
-						isMangaWork: false,
 						isNewRelease: false,
 						isPopular: false,
 						primaryLanguage: "ja",

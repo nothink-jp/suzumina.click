@@ -132,24 +132,3 @@ describe("work-firestore fromFirestore の fileSize", () => {
 		expect(fromFirestore(createWorkDocument({ fileSize: 1024 })).fileSize).toBe(1024);
 	});
 });
-
-// SPR-377: カテゴリの表示名・判定は WORK_CATEGORY_DISPLAY_NAMES / *_CATEGORY_CODES を正本にする
-describe("work-firestore fromFirestore のカテゴリ由来の _computed", () => {
-	it("displayCategory は正本の表示名を使う", () => {
-		expect(fromFirestore(createWorkDocument({ category: "DNV" }))._computed.displayCategory).toBe(
-			"デジタルノベル",
-		);
-		expect(fromFirestore(createWorkDocument({ category: "ICG" }))._computed.displayCategory).toBe(
-			"CG・イラスト",
-		);
-	});
-
-	it("isGameWork / isMangaWork は DLsite の実コードで判定する", () => {
-		const rpg = fromFirestore(createWorkDocument({ category: "RPG" }))._computed;
-		const icg = fromFirestore(createWorkDocument({ category: "ICG" }))._computed;
-		const sou = fromFirestore(createWorkDocument({ category: "SOU" }))._computed;
-		expect([rpg.isGameWork, rpg.isMangaWork]).toEqual([true, false]);
-		expect([icg.isGameWork, icg.isMangaWork]).toEqual([false, true]);
-		expect([sou.isGameWork, sou.isMangaWork]).toEqual([false, false]);
-	});
-});

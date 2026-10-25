@@ -82,34 +82,6 @@ export const AGE_CATEGORY_STRING_LABELS: Record<string, string> = {
 } as const;
 
 /**
- * ゲーム系作品カテゴリコード
- */
-export const GAME_CATEGORY_CODES = [
-	"ACN",
-	"QIZ",
-	"ADV",
-	"RPG",
-	"TBL",
-	"DNV",
-	"SLN",
-	"TYP",
-	"STG",
-	"PZL",
-	"ETC",
-] as const satisfies readonly WorkCategory[];
-
-/**
- * `isMangaWork` の判定対象カテゴリコード
- * マンガ系（MNG / SCM / WBT）に加え、従来の判定を引き継いで CG・イラスト（ICG）も含む
- */
-export const MANGA_CATEGORY_CODES = [
-	"MNG",
-	"SCM",
-	"WBT",
-	"ICG",
-] as const satisfies readonly WorkCategory[];
-
-/**
  * サポートされている言語コード
  */
 export const SUPPORTED_LANGUAGES = [
