@@ -54,7 +54,7 @@ export function decodePubsubMode(data: MessagePublishedData | undefined): string
 		return typeof parsed.mode === "string" ? parsed.mode : undefined;
 	} catch (err) {
 		logger.warn("Pub/Subペイロードのデコードに失敗（modeなしとして通常runを続行します）", {
-			error: err instanceof Error ? err.message : String(err),
+			error: err,
 		});
 		return undefined;
 	}

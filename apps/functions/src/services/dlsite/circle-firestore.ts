@@ -87,7 +87,7 @@ export async function updateCircleWithWork(
 		return false;
 	} catch (error) {
 		logger.error(`サークル更新エラー: ${circleId}`, {
-			error: error instanceof Error ? error.message : String(error),
+			error,
 			workId,
 			circleName,
 		});

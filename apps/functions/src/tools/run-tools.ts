@@ -44,7 +44,7 @@ export async function showFailureStats(): Promise<void> {
 		}
 	} catch (error) {
 		logger.error("失敗統計表示エラー:", {
-			error: error instanceof Error ? error.message : String(error),
+			error,
 		});
 		throw error;
 	}
@@ -169,7 +169,7 @@ export async function runWeeklyReport(): Promise<void> {
 		displayImprovementSuggestions(successRate);
 	} catch (error) {
 		logger.error("週次健全性レポートスクリプトエラー:", {
-			error: error instanceof Error ? error.message : String(error),
+			error,
 		});
 		throw error;
 	}
@@ -185,7 +185,7 @@ export async function backfillCreators(): Promise<void> {
 		await backfillCreatorStats();
 	} catch (error) {
 		logger.error("クリエイター集計 backfill エラー:", {
-			error: error instanceof Error ? error.message : String(error),
+			error,
 		});
 		throw error;
 	}
@@ -202,7 +202,7 @@ export async function resetMetadata(): Promise<void> {
 		await resetUnifiedMetadata();
 	} catch (error) {
 		logger.error("メタデータリセットエラー:", {
-			error: error instanceof Error ? error.message : String(error),
+			error,
 		});
 		throw error;
 	}

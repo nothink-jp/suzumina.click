@@ -257,7 +257,12 @@ describe("claimRunEventFailOpen（SPR-368 / SPR-369）", () => {
 		await expect(claimRunEventFailOpen("m1", claimOptions)).resolves.toBe(true);
 		expect(logger.warn).toHaveBeenCalledWith(
 			"重複配信の判定に失敗したため、判定せずに run を実行",
-			{ eventId: "m1", docId: "test_doc", error: "ABORTED: too much contention" },
+			{
+				eventId: "m1",
+				docId: "test_doc",
+				// ログには文字列ではなく Error をそのまま渡す（logger が展開する。SPR-389）
+				error: expect.objectContaining({ message: "ABORTED: too much contention" }),
+			},
 		);
 	});
 });

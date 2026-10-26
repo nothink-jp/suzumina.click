@@ -6,6 +6,7 @@
  */
 
 import type { CloudEvent } from "@google-cloud/functions-framework";
+import { errorMessage } from "../../shared/error-message";
 import * as logger from "../../shared/logger";
 import { logRunMemoryUsage } from "../../shared/memory-diagnostics";
 import { decodePubsubMode, type MessagePublishedData } from "../../shared/pubsub-utils";
@@ -81,7 +82,7 @@ export const fetchYouTubeVideos = async (
 		try {
 			await updateMetadata({
 				isInProgress: false,
-				lastError: error instanceof Error ? error.message : String(error),
+				lastError: errorMessage(error),
 			});
 		} catch (updateError) {
 			logger.error("エラー状態の記録に失敗しました:", updateError);

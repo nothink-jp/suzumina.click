@@ -62,7 +62,7 @@ async function buildPlaylistVideoMapping(
 		} catch (error) {
 			// 個別プレイリストの失敗も同様にタグを欠損させるため中断する。
 			logger.error(`プレイリスト「${playlist.title}」の動画取得に失敗したため中断します`, {
-				error: error instanceof Error ? error.message : String(error),
+				error,
 			});
 			throw error;
 		}

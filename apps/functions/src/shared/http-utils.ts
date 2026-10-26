@@ -5,6 +5,7 @@
  */
 
 import { generateDLsiteHeaders } from "../infrastructure/management/user-agent-manager";
+import { errorMessage } from "./error-message";
 import * as logger from "./logger";
 
 /**
@@ -106,7 +107,7 @@ function handleNetworkError(error: unknown, url: string, enableDetailedLogging: 
 		});
 	}
 
-	throw new HttpRequestError(error instanceof Error ? error.message : String(error));
+	throw new HttpRequestError(errorMessage(error));
 }
 
 /**

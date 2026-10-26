@@ -87,7 +87,7 @@ function parseJsonResponse(
 		const errorContext = {
 			workId,
 			responseText: responseText.substring(0, 1000),
-			jsonError: jsonError instanceof Error ? jsonError.message : String(jsonError),
+			jsonError,
 			url,
 		};
 
@@ -237,7 +237,7 @@ export async function fetchIndividualWorkInfo(
 
 		// API取得エラーは重要なため保持
 		logger.error(`Individual Info API取得エラー: ${workId}`, {
-			error: error instanceof Error ? error.message : String(error),
+			error,
 			stack: error instanceof Error ? error.stack : undefined,
 		});
 
@@ -304,7 +304,7 @@ export async function batchFetchIndividualInfo(
 			}
 		} catch (error) {
 			logger.error(`バッチ ${batchIndex + 1} でエラー:`, {
-				error: error instanceof Error ? error.message : String(error),
+				error,
 				stack: error instanceof Error ? error.stack : undefined,
 			});
 			// バッチ全体が失敗した場合、そのバッチの全作品IDを失敗として記録

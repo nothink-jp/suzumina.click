@@ -6,6 +6,7 @@
  */
 
 import type { DLsiteApiResponse, WorkDocument } from "@suzumina.click/shared-types";
+import { errorMessage } from "../../shared/error-message";
 import * as logger from "../../shared/logger";
 import { WorkMapper } from "../mappers/work-mapper";
 import { savePriceHistory } from "../price-history";
@@ -66,7 +67,7 @@ async function updateWork(workData: WorkDocument, result: ProcessingResult): Pro
 		await saveWorksToFirestore([workData]);
 		result.updates.work = true;
 	} catch (error) {
-		result.errors.push(`Work更新エラー: ${error instanceof Error ? error.message : String(error)}`);
+		result.errors.push(`Work更新エラー: ${errorMessage(error)}`);
 		logger.error(`Work更新エラー: ${workData.productId}`, { error });
 	}
 }
@@ -89,9 +90,7 @@ async function updateCircle(
 		);
 		result.updates.circle = true;
 	} catch (error) {
-		result.errors.push(
-			`Circle更新エラー: ${error instanceof Error ? error.message : String(error)}`,
-		);
+		result.errors.push(`Circle更新エラー: ${errorMessage(error)}`);
 		logger.error(`Circle更新エラー: ${workId}`, { error });
 		// 新しいサークルへの追加に失敗したら外さない（どのサークルにも属さない状態を避ける）
 		return;
@@ -103,9 +102,7 @@ async function updateCircle(
 	try {
 		await removeWorkFromCircle(previousCircleId, workId);
 	} catch (error) {
-		result.errors.push(
-			`前サークルからの除外エラー: ${error instanceof Error ? error.message : String(error)}`,
-		);
+		result.errors.push(`前サークルからの除外エラー: ${errorMessage(error)}`);
 		logger.error(`前サークルからの除外エラー: ${previousCircleId} - ${workId}`, { error });
 	}
 }
@@ -126,9 +123,7 @@ async function updateCreators(
 			result.errors.push(`Creator更新エラー: ${creatorResult.error}`);
 		}
 	} catch (error) {
-		result.errors.push(
-			`Creator更新エラー: ${error instanceof Error ? error.message : String(error)}`,
-		);
+		result.errors.push(`Creator更新エラー: ${errorMessage(error)}`);
 		logger.error(`Creator更新エラー: ${workId}`, { error });
 	}
 }
@@ -151,7 +146,7 @@ async function updatePriceHistory(
 			logger.debug(`価格履歴更新失敗: ${workId}`);
 		}
 	} catch (error) {
-		result.errors.push(`価格履歴エラー: ${error instanceof Error ? error.message : String(error)}`);
+		result.errors.push(`価格履歴エラー: ${errorMessage(error)}`);
 		logger.warn(`価格履歴保存エラー: ${workId}`, { error });
 	}
 }
@@ -313,7 +308,7 @@ export async function processUnifiedDLsiteData(
 			});
 		}
 	} catch (error) {
-		result.errors.push(`統合処理エラー: ${error instanceof Error ? error.message : String(error)}`);
+		result.errors.push(`統合処理エラー: ${errorMessage(error)}`);
 		logger.error(`統合データ処理エラー: ${apiData.workno}`, { error });
 	}
 
