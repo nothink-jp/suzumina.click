@@ -165,6 +165,7 @@ export function extractCreatorMappingsFromWorkDocument(
  *
  * @param workId 作品ID
  * @returns クリエイターIDをキーとしたMap
+ * @throws 取得に失敗したとき（空の Map で続行しない）
  */
 async function getExistingCreatorMappings(
 	workId: string,
@@ -194,6 +195,9 @@ async function getExistingCreatorMappings(
 		logger.error(`既存クリエイターマッピング取得エラー: ${workId}`, {
 			error: error instanceof Error ? error.message : String(error),
 		});
+		// 空で続行すると全マッピングが「新規」扱いになり書き直される（SPR-346 / SPR-275 §2）。
+		// 呼び出し側の catch で失敗として返し、この作品のマッピング更新は書き込まない。
+		throw error;
 	}
 
 	return mappings;

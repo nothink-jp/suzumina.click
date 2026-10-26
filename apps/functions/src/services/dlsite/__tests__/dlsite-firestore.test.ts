@@ -48,12 +48,16 @@ import {
 	getWorkFromFirestore,
 	saveWorksToFirestore,
 } from "../dlsite-firestore";
+import { WORK_DELETE_ON_ABSENCE_PATHS } from "../work-change-paths";
 
 // モックの参照を取得
 const firestoreMock = vi.mocked(await import("../../../infrastructure/database/firestore"));
 const mockQuery = (firestoreMock as any).__mockQuery;
 const mockDoc = (firestoreMock as any).__mockDoc;
 const mockBatch = (firestoreMock as any).__mockBatch;
+
+const isDelete = (value: unknown): boolean =>
+	value instanceof FieldValue && value.isEqual(FieldValue.delete());
 
 // テスト用のサンプルデータ
 const sampleWork: WorkDocument = {
@@ -136,6 +140,22 @@ describe("dlsite-firestore", () => {
 
 			const payload = mockBatch.set.mock.calls[0]![1] as Record<string, unknown>;
 			expect((payload.highResImageUrl as any).isEqual(FieldValue.delete())).toBe(true);
+		});
+
+		it("不在で削除するフィールドが変更検知の WORK_DELETE_ON_ABSENCE_PATHS と一致する", async () => {
+			const bare = { ...sampleWork, price: { current: 1000, currency: "JPY" } } as WorkDocument;
+			delete (bare as Partial<WorkDocument>).highResImageUrl;
+
+			await saveWorksToFirestore([bare]);
+
+			const payload = mockBatch.set.mock.calls[0]![1] as Record<string, unknown>;
+			const deletedPaths = [
+				...Object.keys(payload).filter((k) => isDelete(payload[k])),
+				...Object.entries(payload.price as Record<string, unknown>)
+					.filter(([, v]) => isDelete(v))
+					.map(([k]) => `price.${k}`),
+			];
+			expect(deletedPaths.sort()).toEqual([...WORK_DELETE_ON_ABSENCE_PATHS].sort());
 		});
 
 		it("highResImageUrl があればその値を保持する", async () => {
@@ -252,15 +272,12 @@ describe("dlsite-firestore", () => {
 			expect(mockQuery.get).toHaveBeenCalledTimes(1); // 最適化により1回のクエリ（25件は30件以下なので1チャンク）
 		});
 
-		it("Firestoreエラーが発生しても処理を継続する", async () => {
+		it("Firestoreエラー時は空のマップで続行せず投げる（全件新規扱いを防ぐ・SPR-346）", async () => {
 			const productIds = ["RJ12345"];
-			// モックをリセットしてエラーを設定
 			mockQuery.get.mockReset();
 			mockQuery.get.mockRejectedValue(new Error("Firestore error"));
 
-			const result = await getExistingWorksMap(productIds);
-
-			expect(result.size).toBe(0); // エラーでも空のマップを返す
+			await expect(getExistingWorksMap(productIds)).rejects.toThrow("既存作品データの取得に失敗");
 		});
 	});
 

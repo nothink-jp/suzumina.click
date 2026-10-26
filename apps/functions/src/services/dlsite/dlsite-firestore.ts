@@ -31,6 +31,8 @@ const DLSITE_WORKS_COLLECTION = "works";
  * highResImageUrl も同様。API が「画像なし」プレースホルダを返す作品では
  * mapper が undefined を返すため（SPR-312）、delete しないと過去に保存した
  * no_img gif の URL が残り続ける。
+ *
+ * 削除対象のパスは変更検知と共有する（`WORK_DELETE_ON_ABSENCE_PATHS`。ここと一致させる）。
  */
 function toWorkWriteData(work: WorkDocument): WorkDocument {
 	const { original, discount, point } = work.price;
@@ -203,6 +205,8 @@ export async function saveWorksToFirestore(works: WorkDocument[]): Promise<void>
 
 /**
  * 既存の作品データを効率的に取得 (読み取り最適化対応)
+ *
+ * @throws 取得に失敗したとき（空の Map で続行しない）
  */
 export async function getExistingWorksMap(
 	productIds: string[],
@@ -267,7 +271,11 @@ export async function getExistingWorksMap(
 			productIds: productIds.slice(0, 5),
 			productIdCount: productIds.length,
 		});
-		// エラーが発生しても処理は継続（全て新規作成として扱う）
+		// 空の Map を返すと全件「新規」扱いになり、カタログ全体の書き換えとクリエイター再同期が
+		// 黙って走る（SPR-346）。run を失敗させ、次の定期実行で再試行させる。
+		throw new Error(
+			`既存作品データの取得に失敗: ${error instanceof Error ? error.message : String(error)}`,
+		);
 	}
 
 	return existingWorksMap;

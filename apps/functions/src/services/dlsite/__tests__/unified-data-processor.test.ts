@@ -289,7 +289,7 @@ describe("unified-data-processor", () => {
 		});
 	});
 
-	describe("hasSignificantChanges", () => {
+	describe("変更検知による書き込み判定", () => {
 		it("タイトル変更を検出する", async () => {
 			const existingWork = { ...mockWorkData, title: "旧タイトル" };
 			vi.mocked(getWorkFromFirestore).mockResolvedValue(existingWork);
@@ -326,17 +326,82 @@ describe("unified-data-processor", () => {
 			expect(result.updates.work).toBe(true);
 		});
 
-		it("小幅な評価変更は無視する", async () => {
+		it("小幅な評価変更も検出する（SPR-346: 旧実装は星差 > 2 のみ）", async () => {
 			const existingWork = {
 				...mockWorkData,
-				rating: { stars: 4.0, count: 100 }, // 4.5から4.0への変更（差が0.5）
+				rating: { stars: 4.4, count: 100 },
 			};
 			vi.mocked(getWorkFromFirestore).mockResolvedValue(existingWork);
 
 			const result = await processUnifiedDLsiteData(mockApiData);
 
-			expect(result.success).toBe(true);
+			expect(result.updates.work).toBe(true);
+			expect(saveWorksToFirestore).toHaveBeenCalled();
+		});
+
+		it("評価件数のみの変化を検出する", async () => {
+			const existingWork = {
+				...mockWorkData,
+				rating: { stars: 4.5, count: 99 },
+			};
+			vi.mocked(getWorkFromFirestore).mockResolvedValue(existingWork);
+
+			const result = await processUnifiedDLsiteData(mockApiData);
+
+			expect(result.updates.work).toBe(true);
+		});
+
+		it("作者の変化を検出し、works / circles / creators を書き込む", async () => {
+			const existingWork = {
+				...mockWorkData,
+				creators: { voice_by: [{ id: "creator1", name: "声優A" }], illust_by: [] },
+			} as any;
+			const updatedWork = {
+				...mockWorkData,
+				creators: {
+					voice_by: [{ id: "creator1", name: "声優A" }],
+					illust_by: [{ id: "creator2", name: "イラストレーターB" }],
+				},
+			} as any;
+			vi.mocked(getWorkFromFirestore).mockResolvedValue(existingWork);
+			vi.mocked(WorkMapper.toWork).mockReturnValue(updatedWork);
+
+			const result = await processUnifiedDLsiteData(mockApiData);
+
+			expect(result.updates).toMatchObject({ work: true, circle: true, creators: true });
+			expect(updateCreatorWorkMapping).toHaveBeenCalledWith(mockApiData, "RJ123456");
+		});
+
+		it("説明の変化を検出する", async () => {
+			const existingWork = { ...mockWorkData, description: "旧説明" };
+			const updatedWork = { ...mockWorkData, description: "新説明" };
+			vi.mocked(getWorkFromFirestore).mockResolvedValue(existingWork);
+			vi.mocked(WorkMapper.toWork).mockReturnValue(updatedWork);
+
+			const result = await processUnifiedDLsiteData(mockApiData);
+
+			expect(result.updates.work).toBe(true);
+			expect(saveWorksToFirestore).toHaveBeenCalledWith([updatedWork]);
+		});
+
+		it("取得時刻だけが違う場合は書き込まない", async () => {
+			const existingWork = {
+				...mockWorkData,
+				lastFetchedAt: "2026-01-01T00:00:00.000Z",
+				updatedAt: "2026-01-01T00:00:00.000Z",
+			};
+			const updatedWork = {
+				...mockWorkData,
+				lastFetchedAt: "2026-10-26T00:00:00.000Z",
+				updatedAt: "2026-10-26T00:00:00.000Z",
+			};
+			vi.mocked(getWorkFromFirestore).mockResolvedValue(existingWork);
+			vi.mocked(WorkMapper.toWork).mockReturnValue(updatedWork);
+
+			const result = await processUnifiedDLsiteData(mockApiData);
+
 			expect(result.updates.work).toBe(false);
+			expect(saveWorksToFirestore).not.toHaveBeenCalled();
 		});
 
 		it("販売終了を検出する", async () => {
@@ -417,6 +482,15 @@ describe("unified-data-processor", () => {
 			expect(result.priceOrSalesChanged).toBe(false);
 			expect(result.metadataChanged).toBe(false);
 			expect(result.hasAnyChange).toBe(false);
+		});
+
+		it("ジャンルの削除はmetadataChangedになる", () => {
+			const existing = { ...mockWorkData, genres: ["ジャンル1", "ジャンル2"] };
+			const updated = { ...mockWorkData, genres: ["ジャンル1"] };
+			const result = detectChanges(existing, updated);
+
+			expect(result.metadataChanged).toBe(true);
+			expect(result.changedPaths).toEqual(["genres"]);
 		});
 
 		it("割引率のみ変化した場合、priceOrSalesChangedのみtrueになる（JPY価格は据え置き）", () => {

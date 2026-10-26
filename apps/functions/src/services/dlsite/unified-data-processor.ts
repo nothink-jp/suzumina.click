@@ -12,6 +12,7 @@ import { savePriceHistory } from "../price-history";
 import { updateCircleWithWork } from "./circle-firestore";
 import { updateCreatorWorkMapping } from "./creator-firestore";
 import { getWorkFromFirestore, saveWorksToFirestore } from "./dlsite-firestore";
+import { listChangedWorkPaths } from "./work-change-paths";
 
 /**
  * 統合処理の結果
@@ -247,103 +248,25 @@ export async function processUnifiedDLsiteData(
 }
 
 /**
- * 価格変更をチェック
- *
- * 本体価格（current）だけでなく割引率（discount）も見る。DLsiteのセールでJPY価格は
- * 据え置きのまま割引率だけ変わるケースがあり、currentのみの比較では検知できないため
- * （レビュー指摘: 割引率のみの変化がShouldSkipUpdate/取りこぼし検知の両方で見逃される）。
- */
-function hasPriceChanged(existing: WorkDocument, updated: WorkDocument): boolean {
-	if (existing.price.current !== updated.price.current) {
-		logger.info(
-			`価格変更検出: ${existing.productId} - ${existing.price.current} → ${updated.price.current}`,
-		);
-		return true;
-	}
-	if (existing.price.discount !== updated.price.discount) {
-		logger.info(
-			`割引率変更検出: ${existing.productId} - ${existing.price.discount} → ${updated.price.discount}`,
-		);
-		return true;
-	}
-	return false;
-}
-
-/**
- * タイトル変更をチェック
- */
-function hasTitleChanged(existing: WorkDocument, updated: WorkDocument): boolean {
-	if (existing.title !== updated.title) {
-		logger.info(`タイトル変更検出: ${existing.productId}`);
-		return true;
-	}
-	return false;
-}
-
-/**
- * 販売状態変更をチェック
- */
-function hasSalesStatusChanged(existing: WorkDocument, updated: WorkDocument): boolean {
-	if (existing.salesStatus?.isSale !== updated.salesStatus?.isSale) {
-		logger.info(
-			`販売状態変更検出: ${existing.productId} - ${existing.salesStatus?.isSale} → ${updated.salesStatus?.isSale}`,
-		);
-		return true;
-	}
-	return false;
-}
-
-/**
- * 評価の大幅な変更をチェック
- */
-function hasRatingChanged(existing: WorkDocument, updated: WorkDocument): boolean {
-	const existingStars = existing.rating?.stars || 0;
-	const updatedStars = updated.rating?.stars || 0;
-	if (Math.abs(existingStars - updatedStars) > 2) {
-		logger.info(`評価変更検出: ${existing.productId} - ${existingStars} → ${updatedStars}`);
-		return true;
-	}
-	return false;
-}
-
-/**
- * 販売終了をチェック
- */
-function isSoldOut(existing: WorkDocument, updated: WorkDocument): boolean {
-	if (!existing.salesStatus?.isSoldOut && updated.salesStatus?.isSoldOut) {
-		logger.info(`販売終了検出: ${existing.productId}`);
-		return true;
-	}
-	return false;
-}
-
-/**
- * 新しいジャンルの追加をチェック
- */
-function hasNewGenres(existing: WorkDocument, updated: WorkDocument): boolean {
-	const existingGenres = new Set(existing.genres || []);
-	const hasNewGenres = (updated.genres || []).some((genre) => !existingGenres.has(genre));
-	if (hasNewGenres) {
-		logger.info(`ジャンル追加検出: ${existing.productId}`);
-		return true;
-	}
-	return false;
-}
-
-/**
  * 変更種別の分類結果
  *
  * SPR-229 Stage①: 価格/販売状態の変化とメタ情報の変化を分離して集計する。
- * 「価格のみ変化」を切り出せるようにしておくことで、後続のティア差分判定や
- * 取りこぼし検知ログで変化の質を区別できるようにする（本Stageでは動作は変えない）。
+ * SPR-346: 判定は追跡フィールドの列挙ではなく {@link listChangedWorkPaths}（merge 書き込みで
+ * 変わる全フィールド）に基づく。
  */
 export interface ChangeDetectionResult {
-	/** 価格・販売状態（セール/売り切れ）の変化 */
+	/** 価格・販売状態（`price.*` / `salesStatus.*`）の変化 */
 	priceOrSalesChanged: boolean;
-	/** タイトル・評価・ジャンルなどメタ情報の変化 */
+	/** それ以外（タイトル・評価・作者・説明・画像・ジャンル等）の変化 */
 	metadataChanged: boolean;
-	/** いずれかの変化があるか（既存の hasSignificantChanges 相当） */
+	/** いずれかの変化があるか（false なら works / circles / creators の書き込みをスキップする） */
 	hasAnyChange: boolean;
+	/** 変化したフィールドのパス */
+	changedPaths: string[];
+}
+
+function isPriceOrSalesPath(path: string): boolean {
+	return /^(price|salesStatus)(\.|$)/.test(path);
 }
 
 /**
@@ -357,19 +280,19 @@ export function detectChanges(
 	existing: WorkDocument,
 	updated: WorkDocument,
 ): ChangeDetectionResult {
-	const priceOrSalesChanged =
-		hasPriceChanged(existing, updated) ||
-		hasSalesStatusChanged(existing, updated) ||
-		isSoldOut(existing, updated);
-	const metadataChanged =
-		hasTitleChanged(existing, updated) ||
-		hasRatingChanged(existing, updated) ||
-		hasNewGenres(existing, updated);
+	const changedPaths = listChangedWorkPaths(existing, updated);
+	const priceOrSalesChanged = changedPaths.some(isPriceOrSalesPath);
+	const metadataChanged = changedPaths.some((path) => !isPriceOrSalesPath(path));
+
+	if (changedPaths.length > 0) {
+		logger.info(`作品変更検出: ${existing.productId}`, { changedPaths });
+	}
 
 	return {
 		priceOrSalesChanged,
 		metadataChanged,
-		hasAnyChange: priceOrSalesChanged || metadataChanged,
+		hasAnyChange: changedPaths.length > 0,
+		changedPaths,
 	};
 }
 
