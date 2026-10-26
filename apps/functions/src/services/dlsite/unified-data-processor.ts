@@ -166,6 +166,9 @@ const CREATORS_PATH = /^(creators(\.|$)|circleId$)/;
  * SPR-346: 変更検知を全フィールドに広げたため、評価・説明だけの変化でも Circle / Creator の
  * 同期（circle doc の get/set、collectionGroup QUERY）が走ると reads が評価変動数に比例して増える。
  * それぞれが使う値が変わったときだけ同期する。新規作品と forceUpdate は従来どおり全部書く。
+ *
+ * 副作用の注意: works は Circle / Creator の同期より先に書くため、同期だけが失敗した作品は
+ * 次の run で差分が出ず再試行されない。回復は週次の整合性 cron（`checkDataIntegrity`）が担う。
  */
 async function planUpdates(
 	workData: WorkDocument,
