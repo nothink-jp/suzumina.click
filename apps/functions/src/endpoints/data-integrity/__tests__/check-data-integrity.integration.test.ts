@@ -254,7 +254,7 @@ describe.skipIf(!RUN)("checkDataIntegrity (integration / Firestore Emulator)", (
 		);
 	});
 
-	it("400件超の Circle 修正でもバッチ分割で例外なく完了する（commitAndRenew 回帰 / SPR-142）", async () => {
+	it("400件超の Circle 修正でもバッチ分割で例外なく完了する（分割コミットの回帰 / SPR-142）", async () => {
 		const db = getFirestore();
 		// 存在する作品を1件用意（存在チェックを通し、circle あたりの batch 操作を1回に保つ）。
 		// 全サークルの workIds に入れるため circleId は持たせない（持たせると RG0 以外では
@@ -284,9 +284,9 @@ describe.skipIf(!RUN)("checkDataIntegrity (integration / Firestore Emulator)", (
 		}
 	});
 
-	it("400件超の Creator-Work 復元でもバッチ分割で例外なく完了する（commitBatchIfNeeded 回帰 / SPR-142）", async () => {
+	it("400件超の Creator-Work 復元でもバッチ分割で例外なく完了する（分割コミットの回帰 / SPR-142）", async () => {
 		const db = getFirestore();
-		// 1作品に境界超のクリエイターを詰め、復元側（commitBatchIfNeeded）の分割を強制する。
+		// 1作品に境界超のクリエイターを詰め、復元側の分割を強制する。
 		// クリエイター毎に ensure(set) + mapping(set) の2書き込みが出るため、COUNT 件で境界を複数回跨ぐ。
 		const COUNT = batchLimit + 1;
 		const voiceBy = Array.from({ length: COUNT }, (_, i) => ({ id: `C${i}`, name: `creator${i}` }));
