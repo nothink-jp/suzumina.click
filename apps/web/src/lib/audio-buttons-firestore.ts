@@ -2,7 +2,6 @@
  * 音声ボタン関連のFirestore操作を提供するモジュール
  */
 
-import type { Query } from "@google-cloud/firestore";
 import {
 	type AudioButton,
 	type AudioButtonDocument,
@@ -113,92 +112,64 @@ export function convertToAudioButtonPlainObject(
 }
 
 /**
- * 特定ユーザーが作成した公開音声ボタンを取得
+ * 特定ユーザーが作成した公開音声ボタンを新しい順に取得
  *
  * 非公開ボタンは常に除外する（呼び出し側から外せない＝SPR-379）。
- * 所有者向けに非公開を含める一覧が要るなら、認可付きの別関数として分ける
+ * 所有者向けに非公開を含める一覧が要るなら、認可付きの別関数として分ける。
+ * 読み取りは表示件数（limit）に比例する。複合インデックスは
+ * terraform の audiobuttons_creatorid_ispublic_createdat_desc が正本（SPR-380）
  */
 export async function getAudioButtonsByUser(
 	discordId: string,
-	options: {
-		limit?: number;
-		orderBy?: "newest" | "oldest" | "mostPlayed";
-	} = {},
+	options: { limit?: number } = {},
 ): Promise<AudioButton[]> {
+	const { limit = 20 } = options;
 	try {
 		const firestore = getFirestore();
-		const { limit = 20, orderBy = "newest" } = options;
+		const byCreator = firestore.collection("audioButtons").where("creatorId", "==", discordId);
 
-		let snapshot: FirebaseFirestore.QuerySnapshot;
-
+		let docs: FirebaseFirestore.QueryDocumentSnapshot[];
 		try {
-			// まず最適化されたクエリを試行
-			let query: Query = firestore.collection("audioButtons").where("creatorId", "==", discordId);
-
-			// デフォルトは作成日順のソートのみ（最もシンプルなインデックス）
-			if (orderBy === "newest" || orderBy === "oldest") {
-				const direction = orderBy === "newest" ? "desc" : "asc";
-				query = query.orderBy("createdAt", direction);
-			}
-
-			// 制限を大きめに設定して、後でフィルタリング
-			query = query.limit(limit * 2);
-
-			snapshot = await query.get();
+			const snapshot = await byCreator
+				.where("isPublic", "==", true)
+				.orderBy("createdAt", "desc")
+				.limit(limit)
+				.get();
+			docs = snapshot.docs;
 		} catch (indexError) {
-			// インデックスエラーの場合、最もシンプルなクエリにフォールバック
+			// 複合インデックスが未作成・ビルド中（FAILED_PRECONDITION）でも結果を欠けさせないため、
+			// creatorId だけで全件取得して下の in-memory 処理に任せる。読み取りはユーザーのボタン数に比例する
 			logError("Index error, falling back to simple query:", {
 				discordId,
 				indexError: indexError instanceof Error ? indexError.message : String(indexError),
 			});
-
-			const simpleQuery = firestore.collection("audioButtons").where("creatorId", "==", discordId);
-			snapshot = await simpleQuery.get();
-		}
-		let audioButtons = snapshot.docs
-			.map((doc) => {
-				try {
-					const data = doc.data() as AudioButtonDocument;
-					return convertToAudioButtonPlainObject({ ...data, id: doc.id });
-				} catch (conversionError) {
-					logError("Failed to convert audio button data:", {
-						docId: doc.id,
-						error:
-							conversionError instanceof Error ? conversionError.message : String(conversionError),
-					});
-					return null;
-				}
-			})
-			.filter((button): button is AudioButton => button !== null)
-			// 公開のみ（in-memory で適用。creatorId との複合インデックスを増やさないため）
-			.filter((button) => button.isPublic);
-
-		// クライアント側でソート（フォールバック時や再生数順の場合）
-		switch (orderBy) {
-			case "newest":
-				audioButtons.sort(
-					(a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-				);
-				break;
-			case "oldest":
-				audioButtons.sort(
-					(a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-				);
-				break;
-			case "mostPlayed":
-				audioButtons.sort((a, b) => (b.stats.playCount || 0) - (a.stats.playCount || 0));
-				break;
-			default:
-				// orderBy は "newest" 既定でこのフォールバックには到達しないが、網羅性のため明示（ソートなし）
-				break;
+			docs = (await byCreator.get()).docs;
 		}
 
-		// 最終的な制限を適用
-		audioButtons = audioButtons.slice(0, limit);
-
-		return audioButtons;
+		return (
+			docs
+				.map((doc) => {
+					try {
+						const data = doc.data() as AudioButtonDocument;
+						return convertToAudioButtonPlainObject({ ...data, id: doc.id });
+					} catch (conversionError) {
+						logError("Failed to convert audio button data:", {
+							docId: doc.id,
+							error:
+								conversionError instanceof Error
+									? conversionError.message
+									: String(conversionError),
+						});
+						return null;
+					}
+				})
+				.filter((button): button is AudioButton => button !== null)
+				// 正常経路では where 済み。フォールバック経路のためと fail-closed の二重防御
+				.filter((button) => button.isPublic)
+				.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+				.slice(0, limit)
+		);
 	} catch (error) {
-		// エラーログを詳細に出力
 		logError("getAudioButtonsByUser error:", {
 			discordId,
 			options,

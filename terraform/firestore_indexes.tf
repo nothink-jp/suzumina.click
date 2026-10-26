@@ -143,7 +143,7 @@ resource "google_firestore_index" "audiobuttons_ispublic_createdat_desc" {
 # }
 
 # audioButtons コレクションのインデックス - createdBy（昇順）、createdAt（降順）
-# 🔄 MIGRATED TO NEW FIELD NAMES - Use audiobuttons_creatorid_createdat_desc instead
+# 🔄 MIGRATED TO NEW FIELD NAMES - 後継は audiobuttons_creatorid_ispublic_createdat_desc（SPR-380）
 # resource "google_firestore_index" "audiobuttons_createdby_createdat_desc" {
 #   project    = var.gcp_project_id
 #   collection = "audioButtons"
