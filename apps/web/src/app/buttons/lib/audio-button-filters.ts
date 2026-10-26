@@ -1,18 +1,15 @@
 import type { AudioButton } from "@suzumina.click/shared-types";
 
 /**
- * Firestoreクエリにフィルタを適用
+ * 公開一覧向けの Firestore フィルタを適用する。
+ * `isPublic == true` は常に強制する（呼び出し側から外せない＝SPR-332）。
+ * 所有者向けに非公開を含める一覧が要るなら、認可付きの別関数として分ける
  */
 export function applyFilters(
 	queryRef: FirebaseFirestore.Query,
-	onlyPublic: boolean,
 	videoId?: string,
 ): FirebaseFirestore.Query {
-	let filteredQuery = queryRef;
-
-	if (onlyPublic) {
-		filteredQuery = filteredQuery.where("isPublic", "==", true) as typeof filteredQuery;
-	}
+	let filteredQuery = queryRef.where("isPublic", "==", true) as FirebaseFirestore.Query;
 
 	if (videoId) {
 		// Use videoId field (unified naming)

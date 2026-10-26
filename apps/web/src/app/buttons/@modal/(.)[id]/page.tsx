@@ -32,7 +32,6 @@ export default async function InterceptedAudioButtonPage({
 		videoId: audioButton.videoId,
 		limit: RELATED_LIMIT + 1,
 		sortBy: "newest",
-		onlyPublic: true,
 	}).catch(() => null);
 	const related = (relatedResult?.success ? relatedResult.data.audioButtons : [])
 		.filter((b) => b.id !== audioButton.id)

@@ -19,17 +19,17 @@ const makeQuery = () => {
 const button = (over: Partial<AudioButton>): AudioButton => over as AudioButton;
 
 describe("applyFilters", () => {
-	it("onlyPublic で isPublic、videoId 指定で videoId を where", () => {
+	it("isPublic を常に where し、videoId 指定で videoId も where", () => {
 		const { q, calls } = makeQuery();
-		applyFilters(q as never, true, "vid1");
+		applyFilters(q as never, "vid1");
 		expect(calls).toContainEqual({ method: "where", args: ["isPublic", "==", true] });
 		expect(calls).toContainEqual({ method: "where", args: ["videoId", "==", "vid1"] });
 	});
 
-	it("onlyPublic=false・videoId 無しは where を呼ばない", () => {
+	it("videoId 無しでも isPublic の where だけは必ず掛ける（SPR-332）", () => {
 		const { q, calls } = makeQuery();
-		applyFilters(q as never, false);
-		expect(calls).toHaveLength(0);
+		applyFilters(q as never);
+		expect(calls).toEqual([{ method: "where", args: ["isPublic", "==", true] }]);
 	});
 });
 

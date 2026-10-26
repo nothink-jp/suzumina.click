@@ -174,7 +174,7 @@ export default async function CreateAudioButtonPage({ searchParams }: CreateAudi
 	// getMyButtonDrafts は未ログイン時に success:false を返すだけなので ProtectedRoute の外で呼んでも安全。
 	// 下書きは既定 limit=100 だと多数保持ユーザーで黙って欠けるため、保持上限の500で全件取る
 	const [buttonsResult, draftsResult] = await Promise.all([
-		getAudioButtonsList({ videoId, onlyPublic: true, limit: 1000 }),
+		getAudioButtonsList({ videoId, limit: 1000 }),
 		getMyButtonDrafts(500),
 	]);
 	const madeMarks = buttonsResult.success

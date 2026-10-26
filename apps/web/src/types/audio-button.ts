@@ -12,7 +12,6 @@ export interface AudioButtonQuery {
 	page?: number;
 	limit?: number;
 	videoId?: string;
-	onlyPublic?: boolean;
 	includeTotalCount?: boolean;
 	// Advanced filters
 	playCountMin?: number;
