@@ -147,7 +147,7 @@ export async function getAudioButtonsByUser(
 			if ((indexError as { code?: unknown } | null)?.code !== FIRESTORE_FAILED_PRECONDITION) {
 				throw indexError;
 			}
-			logError("Index error, falling back to simple query:", {
+			logError("getAudioButtonsByUser: index error, falling back to simple query", {
 				discordId,
 				indexError: indexError instanceof Error ? indexError.message : String(indexError),
 			});
@@ -201,7 +201,8 @@ export interface UserPublicAudioButtonStats {
  * 非公開ボタンは含めない（公開プロフィールに出すため）。件数と総再生数は Firestore の集計
  * （1,000 件ごとに 1 read）、最高再生数は limit(1) で取り、ボタン数に比例した読み取りをしない。
  * 複合インデックスは terraform の audiobuttons_creatorid_ispublic_stats_playcount_asc（集計）と
- * _desc（最高再生数）が正本。集計は昇順 index でしか受けられない（SPR-381）
+ * audiobuttons_creatorid_ispublic_stats_playcount_desc（最高再生数）が正本。
+ * 集計は昇順 index でしか受けられない（SPR-381）
  */
 export async function getUserPublicAudioButtonStats(
 	discordId: string,
@@ -230,7 +231,7 @@ export async function getUserPublicAudioButtonStats(
 			if ((indexError as { code?: unknown } | null)?.code !== FIRESTORE_FAILED_PRECONDITION) {
 				throw indexError;
 			}
-			logError("Index error, falling back to simple query:", {
+			logError("getUserPublicAudioButtonStats: index error, falling back to simple query", {
 				discordId,
 				indexError: indexError instanceof Error ? indexError.message : String(indexError),
 			});

@@ -26,7 +26,8 @@ export const AUDIO_BUTTON_LIST_FIELDS = [
  *
  * 一覧 Server Action（getAudioButtonsList）は limit を上限で切り詰めるため、それを超える件数が要る
  * サーバー側の用途（/buttons のグループビュー）はこちらを使う。"use server" ではないので
- * クライアントからは呼べない（SPR-378）。クエリの形は getAudioButtonsList の素の一覧と同じ
+ * クライアントからは呼べない（SPR-378）。クエリの形は getAudioButtonsList の素の一覧と同じ。
+ * 名前の似た getRecentAudioButtons（app/buttons/actions.ts）は Server Action で、上限 100 がかかる
  */
 export async function getRecentPublicAudioButtons(
 	limit: number,

@@ -175,19 +175,3 @@ resource "google_firestore_index" "audiobuttons_creatorid_ispublic_stats_playcou
     order      = "ASCENDING"
   }
 }
-
-# ===================================================================
-# 注意事項:
-# ===================================================================
-# 
-# 1. 適用前に既存のインデックスをバックアップ:
-#    gcloud firestore indexes composite list --database="(default)" > indexes_backup.txt
-# 
-# 2. 新しいインデックスを作成:
-#    terraform apply -target=module.firestore_indexes_audiobuttons_update
-# 
-# 3. アプリケーションの動作確認後、古いインデックスを削除:
-#    - firestore_indexes.tf の古いインデックス定義をコメントアウト
-#    - terraform apply
-# 
-# 4. インデックス作成には時間がかかります（5-10分程度）
