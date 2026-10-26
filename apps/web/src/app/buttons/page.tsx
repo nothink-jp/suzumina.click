@@ -4,13 +4,14 @@ import {
 	ListPageLayout,
 } from "@suzumina.click/ui/components/custom";
 import { Suspense } from "react";
-import { warn } from "@/lib/logger";
+import { error as logError, warn } from "@/lib/logger";
 import type { AudioButtonQuery } from "@/types/audio-button";
 import { getAudioButtonsList } from "./actions";
 import AudioButtonsList from "./components/audio-buttons-list";
 import { type ButtonsView, ButtonsViewNav } from "./components/buttons-view-nav";
 import { FeaturedAudioButtons } from "./components/featured-audio-buttons";
 import { GroupedButtonsView } from "./components/grouped-buttons-view";
+import { getRecentPublicAudioButtons } from "./lib/audio-button-list-query";
 import { groupByUsageTag, groupByVideo } from "./lib/group-buttons";
 
 interface SearchParams {
@@ -85,16 +86,20 @@ interface AudioButtonsPageProps {
 	searchParams: Promise<SearchParams>;
 }
 
-/** 用途別/動画ごとビュー（全件を1回取得して in-memory グルーピング） */
+/**
+ * 用途別/動画ごとビュー（全件を1回取得して in-memory グルーピング）
+ * 一覧 Server Action は limit を 100 で切り詰めるため、サーバー専用の取得関数を使う（SPR-378）
+ */
 async function GroupedView({ view }: { view: "usage" | "video" }) {
-	const result = await getAudioButtonsList({
-		sortBy: "newest",
-		page: 1,
-		limit: GROUP_FETCH_LIMIT,
+	const result = await getRecentPublicAudioButtons(GROUP_FETCH_LIMIT).catch((error: unknown) => {
+		logError("GroupedView: 音声ボタンの取得に失敗しました", {
+			error: error instanceof Error ? error.message : String(error),
+		});
+		return null;
 	});
-	const buttons = result.success && result.data ? result.data.audioButtons : [];
+	const buttons = result ? result.audioButtons : [];
 	// 見出しの総数は count() 集計の実総数を使う（取得上限で切られた件数を「総数」と偽らない）
-	const totalCount = result.success && result.data ? result.data.totalCount : buttons.length;
+	const totalCount = result ? result.totalCount : buttons.length;
 	if (totalCount > buttons.length) {
 		// 上限到達＝グルーピング対象から静かに欠落する状態。無警告にしない（§1 silent fallback 禁止の精神）
 		warn(

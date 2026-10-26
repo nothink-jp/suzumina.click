@@ -2,7 +2,6 @@
 
 import type {
 	AudioButton,
-	AudioButtonDocument,
 	CreateAudioButtonInput,
 	UpdateAudioButtonInput,
 } from "@suzumina.click/shared-types";
@@ -24,6 +23,7 @@ import {
 	filterBySearch,
 	filterByTags,
 } from "./lib/audio-button-filters";
+import { AUDIO_BUTTON_LIST_FIELDS } from "./lib/audio-button-list-query";
 import {
 	getAudioButtonCount as getButtonCount,
 	getPopularAudioButtonTags as getPopularTags,
@@ -52,27 +52,10 @@ export async function getRecentAudioButtons(limit = 10): Promise<AudioButton[]> 
 	}
 }
 
-/** 一覧表示に要るフィールドだけを読む（AudioButtonDocument のうち一覧で使うもの） */
-const AUDIO_BUTTON_LIST_FIELDS = [
-	"buttonText",
-	"tags",
-	"videoId",
-	"videoTitle",
-	"videoThumbnailUrl",
-	"startTime",
-	"endTime",
-	"duration",
-	"creatorId",
-	"creatorName",
-	"isPublic",
-	"stats",
-	"createdAt",
-	"updatedAt",
-] as const satisfies readonly (keyof AudioButtonDocument)[];
-
 /**
  * 一覧 Server Action の 1 回あたりの最大件数。クライアントから任意の limit を渡せるため上限で切り詰める。
- * 画面の最大は一覧の 48 件。動画の全ボタンが要る用途は getPublicAudioButtonStartTimesByVideo を使う（SPR-378）
+ * 画面からの最大は一覧の 48 件。これを超える件数が要るサーバー側の用途はサーバー専用の関数を使う
+ * （動画の作成済み目印: getPublicAudioButtonStartTimesByVideo、グループビュー: getRecentPublicAudioButtons・SPR-378）
  */
 const AUDIO_BUTTON_LIST_MAX_LIMIT = 100;
 
