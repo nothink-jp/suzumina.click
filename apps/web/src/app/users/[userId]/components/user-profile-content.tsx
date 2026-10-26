@@ -22,12 +22,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { AudioButtonWithPlayCount } from "@/components/audio/audio-button-with-play-count";
+import type { UserPublicAudioButtonStats } from "@/lib/audio-buttons-firestore";
 
 interface UserProfileContentProps {
 	user: FrontendUserData;
 	audioButtons: AudioButtonPlainObject[];
-	audioButtonsCount: number;
-	totalPlayCount: number;
+	/** 公開ボタン全件の統計（audioButtons は表示用の先頭 20 件なので統計に使わない） */
+	buttonStats: UserPublicAudioButtonStats;
 	isOwnProfile: boolean;
 	favoritesCount?: number;
 	initialLikeDislikeStatuses?: Record<string, { isLiked: boolean; isDisliked: boolean }>;
@@ -155,14 +156,14 @@ function AudioButtonsList({
 export function UserProfileContent({
 	user,
 	audioButtons,
-	audioButtonsCount,
-	totalPlayCount,
+	buttonStats,
 	isOwnProfile,
 	favoritesCount = 0,
 	initialLikeDislikeStatuses = {},
 }: UserProfileContentProps) {
 	const [selectedTab, setSelectedTab] = useState<"buttons" | "stats" | "favorites">("buttons");
-	const averagePlays = audioButtonsCount > 0 ? Math.round(totalPlayCount / audioButtonsCount) : 0;
+	const averagePlays =
+		buttonStats.count > 0 ? Math.round(buttonStats.totalPlays / buttonStats.count) : 0;
 
 	return (
 		<div className="min-h-screen bg-background">
@@ -200,12 +201,12 @@ export function UserProfileContent({
 					<CardContent className="p-6">
 						<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
 							<div className="text-center">
-								<div className="text-2xl font-bold text-primary">{audioButtonsCount}</div>
+								<div className="text-2xl font-bold text-primary">{buttonStats.count}</div>
 								<div className="text-sm text-muted-foreground">作成ボタン</div>
 							</div>
 							<div className="text-center">
 								<div className="text-2xl font-bold text-primary">
-									{totalPlayCount.toLocaleString("ja-JP")}
+									{buttonStats.totalPlays.toLocaleString("ja-JP")}
 								</div>
 								<div className="text-sm text-muted-foreground">総再生数</div>
 							</div>
@@ -283,16 +284,8 @@ export function UserProfileContent({
 							</CardHeader>
 							<CardContent className="space-y-4">
 								<div className="flex justify-between">
-									<span>総ボタン数</span>
-									<span className="font-semibold">{audioButtonsCount}</span>
-								</div>
-								<div className="flex justify-between">
 									<span>公開ボタン</span>
-									<span className="font-semibold">{audioButtons.length}</span>
-								</div>
-								<div className="flex justify-between">
-									<span>非公開ボタン</span>
-									<span className="font-semibold">{audioButtonsCount - audioButtons.length}</span>
+									<span className="font-semibold">{buttonStats.count}</span>
 								</div>
 							</CardContent>
 						</Card>
@@ -306,7 +299,9 @@ export function UserProfileContent({
 							<CardContent className="space-y-4">
 								<div className="flex justify-between">
 									<span>総再生数</span>
-									<span className="font-semibold">{totalPlayCount.toLocaleString("ja-JP")}</span>
+									<span className="font-semibold">
+										{buttonStats.totalPlays.toLocaleString("ja-JP")}
+									</span>
 								</div>
 								<div className="flex justify-between">
 									<span>平均再生数</span>
@@ -315,11 +310,7 @@ export function UserProfileContent({
 								<div className="flex justify-between">
 									<span>最高再生数</span>
 									<span className="font-semibold">
-										{audioButtons.length > 0
-											? Math.max(...audioButtons.map((b) => b.stats.playCount)).toLocaleString(
-													"ja-JP",
-												)
-											: 0}
+										{buttonStats.maxPlays.toLocaleString("ja-JP")}
 									</span>
 								</div>
 							</CardContent>

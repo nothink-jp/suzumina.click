@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	convertToAudioButtonPlainObject,
 	getAudioButtonsByUser,
-	getUserAudioButtonStats,
+	getUserPublicAudioButtonStats,
 } from "../audio-buttons-firestore";
 import { getFirestore } from "../firestore";
 
@@ -304,89 +304,79 @@ describe("audio-buttons-firestore", () => {
 		});
 	});
 
-	describe("getUserAudioButtonStats", () => {
-		it("should calculate user statistics correctly", async () => {
-			const allButtonsSnapshot = {
-				size: 3,
-				docs: [
-					{ data: () => ({ stats: { playCount: 100 } }) },
-					{ data: () => ({ stats: { playCount: 50 } }) },
-					{ data: () => ({ stats: { playCount: 25 } }) },
-				],
-			};
+	describe("getUserPublicAudioButtonStats", () => {
+		const mockAggregate = vi.fn();
+		const mockAggregateGet = vi.fn();
 
-			const publicButtonsSnapshot = {
-				size: 2,
-			};
-
-			mockGet
-				.mockResolvedValueOnce(allButtonsSnapshot)
-				.mockResolvedValueOnce(publicButtonsSnapshot);
-
-			const result = await getUserAudioButtonStats("user-123");
-
-			expect(result).toEqual({
-				totalButtons: 3,
-				totalPlays: 175, // 100 + 50 + 25
-				averagePlays: 58, // Math.round(175 / 3)
-				publicButtons: 2,
+		beforeEach(() => {
+			mockAggregate.mockReturnValue({ get: mockAggregateGet });
+			mockWhere.mockReturnValue({
+				where: mockWhere,
+				orderBy: mockOrderBy,
+				limit: mockLimit,
+				aggregate: mockAggregate,
+				get: mockGet,
 			});
+		});
+
+		it("公開ボタンを count + sum で集計し、最高再生数は limit(1) で取る（SPR-381）", async () => {
+			mockAggregateGet.mockResolvedValue({ data: () => ({ count: 30, totalPlays: 1200 }) });
+			mockGet.mockResolvedValue({ docs: [{ data: () => ({ stats: { playCount: 300 } }) }] });
+
+			const result = await getUserPublicAudioButtonStats("user-123");
 
 			expect(mockWhere).toHaveBeenCalledWith("creatorId", "==", "user-123");
+			expect(mockWhere).toHaveBeenCalledWith("isPublic", "==", true);
+			expect(Object.keys(mockAggregate.mock.calls[0]![0])).toEqual(["count", "totalPlays"]);
+			expect(mockOrderBy).toHaveBeenCalledWith("stats.playCount", "desc");
+			expect(mockLimit).toHaveBeenCalledWith(1);
+			expect(result).toEqual({ count: 30, totalPlays: 1200, maxPlays: 300 });
 		});
 
-		it("should handle user with no buttons", async () => {
-			const emptySnapshot = {
-				size: 0,
-				docs: [],
-			};
+		it("公開ボタンが無ければ最高再生数は 0", async () => {
+			mockAggregateGet.mockResolvedValue({ data: () => ({ count: 0, totalPlays: 0 }) });
+			mockGet.mockResolvedValue({ docs: [] });
 
-			mockGet.mockResolvedValue(emptySnapshot);
+			const result = await getUserPublicAudioButtonStats("user-123");
 
-			const result = await getUserAudioButtonStats("user-123");
-
-			expect(result).toEqual({
-				totalButtons: 0,
-				totalPlays: 0,
-				averagePlays: 0,
-				publicButtons: 0,
-			});
+			expect(result).toEqual({ count: 0, totalPlays: 0, maxPlays: 0 });
 		});
 
-		it("should handle missing playCount in documents", async () => {
-			const snapshotWithMissingPlayCount = {
-				size: 2,
-				docs: [
-					{ data: () => ({ stats: { playCount: 10 } }) },
-					{ data: () => ({}) }, // No stats
-				],
-			};
-
+		it("インデックス未作成時は全件取得にフォールバックし、非公開を除いて計算する", async () => {
+			mockAggregateGet.mockRejectedValueOnce(
+				Object.assign(new Error("9 FAILED_PRECONDITION: The query requires an index."), {
+					code: 9,
+				}),
+			);
 			mockGet
-				.mockResolvedValueOnce(snapshotWithMissingPlayCount)
-				.mockResolvedValueOnce({ size: 1 });
+				// 最高再生数クエリ（Promise.all で並行に投げられる）
+				.mockResolvedValueOnce({ docs: [] })
+				// フォールバックの全件取得
+				.mockResolvedValueOnce({
+					docs: [
+						{ data: () => ({ isPublic: true, stats: { playCount: 100 } }) },
+						{ data: () => ({ isPublic: false, stats: { playCount: 999 } }) },
+						{ data: () => ({ isPublic: true, stats: { playCount: 25 } }) },
+						{ data: () => ({ isPublic: true }) },
+					],
+				});
 
-			const result = await getUserAudioButtonStats("user-123");
+			const result = await getUserPublicAudioButtonStats("user-123");
 
-			expect(result).toEqual({
-				totalButtons: 2,
-				totalPlays: 10, // Only count the valid playCount
-				averagePlays: 5, // Math.round(10 / 2)
-				publicButtons: 1,
-			});
+			expect(result).toEqual({ count: 3, totalPlays: 125, maxPlays: 100 });
 		});
 
-		it("should return default values on error", async () => {
-			mockGet.mockRejectedValue(new Error("Firestore error"));
+		it("インデックス不足以外のエラーではフォールバックせずエラーを投げる", async () => {
+			mockAggregateGet.mockRejectedValueOnce(
+				Object.assign(new Error("14 UNAVAILABLE: Connection dropped"), { code: 14 }),
+			);
+			mockGet.mockResolvedValue({ docs: [] });
 
-			const result = await getUserAudioButtonStats("user-123");
-
-			expect(result).toEqual({
-				totalButtons: 0,
-				totalPlays: 0,
-				averagePlays: 0,
-				publicButtons: 0,
-			});
+			await expect(getUserPublicAudioButtonStats("user-123")).rejects.toThrow(
+				"音声ボタン統計の取得に失敗しました",
+			);
+			// 最高再生数クエリの 1 回だけで、全件取得は走らない
+			expect(mockGet).toHaveBeenCalledTimes(1);
 		});
 	});
 });

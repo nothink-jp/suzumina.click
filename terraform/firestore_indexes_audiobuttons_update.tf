@@ -130,6 +130,29 @@ resource "google_firestore_index" "audiobuttons_creatorid_ispublic_createdat_des
   }
 }
 
+# audioButtons - creatorId（昇順）、isPublic（昇順）、stats.playCount（降順）
+# ユーザーページの公開ボタン統計 getUserPublicAudioButtonStats（apps/web/src/lib/audio-buttons-firestore.ts・SPR-381）。
+# count()+sum(stats.playCount) の集計と、最高再生数の orderBy(stats.playCount desc).limit(1) の両方で使う
+resource "google_firestore_index" "audiobuttons_creatorid_ispublic_stats_playcount_desc" {
+  project    = var.gcp_project_id
+  collection = "audioButtons"
+
+  fields {
+    field_path = "creatorId"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "isPublic"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "stats.playCount"
+    order      = "DESCENDING"
+  }
+}
+
 # ===================================================================
 # 注意事項:
 # ===================================================================

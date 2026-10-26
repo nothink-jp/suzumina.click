@@ -2,6 +2,7 @@
  * 音声ボタン関連のFirestore操作を提供するモジュール
  */
 
+import { AggregateField } from "@google-cloud/firestore";
 import {
 	type AudioButton,
 	type AudioButtonDocument,
@@ -187,57 +188,67 @@ export async function getAudioButtonsByUser(
 	}
 }
 
-/**
- * ユーザーの音声ボタン統計を取得
- */
-export async function getUserAudioButtonStats(discordId: string): Promise<{
-	totalButtons: number;
+/** ユーザーページに出す公開音声ボタンの統計 */
+export interface UserPublicAudioButtonStats {
+	count: number;
 	totalPlays: number;
-	averagePlays: number;
-	publicButtons: number;
-}> {
+	maxPlays: number;
+}
+
+/**
+ * 特定ユーザーの公開音声ボタンの統計（件数・総再生数・最高再生数）を取得
+ *
+ * 非公開ボタンは含めない（公開プロフィールに出すため）。件数と総再生数は Firestore の集計
+ * （1,000 件ごとに 1 read）、最高再生数は limit(1) で取り、ボタン数に比例した読み取りをしない。
+ * 複合インデックスは terraform の audiobuttons_creatorid_ispublic_stats_playcount_desc が正本（SPR-381）
+ */
+export async function getUserPublicAudioButtonStats(
+	discordId: string,
+): Promise<UserPublicAudioButtonStats> {
 	try {
 		const firestore = getFirestore();
+		const byCreator = firestore.collection("audioButtons").where("creatorId", "==", discordId);
+		const publicByCreator = byCreator.where("isPublic", "==", true);
 
-		// ユーザーの全音声ボタンを取得
-		const allButtonsQuery = firestore
-			.collection("audioButtons")
-			.where("creatorId", "==", discordId);
-
-		const publicButtonsQuery = firestore
-			.collection("audioButtons")
-			.where("creatorId", "==", discordId)
-			.where("isPublic", "==", true);
-
-		const [allButtonsSnapshot, publicButtonsSnapshot] = await Promise.all([
-			allButtonsQuery.get(),
-			publicButtonsQuery.get(),
-		]);
-
-		const totalButtons = allButtonsSnapshot.size;
-		const publicButtons = publicButtonsSnapshot.size;
-
-		// 再生回数の合計を計算
-		let totalPlays = 0;
-		allButtonsSnapshot.docs.forEach((doc) => {
-			const data = doc.data() as AudioButtonDocument;
-			totalPlays += data.stats?.playCount || 0;
+		try {
+			const [aggregateSnapshot, topSnapshot] = await Promise.all([
+				publicByCreator
+					.aggregate({
+						count: AggregateField.count(),
+						totalPlays: AggregateField.sum("stats.playCount"),
+					})
+					.get(),
+				publicByCreator.orderBy("stats.playCount", "desc").limit(1).get(),
+			]);
+			const { count, totalPlays } = aggregateSnapshot.data();
+			const top = topSnapshot.docs[0]?.data() as AudioButtonDocument | undefined;
+			return { count, totalPlays, maxPlays: top?.stats?.playCount ?? 0 };
+		} catch (indexError) {
+			// 複合インデックスが未作成・ビルド中（FAILED_PRECONDITION）だけは、creatorId の全件取得から
+			// メモリ上で計算する。読み取りはユーザーのボタン数に比例する。一時障害は外側の catch へ流す
+			if ((indexError as { code?: unknown } | null)?.code !== FIRESTORE_FAILED_PRECONDITION) {
+				throw indexError;
+			}
+			logError("Index error, falling back to simple query:", {
+				discordId,
+				indexError: indexError instanceof Error ? indexError.message : String(indexError),
+			});
+			const playCounts = (await byCreator.get()).docs
+				.map((doc) => doc.data() as AudioButtonDocument)
+				.filter((data) => data.isPublic)
+				.map((data) => data.stats?.playCount || 0);
+			return {
+				count: playCounts.length,
+				totalPlays: playCounts.reduce((sum, plays) => sum + plays, 0),
+				maxPlays: playCounts.length > 0 ? Math.max(...playCounts) : 0,
+			};
+		}
+	} catch (error) {
+		logError("getUserPublicAudioButtonStats error:", {
+			discordId,
+			error: error instanceof Error ? error.message : String(error),
+			stack: error instanceof Error ? error.stack : undefined,
 		});
-
-		const averagePlays = totalButtons > 0 ? Math.round(totalPlays / totalButtons) : 0;
-
-		return {
-			totalButtons,
-			totalPlays,
-			averagePlays,
-			publicButtons,
-		};
-	} catch (_error) {
-		return {
-			totalButtons: 0,
-			totalPlays: 0,
-			averagePlays: 0,
-			publicButtons: 0,
-		};
+		throw new Error("音声ボタン統計の取得に失敗しました");
 	}
 }
