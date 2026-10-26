@@ -98,6 +98,27 @@ describe.skipIf(!RUN)("checkDataIntegrity (integration / Firestore Emulator)", (
 		expect((circle.data()?.workIds as string[] | undefined)?.sort()).toEqual(["RJ001", "RJ002"]);
 	});
 
+	it("別サークルへ移った作品を前のサークルの workIds から外し、今のサークルへ足す（SPR-384）", async () => {
+		const db = getFirestore();
+		await db.collection("works").doc("RJ001").set({ title: "w1", circleId: "RG001" });
+		// RJ002 は RG002 へ移ったが、RG001 の workIds に残っている
+		await db.collection("works").doc("RJ002").set({ title: "w2", circleId: "RG002" });
+		// circleId を持たない古い作品は判定できないので残す
+		await db.collection("works").doc("RJ003").set({ title: "w3" });
+		await db
+			.collection("circles")
+			.doc("RG001")
+			.set({ workIds: ["RJ001", "RJ002", "RJ003"] });
+		await db.collection("circles").doc("RG002").set({ workIds: [] });
+
+		await runIntegrityCheck();
+
+		const before = await db.collection("circles").doc("RG001").get();
+		expect((before.data()?.workIds as string[] | undefined)?.sort()).toEqual(["RJ001", "RJ003"]);
+		const after = await db.collection("circles").doc("RG002").get();
+		expect(after.data()?.workIds).toEqual(["RJ002"]);
+	});
+
 	it("孤立した Creator マッピングと空 Creator を削除する", async () => {
 		const db = getFirestore();
 		await db.collection("works").doc("RJ001").set({ title: "w1", circleId: "RG001" });
@@ -216,8 +237,10 @@ describe.skipIf(!RUN)("checkDataIntegrity (integration / Firestore Emulator)", (
 
 	it("400件超の Circle 修正でもバッチ分割で例外なく完了する（commitAndRenew 回帰 / SPR-142）", async () => {
 		const db = getFirestore();
-		// 存在する作品を1件用意（存在チェックを通し、circle あたりの batch 操作を1回に保つ）
-		await db.collection("works").doc("RJ001").set({ title: "w1", circleId: "RG0" });
+		// 存在する作品を1件用意（存在チェックを通し、circle あたりの batch 操作を1回に保つ）。
+		// 全サークルの workIds に入れるため circleId は持たせない（持たせると RG0 以外では
+		// 「別サークルへ移った作品」として外れる＝SPR-384 の判定で、このテストの意図ではない）
+		await db.collection("works").doc("RJ001").set({ title: "w1" });
 
 		// 分割コミット境界（FIRESTORE_BATCH_LIMIT）を1件超えるサークルに重複 workIds を仕込む
 		const COUNT = batchLimit + 1;

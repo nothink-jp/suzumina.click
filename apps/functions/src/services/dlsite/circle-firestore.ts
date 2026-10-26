@@ -98,3 +98,37 @@ export async function updateCircleWithWork(
 		throw error;
 	}
 }
+
+/** gRPC の NOT_FOUND（update 対象の doc が存在しない） */
+const GRPC_NOT_FOUND = 5;
+
+/**
+ * サークルの workIds から作品を外す
+ *
+ * 作品の circleId が変わったとき、前のサークルに作品が残らないようにする（SPR-384）。
+ * `updateCircleWithWork` は新しいサークルに足すだけで、前のサークルからは外さないため。
+ *
+ * @param circleId - 作品を外すサークル（作品の**前の** circleId）
+ * @param workId - 作品ID
+ * @returns 外したら true。サークルの doc が存在しなければ false（外す対象が無い）
+ * @throws NOT_FOUND 以外の Firestore エラー
+ */
+export async function removeWorkFromCircle(circleId: string, workId: string): Promise<boolean> {
+	try {
+		await firestore
+			.collection(CIRCLES_COLLECTION)
+			.doc(circleId)
+			.update({
+				workIds: FieldValue.arrayRemove(workId),
+				updatedAt: Timestamp.now(),
+			});
+		logger.info(`サークルから作品を除外: ${circleId} - ${workId}`);
+		return true;
+	} catch (error) {
+		if ((error as { code?: unknown }).code === GRPC_NOT_FOUND) {
+			logger.warn(`作品を外す前のサークルが存在しない: ${circleId} - ${workId}`);
+			return false;
+		}
+		throw error;
+	}
+}

@@ -7,7 +7,7 @@ import type { CircleDocument } from "@suzumina.click/shared-types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import firestore from "../../../infrastructure/database/firestore";
 import * as logger from "../../../shared/logger";
-import { updateCircleWithWork } from "../circle-firestore";
+import { removeWorkFromCircle, updateCircleWithWork } from "../circle-firestore";
 
 // モックの設定
 vi.mock("../../../infrastructure/database/firestore", () => ({
@@ -192,6 +192,34 @@ describe("circle-firestore", () => {
 			).rejects.toThrow("Firestore error");
 
 			expect(logger.error).toHaveBeenCalled();
+		});
+	});
+
+	describe("removeWorkFromCircle", () => {
+		it("前のサークルの workIds から arrayRemove で作品を外す", async () => {
+			mockUpdate.mockResolvedValue(undefined);
+
+			const removed = await removeWorkFromCircle("RG00000", "RJ123456");
+
+			expect(removed).toBe(true);
+			expect(mockDoc).toHaveBeenCalledWith("RG00000");
+			expect(mockUpdate).toHaveBeenCalledWith({
+				workIds: { arrayRemove: "RJ123456" },
+				updatedAt: expect.anything(),
+			});
+		});
+
+		it("サークルの doc が存在しない（NOT_FOUND）なら false を返して続行する", async () => {
+			mockUpdate.mockRejectedValue(Object.assign(new Error("not found"), { code: 5 }));
+
+			await expect(removeWorkFromCircle("RG00000", "RJ123456")).resolves.toBe(false);
+			expect(logger.warn).toHaveBeenCalled();
+		});
+
+		it("NOT_FOUND 以外のエラーは投げる", async () => {
+			mockUpdate.mockRejectedValue(Object.assign(new Error("unavailable"), { code: 14 }));
+
+			await expect(removeWorkFromCircle("RG00000", "RJ123456")).rejects.toThrow("unavailable");
 		});
 	});
 });
