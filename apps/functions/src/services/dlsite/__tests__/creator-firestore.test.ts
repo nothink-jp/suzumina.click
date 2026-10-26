@@ -213,16 +213,52 @@ describe("creator-firestore", () => {
 				],
 			});
 
-			// クリエイタードキュメントの取得
-			mockGet.mockResolvedValueOnce({
-				exists: true,
-				data: () => ({ creatorId: "VA001", name: "声優A" }),
-			});
-
 			const result = await updateCreatorWorkMapping(apiData, "RJ123456");
 
 			expect(result.success).toBe(true);
 			expect(mockSet).toHaveBeenCalledTimes(2); // 基本情報 + 関連情報
+			// この作品との関連が既にあるクリエイターは doc も存在するので get しない（SPR-387）
+			expect(mockGet).toHaveBeenCalledTimes(1); // collectionGroup の 1 回だけ
+			expect(mockSet.mock.calls[0]?.[1]).not.toHaveProperty("createdAt");
+		});
+
+		it("関連の無いクリエイターは doc の有無を get して、無ければ createdAt を付ける", async () => {
+			const apiData: DLsiteApiResponse = {
+				workno: "RJ123456",
+				maker_id: "RG11111",
+				creaters: {
+					voice_by: [
+						{ id: "VA001", name: "既存の関連あり" },
+						{ id: "VA002", name: "関連なし・doc あり" },
+						{ id: "VA003", name: "関連なし・doc なし" },
+					],
+				},
+			} as any;
+			mockCollectionGroup.mockReturnValueOnce({ where: mockWhere });
+			mockWhere.mockReturnValueOnce({ get: mockGet });
+			mockGet.mockResolvedValueOnce({
+				docs: [
+					{
+						ref: { parent: { parent: { id: "VA001" } } },
+						data: () => ({ workId: "RJ123456", roles: ["voice"], circleId: "RG11111" }),
+					},
+				],
+			});
+			mockGet
+				.mockResolvedValueOnce({ exists: true, data: () => ({ creatorId: "VA002" }) })
+				.mockResolvedValueOnce({ exists: false, data: () => null });
+
+			const result = await updateCreatorWorkMapping(apiData, "RJ123456");
+
+			expect(result.success).toBe(true);
+			expect(mockGet).toHaveBeenCalledTimes(3); // collectionGroup + VA002 + VA003
+			const creatorWrites = mockSet.mock.calls
+				.map((call) => call[1] as Record<string, unknown>)
+				.filter((data) => "creatorId" in data);
+			const byId = Object.fromEntries(creatorWrites.map((data) => [data.creatorId, data]));
+			expect(byId.VA001).not.toHaveProperty("createdAt");
+			expect(byId.VA002).not.toHaveProperty("createdAt");
+			expect(byId.VA003).toHaveProperty("createdAt");
 		});
 
 		it("無効なクリエイターIDはスキップする", async () => {
@@ -341,10 +377,6 @@ describe("creator-firestore", () => {
 
 		it("roles 不変（name のみ変更）はキューに積まない", async () => {
 			mockExistingMappings([{ creatorId: "VA001", roles: ["voice"] }]);
-			mockGet.mockResolvedValueOnce({
-				exists: true,
-				data: () => ({ creatorId: "VA001", name: "声優A" }),
-			});
 
 			const result = await updateCreatorWorkMapping(
 				{
