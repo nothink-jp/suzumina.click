@@ -2,7 +2,11 @@ import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getLikeDislikeStatusAction } from "@/actions/dislikes";
-import { getAudioButtonsByUser } from "@/lib/audio-buttons-firestore";
+import {
+	getAudioButtonsByUser,
+	getUserPublicAudioButtonStats,
+	type UserPublicAudioButtonStats,
+} from "@/lib/audio-buttons-firestore";
 import { getCurrentUser } from "@/lib/auth/server";
 import { getUserFavoritesCount } from "@/lib/favorites-firestore";
 import { getUserByDiscordId } from "@/lib/user-firestore";
@@ -73,20 +77,13 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
 		notFound();
 	}
 
-	// ユーザーが作成した音声ボタンを取得
-	let audioButtons: AudioButtonPlainObject[] = [];
-	try {
-		audioButtons = await getAudioButtonsByUser(resolvedParams.userId);
-	} catch (_error) {
-		// エラーが発生しても空の配列で続行
-	}
-
-	// 統計情報を計算
-	const audioButtonsCount = audioButtons.length;
-	const totalPlayCount = audioButtons.reduce(
-		(sum, button) => sum + (button.stats.playCount || 0),
-		0,
-	);
+	// 一覧（新しい順に最大 20 件）と統計は別取得。統計を一覧から計算すると 21 件目以降が欠ける（SPR-381）
+	// どちらも失敗時は空・0 で続行（ログは取得関数側で出す）
+	const emptyStats: UserPublicAudioButtonStats = { count: 0, totalPlays: 0, maxPlays: 0 };
+	const [audioButtons, buttonStats] = await Promise.all([
+		getAudioButtonsByUser(resolvedParams.userId).catch((): AudioButtonPlainObject[] => []),
+		getUserPublicAudioButtonStats(resolvedParams.userId).catch(() => emptyStats),
+	]);
 
 	// お気に入り数を取得（自分のプロフィールの場合のみ）
 	let favoritesCount = 0;
@@ -106,8 +103,7 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
 		<UserProfileContent
 			user={user}
 			audioButtons={audioButtons}
-			audioButtonsCount={audioButtonsCount}
-			totalPlayCount={totalPlayCount}
+			buttonStats={buttonStats}
 			isOwnProfile={isOwnProfile}
 			favoritesCount={favoritesCount}
 			initialLikeDislikeStatuses={likeDislikeStatuses}
