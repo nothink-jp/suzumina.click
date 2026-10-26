@@ -132,7 +132,7 @@ resource "google_firestore_index" "audiobuttons_creatorid_ispublic_createdat_des
 
 # audioButtons - creatorId（昇順）、isPublic（昇順）、stats.playCount（降順）
 # ユーザーページの公開ボタン統計 getUserPublicAudioButtonStats（apps/web/src/lib/audio-buttons-firestore.ts・SPR-381）。
-# count()+sum(stats.playCount) の集計と、最高再生数の orderBy(stats.playCount desc).limit(1) の両方で使う
+# 最高再生数の orderBy(stats.playCount desc).limit(1) で使う
 resource "google_firestore_index" "audiobuttons_creatorid_ispublic_stats_playcount_desc" {
   project    = var.gcp_project_id
   collection = "audioButtons"
@@ -150,6 +150,29 @@ resource "google_firestore_index" "audiobuttons_creatorid_ispublic_stats_playcou
   fields {
     field_path = "stats.playCount"
     order      = "DESCENDING"
+  }
+}
+
+# audioButtons - creatorId（昇順）、isPublic（昇順）、stats.playCount（昇順）
+# 同関数の count()+sum(stats.playCount) の集計で使う。集計は集計対象フィールドが昇順の index を要求し、
+# 上の降順 index では受けられない（本番で FAILED_PRECONDITION を確認済み・SPR-381）
+resource "google_firestore_index" "audiobuttons_creatorid_ispublic_stats_playcount_asc" {
+  project    = var.gcp_project_id
+  collection = "audioButtons"
+
+  fields {
+    field_path = "creatorId"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "isPublic"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "stats.playCount"
+    order      = "ASCENDING"
   }
 }
 
