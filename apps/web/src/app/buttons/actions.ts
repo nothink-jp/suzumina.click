@@ -2,7 +2,6 @@
 
 import type {
 	AudioButton,
-	AudioButtonDocument,
 	CreateAudioButtonInput,
 	UpdateAudioButtonInput,
 } from "@suzumina.click/shared-types";
@@ -24,6 +23,7 @@ import {
 	filterBySearch,
 	filterByTags,
 } from "./lib/audio-button-filters";
+import { AUDIO_BUTTON_LIST_FIELDS } from "./lib/audio-button-list-query";
 import {
 	getAudioButtonCount as getButtonCount,
 	getPopularAudioButtonTags as getPopularTags,
@@ -52,29 +52,19 @@ export async function getRecentAudioButtons(limit = 10): Promise<AudioButton[]> 
 	}
 }
 
-/** 一覧表示に要るフィールドだけを読む（AudioButtonDocument のうち一覧で使うもの） */
-const AUDIO_BUTTON_LIST_FIELDS = [
-	"buttonText",
-	"tags",
-	"videoId",
-	"videoTitle",
-	"videoThumbnailUrl",
-	"startTime",
-	"endTime",
-	"duration",
-	"creatorId",
-	"creatorName",
-	"isPublic",
-	"stats",
-	"createdAt",
-	"updatedAt",
-] as const satisfies readonly (keyof AudioButtonDocument)[];
+/**
+ * 一覧 Server Action の 1 回あたりの最大件数。クライアントから任意の limit を渡せるため上限で切り詰める。
+ * 画面からの最大は一覧の 48 件。これを超える件数が要るサーバー側の用途はサーバー専用の関数を使う
+ * （動画の作成済み目印: getPublicAudioButtonStartTimesByVideo、グループビュー: getRecentPublicAudioButtons・SPR-378）
+ */
+const AUDIO_BUTTON_LIST_MAX_LIMIT = 100;
 
 /**
  * 公開音声ボタンの一覧を取得（ConfigurableList用）
  *
  * クライアントから任意の引数で呼べる Server Action なので、非公開ボタンは引数に関わらず返さない
- * （`isPublic == true` を applyFilters で強制。旧 `onlyPublic` 引数は SPR-332 で撤去）
+ * （`isPublic == true` を applyFilters で強制。旧 `onlyPublic` 引数は SPR-332 で撤去）。
+ * limit も同じ理由で AUDIO_BUTTON_LIST_MAX_LIMIT に切り詰める
  */
 export async function getAudioButtonsList(
 	query: {
@@ -112,13 +102,14 @@ export async function getAudioButtonsList(
 		},
 		async (validatedQuery) => {
 			const {
-				limit = 20,
+				limit: requestedLimit = 20,
 				page = 1,
 				sortBy = "newest",
 				videoId,
 				search,
 				tags = [],
 			} = validatedQuery;
+			const limit = Math.min(requestedLimit, AUDIO_BUTTON_LIST_MAX_LIMIT);
 
 			const firestore = getFirestore();
 			const listQueryRef = applySorting(

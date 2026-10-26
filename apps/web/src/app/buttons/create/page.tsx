@@ -9,11 +9,11 @@ import { AlertCircle, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getMyButtonDrafts } from "@/actions/button-drafts";
-import { getAudioButtonsList } from "@/app/buttons/actions";
 import { getVideoById } from "@/app/videos/actions";
 import { AudioButtonCreator } from "@/components/audio/audio-button-creator";
 import ProtectedRoute from "@/components/system/protected-route";
 import { CREATE_ENTRY, CREATE_ENTRY_PARAM, parseCreateEntry } from "@/lib/analytics/create-entry";
+import { getPublicAudioButtonStartTimesByVideo } from "@/lib/audio-buttons-firestore";
 
 interface CreateAudioButtonPageProps {
 	searchParams: Promise<{
@@ -173,13 +173,11 @@ export default async function CreateAudioButtonPage({ searchParams }: CreateAudi
 	// 探索レーンの目印用に、この動画の作成済みボタンと自分の下書きを取得する（SPR-289）。
 	// getMyButtonDrafts は未ログイン時に success:false を返すだけなので ProtectedRoute の外で呼んでも安全。
 	// 下書きは既定 limit=100 だと多数保持ユーザーで黙って欠けるため、保持上限の500で全件取る
-	const [buttonsResult, draftsResult] = await Promise.all([
-		getAudioButtonsList({ videoId, limit: 1000 }),
+	// 作成済みの目印は全件要るので、上限付きの一覧 Server Action ではなく専用関数で取る（SPR-378）
+	const [madeMarks, draftsResult] = await Promise.all([
+		getPublicAudioButtonStartTimesByVideo(videoId).catch((): number[] => []),
 		getMyButtonDrafts(500),
 	]);
-	const madeMarks = buttonsResult.success
-		? buttonsResult.data.audioButtons.map((button) => button.startTime)
-		: [];
 	const myVideoDrafts: AudioButtonDraft[] = draftsResult.success
 		? draftsResult.data
 				.filter((draft) => draft.videoId === videoId)

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	convertToAudioButtonPlainObject,
 	getAudioButtonsByUser,
+	getPublicAudioButtonStartTimesByVideo,
 	getUserPublicAudioButtonStats,
 } from "../audio-buttons-firestore";
 import { getFirestore } from "../firestore";
@@ -377,6 +378,42 @@ describe("audio-buttons-firestore", () => {
 			);
 			// 最高再生数クエリの 1 回だけで、全件取得は走らない
 			expect(mockGet).toHaveBeenCalledTimes(1);
+		});
+	});
+
+	describe("getPublicAudioButtonStartTimesByVideo", () => {
+		const mockSelect = vi.fn();
+
+		beforeEach(() => {
+			mockSelect.mockReturnValue({ get: mockGet });
+			mockWhere.mockReturnValue({ where: mockWhere, select: mockSelect, get: mockGet });
+		});
+
+		it("動画の公開ボタンの startTime だけを件数で打ち切らずに取る（SPR-378）", async () => {
+			mockGet.mockResolvedValue({
+				docs: [
+					{ data: () => ({ startTime: 12.5 }) },
+					{ data: () => ({ startTime: 3 }) },
+					{ data: () => ({}) },
+				],
+			});
+
+			const result = await getPublicAudioButtonStartTimesByVideo("video-1");
+
+			expect(mockCollection).toHaveBeenCalledWith("audioButtons");
+			expect(mockWhere).toHaveBeenCalledWith("videoId", "==", "video-1");
+			expect(mockWhere).toHaveBeenCalledWith("isPublic", "==", true);
+			expect(mockSelect).toHaveBeenCalledWith("startTime");
+			expect(mockLimit).not.toHaveBeenCalled();
+			expect(result).toEqual([12.5, 3]);
+		});
+
+		it("取得に失敗したらエラーを投げる", async () => {
+			mockGet.mockRejectedValue(new Error("Firestore error"));
+
+			await expect(getPublicAudioButtonStartTimesByVideo("video-1")).rejects.toThrow(
+				"音声ボタンの開始位置の取得に失敗しました",
+			);
 		});
 	});
 });
