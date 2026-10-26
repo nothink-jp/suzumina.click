@@ -236,6 +236,50 @@ describe("unified-data-processor", () => {
 		});
 	});
 
+	describe("createdAt の維持（SPR-385）", () => {
+		it("既存作品を書き込むときは既存の createdAt を維持する", async () => {
+			const existingWork = {
+				...mockWorkData,
+				title: "旧タイトル",
+				createdAt: "2025-01-01T00:00:00.000Z",
+			};
+			const updatedWork = { ...mockWorkData, createdAt: "2026-10-26T00:00:00.000Z" };
+			vi.mocked(getWorkFromFirestore).mockResolvedValue(existingWork);
+			vi.mocked(WorkMapper.toWork).mockReturnValue(updatedWork);
+
+			await processUnifiedDLsiteData(mockApiData);
+
+			expect(saveWorksToFirestore).toHaveBeenCalledWith([
+				expect.objectContaining({ title: "テスト作品", createdAt: "2025-01-01T00:00:00.000Z" }),
+			]);
+		});
+
+		it("新規作品は mapper の createdAt で作成する", async () => {
+			const newWork = { ...mockWorkData, createdAt: "2026-10-26T00:00:00.000Z" };
+			vi.mocked(getWorkFromFirestore).mockResolvedValue(null);
+			vi.mocked(WorkMapper.toWork).mockReturnValue(newWork);
+
+			await processUnifiedDLsiteData(mockApiData);
+
+			expect(saveWorksToFirestore).toHaveBeenCalledWith([
+				expect.objectContaining({ createdAt: "2026-10-26T00:00:00.000Z" }),
+			]);
+		});
+
+		it("既存作品に createdAt が無い古いデータなら mapper の値で埋める", async () => {
+			const existingWork = { ...mockWorkData, title: "旧タイトル", createdAt: undefined } as any;
+			const updatedWork = { ...mockWorkData, createdAt: "2026-10-26T00:00:00.000Z" };
+			vi.mocked(getWorkFromFirestore).mockResolvedValue(existingWork);
+			vi.mocked(WorkMapper.toWork).mockReturnValue(updatedWork);
+
+			await processUnifiedDLsiteData(mockApiData);
+
+			expect(saveWorksToFirestore).toHaveBeenCalledWith([
+				expect.objectContaining({ createdAt: "2026-10-26T00:00:00.000Z" }),
+			]);
+		});
+	});
+
 	describe("processBatchUnifiedDLsiteData", () => {
 		it("複数のAPIデータをバッチ処理する", async () => {
 			const apiDataList = [

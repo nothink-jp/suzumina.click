@@ -165,6 +165,11 @@ interface UpdatePlan {
 	creators: boolean;
 	/** circleId が変わった作品の、前の circleId（前のサークルの workIds から外すため） */
 	previousCircleId?: string;
+	/**
+	 * 既存作品の createdAt。works へ書くときはこの値を維持する（SPR-385）。
+	 * mapper は毎回現在時刻を入れるため、そのまま merge すると作成日時が上書きされる
+	 */
+	existingCreatedAt?: string;
 }
 
 const UPDATE_ALL: UpdatePlan = { work: true, circle: true, creators: true };
@@ -189,6 +194,9 @@ const CREATORS_PATH = /^(creators(\.|$)|circleId$)/;
  * 欠けた creator mapping と circle.workIds の追加・circleId が別サークルを指す作品の除外だけで、
  * 作者の削除・roles の変更・creator mapping の circleId・名前の変更は、その作品の関係する値が
  * 次に変わるか forceUpdate するまで残る。
+ *
+ * forceUpdate は既存作品を読まないため createdAt を維持できない（本番の呼び出しは
+ * `process-batch.ts` の forceUpdate: false のみ）。
  */
 async function planUpdates(
 	workData: WorkDocument,
@@ -219,6 +227,7 @@ async function planUpdates(
 		circle: changedPaths.some((path) => CIRCLE_PATH.test(path)),
 		creators: changedPaths.some((path) => CREATORS_PATH.test(path)),
 		previousCircleId: circleIdChanged ? existingWork.circleId || undefined : undefined,
+		existingCreatedAt: existingWork.createdAt || undefined,
 	};
 }
 
@@ -238,7 +247,10 @@ async function performUpdates(
 	});
 
 	if (plan.work) {
-		await updateWork(workData, result);
+		const writeData = plan.existingCreatedAt
+			? { ...workData, createdAt: plan.existingCreatedAt }
+			: workData;
+		await updateWork(writeData, result);
 	} else {
 		logger.debug(`Work/Circle/Creator更新をスキップ: ${workData.productId} (変更なし)`);
 	}
