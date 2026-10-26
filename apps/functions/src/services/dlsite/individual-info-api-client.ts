@@ -238,7 +238,6 @@ export async function fetchIndividualWorkInfo(
 		// API取得エラーは重要なため保持
 		logger.error(`Individual Info API取得エラー: ${workId}`, {
 			error,
-			stack: error instanceof Error ? error.stack : undefined,
 		});
 
 		throw error;
@@ -305,7 +304,6 @@ export async function batchFetchIndividualInfo(
 		} catch (error) {
 			logger.error(`バッチ ${batchIndex + 1} でエラー:`, {
 				error,
-				stack: error instanceof Error ? error.stack : undefined,
 			});
 			// バッチ全体が失敗した場合、そのバッチの全作品IDを失敗として記録
 			failedWorkIds.push(...batch);
