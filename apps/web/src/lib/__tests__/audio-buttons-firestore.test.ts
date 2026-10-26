@@ -264,7 +264,11 @@ describe("audio-buttons-firestore", () => {
 
 		it("インデックス未作成時は全件取得にフォールバックし、公開だけを新しい順に limit 件返す", async () => {
 			mockGet
-				.mockRejectedValueOnce(new Error("9 FAILED_PRECONDITION: The query requires an index."))
+				.mockRejectedValueOnce(
+					Object.assign(new Error("9 FAILED_PRECONDITION: The query requires an index."), {
+						code: 9,
+					}),
+				)
 				.mockResolvedValueOnce({
 					docs: [
 						doc("old", true, "2025-01-01T00:00:00.000Z"),
@@ -280,8 +284,19 @@ describe("audio-buttons-firestore", () => {
 			expect(result.map((b) => b.id)).toEqual(["newest", "middle"]);
 		});
 
+		it("インデックス不足以外のエラー（UNAVAILABLE 等）では全件取得にフォールバックしない", async () => {
+			mockGet.mockRejectedValueOnce(
+				Object.assign(new Error("14 UNAVAILABLE: Connection dropped"), { code: 14 }),
+			);
+
+			await expect(getAudioButtonsByUser("user-123")).rejects.toThrow(
+				"音声ボタン一覧の取得に失敗しました",
+			);
+			expect(mockGet).toHaveBeenCalledTimes(1);
+		});
+
 		it("フォールバックも失敗したらエラーを投げる", async () => {
-			mockGet.mockRejectedValue(new Error("Firestore error"));
+			mockGet.mockRejectedValue(Object.assign(new Error("Firestore error"), { code: 9 }));
 
 			await expect(getAudioButtonsByUser("user-123")).rejects.toThrow(
 				"音声ボタン一覧の取得に失敗しました",

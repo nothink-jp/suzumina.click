@@ -111,6 +111,9 @@ export function convertToAudioButtonPlainObject(
 	};
 }
 
+/** gRPC ステータス FAILED_PRECONDITION（Firestore が複合インデックス不足のときに返す） */
+const FIRESTORE_FAILED_PRECONDITION = 9;
+
 /**
  * 特定ユーザーが作成した公開音声ボタンを新しい順に取得
  *
@@ -138,7 +141,11 @@ export async function getAudioButtonsByUser(
 			docs = snapshot.docs;
 		} catch (indexError) {
 			// 複合インデックスが未作成・ビルド中（FAILED_PRECONDITION）でも結果を欠けさせないため、
-			// creatorId だけで全件取得して下の in-memory 処理に任せる。読み取りはユーザーのボタン数に比例する
+			// creatorId だけで全件取得して下の in-memory 処理に任せる。読み取りはユーザーのボタン数に比例する。
+			// 一時障害（UNAVAILABLE 等）はフォールバックせず外側の catch へ流す
+			if ((indexError as { code?: unknown } | null)?.code !== FIRESTORE_FAILED_PRECONDITION) {
+				throw indexError;
+			}
 			logError("Index error, falling back to simple query:", {
 				discordId,
 				indexError: indexError instanceof Error ? indexError.message : String(indexError),
