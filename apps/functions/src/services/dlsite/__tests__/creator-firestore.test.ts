@@ -7,9 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as logger from "../../../shared/logger";
 import {
 	extractCreatorMappingsFromWorkDocument,
-	getCreatorWorkCount,
 	recomputeCreatorStats,
-	removeCreatorMappings,
 	updateCreatorWorkMapping,
 } from "../creator-firestore";
 import { resetCreatorRecomputeQueue, takeQueuedCreators } from "../creator-recompute-queue";
@@ -405,91 +403,6 @@ describe("creator-firestore", () => {
 
 			expect(result.success).toBe(true);
 			expect(takeQueuedCreators()).toEqual(["VA002"]);
-		});
-	});
-
-	describe("removeCreatorMappings", () => {
-		it("作品のすべてのマッピングを削除する", async () => {
-			// Collection Group Queryのモック
-			mockCollectionGroup.mockReturnValueOnce({
-				where: mockWhere,
-			});
-			mockWhere.mockReturnValueOnce({
-				get: mockGet,
-			});
-
-			// 既存マッピング
-			mockGet.mockResolvedValueOnce({
-				docs: [
-					{
-						ref: { parent: { parent: { id: "VA001" } } },
-						data: () => ({
-							workId: "RJ123456",
-							roles: ["voice"],
-							circleId: "RG11111",
-						}),
-					},
-					{
-						ref: { parent: { parent: { id: "IL001" } } },
-						data: () => ({
-							workId: "RJ123456",
-							roles: ["illustration"],
-							circleId: "RG11111",
-						}),
-					},
-				],
-			});
-
-			const count = await removeCreatorMappings("RJ123456");
-
-			expect(count).toBe(2);
-			expect(mockDelete).toHaveBeenCalledTimes(2);
-			expect(mockCommit).toHaveBeenCalledTimes(1);
-		});
-
-		it("マッピングがない場合は0を返す", async () => {
-			// Collection Group Queryのモック
-			mockCollectionGroup.mockReturnValueOnce({
-				where: mockWhere,
-			});
-			mockWhere.mockReturnValueOnce({
-				get: mockGet,
-			});
-
-			mockGet.mockResolvedValueOnce({
-				docs: [],
-				empty: true,
-			});
-
-			const count = await removeCreatorMappings("RJ123456");
-
-			expect(count).toBe(0);
-			expect(mockDelete).not.toHaveBeenCalled();
-			expect(mockCommit).not.toHaveBeenCalled();
-		});
-	});
-
-	describe("getCreatorWorkCount", () => {
-		it("クリエイターの作品数を取得する", async () => {
-			mockGet.mockResolvedValueOnce({
-				size: 5,
-				docs: Array(5).fill({}),
-			});
-
-			const count = await getCreatorWorkCount("VA001");
-
-			expect(count).toBe(5);
-			expect(mockCollection).toHaveBeenCalledWith("creators");
-			expect(mockDoc).toHaveBeenCalledWith("VA001");
-		});
-
-		it("エラー時は0を返す", async () => {
-			mockGet.mockRejectedValueOnce(new Error("Get failed"));
-
-			const count = await getCreatorWorkCount("VA001");
-
-			expect(count).toBe(0);
-			expect(logger.error).toHaveBeenCalled();
 		});
 	});
 

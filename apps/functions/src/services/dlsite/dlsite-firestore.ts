@@ -12,8 +12,6 @@ import * as logger from "../../shared/logger";
 import { recordWorksMapRead } from "./dlsite-read-metrics";
 import { FAILURE_REASONS, trackMultipleFailedWorks } from "./failure-tracker";
 
-// Note: 最適化構造では mapToFirestoreData, filterWorksForUpdate, validateWorkData は不要
-
 // Firestore関連の定数
 const DLSITE_WORKS_COLLECTION = "works";
 
@@ -51,6 +49,20 @@ function toWorkWriteData(work: WorkDocument): WorkDocument {
 }
 
 /**
+ * 作品を 1 つの WriteBatch で merge 書き込みしてコミットする
+ */
+async function commitWorksBatch(works: WorkDocument[]): Promise<void> {
+	const collection = firestore.collection(DLSITE_WORKS_COLLECTION);
+	const batch = firestore.batch();
+
+	for (const work of works) {
+		batch.set(collection.doc(work.productId), toWorkWriteData(work), { merge: true });
+	}
+
+	await batch.commit();
+}
+
+/**
  * 単一チャンクのバッチ処理
  */
 async function processChunk(
@@ -58,16 +70,8 @@ async function processChunk(
 	chunkIndex: number,
 	totalChunks: number,
 ): Promise<void> {
-	const collection = firestore.collection(DLSITE_WORKS_COLLECTION);
-	const chunkBatch = firestore.batch();
-
-	for (const work of chunk) {
-		const docRef = collection.doc(work.productId);
-		chunkBatch.set(docRef, toWorkWriteData(work), { merge: true });
-	}
-
 	const startTime = Date.now();
-	await chunkBatch.commit();
+	await commitWorksBatch(chunk);
 	const duration = Date.now() - startTime;
 
 	logger.info(
@@ -87,13 +91,7 @@ async function handleChunkFailure(
 		chunkIndex: chunkIndex + 1,
 		chunkSize: chunk.length,
 		sampleWorkIds: chunk.slice(0, 3).map((w) => w.productId),
-		error:
-			chunkError instanceof Error
-				? {
-						message: chunkError.message,
-						name: chunkError.name,
-					}
-				: String(chunkError),
+		error: chunkError,
 	});
 
 	// 失敗した作品IDを追跡システムに記録
@@ -146,25 +144,7 @@ async function processChunkedBatch(works: WorkDocument[]): Promise<void> {
 }
 
 /**
- * 単一バッチ処理
- */
-async function processSingleBatch(works: WorkDocument[]): Promise<void> {
-	const batch = firestore.batch();
-	const collection = firestore.collection(DLSITE_WORKS_COLLECTION);
-
-	for (const work of works) {
-		const docRef = collection.doc(work.productId);
-		batch.set(docRef, toWorkWriteData(work), { merge: true });
-	}
-
-	await batch.commit();
-	// 単一バッチ実行完了ログは省略（ログ削減）
-}
-
-// 最適化構造では未使用の関数を削除
-
-/**
- * 作品データをFirestoreに保存 (最適化構造対応)
+ * 作品データをFirestoreに保存
  */
 export async function saveWorksToFirestore(works: WorkDocument[]): Promise<void> {
 	if (works.length === 0) {
@@ -180,20 +160,13 @@ export async function saveWorksToFirestore(works: WorkDocument[]): Promise<void>
 		if (works.length > 50) {
 			await processChunkedBatch(works);
 		} else {
-			await processSingleBatch(works);
+			await commitWorksBatch(works);
 		}
 
 		// Firestore保存完了ログは省略（ログ削減）
 	} catch (error) {
 		logger.error("Firestore保存中にエラーが発生:", {
-			error:
-				error instanceof Error
-					? {
-							message: error.message,
-							stack: error.stack,
-							name: error.name,
-						}
-					: String(error),
+			error,
 			workCount: works.length,
 			sampleWorkIds: works.slice(0, 3).map((w) => w.productId),
 		});
@@ -211,7 +184,7 @@ export async function saveWorksToFirestore(works: WorkDocument[]): Promise<void>
 export async function getExistingWorksMap(
 	productIds: string[],
 ): Promise<Map<string, WorkDocument>> {
-	const existingWorksMap = new Map();
+	const existingWorksMap = new Map<string, WorkDocument>();
 
 	if (productIds.length === 0) {
 		return existingWorksMap;
@@ -260,14 +233,7 @@ export async function getExistingWorksMap(
 		);
 	} catch (error) {
 		logger.error("既存作品データの取得に失敗:", {
-			error:
-				error instanceof Error
-					? {
-							message: error.message,
-							stack: error.stack,
-							name: error.name,
-						}
-					: String(error),
+			error,
 			productIds: productIds.slice(0, 5),
 			productIdCount: productIds.length,
 		});
@@ -282,7 +248,7 @@ export async function getExistingWorksMap(
 }
 
 /**
- * 特定の作品データを取得 (最適化構造対応)
+ * 特定の作品データを取得
  */
 export async function getWorkFromFirestore(productId: string): Promise<WorkDocument | null> {
 	try {
@@ -295,6 +261,6 @@ export async function getWorkFromFirestore(productId: string): Promise<WorkDocum
 		return doc.data() as WorkDocument;
 	} catch (error) {
 		logger.error(`作品データの取得に失敗: ${productId}`, { error });
-		throw new Error(`作品データの取得に失敗: ${productId}`);
+		throw new Error(`作品データの取得に失敗: ${productId}`, { cause: error });
 	}
 }

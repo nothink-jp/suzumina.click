@@ -378,68 +378,8 @@ export async function updateCreatorWorkMapping(
 		});
 		return {
 			success: false,
-			error: error instanceof Error ? error.message : "Unknown error",
+			error: error instanceof Error ? error.message : String(error),
 		};
-	}
-}
-
-/**
- * 作品に関連するすべてのクリエイターマッピングを削除
- *
- * @param workId 作品ID
- * @returns 削除件数
- */
-export async function removeCreatorMappings(workId: string): Promise<number> {
-	try {
-		const existingMappings = await getExistingCreatorMappings(workId);
-		const batch = firestore.batch();
-		let deletedCount = 0;
-
-		for (const [creatorId] of existingMappings) {
-			const mappingRef = firestore
-				.collection(CREATORS_COLLECTION)
-				.doc(creatorId)
-				.collection("works")
-				.doc(workId);
-
-			batch.delete(mappingRef);
-			deletedCount++;
-		}
-
-		if (deletedCount > 0) {
-			await batch.commit();
-			logger.info(`クリエイターマッピング削除: ${workId} - ${deletedCount}件`);
-		}
-
-		return deletedCount;
-	} catch (error) {
-		logger.error(`クリエイターマッピング削除エラー: ${workId}`, {
-			error: error instanceof Error ? error.message : String(error),
-		});
-		return 0;
-	}
-}
-
-/**
- * クリエイターの作品数を取得
- *
- * @param creatorId クリエイターID
- * @returns 作品数
- */
-export async function getCreatorWorkCount(creatorId: string): Promise<number> {
-	try {
-		const worksSnapshot = await firestore
-			.collection(CREATORS_COLLECTION)
-			.doc(creatorId)
-			.collection("works")
-			.get();
-
-		return worksSnapshot.size;
-	} catch (error) {
-		logger.error(`クリエイター作品数取得エラー: ${creatorId}`, {
-			error: error instanceof Error ? error.message : String(error),
-		});
-		return 0;
 	}
 }
 

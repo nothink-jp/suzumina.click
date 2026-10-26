@@ -577,65 +577,41 @@ describe("unified-data-processor", () => {
 	});
 
 	describe("detectChanges", () => {
-		it("価格のみ変化した場合、priceOrSalesChangedのみtrueになる", () => {
+		it("価格のみ変化した場合、price のパスだけを返す", () => {
 			const existing = { ...mockWorkData, price: { ...mockWorkData.price, current: 800 } };
-			const result = detectChanges(existing, mockWorkData);
 
-			expect(result.priceOrSalesChanged).toBe(true);
-			expect(result.metadataChanged).toBe(false);
-			expect(result.hasAnyChange).toBe(true);
+			expect(detectChanges(existing, mockWorkData)).toEqual(["price.current"]);
 		});
 
-		it("タイトルのみ変化した場合、metadataChangedのみtrueになる", () => {
+		it("タイトルのみ変化した場合、title のパスだけを返す", () => {
 			const existing = { ...mockWorkData, title: "旧タイトル" };
-			const result = detectChanges(existing, mockWorkData);
 
-			expect(result.priceOrSalesChanged).toBe(false);
-			expect(result.metadataChanged).toBe(true);
-			expect(result.hasAnyChange).toBe(true);
+			expect(detectChanges(existing, mockWorkData)).toEqual(["title"]);
 		});
 
-		it("販売終了のみ変化した場合、priceOrSalesChangedのみtrueになる", () => {
-			const existing = {
-				...mockWorkData,
-				salesStatus: { isSale: true, isSoldOut: false },
-			};
-			const updated = {
-				...mockWorkData,
-				salesStatus: { isSale: true, isSoldOut: true },
-			};
-			const result = detectChanges(existing, updated);
+		it("販売終了の変化を返す", () => {
+			const existing = { ...mockWorkData, salesStatus: { isSale: true, isSoldOut: false } };
+			const updated = { ...mockWorkData, salesStatus: { isSale: true, isSoldOut: true } };
 
-			expect(result.priceOrSalesChanged).toBe(true);
-			expect(result.metadataChanged).toBe(false);
-			expect(result.hasAnyChange).toBe(true);
+			expect(detectChanges(existing, updated)).toEqual(["salesStatus.isSoldOut"]);
 		});
 
-		it("変化がない場合、いずれもfalseになる", () => {
-			const result = detectChanges(mockWorkData, mockWorkData);
-
-			expect(result.priceOrSalesChanged).toBe(false);
-			expect(result.metadataChanged).toBe(false);
-			expect(result.hasAnyChange).toBe(false);
+		it("変化がない場合は空を返す", () => {
+			expect(detectChanges(mockWorkData, mockWorkData)).toEqual([]);
 		});
 
-		it("ジャンルの削除はmetadataChangedになる", () => {
+		it("ジャンルの削除を返す", () => {
 			const existing = { ...mockWorkData, genres: ["ジャンル1", "ジャンル2"] };
 			const updated = { ...mockWorkData, genres: ["ジャンル1"] };
-			const result = detectChanges(existing, updated);
 
-			expect(result.metadataChanged).toBe(true);
-			expect(result.changedPaths).toEqual(["genres"]);
+			expect(detectChanges(existing, updated)).toEqual(["genres"]);
 		});
 
-		it("割引率のみ変化した場合、priceOrSalesChangedのみtrueになる（JPY価格は据え置き）", () => {
+		it("割引率のみの変化を返す（JPY価格は据え置き）", () => {
 			const existing = { ...mockWorkData, price: { ...mockWorkData.price, discount: 10 } };
 			const updated = { ...mockWorkData, price: { ...mockWorkData.price, discount: 30 } };
-			const result = detectChanges(existing, updated);
 
-			expect(result.priceOrSalesChanged).toBe(true);
-			expect(result.metadataChanged).toBe(false);
-			expect(result.hasAnyChange).toBe(true);
+			expect(detectChanges(existing, updated)).toEqual(["price.discount"]);
 		});
 	});
 
