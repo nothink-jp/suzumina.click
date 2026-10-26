@@ -205,85 +205,53 @@ describe("audio-buttons-firestore", () => {
 	});
 
 	describe("getAudioButtonsByUser", () => {
-		it("should fetch user's audio buttons with default options", async () => {
-			const mockDocuments = [
-				{
-					id: "button-1",
-					data: () => ({
-						buttonText: "音声ボタン1",
-						tags: ["タグ1"],
-						videoId: "video-1",
-						videoTitle: "動画1",
-						startTime: 0,
-						endTime: 10,
-						creatorId: "user-123",
-						creatorName: "ユーザー",
-						isPublic: true,
-						stats: {
-							playCount: 50,
-							likeCount: 25,
-							dislikeCount: 0,
-							favoriteCount: 10,
-							engagementRate: 0,
-						},
-						createdAt: "2025-01-01T00:00:00.000Z",
-						updatedAt: "2025-01-01T00:00:00.000Z",
-					}),
+		const doc = (id: string, isPublic: boolean, createdAt = "2025-01-01T00:00:00.000Z") => ({
+			id,
+			data: () => ({
+				buttonText: id,
+				tags: [],
+				videoId: "video-1",
+				videoTitle: "動画1",
+				startTime: 0,
+				endTime: 10,
+				creatorId: "user-123",
+				creatorName: "ユーザー",
+				isPublic,
+				stats: {
+					playCount: 0,
+					likeCount: 0,
+					dislikeCount: 0,
+					favoriteCount: 0,
+					engagementRate: 0,
 				},
-			];
+				createdAt,
+				updatedAt: createdAt,
+			}),
+		});
 
-			mockGet.mockResolvedValue({
-				docs: mockDocuments,
-			});
+		it("公開・新しい順・表示件数分の limit で Firestore に問い合わせる（SPR-380）", async () => {
+			mockGet.mockResolvedValue({ docs: [doc("button-1", true)] });
 
 			const result = await getAudioButtonsByUser("user-123");
 
 			expect(mockCollection).toHaveBeenCalledWith("audioButtons");
 			expect(mockWhere).toHaveBeenCalledWith("creatorId", "==", "user-123");
-			// isPublic フィルタはクライアント側で適用される
+			expect(mockWhere).toHaveBeenCalledWith("isPublic", "==", true);
 			expect(mockOrderBy).toHaveBeenCalledWith("createdAt", "desc");
-			expect(mockLimit).toHaveBeenCalledWith(40); // limit * 2
-
-			expect(result).toHaveLength(1);
-			expect(result[0]!.buttonText).toBe("音声ボタン1");
+			// 読み捨て分を取らない（read は表示件数に比例）
+			expect(mockLimit).toHaveBeenCalledWith(20);
+			expect(result.map((b) => b.id)).toEqual(["button-1"]);
 		});
 
-		it("should respect custom options", async () => {
+		it("limit を指定するとその件数で問い合わせる", async () => {
 			mockGet.mockResolvedValue({ docs: [] });
 
-			await getAudioButtonsByUser("user-123", {
-				limit: 5,
-				orderBy: "mostPlayed",
-			});
+			await getAudioButtonsByUser("user-123", { limit: 5 });
 
-			// mostPlayed はクライアント側でソートされる
-			expect(mockLimit).toHaveBeenCalledWith(10); // limit * 2
+			expect(mockLimit).toHaveBeenCalledWith(5);
 		});
 
 		it("onlyPublic: false を渡されても非公開ボタンを返さない（SPR-379）", async () => {
-			const doc = (id: string, isPublic: boolean) => ({
-				id,
-				data: () => ({
-					buttonText: id,
-					tags: [],
-					videoId: "video-1",
-					videoTitle: "動画1",
-					startTime: 0,
-					endTime: 10,
-					creatorId: "user-123",
-					creatorName: "ユーザー",
-					isPublic,
-					stats: {
-						playCount: 0,
-						likeCount: 0,
-						dislikeCount: 0,
-						favoriteCount: 0,
-						engagementRate: 0,
-					},
-					createdAt: "2025-01-01T00:00:00.000Z",
-					updatedAt: "2025-01-01T00:00:00.000Z",
-				}),
-			});
 			mockGet.mockResolvedValue({ docs: [doc("public", true), doc("private", false)] });
 
 			// 型に無いキーが混ざっても公開判定は外れない
@@ -294,37 +262,41 @@ describe("audio-buttons-firestore", () => {
 			expect(result.map((b) => b.id)).toEqual(["public"]);
 		});
 
-		it("should handle different sort orders", async () => {
-			mockGet.mockResolvedValue({ docs: [] });
+		it("インデックス未作成時は全件取得にフォールバックし、公開だけを新しい順に limit 件返す", async () => {
+			mockGet
+				.mockRejectedValueOnce(
+					Object.assign(new Error("9 FAILED_PRECONDITION: The query requires an index."), {
+						code: 9,
+					}),
+				)
+				.mockResolvedValueOnce({
+					docs: [
+						doc("old", true, "2025-01-01T00:00:00.000Z"),
+						doc("private-newest", false, "2025-01-04T00:00:00.000Z"),
+						doc("newest", true, "2025-01-03T00:00:00.000Z"),
+						doc("middle", true, "2025-01-02T00:00:00.000Z"),
+					],
+				});
 
-			// Test oldest first
-			await getAudioButtonsByUser("user-123", { orderBy: "oldest" });
-			expect(mockOrderBy).toHaveBeenCalledWith("createdAt", "asc");
+			const result = await getAudioButtonsByUser("user-123", { limit: 2 });
 
-			vi.clearAllMocks();
-			// Reset mock chains
-			mockCollection.mockReturnValue({ where: mockWhere });
-			mockWhere.mockReturnValue({
-				where: mockWhere,
-				orderBy: mockOrderBy,
-				limit: mockLimit,
-				get: mockGet,
-			});
-			mockOrderBy.mockReturnValue({
-				where: mockWhere,
-				orderBy: mockOrderBy,
-				limit: mockLimit,
-				get: mockGet,
-			});
-			mockLimit.mockReturnValue({ get: mockGet });
-
-			// Test most played - クライアント側でソートされるため、orderByは呼び出されない
-			await getAudioButtonsByUser("user-123", { orderBy: "mostPlayed" });
-			expect(mockOrderBy).not.toHaveBeenCalledWith("playCount", "desc");
+			expect(mockGet).toHaveBeenCalledTimes(2);
+			expect(result.map((b) => b.id)).toEqual(["newest", "middle"]);
 		});
 
-		it("should handle Firestore errors", async () => {
-			mockGet.mockRejectedValue(new Error("Firestore error"));
+		it("インデックス不足以外のエラー（UNAVAILABLE 等）では全件取得にフォールバックしない", async () => {
+			mockGet.mockRejectedValueOnce(
+				Object.assign(new Error("14 UNAVAILABLE: Connection dropped"), { code: 14 }),
+			);
+
+			await expect(getAudioButtonsByUser("user-123")).rejects.toThrow(
+				"音声ボタン一覧の取得に失敗しました",
+			);
+			expect(mockGet).toHaveBeenCalledTimes(1);
+		});
+
+		it("フォールバックも失敗したらエラーを投げる", async () => {
+			mockGet.mockRejectedValue(Object.assign(new Error("Firestore error"), { code: 9 }));
 
 			await expect(getAudioButtonsByUser("user-123")).rejects.toThrow(
 				"音声ボタン一覧の取得に失敗しました",

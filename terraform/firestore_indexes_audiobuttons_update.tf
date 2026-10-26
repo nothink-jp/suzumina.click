@@ -107,36 +107,26 @@ resource "google_firestore_index" "audiobuttons_videoid_ispublic_stats_likecount
   }
 }
 
-# audioButtons - creatorId（昇順）、createdAt（降順）
-resource "google_firestore_index" "audiobuttons_creatorid_createdat_desc" {
+# audioButtons - creatorId（昇順）、isPublic（昇順）、createdAt（降順）
+# ユーザーページの公開ボタン一覧 getAudioButtonsByUser（apps/web/src/lib/audio-buttons-firestore.ts・SPR-380）。
+# 旧 creatorid_createdat_desc / _asc はこのクエリへの移行で未使用になったため撤去
+resource "google_firestore_index" "audiobuttons_creatorid_ispublic_createdat_desc" {
   project    = var.gcp_project_id
   collection = "audioButtons"
 
   fields {
     field_path = "creatorId"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "isPublic"
     order      = "ASCENDING"
   }
 
   fields {
     field_path = "createdAt"
     order      = "DESCENDING"
-  }
-}
-
-# audioButtons - creatorId（昇順）、createdAt（昇順）
-# レート制限チェッククエリで使用（範囲クエリ対応）
-resource "google_firestore_index" "audiobuttons_creatorid_createdat_asc" {
-  project    = var.gcp_project_id
-  collection = "audioButtons"
-
-  fields {
-    field_path = "creatorId"
-    order      = "ASCENDING"
-  }
-
-  fields {
-    field_path = "createdAt"
-    order      = "ASCENDING"
   }
 }
 
