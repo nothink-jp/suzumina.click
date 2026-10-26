@@ -50,17 +50,10 @@ function serializeError(error: Error): Record<string, unknown> {
 }
 
 /**
- * JSON.stringify 用 replacer。payload のどの深さにある Error も {@link serializeError} で展開する
- *
- * `error` キーに Error 以外のオブジェクト（throw された素のオブジェクト等）が来た場合も、
- * Error と同じ理由でプリミティブ値だけを残す。
+ * JSON.stringify 用 replacer。payload のどの深さにある Error も {@link serializeError} で展開する（functions と同じ）
  */
-function errorReplacer(key: string, value: unknown): unknown {
-	if (value instanceof Error) return serializeError(value);
-	if (key === "error" && value !== null && typeof value === "object" && !Array.isArray(value)) {
-		return pickPrimitiveProps(value);
-	}
-	return value;
+function errorReplacer(_key: string, value: unknown): unknown {
+	return value instanceof Error ? serializeError(value) : value;
 }
 
 /**
@@ -77,13 +70,45 @@ function createBaseLogEntry(level: LogLevel, message: string): Record<string, un
 
 /**
  * 第 2 引数を payload オブジェクトに正規化する（Error やプリミティブは `error` キーに入れる）
+ *
+ * web だけの規則: **トップレベルの** `error` が Error 以外のオブジェクト（throw された素のオブジェクト等）なら、
+ * Error と同じ理由でプリミティブ値だけを残す。ネストした `error` キー（外部 API レスポンス等）は触らない。
  */
 function toPayload(optionsOrError: unknown): Record<string, unknown> {
 	if (optionsOrError === undefined || optionsOrError === null) return {};
 	if (optionsOrError instanceof Error || typeof optionsOrError !== "object") {
 		return { error: optionsOrError };
 	}
-	return optionsOrError as Record<string, unknown>;
+	const payload = optionsOrError as Record<string, unknown>;
+	const { error } = payload;
+	if (
+		error !== null &&
+		typeof error === "object" &&
+		!(error instanceof Error) &&
+		!Array.isArray(error)
+	) {
+		return { ...payload, error: pickPrimitiveProps(error) };
+	}
+	return payload;
+}
+
+/**
+ * ログエントリを JSON 化する。循環参照・bigint で throw した場合は基本フィールドだけを出す
+ *
+ * catch 節の中で logger が throw すると元のエラーが別の例外で隠れるため、logger からは例外を出さない。
+ */
+function serializeLogEntry(
+	logEntry: Record<string, unknown>,
+	baseEntry: Record<string, unknown>,
+): string {
+	try {
+		return JSON.stringify(logEntry, errorReplacer);
+	} catch (serializationError) {
+		return JSON.stringify({
+			...baseEntry,
+			log_serialization_error: String(serializationError),
+		});
+	}
 }
 
 /**
@@ -101,7 +126,7 @@ function logMessage(level: LogLevel, message: string, optionsOrError?: LogOption
 	const baseEntry = createBaseLogEntry(level, message);
 	const logEntry = { ...baseEntry, ...toPayload(optionsOrError), ...baseEntry };
 
-	writeLogEntry(JSON.stringify(logEntry, errorReplacer));
+	writeLogEntry(serializeLogEntry(logEntry, baseEntry));
 }
 
 /**

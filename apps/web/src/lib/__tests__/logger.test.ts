@@ -160,6 +160,22 @@ describe("エラーのシリアライズ（本番 JSON・SPR-383）", () => {
 		expect(payload).toEqual({ error: err, nested: { severity: "x" } });
 	});
 
+	it("ネストした error キーのオブジェクト（外部 API レスポンス等）はそのまま残す", () => {
+		error("x", { response: { error: { details: { reason: "quota" } } } });
+		const { json } = lastJson();
+		expect(json.response.error.details.reason).toBe("quota");
+	});
+
+	it("循環参照・bigint で JSON 化に失敗しても throw せず基本フィールドを出す", () => {
+		const circular: Record<string, unknown> = {};
+		circular.self = circular;
+		expect(() => error("x", { circular, size: 1n })).not.toThrow();
+		const { json } = lastJson();
+		expect(json.severity).toBe(LogLevel.ERROR);
+		expect(json.message).toBe("x");
+		expect(json.log_serialization_error).toBeDefined();
+	});
+
 	it("Error 以外の値を直接渡すと error キーに入る", () => {
 		error("x", "thrown string");
 		const { json } = lastJson();
