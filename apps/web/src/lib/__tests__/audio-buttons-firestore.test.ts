@@ -253,13 +253,45 @@ describe("audio-buttons-firestore", () => {
 
 			await getAudioButtonsByUser("user-123", {
 				limit: 5,
-				onlyPublic: false,
 				orderBy: "mostPlayed",
 			});
 
 			// mostPlayed はクライアント側でソートされる
 			expect(mockLimit).toHaveBeenCalledWith(10); // limit * 2
-			// onlyPublic: false の場合、isPublic フィルターは追加されない
+		});
+
+		it("onlyPublic: false を渡されても非公開ボタンを返さない（SPR-379）", async () => {
+			const doc = (id: string, isPublic: boolean) => ({
+				id,
+				data: () => ({
+					buttonText: id,
+					tags: [],
+					videoId: "video-1",
+					videoTitle: "動画1",
+					startTime: 0,
+					endTime: 10,
+					creatorId: "user-123",
+					creatorName: "ユーザー",
+					isPublic,
+					stats: {
+						playCount: 0,
+						likeCount: 0,
+						dislikeCount: 0,
+						favoriteCount: 0,
+						engagementRate: 0,
+					},
+					createdAt: "2025-01-01T00:00:00.000Z",
+					updatedAt: "2025-01-01T00:00:00.000Z",
+				}),
+			});
+			mockGet.mockResolvedValue({ docs: [doc("public", true), doc("private", false)] });
+
+			// 型に無いキーが混ざっても公開判定は外れない
+			const result = await getAudioButtonsByUser("user-123", {
+				onlyPublic: false,
+			} as Parameters<typeof getAudioButtonsByUser>[1]);
+
+			expect(result.map((b) => b.id)).toEqual(["public"]);
 		});
 
 		it("should handle different sort orders", async () => {

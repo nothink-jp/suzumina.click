@@ -113,19 +113,21 @@ export function convertToAudioButtonPlainObject(
 }
 
 /**
- * 特定ユーザーが作成した音声ボタンを取得
+ * 特定ユーザーが作成した公開音声ボタンを取得
+ *
+ * 非公開ボタンは常に除外する（呼び出し側から外せない＝SPR-379）。
+ * 所有者向けに非公開を含める一覧が要るなら、認可付きの別関数として分ける
  */
 export async function getAudioButtonsByUser(
 	discordId: string,
 	options: {
 		limit?: number;
-		onlyPublic?: boolean;
 		orderBy?: "newest" | "oldest" | "mostPlayed";
 	} = {},
 ): Promise<AudioButton[]> {
 	try {
 		const firestore = getFirestore();
-		const { limit = 20, onlyPublic = true, orderBy = "newest" } = options;
+		const { limit = 20, orderBy = "newest" } = options;
 
 		let snapshot: FirebaseFirestore.QuerySnapshot;
 
@@ -168,13 +170,8 @@ export async function getAudioButtonsByUser(
 				}
 			})
 			.filter((button): button is AudioButton => button !== null)
-			.filter((button) => {
-				// 公開のみのフィルター（クライアント側で適用）
-				if (onlyPublic && !button.isPublic) {
-					return false;
-				}
-				return true;
-			});
+			// 公開のみ（in-memory で適用。creatorId との複合インデックスを増やさないため）
+			.filter((button) => button.isPublic);
 
 		// クライアント側でソート（フォールバック時や再生数順の場合）
 		switch (orderBy) {
