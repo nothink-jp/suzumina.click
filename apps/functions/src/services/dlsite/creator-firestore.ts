@@ -247,7 +247,9 @@ async function applyNewCreatorMappings(
 
 		// 新規作成の場合はcreatedAtも設定。この作品との関連が既にあるクリエイターは doc も
 		// 存在するので get しない（SPR-387）。関連は creator doc と同じ batch で書かれ（ここ）、
-		// 整合性 cron の復元も ensureCreatorExists で doc を作ってから書くため。
+		// 整合性 cron の復元も ensureCreatorExists で doc を作ってから書く。creator doc を消すのは
+		// 整合性 cron の checkOrphanedCreators だけで、関連を消してから消す（前提が崩れると
+		// createdAt なしの doc が黙ってできるので、削除側を変えるときはここも見直すこと）。
 		const existing = existingMappings.get(creatorId);
 		if (!existing) {
 			const creatorDoc = await creatorRef.get();

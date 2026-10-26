@@ -203,7 +203,9 @@ export async function checkOrphanedCreators(
 			}
 		}
 
-		// 作品が1つもないクリエイターは削除
+		// 作品が1つもないクリエイターは削除。関連（上のループで削除済み）より後に消すこと:
+		// 同期（applyNewCreatorMappings）は「関連があれば creator doc もある」前提で
+		// 存在確認の get を省いている（SPR-387）
 		if (!hasValidWork && worksSnapshot.size > 0) {
 			logger.warn(`Creator ${creatorDoc.id}: 有効な作品がないため削除`);
 			batch.delete(creatorDoc.ref);
