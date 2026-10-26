@@ -20,6 +20,29 @@ interface LogOptions {
 }
 
 /**
+ * Error を JSON 化できる形に展開する
+ *
+ * Error の message / stack は列挙不可のため、そのまま JSON.stringify すると `{}` に潰れる（SPR-347）。
+ * 列挙可能な独自プロパティ（Firestore / gRPC の `code` 等）も残す。`cause` は replacer の再帰で展開される。
+ */
+function serializeError(error: Error): Record<string, unknown> {
+	return {
+		...error,
+		message: error.message,
+		name: error.name,
+		stack: error.stack,
+		...(error.cause !== undefined && { cause: error.cause }),
+	};
+}
+
+/**
+ * JSON.stringify 用 replacer。payload のどの深さにある Error も {@link serializeError} で展開する
+ */
+function errorReplacer(_key: string, value: unknown): unknown {
+	return value instanceof Error ? serializeError(value) : value;
+}
+
+/**
  * コンソール形式用の追加情報をフォーマット
  */
 function formatConsoleAdditionalInfo(optionsOrError: unknown): string {
@@ -36,7 +59,7 @@ function formatConsoleAdditionalInfo(optionsOrError: unknown): string {
 	}
 
 	if (typeof optionsOrError === "object" && optionsOrError !== null) {
-		const formatted = JSON.stringify(optionsOrError, null, 2);
+		const formatted = JSON.stringify(optionsOrError, errorReplacer, 2);
 		return `\n  Data: ${formatted}`;
 	}
 
@@ -90,11 +113,7 @@ function addOptionsToLogEntry(
 	}
 
 	if (optionsOrError instanceof Error) {
-		logEntry.error = {
-			message: optionsOrError.message,
-			name: optionsOrError.name,
-			stack: optionsOrError.stack,
-		};
+		logEntry.error = optionsOrError;
 	} else {
 		Object.assign(logEntry, optionsOrError);
 	}
@@ -102,6 +121,9 @@ function addOptionsToLogEntry(
 
 /**
  * 構造化ログ形式でログを出力
+ *
+ * `severity` / `message` / labels は log-based メトリクス・アラートのフィルタ対象（監視の契約）なので、
+ * payload に同名キーがあっても logger の値で上書きし直す（payload 側の値は捨てる）。
  */
 function logStructured(
 	level: LogLevel,
@@ -112,18 +134,18 @@ function logStructured(
 		severity: level,
 		message,
 	};
-
-	// Cloud Functions v2の実行情報を追加
 	const cloudFunctionsLabels = getCloudFunctionsLabels();
+
+	addOptionsToLogEntry(logEntry, optionsOrError);
+
+	logEntry.severity = level;
+	logEntry.message = message;
 	if (cloudFunctionsLabels) {
 		Object.assign(logEntry, cloudFunctionsLabels);
 	}
 
-	// オプションまたはエラーを追加
-	addOptionsToLogEntry(logEntry, optionsOrError);
-
 	// biome-ignore lint/suspicious/noConsole: Cloud Loggingへの転送にconsole.logが必要
-	console.log(JSON.stringify(logEntry));
+	console.log(JSON.stringify(logEntry, errorReplacer));
 }
 
 /**

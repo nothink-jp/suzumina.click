@@ -154,6 +154,50 @@ describe("logger", () => {
 			expect(parsed.action).toBe("login");
 			expect(parsed.timestamp).toBe(1234567890);
 		});
+
+		it("payload にネストした Error も message / stack に展開すること（SPR-347）", () => {
+			logger.error("x", { error: new Error("boom") });
+
+			const logOutput = mockConsoleLog.mock.calls[0]![0];
+			const parsed = JSON.parse(logOutput);
+
+			expect(logOutput).toContain("boom");
+			expect(parsed.error.message).toBe("boom");
+			expect(parsed.error.name).toBe("Error");
+			expect(parsed.error.stack).toContain("Error: boom");
+		});
+
+		it("Error の cause と列挙可能な独自プロパティ（code 等）も残すこと", () => {
+			const cause = new Error("root cause");
+			const testError = Object.assign(new Error("outer", { cause }), { code: 9 });
+
+			logger.error("x", { context: { error: testError } });
+
+			const parsed = JSON.parse(mockConsoleLog.mock.calls[0]![0]);
+
+			expect(parsed.context.error.message).toBe("outer");
+			expect(parsed.context.error.code).toBe(9);
+			expect(parsed.context.error.cause.message).toBe("root cause");
+			expect(parsed.context.error.cause.stack).toContain("Error: root cause");
+		});
+
+		it("payload が監視の契約キー（severity / message / labels）を上書きできないこと", () => {
+			process.env.K_SERVICE = "test-service";
+
+			logger.error("real message", {
+				severity: "INFO",
+				message: "spoofed",
+				"logging.googleapis.com/labels": { service: "spoofed" },
+				extra: "kept",
+			});
+
+			const parsed = JSON.parse(mockConsoleLog.mock.calls[0]![0]);
+
+			expect(parsed.severity).toBe("ERROR");
+			expect(parsed.message).toBe("real message");
+			expect(parsed["logging.googleapis.com/labels"]).toEqual({ service: "test-service" });
+			expect(parsed.extra).toBe("kept");
+		});
 	});
 
 	describe("Console format", () => {
@@ -195,6 +239,15 @@ describe("logger", () => {
 			expect(logOutput).toContain("Data:");
 			expect(logOutput).toContain('"userId": "user123"');
 			expect(logOutput).toContain('"count": 42');
+		});
+
+		it("console 形式でも payload にネストした Error を展開すること", () => {
+			logger.error("x", { error: new Error("boom") });
+
+			const logOutput = mockConsoleLog.mock.calls[0]![0];
+
+			expect(logOutput).toContain('"message": "boom"');
+			expect(logOutput).toContain("Error: boom");
 		});
 
 		it("should use correct icons for each log level", () => {
