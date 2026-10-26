@@ -160,9 +160,9 @@ describe("checkDataIntegrity", () => {
 			],
 		};
 
-		// 作品の存在確認モック（現在は使用されない - コメントアウトされているため）
+		// 作品の存在確認モック（circle1 に属する作品）
 		const mockWorkDoc = {
-			get: vi.fn().mockResolvedValue({ exists: true }),
+			get: vi.fn().mockResolvedValue({ exists: true, data: () => ({ circleId: "circle1" }) }),
 		};
 
 		// creators/worksの空のスナップショット
@@ -428,7 +428,9 @@ describe("checkDataIntegrity", () => {
 				},
 			],
 		};
-		const mockWorkDoc = { get: vi.fn().mockResolvedValue({ exists: true }) };
+		const mockWorkDoc = {
+			get: vi.fn().mockResolvedValue({ exists: true, data: () => ({ circleId: "circle1" }) }),
+		};
 		const emptySnapshot = { size: 0, docs: [] };
 
 		mockCollection.mockImplementation((collName: string) => {

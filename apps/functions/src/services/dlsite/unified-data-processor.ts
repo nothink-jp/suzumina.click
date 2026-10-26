@@ -9,7 +9,7 @@ import type { DLsiteApiResponse, WorkDocument } from "@suzumina.click/shared-typ
 import * as logger from "../../shared/logger";
 import { WorkMapper } from "../mappers/work-mapper";
 import { savePriceHistory } from "../price-history";
-import { updateCircleWithWork } from "./circle-firestore";
+import { removeWorkFromCircle, updateCircleWithWork } from "./circle-firestore";
 import { updateCreatorWorkMapping } from "./creator-firestore";
 import { getWorkFromFirestore, saveWorksToFirestore } from "./dlsite-firestore";
 import { listChangedWorkPaths } from "./work-change-paths";
@@ -78,6 +78,7 @@ async function updateCircle(
 	apiData: DLsiteApiResponse,
 	workId: string,
 	result: ProcessingResult,
+	previousCircleId: string | undefined,
 ): Promise<void> {
 	try {
 		await updateCircleWithWork(
@@ -92,6 +93,20 @@ async function updateCircle(
 			`Circle更新エラー: ${error instanceof Error ? error.message : String(error)}`,
 		);
 		logger.error(`Circle更新エラー: ${workId}`, { error });
+		// 新しいサークルへの追加に失敗したら外さない（どのサークルにも属さない状態を避ける）
+		return;
+	}
+
+	if (!previousCircleId) {
+		return;
+	}
+	try {
+		await removeWorkFromCircle(previousCircleId, workId);
+	} catch (error) {
+		result.errors.push(
+			`前サークルからの除外エラー: ${error instanceof Error ? error.message : String(error)}`,
+		);
+		logger.error(`前サークルからの除外エラー: ${previousCircleId} - ${workId}`, { error });
 	}
 }
 
@@ -148,6 +163,8 @@ interface UpdatePlan {
 	work: boolean;
 	circle: boolean;
 	creators: boolean;
+	/** circleId が変わった作品の、前の circleId（前のサークルの workIds から外すため） */
+	previousCircleId?: string;
 }
 
 const UPDATE_ALL: UpdatePlan = { work: true, circle: true, creators: true };
@@ -169,8 +186,9 @@ const CREATORS_PATH = /^(creators(\.|$)|circleId$)/;
  *
  * 副作用の注意: works は Circle / Creator の同期より先に書くため、同期だけが失敗した作品は
  * 次の run で差分が出ず再試行されない。週次の整合性 cron（`checkDataIntegrity`）が直すのは
- * 欠けた creator mapping と circle.workIds の追加だけで、作者の削除・roles の変更・circleId の移動・
- * 名前の変更は、その作品の関係する値が次に変わるか forceUpdate するまで残る。
+ * 欠けた creator mapping と circle.workIds の追加・circleId が別サークルを指す作品の除外だけで、
+ * 作者の削除・roles の変更・creator mapping の circleId・名前の変更は、その作品の関係する値が
+ * 次に変わるか forceUpdate するまで残る。
  */
 async function planUpdates(
 	workData: WorkDocument,
@@ -195,10 +213,12 @@ async function planUpdates(
 	}
 
 	const { changedPaths } = detectChanges(existingWork, workData);
+	const circleIdChanged = changedPaths.includes("circleId");
 	return {
 		work: changedPaths.length > 0,
 		circle: changedPaths.some((path) => CIRCLE_PATH.test(path)),
 		creators: changedPaths.some((path) => CREATORS_PATH.test(path)),
+		previousCircleId: circleIdChanged ? existingWork.circleId || undefined : undefined,
 	};
 }
 
@@ -223,7 +243,7 @@ async function performUpdates(
 		logger.debug(`Work/Circle/Creator更新をスキップ: ${workData.productId} (変更なし)`);
 	}
 	if (plan.circle) {
-		await updateCircle(apiData, workData.productId, result);
+		await updateCircle(apiData, workData.productId, result, plan.previousCircleId);
 	}
 	if (plan.creators) {
 		await updateCreators(apiData, workData.productId, result);

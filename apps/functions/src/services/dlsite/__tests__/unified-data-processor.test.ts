@@ -13,6 +13,7 @@ vi.mock("../dlsite-firestore", () => ({
 
 vi.mock("../circle-firestore", () => ({
 	updateCircleWithWork: vi.fn().mockResolvedValue(true),
+	removeWorkFromCircle: vi.fn().mockResolvedValue(true),
 }));
 
 vi.mock("../creator-firestore", () => ({
@@ -41,7 +42,7 @@ const { processUnifiedDLsiteData, processBatchUnifiedDLsiteData, detectChanges }
 	"../unified-data-processor"
 );
 const { getWorkFromFirestore, saveWorksToFirestore } = await import("../dlsite-firestore");
-const { updateCircleWithWork } = await import("../circle-firestore");
+const { removeWorkFromCircle, updateCircleWithWork } = await import("../circle-firestore");
 const { updateCreatorWorkMapping } = await import("../creator-firestore");
 const { savePriceHistory } = await import("../../price-history");
 const { WorkMapper } = await import("../../mappers/work-mapper");
@@ -404,6 +405,62 @@ describe("unified-data-processor", () => {
 			const result = await processUnifiedDLsiteData(mockApiData);
 
 			expect(result.updates).toMatchObject({ work: true, circle: true, creators: true });
+			expect(updateCircleWithWork).toHaveBeenCalledWith(
+				"RG12345",
+				"RJ123456",
+				"テストサークル",
+				"Test Circle",
+			);
+			expect(removeWorkFromCircle).toHaveBeenCalledWith("RG00000", "RJ123456");
+		});
+
+		it("サークルIDが変わらなければ前のサークルから外す処理は呼ばない", async () => {
+			const existingWork = { ...mockWorkData, circle: "旧サークル名", circleId: "RG12345" };
+			const updatedWork = { ...mockWorkData, circle: "新サークル名", circleId: "RG12345" };
+			vi.mocked(getWorkFromFirestore).mockResolvedValue(existingWork);
+			vi.mocked(WorkMapper.toWork).mockReturnValue(updatedWork);
+
+			await processUnifiedDLsiteData(mockApiData);
+
+			expect(updateCircleWithWork).toHaveBeenCalled();
+			expect(removeWorkFromCircle).not.toHaveBeenCalled();
+		});
+
+		it("前のサークルからの除外だけが失敗したら、追加は成功扱いのまま除外エラーを記録する", async () => {
+			const existingWork = { ...mockWorkData, circleId: "RG00000" };
+			const updatedWork = { ...mockWorkData, circleId: "RG12345" };
+			vi.mocked(getWorkFromFirestore).mockResolvedValue(existingWork);
+			vi.mocked(WorkMapper.toWork).mockReturnValue(updatedWork);
+			vi.mocked(removeWorkFromCircle).mockRejectedValueOnce(new Error("UNAVAILABLE"));
+
+			const result = await processUnifiedDLsiteData(mockApiData);
+
+			expect(result.updates.circle).toBe(true);
+			expect(result.errors).toContain("前サークルからの除外エラー: UNAVAILABLE");
+		});
+
+		it("maker_id が欠けて circleId が undefined になっても前のサークルから外さない（undefined は merge で既存値が残るため変化とみなさない）", async () => {
+			const existingWork = { ...mockWorkData, circleId: "RG00000", circle: "サークル" };
+			const updatedWork = { ...mockWorkData, circleId: undefined, circle: "Unknown Maker" };
+			vi.mocked(getWorkFromFirestore).mockResolvedValue(existingWork);
+			vi.mocked(WorkMapper.toWork).mockReturnValue(updatedWork);
+
+			await processUnifiedDLsiteData({ ...mockApiData, maker_id: undefined } as any);
+
+			expect(removeWorkFromCircle).not.toHaveBeenCalled();
+		});
+
+		it("新しいサークルへの追加に失敗したら前のサークルから外さない", async () => {
+			const existingWork = { ...mockWorkData, circleId: "RG00000" };
+			const updatedWork = { ...mockWorkData, circleId: "RG12345" };
+			vi.mocked(getWorkFromFirestore).mockResolvedValue(existingWork);
+			vi.mocked(WorkMapper.toWork).mockReturnValue(updatedWork);
+			vi.mocked(updateCircleWithWork).mockRejectedValue(new Error("UNAVAILABLE"));
+
+			const result = await processUnifiedDLsiteData(mockApiData);
+
+			expect(result.updates.circle).toBe(false);
+			expect(removeWorkFromCircle).not.toHaveBeenCalled();
 		});
 
 		it("説明の変化を検出する", async () => {

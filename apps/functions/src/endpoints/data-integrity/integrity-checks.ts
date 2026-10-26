@@ -11,7 +11,7 @@
 
 import type { DocumentReference, WriteBatch } from "@google-cloud/firestore";
 import type { CreatorType, CreatorWorkRelation } from "@suzumina.click/shared-types";
-import firestore, { Timestamp } from "../../infrastructure/database/firestore";
+import firestore, { FieldValue, Timestamp } from "../../infrastructure/database/firestore";
 import {
 	extractCreatorMappingsFromWorkDocument,
 	recomputeCreatorStats,
@@ -70,6 +70,8 @@ export interface IntegrityCheckResult {
 
 /**
  * CircleのworkIds配列の整合性をチェック
+ *
+ * 重複・存在しない作品・別サークルへ移った作品（work の circleId が別サークル）を workIds から外す。
  */
 export async function checkCircleWorkCounts(
 	result: IntegrityCheckResult,
@@ -112,24 +114,32 @@ export async function checkCircleWorkCounts(
 			}
 		}
 
-		// 存在しない作品IDのチェック
-		const existingWorkIds: string[] = [];
+		// 存在しない作品・別サークルへ移った作品（SPR-384）のチェック。
+		// 後者は同期（removeWorkFromCircle）が外すが、同期失敗と修正前に移った分はここで直す。
+		// 作品 doc はどちらの判定でも 1 回の get で足りる（追加の読み取りは無い）。
+		const keptWorkIds: string[] = [];
 		for (const workId of uniqueWorkIds) {
 			const workDoc = await firestore
 				.collection("works")
 				.doc(workId as string)
 				.get();
-			if (workDoc.exists) {
-				existingWorkIds.push(workId as string);
-			} else {
+			const workCircleId = workDoc.exists ? workDoc.data()?.circleId : undefined;
+			if (!workDoc.exists) {
 				logger.warn(`Circle ${circleDoc.id}: 存在しない作品ID ${workId} を検出`);
 				result.checks.circleWorkCounts.mismatches++;
+			} else if (workCircleId && workCircleId !== circleDoc.id) {
+				logger.warn(
+					`Circle ${circleDoc.id}: 別サークル ${workCircleId} に移った作品ID ${workId} を検出`,
+				);
+				result.checks.circleWorkCounts.mismatches++;
+			} else {
+				keptWorkIds.push(workId as string);
 			}
 		}
 
-		if (existingWorkIds.length !== uniqueWorkIds.length) {
+		if (keptWorkIds.length !== uniqueWorkIds.length) {
 			batch.update(circleDoc.ref, {
-				workIds: existingWorkIds,
+				workIds: keptWorkIds,
 				updatedAt: Timestamp.now(),
 			});
 
@@ -452,9 +462,11 @@ export async function checkWorkCircleConsistency(
 			logger.warn(`Work ${workDoc.id}: サークル ${circleId} のworkIds配列に含まれていない`);
 			result.checks.workCircleConsistency.mismatches++;
 
-			// サークル側に追加
+			// サークル側に追加。arrayUnion にするのは、同じサークルに足す作品が 1 run で複数あると
+			// 読んだ時点の配列から作り直す書き方では同じバッチ内で後の update が前を上書きし、
+			// 最後の 1 件しか残らないため（SPR-384: 前サークルからの除外と組み合わさると作品が消える）
 			batch.update(circleDoc.ref, {
-				workIds: [...workIds, workDoc.id],
+				workIds: FieldValue.arrayUnion(workDoc.id),
 				updatedAt: Timestamp.now(),
 			});
 
