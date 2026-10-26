@@ -439,6 +439,17 @@ describe("unified-data-processor", () => {
 			expect(result.errors).toContain("前サークルからの除外エラー: UNAVAILABLE");
 		});
 
+		it("maker_id が欠けて circleId が undefined になっても前のサークルから外さない（undefined は merge で既存値が残るため変化とみなさない）", async () => {
+			const existingWork = { ...mockWorkData, circleId: "RG00000", circle: "サークル" };
+			const updatedWork = { ...mockWorkData, circleId: undefined, circle: "Unknown Maker" };
+			vi.mocked(getWorkFromFirestore).mockResolvedValue(existingWork);
+			vi.mocked(WorkMapper.toWork).mockReturnValue(updatedWork);
+
+			await processUnifiedDLsiteData({ ...mockApiData, maker_id: undefined } as any);
+
+			expect(removeWorkFromCircle).not.toHaveBeenCalled();
+		});
+
 		it("新しいサークルへの追加に失敗したら前のサークルから外さない", async () => {
 			const existingWork = { ...mockWorkData, circleId: "RG00000" };
 			const updatedWork = { ...mockWorkData, circleId: "RG12345" };
