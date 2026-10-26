@@ -9,7 +9,7 @@
  * 実行順序と結果集計はオーケストレータ（run-integrity-check.ts）が担う。
  */
 
-import type { DocumentReference, WriteBatch } from "@google-cloud/firestore";
+import type { DocumentData, DocumentReference, UpdateData } from "@google-cloud/firestore";
 import type { CreatorType, CreatorWorkRelation } from "@suzumina.click/shared-types";
 import firestore, { FieldValue, Timestamp } from "../../infrastructure/database/firestore";
 import {
@@ -23,15 +23,59 @@ import * as logger from "../../shared/logger";
 export const FIRESTORE_BATCH_LIMIT = 400;
 
 /**
- * バッチをコミットして新しい空バッチを返す。
- *
- * @google-cloud/firestore では commit 済みの WriteBatch に再度書き込む／コミットすると
- * 例外（Cannot modify a WriteBatch that has been committed）になる。
- * 400件ごとの分割コミットのたびに、このヘルパで必ず新しいバッチへ差し替えること。
+ * {@link FIRESTORE_BATCH_LIMIT} 件ごとに分割コミットする書き込み器（各チェック共通）
  */
-async function commitAndRenew(batch: WriteBatch): Promise<WriteBatch> {
-	await batch.commit();
-	return firestore.batch();
+interface ChunkedBatchWriter {
+	set(ref: DocumentReference, data: DocumentData): Promise<void>;
+	update(ref: DocumentReference, data: UpdateData<DocumentData>): Promise<void>;
+	delete(ref: DocumentReference): Promise<void>;
+	/** 残りを commit する。各チェックの最後に必ず呼ぶ */
+	flush(): Promise<void>;
+}
+
+/**
+ * 分割コミットの書き込み器を作る。
+ *
+ * - 書き込みは積んだ順に commit される（分割されたときは前の chunk が先）。
+ *   順序に依存する箇所がある（checkOrphanedCreators の関連 → creator doc）
+ * - dryRun では積むだけで commit しない（検出と件数の集計だけ行う）
+ * - commit 済みの WriteBatch は再利用できない（Cannot modify a WriteBatch that has been
+ *   committed）ため、分割のたびに新しい batch に差し替える
+ */
+function createChunkedBatchWriter(dryRun: boolean): ChunkedBatchWriter {
+	let batch = firestore.batch();
+	let count = 0;
+
+	const afterWrite = async (): Promise<void> => {
+		count++;
+		if (!dryRun && count >= FIRESTORE_BATCH_LIMIT) {
+			await batch.commit();
+			batch = firestore.batch();
+			count = 0;
+		}
+	};
+
+	return {
+		async set(ref, data) {
+			batch.set(ref, data);
+			await afterWrite();
+		},
+		async update(ref, data) {
+			batch.update(ref, data);
+			await afterWrite();
+		},
+		async delete(ref) {
+			batch.delete(ref);
+			await afterWrite();
+		},
+		async flush() {
+			if (!dryRun && count > 0) {
+				await batch.commit();
+				batch = firestore.batch();
+				count = 0;
+			}
+		},
+	};
 }
 
 /**
@@ -80,8 +124,7 @@ export async function checkCircleWorkCounts(
 	logger.info("CircleのworkIds配列の整合性チェックを開始");
 
 	const circlesSnapshot = await firestore.collection("circles").get();
-	let batch = firestore.batch();
-	let batchCount = 0;
+	const writer = createChunkedBatchWriter(dryRun);
 
 	for (const circleDoc of circlesSnapshot.docs) {
 		result.checks.circleWorkCounts.checked++;
@@ -97,21 +140,7 @@ export async function checkCircleWorkCounts(
 				`Circle ${circleDoc.id}: 重複作品IDを検出 (${workIds.length} -> ${uniqueWorkIds.length})`,
 			);
 			result.checks.circleWorkCounts.mismatches++;
-
-			// 修正
-			batch.update(circleDoc.ref, {
-				workIds: uniqueWorkIds,
-				updatedAt: Timestamp.now(),
-			});
-
 			result.checks.circleWorkCounts.fixed++;
-			batchCount++;
-
-			// バッチサイズ制限
-			if (!dryRun && batchCount >= FIRESTORE_BATCH_LIMIT) {
-				batch = await commitAndRenew(batch);
-				batchCount = 0;
-			}
 		}
 
 		// 存在しない作品・別サークルへ移った作品（SPR-384）のチェック。
@@ -138,24 +167,19 @@ export async function checkCircleWorkCounts(
 		}
 
 		if (keptWorkIds.length !== uniqueWorkIds.length) {
-			batch.update(circleDoc.ref, {
+			result.checks.circleWorkCounts.fixed++;
+		}
+
+		// 重複の除去と除外は、最終的な配列 1 回の update にまとめて書く
+		if (keptWorkIds.length !== workIds.length) {
+			await writer.update(circleDoc.ref, {
 				workIds: keptWorkIds,
 				updatedAt: Timestamp.now(),
 			});
-
-			result.checks.circleWorkCounts.fixed++;
-			batchCount++;
-
-			if (!dryRun && batchCount >= FIRESTORE_BATCH_LIMIT) {
-				batch = await commitAndRenew(batch);
-				batchCount = 0;
-			}
 		}
 	}
 
-	if (!dryRun && batchCount > 0) {
-		await batch.commit();
-	}
+	await writer.flush();
 
 	logger.info(
 		`CircleのworkIds配列チェック完了: ${result.checks.circleWorkCounts.checked}件チェック、${result.checks.circleWorkCounts.fixed}件${dryRun ? "要修正" : "修正"}`,
@@ -172,8 +196,7 @@ export async function checkOrphanedCreators(
 	logger.info("孤立したCreatorマッピングのチェックを開始");
 
 	const creatorsSnapshot = await firestore.collection("creators").get();
-	let batch = firestore.batch();
-	let batchCount = 0;
+	const writer = createChunkedBatchWriter(dryRun);
 
 	for (const creatorDoc of creatorsSnapshot.docs) {
 		result.checks.orphanedCreators.checked++;
@@ -189,15 +212,8 @@ export async function checkOrphanedCreators(
 				logger.warn(`Creator ${creatorDoc.id}: 孤立したマッピング ${workId} を検出`);
 				result.checks.orphanedCreators.found++;
 
-				// 削除
-				batch.delete(workMapping.ref);
+				await writer.delete(workMapping.ref);
 				result.checks.orphanedCreators.cleaned++;
-				batchCount++;
-
-				if (!dryRun && batchCount >= FIRESTORE_BATCH_LIMIT) {
-					batch = await commitAndRenew(batch);
-					batchCount = 0;
-				}
 			} else {
 				hasValidWork = true;
 			}
@@ -208,20 +224,12 @@ export async function checkOrphanedCreators(
 		// 存在確認の get を省いている（SPR-387）
 		if (!hasValidWork && worksSnapshot.size > 0) {
 			logger.warn(`Creator ${creatorDoc.id}: 有効な作品がないため削除`);
-			batch.delete(creatorDoc.ref);
+			await writer.delete(creatorDoc.ref);
 			result.checks.orphanedCreators.cleaned++;
-			batchCount++;
-
-			if (!dryRun && batchCount >= FIRESTORE_BATCH_LIMIT) {
-				batch = await commitAndRenew(batch);
-				batchCount = 0;
-			}
 		}
 	}
 
-	if (!dryRun && batchCount > 0) {
-		await batch.commit();
-	}
+	await writer.flush();
 
 	logger.info(
 		`孤立Creatorチェック完了: ${result.checks.orphanedCreators.checked}件チェック、${result.checks.orphanedCreators.cleaned}件${dryRun ? "要クリーンアップ" : "クリーンアップ"}`,
@@ -234,7 +242,6 @@ export async function checkOrphanedCreators(
 interface RestoreStats {
 	restoredCount: number;
 	creatorsCreated: number;
-	batchCount: number;
 }
 
 /**
@@ -244,7 +251,7 @@ async function ensureCreatorExists(
 	creatorId: string,
 	creatorName: string,
 	type: string,
-	batch: WriteBatch,
+	writer: ChunkedBatchWriter,
 	processedCreators: Set<string>,
 	stats: RestoreStats,
 ): Promise<DocumentReference> {
@@ -256,7 +263,7 @@ async function ensureCreatorExists(
 		if (!creatorDoc.exists) {
 			logger.info(`Creatorドキュメント作成: ${creatorId} - ${creatorName}`);
 
-			batch.set(creatorRef, {
+			await writer.set(creatorRef, {
 				creatorId: creatorId,
 				name: creatorName,
 				primaryRole: type,
@@ -265,7 +272,6 @@ async function ensureCreatorExists(
 			});
 
 			stats.creatorsCreated++;
-			stats.batchCount++;
 		}
 		processedCreators.add(creatorId);
 	}
@@ -281,7 +287,7 @@ async function restoreCreatorWorkMapping(
 	workId: string,
 	roles: CreatorType[],
 	circleId: string,
-	batch: WriteBatch,
+	writer: ChunkedBatchWriter,
 	stats: RestoreStats,
 ): Promise<boolean> {
 	const mappingRef = creatorRef.collection("works").doc(workId);
@@ -301,34 +307,10 @@ async function restoreCreatorWorkMapping(
 		circleId: circleId || "UNKNOWN",
 		updatedAt: Timestamp.now(),
 	};
-	batch.set(mappingRef, relation);
+	await writer.set(mappingRef, relation);
 
 	stats.restoredCount++;
-	stats.batchCount++;
 	return true;
-}
-
-/**
- * バッチが満杯の場合はコミットし、新しい空バッチを返す（dryRun の場合は書き込まない）。
- *
- * commit 済みの WriteBatch は再利用できないため、呼び出し側は必ず戻り値で
- * バッチを差し替えること（`batch = await commitBatchIfNeeded(batch, ...)`）。
- */
-async function commitBatchIfNeeded(
-	batch: WriteBatch,
-	stats: RestoreStats,
-	force = false,
-	dryRun = false,
-): Promise<WriteBatch> {
-	if (dryRun) {
-		return batch;
-	}
-	if (stats.batchCount >= FIRESTORE_BATCH_LIMIT || (force && stats.batchCount > 0)) {
-		await batch.commit();
-		stats.batchCount = 0;
-		return firestore.batch();
-	}
-	return batch;
 }
 
 /**
@@ -341,14 +323,13 @@ export async function restoreCreatorWorkRelations(
 	logger.info("Creator-Work関連の復元を開始");
 
 	const worksSnapshot = await firestore.collection("works").get();
-	let batch = firestore.batch();
+	const writer = createChunkedBatchWriter(dryRun);
 	const processedCreators = new Set<string>();
 	const creatorsToRecompute = new Set<string>();
 
 	const stats: RestoreStats = {
 		restoredCount: 0,
 		creatorsCreated: 0,
-		batchCount: 0,
 	};
 
 	for (const workDoc of worksSnapshot.docs) {
@@ -367,13 +348,10 @@ export async function restoreCreatorWorkRelations(
 				creatorId,
 				mapping.name,
 				mapping.roles[0] ?? "other",
-				batch,
+				writer,
 				processedCreators,
 				stats,
 			);
-
-			// バッチサイズチェック
-			batch = await commitBatchIfNeeded(batch, stats, false, dryRun);
 
 			// Creator-Workマッピングの復元（roles 配列を含む正本スキーマで書く）
 			const restored = await restoreCreatorWorkMapping(
@@ -381,20 +359,16 @@ export async function restoreCreatorWorkRelations(
 				workDoc.id,
 				mapping.roles,
 				workData.circleId,
-				batch,
+				writer,
 				stats,
 			);
 			if (restored) {
 				creatorsToRecompute.add(creatorId);
 			}
-
-			// バッチサイズチェック
-			batch = await commitBatchIfNeeded(batch, stats, false, dryRun);
 		}
 	}
 
-	// 残りのバッチをコミット
-	batch = await commitBatchIfNeeded(batch, stats, true, dryRun);
+	await writer.flush();
 
 	// 復元したクリエイターの denormalized stats（workCount/types/primaryRole）を同期する。
 	// /creators の読み込みパスがこれらを使うため、復元時にも正本ライタと同様に再計算が必要。
@@ -431,8 +405,7 @@ export async function checkWorkCircleConsistency(
 	logger.info("Work-Circle相互参照の整合性チェックを開始");
 
 	const worksSnapshot = await firestore.collection("works").get();
-	let batch = firestore.batch();
-	let batchCount = 0;
+	const writer = createChunkedBatchWriter(dryRun);
 
 	for (const workDoc of worksSnapshot.docs) {
 		result.checks.workCircleConsistency.checked++;
@@ -467,24 +440,16 @@ export async function checkWorkCircleConsistency(
 			// サークル側に追加。arrayUnion にするのは、同じサークルに足す作品が 1 run で複数あると
 			// 読んだ時点の配列から作り直す書き方では同じバッチ内で後の update が前を上書きし、
 			// 最後の 1 件しか残らないため（SPR-384: 前サークルからの除外と組み合わさると作品が消える）
-			batch.update(circleDoc.ref, {
+			await writer.update(circleDoc.ref, {
 				workIds: FieldValue.arrayUnion(workDoc.id),
 				updatedAt: Timestamp.now(),
 			});
 
 			result.checks.workCircleConsistency.fixed++;
-			batchCount++;
-
-			if (!dryRun && batchCount >= FIRESTORE_BATCH_LIMIT) {
-				batch = await commitAndRenew(batch);
-				batchCount = 0;
-			}
 		}
 	}
 
-	if (!dryRun && batchCount > 0) {
-		await batch.commit();
-	}
+	await writer.flush();
 
 	logger.info(
 		`Work-Circle整合性チェック完了: ${result.checks.workCircleConsistency.checked}件チェック、${result.checks.workCircleConsistency.fixed}件${dryRun ? "要修正" : "修正"}`,

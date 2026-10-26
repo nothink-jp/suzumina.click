@@ -215,6 +215,64 @@ describe("checkDataIntegrity", () => {
 		expect(mockCommit).toHaveBeenCalled();
 	});
 
+	it("重複の除去と存在しない作品の除外は、最終的な配列 1 回の update にまとめる", async () => {
+		const mockCircles = {
+			size: 1,
+			docs: [
+				{
+					id: "circle1",
+					// 重複（work1）+ 存在しない作品（work9）
+					data: () => ({ workIds: ["work1", "work1", "work9"] }),
+					ref: { update: mockUpdate },
+				},
+			],
+		};
+		const emptySnapshot = { size: 0, docs: [] };
+
+		mockCollection.mockImplementation((collName: string) => {
+			if (collName === "circles") {
+				return { get: vi.fn().mockResolvedValue(mockCircles), doc: mockDoc };
+			}
+			if (collName === "creators" || collName === "works") {
+				return {
+					get: vi.fn().mockResolvedValue(emptySnapshot),
+					doc: vi.fn((id: string) => ({
+						get: vi
+							.fn()
+							.mockResolvedValue(
+								id === "work9"
+									? { exists: false, data: () => undefined }
+									: { exists: true, data: () => ({ circleId: "circle1" }) },
+							),
+					})),
+				};
+			}
+			// 結果の保存先（dlsiteMetadata）
+			return {
+				doc: vi.fn(() => ({
+					set: mockSet,
+					collection: vi.fn(() => ({
+						doc: vi.fn(() => ({ set: mockSet })),
+						orderBy: vi.fn(() => ({
+							limit: vi.fn(() => ({ get: vi.fn().mockResolvedValue(emptySnapshot) })),
+						})),
+					})),
+				})),
+			};
+		});
+
+		const result = await runIntegrityCheck({ dryRun: false });
+
+		const circleUpdates = mockUpdate.mock.calls.filter(
+			(call) => (call[1] as { workIds?: unknown }).workIds !== undefined,
+		);
+		expect(circleUpdates).toHaveLength(1);
+		expect(circleUpdates[0]?.[1]).toEqual(expect.objectContaining({ workIds: ["work1"] }));
+		// 件数の数え方は従来どおり（重複と除外をそれぞれ 1 件ずつ）
+		expect(result.checks.circleWorkCounts.fixed).toBe(2);
+		expect(result.checks.circleWorkCounts.mismatches).toBe(2);
+	});
+
 	it("孤立したCreatorマッピングを削除する", async () => {
 		// クリエイターデータのモック
 		const mockCreators = {
