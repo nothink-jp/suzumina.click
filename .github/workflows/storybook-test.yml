@@ -49,8 +49,13 @@ jobs:
       - name: Setup pnpm & install
         uses: ./.github/actions/setup-pnpm
 
+      # --with-deps は付けない。ubuntu-24.04 runner は chromium の共有ライブラリを同梱済みで、
+      # --with-deps が足すのはフォント（CJK 等）と既存パッケージの更新だけ。その apt-get が
+      # Azure ミラーの速度次第で 10 分超かかっていた（ブラウザ本体の DL は数秒）。
+      # テストは DOM 検証のみでスクリーンショット比較を持たないためフォントは不要。
+      # runner イメージ更新でライブラリが欠けたら launch が "missing dependencies" で落ちるので、そのとき戻す
       - name: Install Playwright (chromium)
-        run: pnpm --filter @suzumina.click/ui exec playwright install --with-deps chromium
+        run: pnpm --filter @suzumina.click/ui exec playwright install chromium
 
       - name: Run Storybook play tests
         run: pnpm --filter @suzumina.click/ui test:storybook
