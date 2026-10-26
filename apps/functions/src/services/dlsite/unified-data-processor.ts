@@ -220,7 +220,7 @@ async function planUpdates(
 		return UPDATE_ALL;
 	}
 
-	const { changedPaths } = detectChanges(existingWork, workData);
+	const changedPaths = detectChanges(existingWork, workData);
 	const circleIdChanged = changedPaths.includes("circleId");
 	return {
 		work: changedPaths.length > 0,
@@ -306,7 +306,6 @@ export async function processUnifiedDLsiteData(
 			result.updates.creators ||
 			result.updates.priceHistory;
 
-		// デバッグログ
 		if (result.errors.length > 0) {
 			logger.warn(`統合処理部分エラー: ${workData.productId}`, {
 				updates: result.updates,
@@ -322,69 +321,27 @@ export async function processUnifiedDLsiteData(
 }
 
 /**
- * 変更種別の分類結果
+ * 既存作品と更新後データを比べ、merge 書き込みで値が変わるフィールドのパスを返す
  *
- * SPR-229 Stage①: 価格/販売状態の変化とメタ情報の変化を分離して集計する。
- * SPR-346: 判定は追跡フィールドの列挙ではなく {@link listChangedWorkPaths}（merge 書き込みで
- * 変わる全フィールド）に基づく。
- */
-export interface ChangeDetectionResult {
-	/** 価格・販売状態（`price.*` / `salesStatus.*`）の変化 */
-	priceOrSalesChanged: boolean;
-	/** それ以外（タイトル・評価・作者・説明・画像・ジャンル等）の変化 */
-	metadataChanged: boolean;
-	/** いずれかの変化があるか（false なら works / circles / creators の書き込みをスキップする） */
-	hasAnyChange: boolean;
-	/** 変化したフィールドのパス */
-	changedPaths: string[];
-}
-
-function isPriceOrSalesPath(path: string): boolean {
-	return /^(price|salesStatus)(\.|$)/.test(path);
-}
-
-/**
- * 既存作品と更新後データの変更種別を分類する
+ * 判定の正本は {@link listChangedWorkPaths}。ここは検知したパスをログに残すだけ。
  *
  * @param existing 既存のWorkDocument
  * @param updated 更新されたWorkDocument
- * @returns 変更種別ごとの分類結果
+ * @returns 変化したフィールドのパス（空なら works / circles / creators の書き込みをスキップする）
  */
-export function detectChanges(
-	existing: WorkDocument,
-	updated: WorkDocument,
-): ChangeDetectionResult {
+export function detectChanges(existing: WorkDocument, updated: WorkDocument): string[] {
 	const changedPaths = listChangedWorkPaths(existing, updated);
-	const priceOrSalesChanged = changedPaths.some(isPriceOrSalesPath);
-	const metadataChanged = changedPaths.some((path) => !isPriceOrSalesPath(path));
-
 	if (changedPaths.length > 0) {
 		logger.info(`作品変更検出: ${existing.productId}`, { changedPaths });
 	}
-
-	return {
-		priceOrSalesChanged,
-		metadataChanged,
-		hasAnyChange: changedPaths.length > 0,
-		changedPaths,
-	};
+	return changedPaths;
 }
 
 /**
  * バッチ処理の結果を作成
  */
 function createBatchErrorResult(reason: unknown): ProcessingResult {
-	return {
-		workId: "UNKNOWN",
-		success: false,
-		updates: {
-			work: false,
-			circle: false,
-			creators: false,
-			priceHistory: false,
-		},
-		errors: [`バッチ処理エラー: ${reason}`],
-	};
+	return { ...initializeResult(undefined), errors: [`バッチ処理エラー: ${reason}`] };
 }
 
 /**

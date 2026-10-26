@@ -36,7 +36,7 @@ export const WORK_DELETE_ON_ABSENCE_PATHS: readonly string[] = [
  * - 取得時刻・作成/更新時刻は毎回変わるため
  * - `price.localePrices` / `localeOfficialPrices` は為替で頻繁に動き、
  *   `languageDownloads[].dlCount` はダウンロード数で常に動く。これらで書き込むと
- *   ほぼ全作品が毎 run 書き込み＋クリエイター再同期になる。他の変化で書き込むときに一緒に更新される
+ *   ほぼ全作品が毎 run works を書き込むことになる。他の変化で書き込むときに一緒に更新される
  */
 const IGNORED_PATHS: ReadonlySet<string> = new Set([
 	"createdAt",

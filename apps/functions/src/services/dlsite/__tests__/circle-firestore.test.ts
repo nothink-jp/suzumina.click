@@ -102,10 +102,26 @@ describe("circle-firestore", () => {
 			const result = await updateCircleWithWork("RG01234", "RJ333333", "テストサークル", "");
 
 			expect(result).toBe(true);
+			// 作品の追加は 1 回の update にまとめる（名前の更新と別に書き込まない）
+			expect(mockUpdate).toHaveBeenCalledTimes(1);
 			expect(mockUpdate).toHaveBeenCalledWith(
 				expect.objectContaining({
 					workIds: { arrayUnion: "RJ333333" },
 				}),
+			);
+		});
+
+		it("名前の更新と作品の追加を 1 回の update で書き込む", async () => {
+			mockGet.mockResolvedValue({
+				exists: true,
+				data: () => ({ circleId: "RG01234", name: "旧名", nameEn: "", workIds: ["RJ111111"] }),
+			});
+
+			await updateCircleWithWork("RG01234", "RJ333333", "新名", "");
+
+			expect(mockUpdate).toHaveBeenCalledTimes(1);
+			expect(mockUpdate).toHaveBeenCalledWith(
+				expect.objectContaining({ name: "新名", workIds: { arrayUnion: "RJ333333" } }),
 			);
 		});
 
