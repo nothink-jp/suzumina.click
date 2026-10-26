@@ -93,7 +93,7 @@ function toPayload(optionsOrError: unknown): Record<string, unknown> {
 }
 
 /**
- * ログエントリを JSON 化する。循環参照・bigint で throw した場合は基本フィールドだけを出す
+ * ログエントリを JSON 化する。循環参照・bigint で throw した場合は基本フィールド（+ JSON 化できれば `error`）だけを出す
  *
  * catch 節の中で logger が throw すると元のエラーが別の例外で隠れるため、logger からは例外を出さない。
  */
@@ -104,10 +104,13 @@ function serializeLogEntry(
 	try {
 		return JSON.stringify(logEntry, errorReplacer);
 	} catch (serializationError) {
-		return JSON.stringify({
-			...baseEntry,
-			log_serialization_error: String(serializationError),
-		});
+		const fallbackEntry = { ...baseEntry, log_serialization_error: String(serializationError) };
+		// catch 節で一番残したいのは error なので、他のキーを捨ててでも error だけは残す
+		try {
+			return JSON.stringify({ ...fallbackEntry, error: logEntry.error }, errorReplacer);
+		} catch {
+			return JSON.stringify(fallbackEntry);
+		}
 	}
 }
 

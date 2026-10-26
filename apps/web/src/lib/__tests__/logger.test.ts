@@ -176,6 +176,17 @@ describe("エラーのシリアライズ（本番 JSON・SPR-383）", () => {
 		expect(json.log_serialization_error).toBeDefined();
 	});
 
+	it("他のキーの JSON 化に失敗しても error の message / stack は残す", () => {
+		const circular: Record<string, unknown> = {};
+		circular.self = circular;
+		error("x", { error: new Error("boom"), ctx: circular });
+		const { json } = lastJson();
+		expect(json.log_serialization_error).toBeDefined();
+		expect(json.error.message).toBe("boom");
+		expect(json.error.stack).toContain("Error: boom");
+		expect(json.ctx).toBeUndefined();
+	});
+
 	it("Error 以外の値を直接渡すと error キーに入る", () => {
 		error("x", "thrown string");
 		const { json } = lastJson();
