@@ -253,3 +253,31 @@ export async function getUserPublicAudioButtonStats(
 		throw new Error("音声ボタン統計の取得に失敗しました");
 	}
 }
+
+/**
+ * 動画の公開音声ボタンの開始秒を全件取得（作成・切り抜き画面の「作成済み」目印用）
+ *
+ * 目印は全件描くので件数で打ち切らない。startTime だけを select し、読み取りはその動画の
+ * 公開ボタン数に比例する。一覧の Server Action（getAudioButtonsList）は limit に上限があるため、
+ * 全件が要るこの用途はサーバー専用のこの関数に分けている（SPR-378）。
+ * where は videoId == と isPublic == の等価のみで、getAudioButtonCount と同じ形（複合インデックス不要）
+ */
+export async function getPublicAudioButtonStartTimesByVideo(videoId: string): Promise<number[]> {
+	try {
+		const snapshot = await getFirestore()
+			.collection("audioButtons")
+			.where("videoId", "==", videoId)
+			.where("isPublic", "==", true)
+			.select("startTime")
+			.get();
+		return snapshot.docs
+			.map((doc) => (doc.data() as Pick<AudioButtonDocument, "startTime">).startTime)
+			.filter((startTime): startTime is number => typeof startTime === "number");
+	} catch (error) {
+		logError("getPublicAudioButtonStartTimesByVideo error:", {
+			videoId,
+			error: error instanceof Error ? error.message : String(error),
+		});
+		throw new Error("音声ボタンの開始位置の取得に失敗しました");
+	}
+}

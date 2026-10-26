@@ -1,10 +1,10 @@
 import { parseDurationToSeconds, type VideoPlainObject } from "@suzumina.click/shared-types";
 import type { Metadata } from "next";
 import { getMyButtonDrafts } from "@/actions/button-drafts";
-import { getAudioButtonsList } from "@/app/buttons/actions";
 import { getVideoById, getVideosList } from "@/app/videos/actions";
 import { CaptureView } from "@/components/capture/capture-view";
 import ProtectedRoute from "@/components/system/protected-route";
+import { getPublicAudioButtonStartTimesByVideo } from "@/lib/audio-buttons-firestore";
 
 export const metadata: Metadata = {
 	title: "マーキング",
@@ -81,16 +81,10 @@ async function CaptureContent({ manualVideoId }: { manualVideoId?: string }) {
 	).size;
 
 	// マーク位置レーンの目印用に、この動画の作成済みボタンの開始秒を取る（/buttons/create の探索レーンと同じ判断）
-	let madeMarks: number[] = [];
-	if (video) {
-		const buttonsResult = await getAudioButtonsList({
-			videoId: video.videoId,
-			limit: 1000,
-		});
-		madeMarks = buttonsResult.success
-			? buttonsResult.data.audioButtons.map((button) => button.startTime)
-			: [];
-	}
+	// 全件要るので、上限付きの一覧 Server Action ではなく専用関数で取る（SPR-378）
+	const madeMarks = video
+		? await getPublicAudioButtonStartTimesByVideo(video.videoId).catch((): number[] => [])
+		: [];
 
 	return (
 		<CaptureView

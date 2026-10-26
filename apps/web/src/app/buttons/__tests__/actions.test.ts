@@ -485,6 +485,24 @@ describe("Audio Button Server Actions", () => {
 			expect(mockWhere).not.toHaveBeenCalledWith("isPublic", "==", false);
 		});
 
+		it("limit は上限 100 に切り詰めて問い合わせる（SPR-378）", async () => {
+			mockGet.mockResolvedValue({ docs: [] });
+
+			const result = await getAudioButtonsList({ limit: 5000 });
+
+			expect(result.success).toBe(true);
+			expect(mockLimit).toHaveBeenCalledWith(100);
+			expect(mockLimit).not.toHaveBeenCalledWith(5000);
+		});
+
+		it("上限以下の limit はそのまま使う", async () => {
+			mockGet.mockResolvedValue({ docs: [] });
+
+			await getAudioButtonsList({ limit: 48 });
+
+			expect(mockLimit).toHaveBeenCalledWith(48);
+		});
+
 		it("検索パラメータが正しく処理される", async () => {
 			const mockDocs = [
 				{
