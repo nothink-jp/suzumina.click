@@ -426,6 +426,19 @@ describe("unified-data-processor", () => {
 			expect(removeWorkFromCircle).not.toHaveBeenCalled();
 		});
 
+		it("前のサークルからの除外だけが失敗したら、追加は成功扱いのまま除外エラーを記録する", async () => {
+			const existingWork = { ...mockWorkData, circleId: "RG00000" };
+			const updatedWork = { ...mockWorkData, circleId: "RG12345" };
+			vi.mocked(getWorkFromFirestore).mockResolvedValue(existingWork);
+			vi.mocked(WorkMapper.toWork).mockReturnValue(updatedWork);
+			vi.mocked(removeWorkFromCircle).mockRejectedValueOnce(new Error("UNAVAILABLE"));
+
+			const result = await processUnifiedDLsiteData(mockApiData);
+
+			expect(result.updates.circle).toBe(true);
+			expect(result.errors).toContain("前サークルからの除外エラー: UNAVAILABLE");
+		});
+
 		it("新しいサークルへの追加に失敗したら前のサークルから外さない", async () => {
 			const existingWork = { ...mockWorkData, circleId: "RG00000" };
 			const updatedWork = { ...mockWorkData, circleId: "RG12345" };

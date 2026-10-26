@@ -87,16 +87,26 @@ async function updateCircle(
 			apiData.maker_name || "UNKNOWN",
 			apiData.maker_name_en || "",
 		);
-		// 新しいサークルへの追加が成功してから外す（失敗時はどちらのサークルにも無い状態を避ける）
-		if (previousCircleId) {
-			await removeWorkFromCircle(previousCircleId, workId);
-		}
 		result.updates.circle = true;
 	} catch (error) {
 		result.errors.push(
 			`Circle更新エラー: ${error instanceof Error ? error.message : String(error)}`,
 		);
 		logger.error(`Circle更新エラー: ${workId}`, { error });
+		// 新しいサークルへの追加に失敗したら外さない（どのサークルにも属さない状態を避ける）
+		return;
+	}
+
+	if (!previousCircleId) {
+		return;
+	}
+	try {
+		await removeWorkFromCircle(previousCircleId, workId);
+	} catch (error) {
+		result.errors.push(
+			`前サークルからの除外エラー: ${error instanceof Error ? error.message : String(error)}`,
+		);
+		logger.error(`前サークルからの除外エラー: ${previousCircleId} - ${workId}`, { error });
 	}
 }
 

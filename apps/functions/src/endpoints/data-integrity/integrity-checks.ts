@@ -11,7 +11,7 @@
 
 import type { DocumentReference, WriteBatch } from "@google-cloud/firestore";
 import type { CreatorType, CreatorWorkRelation } from "@suzumina.click/shared-types";
-import firestore, { Timestamp } from "../../infrastructure/database/firestore";
+import firestore, { FieldValue, Timestamp } from "../../infrastructure/database/firestore";
 import {
 	extractCreatorMappingsFromWorkDocument,
 	recomputeCreatorStats,
@@ -462,9 +462,11 @@ export async function checkWorkCircleConsistency(
 			logger.warn(`Work ${workDoc.id}: サークル ${circleId} のworkIds配列に含まれていない`);
 			result.checks.workCircleConsistency.mismatches++;
 
-			// サークル側に追加
+			// サークル側に追加。arrayUnion にするのは、同じサークルに足す作品が 1 run で複数あると
+			// 読んだ時点の配列から作り直す書き方では同じバッチ内で後の update が前を上書きし、
+			// 最後の 1 件しか残らないため（SPR-384: 前サークルからの除外と組み合わさると作品が消える）
 			batch.update(circleDoc.ref, {
-				workIds: [...workIds, workDoc.id],
+				workIds: FieldValue.arrayUnion(workDoc.id),
 				updatedAt: Timestamp.now(),
 			});
 

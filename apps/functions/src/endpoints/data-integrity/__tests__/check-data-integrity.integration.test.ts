@@ -119,6 +119,25 @@ describe.skipIf(!RUN)("checkDataIntegrity (integration / Firestore Emulator)", (
 		expect(after.data()?.workIds).toEqual(["RJ002"]);
 	});
 
+	it("同じサークルへ足す作品が 1 run で複数あっても全部足す（上書きで最後の 1 件だけ残らない）", async () => {
+		const db = getFirestore();
+		// RJ001・RJ002 は RG002 へ移ったが、RG002 の workIds にはどちらも入っていない
+		await db.collection("works").doc("RJ001").set({ title: "w1", circleId: "RG002" });
+		await db.collection("works").doc("RJ002").set({ title: "w2", circleId: "RG002" });
+		await db
+			.collection("circles")
+			.doc("RG001")
+			.set({ workIds: ["RJ001", "RJ002"] });
+		await db.collection("circles").doc("RG002").set({ workIds: [] });
+
+		await runIntegrityCheck();
+
+		const before = await db.collection("circles").doc("RG001").get();
+		expect(before.data()?.workIds).toEqual([]);
+		const after = await db.collection("circles").doc("RG002").get();
+		expect((after.data()?.workIds as string[] | undefined)?.sort()).toEqual(["RJ001", "RJ002"]);
+	});
+
 	it("孤立した Creator マッピングと空 Creator を削除する", async () => {
 		const db = getFirestore();
 		await db.collection("works").doc("RJ001").set({ title: "w1", circleId: "RG001" });
