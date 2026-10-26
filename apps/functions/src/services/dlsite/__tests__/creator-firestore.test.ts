@@ -429,7 +429,7 @@ describe("creator-firestore", () => {
 			expect(updateArg.primaryRole).toBe("voice");
 		});
 
-		it("works が空の場合は workCount=0, types=[] で update する", async () => {
+		it("works が空の場合は workCount=0, types=[] で update し、primaryRole を消す", async () => {
 			mockGet.mockResolvedValueOnce({
 				empty: true,
 				size: 0,
@@ -442,7 +442,26 @@ describe("creator-firestore", () => {
 			const updateArg = mockUpdate.mock.calls[0]?.[0] as Record<string, unknown>;
 			expect(updateArg.workCount).toBe(0);
 			expect(updateArg.types).toEqual([]);
-			expect(updateArg.primaryRole).toBeUndefined();
+			// 古い primaryRole が残ると web の役割表示に混ざるため消す（SPR-386）
+			expect(updateArg.primaryRole).toEqual({ delete: true });
+		});
+
+		it("roles を持つ relation が無い場合も primaryRole を消す", async () => {
+			mockGet.mockResolvedValueOnce({
+				empty: false,
+				size: 2,
+				docs: [
+					{ data: () => ({ workId: "RJ001", roles: [] }) },
+					{ data: () => ({ workId: "RJ002" }) },
+				],
+			});
+
+			await recomputeCreatorStats("VA001");
+
+			const updateArg = mockUpdate.mock.calls[0]?.[0] as Record<string, unknown>;
+			expect(updateArg.workCount).toBe(2);
+			expect(updateArg.types).toEqual([]);
+			expect(updateArg.primaryRole).toEqual({ delete: true });
 		});
 	});
 
