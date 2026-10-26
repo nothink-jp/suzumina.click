@@ -5,6 +5,7 @@
  * リポジトリパターンは使用せず、直接的なFirestore操作を提供
  */
 
+import type { UpdateData } from "@google-cloud/firestore";
 import type { CircleDocument } from "@suzumina.click/shared-types";
 import firestore, { FieldValue, Timestamp } from "../../infrastructure/database/firestore";
 import * as logger from "../../shared/logger";
@@ -57,7 +58,7 @@ export async function updateCircleWithWork(
 		const needsWorkIdsInit = !data.workIds; // workIdsフィールドが存在しない
 
 		if (needsNameUpdate || needsWorkIdUpdate || needsWorkIdsInit) {
-			const updateData: Partial<CircleDocument> = {
+			const updateData: UpdateData<CircleDocument> = {
 				updatedAt: Timestamp.now(),
 			};
 
@@ -71,9 +72,8 @@ export async function updateCircleWithWork(
 				updateData.workIds = [workId];
 				logger.info(`workIds初期化: ${circleId} - 最初の作品: ${workId}`);
 			} else if (needsWorkIdUpdate) {
-				// 読んだ時点の配列から作り直さず arrayUnion で足す（並行する追加を上書きしない）。
-				// FieldValue は型上 string[] ではないため、書き込み専用の値として cast する
-				updateData.workIds = FieldValue.arrayUnion(workId) as unknown as string[];
+				// 読んだ時点の配列から作り直さず arrayUnion で足す（並行する追加を上書きしない）
+				updateData.workIds = FieldValue.arrayUnion(workId);
 			}
 
 			await circleRef.update(updateData);
