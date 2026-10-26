@@ -42,7 +42,6 @@ export async function getRecentAudioButtons(limit = 10): Promise<AudioButton[]> 
 		const result = await getAudioButtonsList({
 			limit,
 			sortBy: "newest",
-			onlyPublic: true,
 		});
 		if (result.success) {
 			return result.data.audioButtons;
@@ -72,14 +71,16 @@ const AUDIO_BUTTON_LIST_FIELDS = [
 ] as const satisfies readonly (keyof AudioButtonDocument)[];
 
 /**
- * 音声ボタンリストを取得（ConfigurableList用）
+ * 公開音声ボタンの一覧を取得（ConfigurableList用）
+ *
+ * クライアントから任意の引数で呼べる Server Action なので、非公開ボタンは引数に関わらず返さない
+ * （`isPublic == true` を applyFilters で強制。旧 `onlyPublic` 引数は SPR-332 で撤去）
  */
 export async function getAudioButtonsList(
 	query: {
 		limit?: number;
 		page?: number;
 		sortBy?: "newest" | "oldest" | "popular" | "mostPlayed";
-		onlyPublic?: boolean;
 		search?: string;
 		videoId?: string;
 		tags?: string[];
@@ -114,7 +115,6 @@ export async function getAudioButtonsList(
 				limit = 20,
 				page = 1,
 				sortBy = "newest",
-				onlyPublic = true,
 				videoId,
 				search,
 				tags = [],
@@ -124,7 +124,6 @@ export async function getAudioButtonsList(
 			const listQueryRef = applySorting(
 				applyFilters(
 					firestore.collection("audioButtons").select(...AUDIO_BUTTON_LIST_FIELDS),
-					onlyPublic,
 					videoId,
 				),
 				sortBy,
@@ -146,11 +145,7 @@ export async function getAudioButtonsList(
 				};
 			}
 
-			const countSnapshot = await applyFilters(
-				firestore.collection("audioButtons"),
-				onlyPublic,
-				videoId,
-			)
+			const countSnapshot = await applyFilters(firestore.collection("audioButtons"), videoId)
 				.count()
 				.get();
 			const totalCount = countSnapshot.data().count;

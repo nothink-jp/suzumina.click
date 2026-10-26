@@ -439,7 +439,6 @@ describe("Audio Button Server Actions", () => {
 			const result = await getAudioButtonsList({
 				limit: 20,
 				sortBy: "newest",
-				onlyPublic: true,
 			});
 
 			expect(result.success).toBe(true);
@@ -459,7 +458,6 @@ describe("Audio Button Server Actions", () => {
 				limit: 20,
 				tags: ["挨拶"],
 				sortBy: "newest",
-				onlyPublic: true,
 			});
 
 			expect(result.success).toBe(true);
@@ -467,6 +465,24 @@ describe("Audio Button Server Actions", () => {
 			// タグ絞り込みは全件取得 + in-memory。件数上限を掛けず（SPR-322）、基本経路の count・ページ取得も走らせない
 			expect(mockLimit).not.toHaveBeenCalled();
 			expect(mockCollection.mock.results[0]?.value.count).not.toHaveBeenCalled();
+		});
+
+		it("onlyPublic: false を渡されても非公開ボタンを返さない（SPR-332）", async () => {
+			mockGet.mockResolvedValue({ docs: [] });
+
+			// クライアントから任意の引数で呼べる Server Action なので、型に無いキーも送られうる
+			const result = await getAudioButtonsList({
+				limit: 20,
+				onlyPublic: false,
+			} as Parameters<typeof getAudioButtonsList>[0]);
+
+			expect(result.success).toBe(true);
+			// 一覧クエリと count クエリの両方に isPublic == true が掛かる
+			const publicWheres = mockWhere.mock.calls.filter(
+				(args) => args[0] === "isPublic" && args[1] === "==" && args[2] === true,
+			);
+			expect(publicWheres).toHaveLength(2);
+			expect(mockWhere).not.toHaveBeenCalledWith("isPublic", "==", false);
 		});
 
 		it("検索パラメータが正しく処理される", async () => {
@@ -506,7 +522,6 @@ describe("Audio Button Server Actions", () => {
 				search: "テスト音声",
 				limit: 20,
 				sortBy: "newest",
-				onlyPublic: true,
 			});
 
 			expect(result.success).toBe(true);
@@ -550,7 +565,6 @@ describe("Audio Button Server Actions", () => {
 				limit: 2,
 				page: 2,
 				sortBy: "newest",
-				onlyPublic: true,
 			});
 
 			expect(result.success).toBe(true);
@@ -568,7 +582,6 @@ describe("Audio Button Server Actions", () => {
 			const result = await getAudioButtonsList({
 				limit: -1, // Invalid limit
 				sortBy: "newest",
-				onlyPublic: true,
 			});
 
 			expect(result.success).toBe(false);

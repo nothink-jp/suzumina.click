@@ -85,7 +85,6 @@ async function CaptureContent({ manualVideoId }: { manualVideoId?: string }) {
 	if (video) {
 		const buttonsResult = await getAudioButtonsList({
 			videoId: video.videoId,
-			onlyPublic: true,
 			limit: 1000,
 		});
 		madeMarks = buttonsResult.success

@@ -69,7 +69,6 @@ export async function RelatedAudioButtons({ currentId, videoId, tags }: RelatedA
 			videoId,
 			limit: SECTION_LIMIT + 1,
 			sortBy: "newest",
-			onlyPublic: true,
 		}),
 		tags.length > 0
 			? fetchButtons({
@@ -78,7 +77,6 @@ export async function RelatedAudioButtons({ currentId, videoId, tags }: RelatedA
 					// （全件取得→スライス）のため limit を増やしても Firestore reads は増えない
 					limit: SECTION_LIMIT * 2,
 					sortBy: "mostPlayed",
-					onlyPublic: true,
 				})
 			: Promise.resolve([]),
 	]);
@@ -93,7 +91,6 @@ export async function RelatedAudioButtons({ currentId, videoId, tags }: RelatedA
 		const popularAll = await fetchButtons({
 			limit: SECTION_LIMIT + 1,
 			sortBy: "mostPlayed",
-			onlyPublic: true,
 		});
 		popular = popularAll.filter((b) => b.id !== currentId).slice(0, SECTION_LIMIT);
 	}
