@@ -181,6 +181,24 @@ describe("logger", () => {
 			expect(parsed.context.error.cause.stack).toContain("Error: root cause");
 		});
 
+		it("Error のオブジェクト値プロパティ（GaxiosError の config 等）は出力しないこと", () => {
+			const testError = Object.assign(new Error("request failed"), {
+				status: 403,
+				config: { url: "https://example.test/?key=SECRET", params: { key: "SECRET" } },
+				response: { data: { huge: true } },
+			});
+
+			logger.error("x", testError);
+
+			const logOutput = mockConsoleLog.mock.calls[0]![0];
+			const parsed = JSON.parse(logOutput);
+
+			expect(logOutput).not.toContain("SECRET");
+			expect(parsed.error.status).toBe(403);
+			expect(parsed.error.config).toBeUndefined();
+			expect(parsed.error.response).toBeUndefined();
+		});
+
 		it("payload が監視の契約キー（severity / message / labels）を上書きできないこと", () => {
 			process.env.K_SERVICE = "test-service";
 
