@@ -376,9 +376,9 @@ locals {
   terraform_apply_sa_roles = [
     "roles/editor",                          # 大半のリソース CRUD（run/scheduler/firestore/monitoring/logging/pubsub/AR/functions 等）
     "roles/logging.configWriter",            # editor は logging.sinks.get/list のみで書き込み不可（logMetrics はフル）。sink 更新（logging.tf）に必須
-    "roles/resourcemanager.projectIamAdmin", # google_project_iam_member（プロジェクト IAM、32件）
+    "roles/resourcemanager.projectIamAdmin", # google_project_iam_member（プロジェクト IAM）
     "roles/iam.serviceAccountAdmin",         # google_service_account + SA IAM binding
-    "roles/iam.roleAdmin",                   # google_project_iam_custom_role（カスタムロール 3件）
+    "roles/iam.roleAdmin",                   # google_project_iam_custom_role（カスタムロール）
     "roles/iam.workloadIdentityPoolAdmin",   # WIF pool / provider
     "roles/storage.admin",                   # bucket IAM + lifecycle + tfstate の state 読み書き/ロック
     "roles/pubsub.admin",                    # pubsub topic IAM
