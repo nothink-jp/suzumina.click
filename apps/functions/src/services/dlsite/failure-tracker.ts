@@ -82,7 +82,7 @@ export async function trackFailedWork(
 			operation: "trackFailedWork",
 			workId,
 			reason,
-			error: error instanceof Error ? error.message : String(error),
+			error,
 		});
 		throw error;
 	}
@@ -139,7 +139,7 @@ export async function trackMultipleFailedWorks(
 		logger.error("失敗作品一括追跡記録エラー", {
 			operation: "trackMultipleFailedWorks",
 			count: failures.length,
-			error: error instanceof Error ? error.message : String(error),
+			error,
 		});
 		throw error;
 	}
@@ -190,7 +190,7 @@ export async function getFailureStatistics(): Promise<{
 	} catch (error) {
 		logger.error("失敗統計情報取得エラー", {
 			operation: "getFailureStatistics",
-			error: error instanceof Error ? error.message : String(error),
+			error,
 		});
 		throw error;
 	}
@@ -234,7 +234,7 @@ export async function cleanupOldFailureRecords(daysToKeep = 30): Promise<number>
 	} catch (error) {
 		logger.error("古い失敗記録クリーンアップエラー", {
 			operation: "cleanupOldFailureRecords",
-			error: error instanceof Error ? error.message : String(error),
+			error,
 		});
 		throw error;
 	}

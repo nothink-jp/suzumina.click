@@ -244,7 +244,7 @@ async function saveBatchVideos(
 		} catch (error) {
 			logger.error("動画のEntity変換に失敗", {
 				videoId: video.id,
-				error: error instanceof Error ? error.message : String(error),
+				error,
 			});
 		}
 	}
@@ -258,7 +258,7 @@ async function saveBatchVideos(
 			logger.error("バッチ保存エラー", {
 				channelId,
 				batchNumber,
-				error: error instanceof Error ? error.message : String(error),
+				error,
 			});
 			return 0;
 		}

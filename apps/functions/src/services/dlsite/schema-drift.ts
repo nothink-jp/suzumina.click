@@ -91,7 +91,7 @@ export function recordSchemaDriftForBatch(
 	} catch (error) {
 		// 観測はベストエフォート。失敗しても本番フェッチには影響させない。
 		logger.debug("スキーマdrift観測でエラー（無視）", {
-			error: error instanceof Error ? error.message : String(error),
+			error,
 		});
 	}
 }

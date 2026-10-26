@@ -13,6 +13,7 @@ import type {
 } from "@suzumina.click/shared-types";
 import { isValidCreatorId } from "@suzumina.click/shared-types";
 import firestore, { FieldValue, Timestamp } from "../../infrastructure/database/firestore";
+import { errorMessage } from "../../shared/error-message";
 import * as logger from "../../shared/logger";
 import { enqueueChangedCreators } from "./creator-recompute-queue";
 import {
@@ -193,7 +194,7 @@ async function getExistingCreatorMappings(
 		});
 	} catch (error) {
 		logger.error(`既存クリエイターマッピング取得エラー: ${workId}`, {
-			error: error instanceof Error ? error.message : String(error),
+			error,
 		});
 		// 空で続行すると全マッピングが「新規」扱いになり書き直される（SPR-346 / SPR-275 §2）。
 		// 呼び出し側の catch で失敗として返し、この作品のマッピング更新は書き込まない。
@@ -380,11 +381,11 @@ export async function updateCreatorWorkMapping(
 		return { success: true };
 	} catch (error) {
 		logger.error(`クリエイターマッピング更新エラー: ${workId}`, {
-			error: error instanceof Error ? error.message : String(error),
+			error,
 		});
 		return {
 			success: false,
-			error: error instanceof Error ? error.message : String(error),
+			error: errorMessage(error),
 		};
 	}
 }

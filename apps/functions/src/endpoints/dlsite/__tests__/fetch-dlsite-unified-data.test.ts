@@ -458,7 +458,10 @@ describe("fetchDLsiteUnifiedData（エントリポイント統合）", () => {
 
 			expect(logger.warn).toHaveBeenCalledWith(
 				"重複配信の判定に失敗したため、判定せずに run を実行",
-				expect.objectContaining({ eventId: "message-1", error: "ABORTED: too much contention" }),
+				expect.objectContaining({
+					eventId: "message-1",
+					error: expect.objectContaining({ message: "ABORTED: too much contention" }),
+				}),
 			);
 			expect(logger.info).toHaveBeenCalledWith(
 				"統合データ収集開始",

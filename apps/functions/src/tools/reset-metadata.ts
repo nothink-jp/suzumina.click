@@ -51,7 +51,7 @@ async function resetMetadataState(): Promise<void> {
 	} catch (error) {
 		logger.error("メタデータリセットエラー", {
 			operation: "resetMetadataState",
-			error: error instanceof Error ? error.message : String(error),
+			error,
 		});
 		throw error;
 	}
@@ -111,7 +111,7 @@ async function showMetadataDetails(): Promise<void> {
 	} catch (error) {
 		logger.error("メタデータ詳細表示エラー", {
 			operation: "showMetadataDetails",
-			error: error instanceof Error ? error.message : String(error),
+			error,
 		});
 	}
 }
@@ -134,7 +134,7 @@ async function main(): Promise<void> {
 	} catch (error) {
 		logger.error("メイン処理エラー", {
 			operation: "main",
-			error: error instanceof Error ? error.message : String(error),
+			error,
 		});
 		process.exit(1);
 	}
@@ -147,7 +147,7 @@ export { resetMetadataState as resetUnifiedMetadata };
 if (require.main === module) {
 	main().catch((error) => {
 		logger.error("スクリプト実行エラー", {
-			error: error instanceof Error ? error.message : String(error),
+			error,
 		});
 		process.exit(1);
 	});

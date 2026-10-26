@@ -8,6 +8,7 @@ import { FieldValue } from "@google-cloud/firestore";
 import type { WorkDocument } from "@suzumina.click/shared-types";
 import firestore from "../../infrastructure/database/firestore";
 import { chunkArray } from "../../shared/array-utils";
+import { errorMessage } from "../../shared/error-message";
 import * as logger from "../../shared/logger";
 import { recordWorksMapRead } from "./dlsite-read-metrics";
 import { FAILURE_REASONS, trackMultipleFailedWorks } from "./failure-tracker";
@@ -102,7 +103,7 @@ async function handleChunkFailure(
 				chunkError instanceof Error && chunkError.message.includes("DEADLINE_EXCEEDED")
 					? FAILURE_REASONS.TIMEOUT
 					: FAILURE_REASONS.UNKNOWN,
-			errorDetails: chunkError instanceof Error ? chunkError.message : String(chunkError),
+			errorDetails: errorMessage(chunkError),
 		}));
 		await trackMultipleFailedWorks(failures);
 	} catch (trackError) {
@@ -170,9 +171,7 @@ export async function saveWorksToFirestore(works: WorkDocument[]): Promise<void>
 			workCount: works.length,
 			sampleWorkIds: works.slice(0, 3).map((w) => w.productId),
 		});
-		throw new Error(
-			`作品データのFirestore保存に失敗: ${error instanceof Error ? error.message : String(error)}`,
-		);
+		throw new Error(`作品データのFirestore保存に失敗: ${errorMessage(error)}`);
 	}
 }
 
@@ -239,9 +238,7 @@ export async function getExistingWorksMap(
 		});
 		// 空の Map を返すと全件「新規」扱いになり、カタログ全体の書き換えとクリエイター再同期が
 		// 黙って走る（SPR-346）。run を失敗させ、次の定期実行で再試行させる。
-		throw new Error(
-			`既存作品データの取得に失敗: ${error instanceof Error ? error.message : String(error)}`,
-		);
+		throw new Error(`既存作品データの取得に失敗: ${errorMessage(error)}`);
 	}
 
 	return existingWorksMap;

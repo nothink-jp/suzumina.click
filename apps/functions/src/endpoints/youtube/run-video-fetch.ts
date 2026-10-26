@@ -19,6 +19,7 @@ import {
 	saveVideosToFirestore,
 } from "../../services/youtube/youtube-firestore";
 import { SUZUKA_MINASE_CHANNEL_ID } from "../../shared/common";
+import { errorMessage } from "../../shared/error-message";
 import * as logger from "../../shared/logger";
 import {
 	type FetchMetadata,
@@ -72,7 +73,7 @@ async function fetchStatsTierVideoIds(): Promise<{
 		return { recentTierVideoIds, oldTierDueVideoIds };
 	} catch (error) {
 		logger.warn("動画統計ティア差分の取得に失敗しました（今回はスキップします）", {
-			error: error instanceof Error ? error.message : String(error),
+			error,
 		});
 		return { recentTierVideoIds: [], oldTierDueVideoIds: [] };
 	}
@@ -103,7 +104,7 @@ async function runWeeklyFullSweep(
 		logger.error("週次フルスイープでエラーが発生しました:", error);
 		await updateMetadata({
 			isInProgress: false,
-			lastError: error instanceof Error ? error.message : String(error),
+			lastError: errorMessage(error),
 		});
 		return {
 			videoCount: 0,
@@ -216,7 +217,7 @@ async function runNormalFetchAndSave(
 		}
 	} catch (error) {
 		logger.warn("stale live/upcoming動画の取得に失敗しました（今回はstale救済をスキップします）", {
-			error: error instanceof Error ? error.message : String(error),
+			error,
 		});
 	}
 
@@ -295,7 +296,7 @@ async function handleFetchYouTubeVideosError(
 		try {
 			await updateMetadata({
 				isInProgress: false,
-				lastError: error instanceof Error ? error.message : String(error),
+				lastError: errorMessage(error),
 			});
 		} catch (updateError) {
 			logger.error("エラー状態の記録に失敗しました:", updateError);

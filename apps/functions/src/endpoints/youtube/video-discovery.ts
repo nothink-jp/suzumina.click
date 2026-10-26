@@ -209,7 +209,7 @@ export async function logDiscoveryComparison(
 		}
 	} catch (error) {
 		logger.warn("discovery方式の比較に失敗しました（本処理には影響しません）", {
-			error: error instanceof Error ? error.message : String(error),
+			error,
 		});
 	}
 }
@@ -271,7 +271,7 @@ export async function tryFastDiscovery(
 		return { videoIds };
 	} catch (error) {
 		logger.warn("fast_recheckでの新着発見に失敗しました（今回は発見をスキップします）", {
-			error: error instanceof Error ? error.message : String(error),
+			error,
 		});
 		return { videoIds: [] };
 	}

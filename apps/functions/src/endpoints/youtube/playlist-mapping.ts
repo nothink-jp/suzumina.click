@@ -134,7 +134,7 @@ export async function resolvePlaylistVideoMapping(
 		}
 	} catch (error) {
 		logger.warn("playlist→videoマッピングキャッシュの読み取りに失敗しました（再構築します）", {
-			error: error instanceof Error ? error.message : String(error),
+			error,
 		});
 	}
 
@@ -161,7 +161,7 @@ export async function resolvePlaylistVideoMapping(
 		logger.warn(
 			"playlist→videoマッピングキャッシュの保存に失敗しました（今回の結果には影響しません）",
 			{
-				error: error instanceof Error ? error.message : String(error),
+				error,
 			},
 		);
 	}

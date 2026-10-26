@@ -233,7 +233,7 @@ async function prepareNewBatchProcessing(
 		logger.info(`作品ID収集完了: ${currentWorkIds.length}件`);
 	} catch (error) {
 		logger.error("作品ID収集エラー: この run を中断します（次の定期実行でリトライ）", {
-			error: error instanceof Error ? error.message : String(error),
+			error,
 			errorType: error instanceof Error ? error.name : "Unknown",
 		});
 		return null;

@@ -455,7 +455,7 @@ async function main(): Promise<void> {
 if (require.main === module) {
 	main().catch((error) => {
 		logger.error("DLsite dry-run 捕捉エラー:", {
-			error: error instanceof Error ? error.message : String(error),
+			error,
 		});
 		process.exit(1);
 	});

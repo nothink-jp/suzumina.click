@@ -166,7 +166,7 @@ export async function claimRunEventFailOpen(
 		logger.warn("重複配信の判定に失敗したため、判定せずに run を実行", {
 			eventId,
 			docId: options.docId,
-			error: error instanceof Error ? error.message : String(error),
+			error,
 		});
 		return true;
 	}
