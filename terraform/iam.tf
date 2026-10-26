@@ -376,9 +376,9 @@ locals {
   terraform_apply_sa_roles = [
     "roles/editor",                          # 大半のリソース CRUD（run/scheduler/firestore/monitoring/logging/pubsub/AR/functions 等）
     "roles/logging.configWriter",            # editor は logging.sinks.get/list のみで書き込み不可（logMetrics はフル）。sink 更新（logging.tf）に必須
-    "roles/resourcemanager.projectIamAdmin", # google_project_iam_member（プロジェクト IAM、32件）
+    "roles/resourcemanager.projectIamAdmin", # google_project_iam_member（プロジェクト IAM）
     "roles/iam.serviceAccountAdmin",         # google_service_account + SA IAM binding
-    "roles/iam.roleAdmin",                   # google_project_iam_custom_role（カスタムロール 2件）
+    "roles/iam.roleAdmin",                   # google_project_iam_custom_role（カスタムロール）
     "roles/iam.workloadIdentityPoolAdmin",   # WIF pool / provider
     "roles/storage.admin",                   # bucket IAM + lifecycle + tfstate の state 読み書き/ロック
     "roles/pubsub.admin",                    # pubsub topic IAM
@@ -408,7 +408,8 @@ resource "google_project_iam_member" "terraform_apply_sa_roles" {
 # キーは terraform 管理外（google_service_account_key を使わない）: tfstate に秘密鍵が平文で残るため。
 # `gcloud iam service-accounts keys create` で手動発行し、Claude の環境設定（Default 環境）に登録する。
 # Default 環境は全セッションで共有されキーがどのセッションからも見えるので、ロールは viewer 系に限る。
-# Firestore（datastore.*）・Secret Manager の読み取りは付けない（roles/viewer を避けているのもこのため）。
+# Firestore のドキュメント（datastore.entities.*）・Secret Manager の値の読み取りは付けない（roles/viewer を避けているのもこのため）。
+# Firestore はメタデータだけのカスタムロール（claude_readonly_firestore_metadata）で付ける。
 
 # 手動作成された既存 SA を管理下へ取り込む（ga4_reader と同じ扱い）。
 import {
@@ -425,12 +426,46 @@ resource "google_service_account" "claude_readonly" {
 
 locals {
   claude_readonly_roles = [
-    "roles/monitoring.viewer", # アラートポリシー・時系列メトリクス
-    "roles/logging.viewer",    # リクエストログ・アプリログ
-    "roles/run.viewer",        # Cloud Run サービス・revision の設定と状態
-    "roles/pubsub.viewer",     # topic・subscription の設定（ackDeadline / retryPolicy 等）。メッセージの pull・publish は含まない
-    "roles/eventarc.viewer",   # Eventarc trigger の設定（宛先・retryPolicy 等）。messageBuses.use 等の非閲覧権限を含むが、create 系が無いので使えない（Eventarc Advanced を導入したら見直す）
+    "roles/monitoring.viewer",     # アラートポリシー・時系列メトリクス
+    "roles/logging.viewer",        # リクエストログ・アプリログ
+    "roles/run.viewer",            # Cloud Run サービス・revision の設定と状態
+    "roles/pubsub.viewer",         # topic・subscription の設定（ackDeadline / retryPolicy 等）。メッセージの pull・publish は含まない
+    "roles/eventarc.viewer",       # Eventarc trigger の設定（宛先・retryPolicy 等）。messageBuses.use 等の非閲覧権限を含むが、create 系が無いので使えない（Eventarc Advanced を導入したら見直す）
+    "roles/cloudscheduler.viewer", # cron（checkDataIntegrity・fetch 系）の次回/前回実行と結果。jobs.fullView で payload も見えるが、全 job が Pub/Sub 宛ての小さな JSON のみ
+    "roles/cloudfunctions.viewer", # 関数の設定（メモリ・timeout・実行 SA・トリガー）とデプロイ時の Cloud Build。関数は terraform 管理外（deploy-functions.yml）で live が唯一の正
   ]
+}
+
+# Firestore はメタデータだけを読むカスタムロールにする。既製ロールは datastore.viewer が entities.get/list
+# （ba_account の OAuth トークンや contacts の個人情報まで全コレクション）を含み、indexAdmin は書き込みを含むため。
+# entities.* はここに足さない（データ閲覧が要る調査は別の環境・別の SA で行う）
+resource "google_project_iam_custom_role" "claude_readonly_firestore_metadata" {
+  project     = var.gcp_project_id
+  role_id     = "claudeReadonlyFirestoreMetadata"
+  title       = "Claude Readonly Firestore Metadata Viewer"
+  description = "claude-readonly 用。Firestore の index・DB 設定・operations・バックアップのメタデータのみ（ドキュメントは読めない）"
+
+  permissions = [
+    "datastore.schemas.get", # 複合・単一フィールド index と TTL（pnpm check:index-drift もこれで動く）
+    "datastore.schemas.list",
+    "datastore.operations.get", # index ビルドの進捗（apply 直後の FAILED_PRECONDITION の切り分け）
+    "datastore.operations.list",
+    "datastore.databases.get", # PITR・削除保護・concurrency mode 等
+    "datastore.databases.getMetadata",
+    "datastore.databases.list",
+    "datastore.backupSchedules.get", # 日次バックアップのスケジュール（リストア権限は含まない）
+    "datastore.backupSchedules.list",
+    "datastore.backups.get",
+    "datastore.backups.list",
+    "datastore.locations.get", # backups list --location に必要
+    "datastore.locations.list",
+  ]
+}
+
+resource "google_project_iam_member" "claude_readonly_firestore_metadata" {
+  project = var.gcp_project_id
+  role    = google_project_iam_custom_role.claude_readonly_firestore_metadata.name
+  member  = "serviceAccount:${google_service_account.claude_readonly.email}"
 }
 
 resource "google_project_iam_member" "claude_readonly_roles" {
