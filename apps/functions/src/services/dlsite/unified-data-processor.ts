@@ -168,7 +168,9 @@ const CREATORS_PATH = /^(creators(\.|$)|circleId$)/;
  * それぞれが使う値が変わったときだけ同期する。新規作品と forceUpdate は従来どおり全部書く。
  *
  * 副作用の注意: works は Circle / Creator の同期より先に書くため、同期だけが失敗した作品は
- * 次の run で差分が出ず再試行されない。回復は週次の整合性 cron（`checkDataIntegrity`）が担う。
+ * 次の run で差分が出ず再試行されない。週次の整合性 cron（`checkDataIntegrity`）が直すのは
+ * 欠けた creator mapping と circle.workIds の追加だけで、作者の削除・roles の変更・circleId の移動・
+ * 名前の変更は、その作品の関係する値が次に変わるか forceUpdate するまで残る。
  */
 async function planUpdates(
 	workData: WorkDocument,
