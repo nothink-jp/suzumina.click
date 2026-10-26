@@ -12,6 +12,7 @@ import { savePriceHistory } from "../price-history";
 import { updateCircleWithWork } from "./circle-firestore";
 import { updateCreatorWorkMapping } from "./creator-firestore";
 import { getWorkFromFirestore, saveWorksToFirestore } from "./dlsite-firestore";
+import { listChangedWorkPaths } from "./work-change-paths";
 
 /**
  * 統合処理の結果
@@ -141,14 +142,42 @@ async function updatePriceHistory(
 }
 
 /**
- * 更新が必要かチェック
+ * この作品で書き込む対象（works / circles / creators）
  */
-async function shouldSkipUpdate(
+interface UpdatePlan {
+	work: boolean;
+	circle: boolean;
+	creators: boolean;
+}
+
+const UPDATE_ALL: UpdatePlan = { work: true, circle: true, creators: true };
+
+/**
+ * `updateCircleWithWork` が使う値（maker_id / maker_name）に対応するパス。
+ * maker_name_en は WorkDocument に写していない（circleEn は常に undefined）ため検知できない。
+ */
+const CIRCLE_PATH = /^(circleId|circle)$/;
+/** `updateCreatorWorkMapping` が使う値（creaters / maker_id）に対応するパス */
+const CREATORS_PATH = /^(creators(\.|$)|circleId$)/;
+
+/**
+ * 既存作品との差分から、書き込む対象を決める
+ *
+ * SPR-346: 変更検知を全フィールドに広げたため、評価・説明だけの変化でも Circle / Creator の
+ * 同期（circle doc の get/set、collectionGroup QUERY）が走ると reads が評価変動数に比例して増える。
+ * それぞれが使う値が変わったときだけ同期する。新規作品と forceUpdate は従来どおり全部書く。
+ *
+ * 副作用の注意: works は Circle / Creator の同期より先に書くため、同期だけが失敗した作品は
+ * 次の run で差分が出ず再試行されない。週次の整合性 cron（`checkDataIntegrity`）が直すのは
+ * 欠けた creator mapping と circle.workIds の追加だけで、作者の削除・roles の変更・circleId の移動・
+ * 名前の変更は、その作品の関係する値が次に変わるか forceUpdate するまで残る。
+ */
+async function planUpdates(
 	workData: WorkDocument,
 	options: ProcessingOptions,
-): Promise<boolean> {
+): Promise<UpdatePlan> {
 	if (options.forceUpdate) {
-		return false;
+		return UPDATE_ALL;
 	}
 
 	// 既存作品マップが提供されている場合は優先的に使用
@@ -161,7 +190,16 @@ async function shouldSkipUpdate(
 		existingWork = await getWorkFromFirestore(workData.productId);
 	}
 
-	return !!(existingWork && !detectChanges(existingWork, workData).hasAnyChange);
+	if (!existingWork) {
+		return UPDATE_ALL;
+	}
+
+	const { changedPaths } = detectChanges(existingWork, workData);
+	return {
+		work: changedPaths.length > 0,
+		circle: changedPaths.some((path) => CIRCLE_PATH.test(path)),
+		creators: changedPaths.some((path) => CREATORS_PATH.test(path)),
+	};
 }
 
 /**
@@ -172,18 +210,23 @@ async function performUpdates(
 	workData: WorkDocument,
 	options: ProcessingOptions,
 	result: ProcessingResult,
-	skipWorkUpdate: boolean,
+	plan: UpdatePlan,
 ): Promise<void> {
-	logger.debug(
-		`performUpdates開始: ${workData.productId}, skipWorkUpdate=${skipWorkUpdate}, skipPriceHistory=${options.skipPriceHistory}`,
-	);
+	logger.debug(`performUpdates開始: ${workData.productId}`, {
+		plan,
+		skipPriceHistory: options.skipPriceHistory,
+	});
 
-	if (!skipWorkUpdate) {
+	if (plan.work) {
 		await updateWork(workData, result);
-		await updateCircle(apiData, workData.productId, result);
-		await updateCreators(apiData, workData.productId, result);
 	} else {
 		logger.debug(`Work/Circle/Creator更新をスキップ: ${workData.productId} (変更なし)`);
+	}
+	if (plan.circle) {
+		await updateCircle(apiData, workData.productId, result);
+	}
+	if (plan.creators) {
+		await updateCreators(apiData, workData.productId, result);
 	}
 
 	// 価格履歴は常に保存を試みる（既存チェックは価格履歴保存側で行う）
@@ -218,11 +261,11 @@ export async function processUnifiedDLsiteData(
 		// APIデータをWorkDocumentに変換
 		const workData = WorkMapper.toWork(apiData);
 
-		// 既存データの存在確認（スキップ判定用）
-		const skipWorkUpdate = await shouldSkipUpdate(workData, options);
+		// 既存データとの差分から書き込む対象を決める
+		const plan = await planUpdates(workData, options);
 
 		// 関連データの更新処理
-		await performUpdates(apiData, workData, options, result, skipWorkUpdate);
+		await performUpdates(apiData, workData, options, result, plan);
 
 		// 成功判定: 主要な更新（Work, Circle, Creator）または価格履歴のうち少なくとも1つが成功
 		result.success =
@@ -247,103 +290,25 @@ export async function processUnifiedDLsiteData(
 }
 
 /**
- * 価格変更をチェック
- *
- * 本体価格（current）だけでなく割引率（discount）も見る。DLsiteのセールでJPY価格は
- * 据え置きのまま割引率だけ変わるケースがあり、currentのみの比較では検知できないため
- * （レビュー指摘: 割引率のみの変化がShouldSkipUpdate/取りこぼし検知の両方で見逃される）。
- */
-function hasPriceChanged(existing: WorkDocument, updated: WorkDocument): boolean {
-	if (existing.price.current !== updated.price.current) {
-		logger.info(
-			`価格変更検出: ${existing.productId} - ${existing.price.current} → ${updated.price.current}`,
-		);
-		return true;
-	}
-	if (existing.price.discount !== updated.price.discount) {
-		logger.info(
-			`割引率変更検出: ${existing.productId} - ${existing.price.discount} → ${updated.price.discount}`,
-		);
-		return true;
-	}
-	return false;
-}
-
-/**
- * タイトル変更をチェック
- */
-function hasTitleChanged(existing: WorkDocument, updated: WorkDocument): boolean {
-	if (existing.title !== updated.title) {
-		logger.info(`タイトル変更検出: ${existing.productId}`);
-		return true;
-	}
-	return false;
-}
-
-/**
- * 販売状態変更をチェック
- */
-function hasSalesStatusChanged(existing: WorkDocument, updated: WorkDocument): boolean {
-	if (existing.salesStatus?.isSale !== updated.salesStatus?.isSale) {
-		logger.info(
-			`販売状態変更検出: ${existing.productId} - ${existing.salesStatus?.isSale} → ${updated.salesStatus?.isSale}`,
-		);
-		return true;
-	}
-	return false;
-}
-
-/**
- * 評価の大幅な変更をチェック
- */
-function hasRatingChanged(existing: WorkDocument, updated: WorkDocument): boolean {
-	const existingStars = existing.rating?.stars || 0;
-	const updatedStars = updated.rating?.stars || 0;
-	if (Math.abs(existingStars - updatedStars) > 2) {
-		logger.info(`評価変更検出: ${existing.productId} - ${existingStars} → ${updatedStars}`);
-		return true;
-	}
-	return false;
-}
-
-/**
- * 販売終了をチェック
- */
-function isSoldOut(existing: WorkDocument, updated: WorkDocument): boolean {
-	if (!existing.salesStatus?.isSoldOut && updated.salesStatus?.isSoldOut) {
-		logger.info(`販売終了検出: ${existing.productId}`);
-		return true;
-	}
-	return false;
-}
-
-/**
- * 新しいジャンルの追加をチェック
- */
-function hasNewGenres(existing: WorkDocument, updated: WorkDocument): boolean {
-	const existingGenres = new Set(existing.genres || []);
-	const hasNewGenres = (updated.genres || []).some((genre) => !existingGenres.has(genre));
-	if (hasNewGenres) {
-		logger.info(`ジャンル追加検出: ${existing.productId}`);
-		return true;
-	}
-	return false;
-}
-
-/**
  * 変更種別の分類結果
  *
  * SPR-229 Stage①: 価格/販売状態の変化とメタ情報の変化を分離して集計する。
- * 「価格のみ変化」を切り出せるようにしておくことで、後続のティア差分判定や
- * 取りこぼし検知ログで変化の質を区別できるようにする（本Stageでは動作は変えない）。
+ * SPR-346: 判定は追跡フィールドの列挙ではなく {@link listChangedWorkPaths}（merge 書き込みで
+ * 変わる全フィールド）に基づく。
  */
 export interface ChangeDetectionResult {
-	/** 価格・販売状態（セール/売り切れ）の変化 */
+	/** 価格・販売状態（`price.*` / `salesStatus.*`）の変化 */
 	priceOrSalesChanged: boolean;
-	/** タイトル・評価・ジャンルなどメタ情報の変化 */
+	/** それ以外（タイトル・評価・作者・説明・画像・ジャンル等）の変化 */
 	metadataChanged: boolean;
-	/** いずれかの変化があるか（既存の hasSignificantChanges 相当） */
+	/** いずれかの変化があるか（false なら works / circles / creators の書き込みをスキップする） */
 	hasAnyChange: boolean;
+	/** 変化したフィールドのパス */
+	changedPaths: string[];
+}
+
+function isPriceOrSalesPath(path: string): boolean {
+	return /^(price|salesStatus)(\.|$)/.test(path);
 }
 
 /**
@@ -357,19 +322,19 @@ export function detectChanges(
 	existing: WorkDocument,
 	updated: WorkDocument,
 ): ChangeDetectionResult {
-	const priceOrSalesChanged =
-		hasPriceChanged(existing, updated) ||
-		hasSalesStatusChanged(existing, updated) ||
-		isSoldOut(existing, updated);
-	const metadataChanged =
-		hasTitleChanged(existing, updated) ||
-		hasRatingChanged(existing, updated) ||
-		hasNewGenres(existing, updated);
+	const changedPaths = listChangedWorkPaths(existing, updated);
+	const priceOrSalesChanged = changedPaths.some(isPriceOrSalesPath);
+	const metadataChanged = changedPaths.some((path) => !isPriceOrSalesPath(path));
+
+	if (changedPaths.length > 0) {
+		logger.info(`作品変更検出: ${existing.productId}`, { changedPaths });
+	}
 
 	return {
 		priceOrSalesChanged,
 		metadataChanged,
-		hasAnyChange: priceOrSalesChanged || metadataChanged,
+		hasAnyChange: changedPaths.length > 0,
+		changedPaths,
 	};
 }
 

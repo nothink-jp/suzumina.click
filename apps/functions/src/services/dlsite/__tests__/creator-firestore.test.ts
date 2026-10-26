@@ -166,6 +166,23 @@ describe("creator-firestore", () => {
 			expect(mockCommit).toHaveBeenCalledTimes(1);
 		});
 
+		it("既存マッピングの取得に失敗したら書き込まずに失敗を返す（全件新規扱いを防ぐ・SPR-346）", async () => {
+			const apiData = {
+				workno: "RJ123456",
+				maker_id: "RG12345",
+				creaters: { voice_by: [{ id: "VA001", name: "声優A" }] },
+			} as any;
+			mockCollectionGroup.mockReturnValueOnce({ where: mockWhere });
+			mockWhere.mockReturnValueOnce({ get: mockGet });
+			mockGet.mockRejectedValueOnce(new Error("UNAVAILABLE"));
+
+			const result = await updateCreatorWorkMapping(apiData, "RJ123456");
+
+			expect(result).toEqual({ success: false, error: "UNAVAILABLE" });
+			expect(mockSet).not.toHaveBeenCalled();
+			expect(mockCommit).not.toHaveBeenCalled();
+		});
+
 		it("既存マッピングを更新する", async () => {
 			const apiData: DLsiteApiResponse = {
 				workno: "RJ123456",

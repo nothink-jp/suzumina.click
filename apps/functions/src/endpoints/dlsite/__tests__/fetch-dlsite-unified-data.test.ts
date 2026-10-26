@@ -310,6 +310,19 @@ describe("fetchDLsiteUnifiedData（エントリポイント統合）", () => {
 		);
 	});
 
+	it("既存作品の取得に失敗したら、どの作品も処理・書き込みせず run を失敗にする（SPR-346）", async () => {
+		vi.mocked(collectWorkIdsForProduction).mockResolvedValue(["RJ001", "RJ002"]);
+		vi.mocked(getExistingWorksMap).mockRejectedValue(new Error("既存作品データの取得に失敗"));
+
+		await fetchDLsiteUnifiedData(pubsubEvent());
+
+		expect(batchFetchIndividualInfo).not.toHaveBeenCalled();
+		expect(processBatchUnifiedDLsiteData).not.toHaveBeenCalled();
+		expect(updateMock).toHaveBeenCalledWith(
+			expect.objectContaining({ isInProgress: false, lastError: expect.any(String) }),
+		);
+	});
+
 	it("stableかつ当日分priceHistoryが既にある作品は通常runのdue-setから除外される", async () => {
 		const existingWorksMap = new Map<string, WorkDocument>([
 			[
