@@ -12,7 +12,7 @@ import type {
 	DLsiteApiResponse,
 } from "@suzumina.click/shared-types";
 import { isValidCreatorId } from "@suzumina.click/shared-types";
-import firestore, { Timestamp } from "../../infrastructure/database/firestore";
+import firestore, { FieldValue, Timestamp } from "../../infrastructure/database/firestore";
 import * as logger from "../../shared/logger";
 import { enqueueChangedCreators } from "./creator-recompute-queue";
 import {
@@ -390,6 +390,9 @@ export async function updateCreatorWorkMapping(
  * SPR-74 Phase B で導入。/creators の読み込みパスがこれらの denormalized
  * フィールドを使うため、書き込み時に必ず同期する必要がある。
  *
+ * primaryRole が決まらない（works が空・roles を持つ relation が無い）ときは消す。
+ * web は primaryRole を types に足して役割を表示するため、残すと古い役割が出る（SPR-386）。
+ *
  * @param creatorId クリエイターID
  */
 export async function recomputeCreatorStats(creatorId: string): Promise<void> {
@@ -400,15 +403,6 @@ export async function recomputeCreatorStats(creatorId: string): Promise<void> {
 		.get();
 
 	recordRecompute(worksSnapshot.size);
-
-	if (worksSnapshot.empty) {
-		await firestore.collection(CREATORS_COLLECTION).doc(creatorId).update({
-			workCount: 0,
-			types: [],
-			updatedAt: Timestamp.now(),
-		});
-		return;
-	}
 
 	const typesSet = new Set<CreatorType>();
 	const roleCount = new Map<CreatorType, number>();
@@ -430,14 +424,13 @@ export async function recomputeCreatorStats(creatorId: string): Promise<void> {
 		}
 	}
 
-	const update: Record<string, unknown> = {
-		workCount: worksSnapshot.size,
-		types: Array.from(typesSet),
-		updatedAt: Timestamp.now(),
-	};
-	if (primaryRole) {
-		update.primaryRole = primaryRole;
-	}
-
-	await firestore.collection(CREATORS_COLLECTION).doc(creatorId).update(update);
+	await firestore
+		.collection(CREATORS_COLLECTION)
+		.doc(creatorId)
+		.update({
+			workCount: worksSnapshot.size,
+			types: Array.from(typesSet),
+			primaryRole: primaryRole ?? FieldValue.delete(),
+			updatedAt: Timestamp.now(),
+		});
 }
