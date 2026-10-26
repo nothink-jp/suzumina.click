@@ -82,15 +82,87 @@ describe("エラーのシリアライズ", () => {
 		expect((rest.error as { message: string }).message).toBe("inner");
 	});
 
-	it("{ error: 独自オブジェクト } は message/code/details を抽出", () => {
-		error("失敗", { error: { message: "独自", code: "E_X", details: { a: 1 } } });
+	it("{ error: 独自オブジェクト } はプリミティブ値だけを残す", () => {
+		error("失敗", { error: { message: "独自", code: 7, details: { a: 1 } } });
 		const [, rest] = errorSpy.mock.calls[0] as [string, Record<string, unknown>];
-		expect(rest.error).toMatchObject({ message: "独自", code: "E_X", details: { a: 1 } });
+		expect(rest.error).toEqual({ message: "独自", code: 7 });
+	});
+});
+
+describe("エラーのシリアライズ（本番 JSON・SPR-383）", () => {
+	beforeEach(() => {
+		setEnv("production");
+		vi.stubGlobal("window", undefined);
+	});
+	afterEach(() => vi.unstubAllGlobals());
+
+	const lastJson = () => {
+		const line = logSpy.mock.calls.at(-1)?.[0] as string;
+		return { line, json: JSON.parse(line) };
+	};
+
+	it("{ error: Error } の出力に message と stack が含まれる", () => {
+		error("x", { error: new Error("boom") });
+		const { line, json } = lastJson();
+		expect(line).toContain("boom");
+		expect(json.error.message).toBe("boom");
+		expect(json.error.stack).toContain("Error: boom");
 	});
 
-	it("{ error: message なしオブジェクト } は既定値", () => {
-		error("失敗", { error: { foo: "bar" } });
-		const [, rest] = errorSpy.mock.calls[0] as [string, Record<string, unknown>];
-		expect(rest.error).toMatchObject({ message: "Unknown error", code: "UNKNOWN" });
+	it("error 以外のキーにネストした Error（cause）も展開する", () => {
+		error("x", { ctx: { cause: new Error("boom") } });
+		const { json } = lastJson();
+		expect(json.ctx.cause.message).toBe("boom");
+		expect(json.ctx.cause.stack).toContain("Error: boom");
+	});
+
+	it("Error の cause とプリミティブな独自プロパティ（code 等）を残す", () => {
+		const cause = new Error("root cause");
+		error("x", Object.assign(new Error("outer", { cause }), { code: 9 }));
+		const { json } = lastJson();
+		expect(json.error.code).toBe(9);
+		expect(json.error.cause.message).toBe("root cause");
+	});
+
+	it("Error のオブジェクト値・bigint プロパティ（GaxiosError の config 等）は出力しない", () => {
+		const testError = Object.assign(new Error("request failed"), {
+			status: 403,
+			config: { url: "https://example.test/?key=SECRET", params: { key: "SECRET" } },
+			size: 1n,
+		});
+		error("x", { error: testError });
+		const { line, json } = lastJson();
+		expect(line).not.toContain("SECRET");
+		expect(json.error.status).toBe(403);
+		expect(json.error.config).toBeUndefined();
+		expect(json.error.size).toBeUndefined();
+	});
+
+	it("payload が監視の契約キー（severity / message / timestamp）を上書きできない", () => {
+		error("real message", {
+			severity: "INFO",
+			message: "spoofed",
+			timestamp: "spoofed",
+			extra: "kept",
+		});
+		const { json } = lastJson();
+		expect(json.severity).toBe(LogLevel.ERROR);
+		expect(json.message).toBe("real message");
+		expect(json.timestamp).not.toBe("spoofed");
+		expect(json.extra).toBe("kept");
+	});
+
+	it("呼び出し元の payload を書き換えない", () => {
+		const err = new Error("boom");
+		const payload = { error: err, nested: { severity: "x" } };
+		error("x", payload);
+		expect(payload.error).toBe(err);
+		expect(payload).toEqual({ error: err, nested: { severity: "x" } });
+	});
+
+	it("Error 以外の値を直接渡すと error キーに入る", () => {
+		error("x", "thrown string");
+		const { json } = lastJson();
+		expect(json.error).toBe("thrown string");
 	});
 });
