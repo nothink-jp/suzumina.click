@@ -48,6 +48,11 @@ const IGNORED_PATHS: ReadonlySet<string> = new Set([
 	"languageDownloads[].dlCount",
 ]);
 
+/**
+ * 配列以外のオブジェクトを merge される map として扱う。
+ * WorkDocument が Timestamp 等のクラスインスタンスを持たない（日時は string ISO）前提。
+ * works に Timestamp フィールドを足すときは、ここでリーフとして比較するよう直すこと。
+ */
 function isPlainObject(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
 }

@@ -351,7 +351,7 @@ describe("unified-data-processor", () => {
 			expect(result.updates.work).toBe(true);
 		});
 
-		it("作者の変化を検出し、works / circles / creators を書き込む", async () => {
+		it("作者の変化では works / creators を書き込み、circles は同期しない", async () => {
 			const existingWork = {
 				...mockWorkData,
 				creators: { voice_by: [{ id: "creator1", name: "声優A" }], illust_by: [] },
@@ -368,8 +368,42 @@ describe("unified-data-processor", () => {
 
 			const result = await processUnifiedDLsiteData(mockApiData);
 
-			expect(result.updates).toMatchObject({ work: true, circle: true, creators: true });
+			expect(result.updates).toMatchObject({ work: true, circle: false, creators: true });
 			expect(updateCreatorWorkMapping).toHaveBeenCalledWith(mockApiData, "RJ123456");
+			expect(updateCircleWithWork).not.toHaveBeenCalled();
+		});
+
+		it("評価だけの変化では works だけを書き込み、circles / creators は同期しない", async () => {
+			const existingWork = { ...mockWorkData, rating: { stars: 4.5, count: 99 } };
+			vi.mocked(getWorkFromFirestore).mockResolvedValue(existingWork);
+
+			const result = await processUnifiedDLsiteData(mockApiData);
+
+			expect(result.updates).toMatchObject({ work: true, circle: false, creators: false });
+			expect(updateCircleWithWork).not.toHaveBeenCalled();
+			expect(updateCreatorWorkMapping).not.toHaveBeenCalled();
+		});
+
+		it("サークル名の変化では circles を同期する", async () => {
+			const existingWork = { ...mockWorkData, circle: "旧サークル名" };
+			const updatedWork = { ...mockWorkData, circle: "新サークル名" };
+			vi.mocked(getWorkFromFirestore).mockResolvedValue(existingWork);
+			vi.mocked(WorkMapper.toWork).mockReturnValue(updatedWork);
+
+			const result = await processUnifiedDLsiteData(mockApiData);
+
+			expect(result.updates).toMatchObject({ work: true, circle: true, creators: false });
+		});
+
+		it("サークルIDの変化では circles / creators の両方を同期する", async () => {
+			const existingWork = { ...mockWorkData, circleId: "RG00000" };
+			const updatedWork = { ...mockWorkData, circleId: "RG12345" };
+			vi.mocked(getWorkFromFirestore).mockResolvedValue(existingWork);
+			vi.mocked(WorkMapper.toWork).mockReturnValue(updatedWork);
+
+			const result = await processUnifiedDLsiteData(mockApiData);
+
+			expect(result.updates).toMatchObject({ work: true, circle: true, creators: true });
 		});
 
 		it("説明の変化を検出する", async () => {

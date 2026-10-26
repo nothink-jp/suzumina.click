@@ -142,14 +142,37 @@ async function updatePriceHistory(
 }
 
 /**
- * 更新が必要かチェック
+ * この作品で書き込む対象（works / circles / creators）
  */
-async function shouldSkipUpdate(
+interface UpdatePlan {
+	work: boolean;
+	circle: boolean;
+	creators: boolean;
+}
+
+const UPDATE_ALL: UpdatePlan = { work: true, circle: true, creators: true };
+
+/**
+ * `updateCircleWithWork` が使う値（maker_id / maker_name）に対応するパス。
+ * maker_name_en は WorkDocument に写していない（circleEn は常に undefined）ため検知できない。
+ */
+const CIRCLE_PATH = /^(circleId|circle)$/;
+/** `updateCreatorWorkMapping` が使う値（creaters / maker_id）に対応するパス */
+const CREATORS_PATH = /^(creators(\.|$)|circleId$)/;
+
+/**
+ * 既存作品との差分から、書き込む対象を決める
+ *
+ * SPR-346: 変更検知を全フィールドに広げたため、評価・説明だけの変化でも Circle / Creator の
+ * 同期（circle doc の get/set、collectionGroup QUERY）が走ると reads が評価変動数に比例して増える。
+ * それぞれが使う値が変わったときだけ同期する。新規作品と forceUpdate は従来どおり全部書く。
+ */
+async function planUpdates(
 	workData: WorkDocument,
 	options: ProcessingOptions,
-): Promise<boolean> {
+): Promise<UpdatePlan> {
 	if (options.forceUpdate) {
-		return false;
+		return UPDATE_ALL;
 	}
 
 	// 既存作品マップが提供されている場合は優先的に使用
@@ -162,7 +185,16 @@ async function shouldSkipUpdate(
 		existingWork = await getWorkFromFirestore(workData.productId);
 	}
 
-	return !!(existingWork && !detectChanges(existingWork, workData).hasAnyChange);
+	if (!existingWork) {
+		return UPDATE_ALL;
+	}
+
+	const { changedPaths } = detectChanges(existingWork, workData);
+	return {
+		work: changedPaths.length > 0,
+		circle: changedPaths.some((path) => CIRCLE_PATH.test(path)),
+		creators: changedPaths.some((path) => CREATORS_PATH.test(path)),
+	};
 }
 
 /**
@@ -173,18 +205,23 @@ async function performUpdates(
 	workData: WorkDocument,
 	options: ProcessingOptions,
 	result: ProcessingResult,
-	skipWorkUpdate: boolean,
+	plan: UpdatePlan,
 ): Promise<void> {
-	logger.debug(
-		`performUpdates開始: ${workData.productId}, skipWorkUpdate=${skipWorkUpdate}, skipPriceHistory=${options.skipPriceHistory}`,
-	);
+	logger.debug(`performUpdates開始: ${workData.productId}`, {
+		plan,
+		skipPriceHistory: options.skipPriceHistory,
+	});
 
-	if (!skipWorkUpdate) {
+	if (plan.work) {
 		await updateWork(workData, result);
-		await updateCircle(apiData, workData.productId, result);
-		await updateCreators(apiData, workData.productId, result);
 	} else {
 		logger.debug(`Work/Circle/Creator更新をスキップ: ${workData.productId} (変更なし)`);
+	}
+	if (plan.circle) {
+		await updateCircle(apiData, workData.productId, result);
+	}
+	if (plan.creators) {
+		await updateCreators(apiData, workData.productId, result);
 	}
 
 	// 価格履歴は常に保存を試みる（既存チェックは価格履歴保存側で行う）
@@ -219,11 +256,11 @@ export async function processUnifiedDLsiteData(
 		// APIデータをWorkDocumentに変換
 		const workData = WorkMapper.toWork(apiData);
 
-		// 既存データの存在確認（スキップ判定用）
-		const skipWorkUpdate = await shouldSkipUpdate(workData, options);
+		// 既存データとの差分から書き込む対象を決める
+		const plan = await planUpdates(workData, options);
 
 		// 関連データの更新処理
-		await performUpdates(apiData, workData, options, result, skipWorkUpdate);
+		await performUpdates(apiData, workData, options, result, plan);
 
 		// 成功判定: 主要な更新（Work, Circle, Creator）または価格履歴のうち少なくとも1つが成功
 		result.success =
