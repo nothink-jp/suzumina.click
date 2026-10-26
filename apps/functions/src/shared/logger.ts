@@ -23,13 +23,15 @@ interface LogOptions {
  * Error を JSON 化できる形に展開する
  *
  * Error の message / stack は列挙不可のため、そのまま JSON.stringify すると `{}` に潰れる（SPR-347）。
- * 列挙可能な独自プロパティは**プリミティブ値だけ**残す（Firestore / gRPC の `code` 等）。
+ * 列挙可能な独自プロパティは**プリミティブ値だけ**残す（Firestore / gRPC の `code` 等。bigint は JSON.stringify が throw するので除く）。
  * オブジェクト値は写さない: GaxiosError の `config` は `params.key`（YouTube API キー）を含み、
  * `response` は巨大・循環参照になり得るため。`cause` は Error のときだけ replacer の再帰で展開される。
  */
 function serializeError(error: Error): Record<string, unknown> {
 	const primitiveProps = Object.fromEntries(
-		Object.entries(error).filter(([, value]) => value === null || typeof value !== "object"),
+		Object.entries(error).filter(
+			([, value]) => value === null || (typeof value !== "object" && typeof value !== "bigint"),
+		),
 	);
 	return {
 		...primitiveProps,

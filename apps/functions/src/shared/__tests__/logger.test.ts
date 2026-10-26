@@ -186,6 +186,7 @@ describe("logger", () => {
 				status: 403,
 				config: { url: "https://example.test/?key=SECRET", params: { key: "SECRET" } },
 				response: { data: { huge: true } },
+				size: 1n,
 			});
 
 			logger.error("x", testError);
@@ -197,6 +198,7 @@ describe("logger", () => {
 			expect(parsed.error.status).toBe(403);
 			expect(parsed.error.config).toBeUndefined();
 			expect(parsed.error.response).toBeUndefined();
+			expect(parsed.error.size).toBeUndefined();
 		});
 
 		it("payload が監視の契約キー（severity / message / labels）を上書きできないこと", () => {
