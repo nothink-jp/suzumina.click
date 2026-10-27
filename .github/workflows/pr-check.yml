@@ -309,7 +309,8 @@ jobs:
         if: always()
         run: docker rm -f web-smoke || true
 
-  # リポジトリ横断の整合チェック（pnpm verify の lint:docs / lint:tokens / lint:ga4）。
+  # リポジトリ横断の整合チェック（pnpm verify の lint:docs / lint:tokens / lint:ga4 / test:scripts）。
+  # ジョブ名はブランチ保護の必須チェック名と結びつくため据え置き、test:scripts も同居させる。
   # パスフィルタなし: docs のみの PR では parallel-check が丸ごと skip されるため、ここで必ず拾う。
   repo-lint:
     name: Repo Lint (docs / tokens / ga4)

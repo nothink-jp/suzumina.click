@@ -59,7 +59,9 @@ jobs:
       # main に元からある advisory は警告と job summary に一覧を出すだけにする。全量ゲートだった頃は
       # main に新しい advisory が出ると依存 PR が全部赤くなり、脆弱性の修正 PR 同士が互いを塞いだ（#1067 / #1068）。
       # base 側は lockfile だけを別ディレクトリに置いて audit する（audit は install 不要）。
-      # auditConfig は両側とも PR 側の pnpm-workspace.yaml を使い、除外の追加・削除を同じ基準で比べる。
+      # 設定は両側とも PR 側を使う: pnpm-workspace.yaml（auditConfig）で除外の基準を揃え、
+      # package.json（packageManager）で pnpm の版を揃える（base の package.json だと pnpm を上げる PR で
+      # base 側だけ旧版の pnpm が audit し、出力形式の差で誤って落ちうる）。audit が読むのは lockfile のみ。
       - name: Audit gate (PR diff, moderate+)
         if: github.event_name == 'pull_request'
         env:
@@ -69,8 +71,7 @@ jobs:
           base_dir="$RUNNER_TEMP/audit-base"
           mkdir -p "$base_dir"
           git show "$BASE_SHA:pnpm-lock.yaml" > "$base_dir/pnpm-lock.yaml"
-          git show "$BASE_SHA:package.json" > "$base_dir/package.json"
-          cp pnpm-workspace.yaml "$base_dir/pnpm-workspace.yaml"
+          cp package.json pnpm-workspace.yaml "$base_dir/"
 
           # advisory があると pnpm audit は非ゼロで終わるため終了コードは見ない。
           # JSON として読めない出力（registry 障害等）は audit-diff.mjs が fail-closed で落とす。

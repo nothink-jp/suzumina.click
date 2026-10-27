@@ -11,6 +11,8 @@
  * main の既知分の検知は、この警告表示・Dependabot security updates・週次の全量 audit が受け持つ。
  *
  * 比較キーは「GHSA ID + パッケージ名」。同じ GHSA が別パッケージへ広がった場合も新規として落とす。
+ * 依存経路（findings[].paths）はキーに含めない: lockfile の小さな揺れで誤って落ちるのを避けるため。
+ * その代わり、main では dev 経由だけだった既知 advisory を PR が本番経路にも持ち込んでも「既知」として通る。
  * 判定対象は moderate 以上（従来の `--audit-level moderate` と同じ線）。除外は pnpm-workspace.yaml の
  * auditConfig.ignoreGhsas が pnpm 側で効くため、ここでは扱わない。
  * 入力が audit の JSON として読めないとき（registry 障害等）は通さずに落とす（fail-closed）。
@@ -32,20 +34,26 @@ export function parseAudit(report) {
 	if (typeof report !== "object" || report === null || typeof report.advisories !== "object") {
 		throw new Error("pnpm audit の JSON ではありません（advisories がない）");
 	}
-	return Object.values(report.advisories)
-		.filter((a) => (SEVERITY_RANK[a.severity] ?? 0) >= SEVERITY_RANK[GATE_SEVERITY])
-		.map((a) => {
-			const ghsa = a.github_advisory_id ?? String(a.id);
-			return {
-				key: `${ghsa}|${a.module_name}`,
-				ghsa,
-				module: a.module_name,
-				severity: a.severity,
-				title: a.title,
-				url: a.url,
-				patched: a.patched_versions,
-			};
-		});
+	return (
+		Object.values(report.advisories)
+			// 未知の severity は判定対象に含める（fail-closed）
+			.filter(
+				(a) =>
+					(SEVERITY_RANK[a.severity] ?? SEVERITY_RANK.critical) >= SEVERITY_RANK[GATE_SEVERITY],
+			)
+			.map((a) => {
+				const ghsa = a.github_advisory_id ?? String(a.id);
+				return {
+					key: `${ghsa}|${a.module_name}`,
+					ghsa,
+					module: a.module_name,
+					severity: a.severity,
+					title: a.title,
+					url: a.url,
+					patched: a.patched_versions,
+				};
+			})
+	);
 }
 
 /**

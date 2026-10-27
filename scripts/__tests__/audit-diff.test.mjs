@@ -35,6 +35,11 @@ describe("parseAudit", () => {
 		);
 	});
 
+	it("未知の severity は判定対象に含める（fail-closed）", () => {
+		const unknown = advisory(5, "GHSA-xxxx-xxxx-xxxx", "mystery", "severe");
+		assert.equal(parseAudit(report(unknown)).length, 1);
+	});
+
 	it("advisories を持たない入力は読めないものとして投げる（fail-closed）", () => {
 		assert.throws(() => parseAudit({ error: "ERR_PNPM_AUDIT_BAD_RESPONSE" }));
 		assert.throws(() => parseAudit(null));
