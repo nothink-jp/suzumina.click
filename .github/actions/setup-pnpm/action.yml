@@ -4,7 +4,8 @@ description: pnpm と Node.js を用意し、lockfile どおりに依存をイ�
 # 呼び出し側は actions/checkout の後に置く（ローカル action はリポジトリ内から解決されるため）。
 # input は持たせない: 全ジョブが同じ手順で揃っていることがこの action の存在理由。
 # 改修の検証: knip.yml と pr-check.yml の secret-scan はパスフィルタなしで全 PR に走るため、
-# この action を変えた PR 上で自己検証される（各 workflow の paths に足す必要はない）。
+# この action を変えた PR 上で自己検証される。加えて pr-check.yml の root フィルタが
+# この action を拾い、parallel-check で全パッケージの lint / typecheck / test を走らせる（SPR-341）。
 runs:
   using: composite
   steps:
