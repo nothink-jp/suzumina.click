@@ -128,6 +128,16 @@ jobs:
         run: |
           echo "🚀 Deploying functions in parallel..."
           
+          # env / secrets の正本はここ（ADR-009）。--set-env-vars / --set-secrets は既存の値を全置換するため、
+          # ここに無いものは live から消える。src が読まない env は置かない（SPR-340）。
+          #
+          # kill switch（*_ENABLED）は既定値 true を明示している。src は「"false" 以外なら有効」と読む。
+          # 障害時の即時切替は Cloud Run 側の env を直接更新する（ソースの再デプロイ不要・新リビジョンが立つ）:
+          #   gcloud run services update <service> --region asia-northeast1 --update-env-vars <KEY>=false
+          #   （<service> は関数名の小文字: fetchdlsiteunifieddata / fetchyoutubevideos）
+          # この手動切替は次のデプロイで true に戻る。切ったまま main をデプロイし続けるなら、
+          # 下の値を false に変えて PR でマージする。
+          #
           # 各関数のデプロイを並列実行
           declare -A deploy_pids
           
@@ -145,7 +155,8 @@ jobs:
             --trigger-topic youtube-video-fetch-trigger \
             --region asia-northeast1 \
             --project ${{ secrets.GCP_PROJECT_ID }} \
-            --set-env-vars NODE_ENV=production,FUNCTION_SIGNATURE_TYPE=cloudevent,FUNCTION_TARGET=fetchYouTubeVideos \
+            --set-env-vars NODE_ENV=production,FUNCTION_SIGNATURE_TYPE=cloudevent,FUNCTION_TARGET=fetchYouTubeVideos,YOUTUBE_STATS_TIER_REFRESH_ENABLED=true,YOUTUBE_PLAYLIST_CACHE_ENABLED=true \
+            --set-secrets YOUTUBE_API_KEY=YOUTUBE_API_KEY:latest \
             --memory 512Mi \
             --timeout 540s \
             --max-instances 3 \
@@ -159,6 +170,7 @@ jobs:
           # 超過後のリクエスト外実行（CPU スロットリング下）で Individual Info API が
           # 15 秒タイムアウトを連発していた（失敗率アラートの実発火要因）。
           # アプリ側の打ち切りは MAX_EXECUTION_TIME=480s（process-batch.ts・run 起動時点基準）。
+          # 並列度（MAX_CONCURRENT_API_REQUESTS）も process-batch.ts の定数が正本で、env では変えない。
           gcloud functions deploy fetchDLsiteUnifiedData \
             --gen2 \
             --source ${{ env.DEPLOYMENT_SOURCE }} \
@@ -167,7 +179,7 @@ jobs:
             --trigger-topic dlsite-individual-api-trigger \
             --region asia-northeast1 \
             --project ${{ secrets.GCP_PROJECT_ID }} \
-            --set-env-vars NODE_ENV=production,FUNCTION_SIGNATURE_TYPE=cloudevent,FUNCTION_TARGET=fetchDLsiteUnifiedData,INDIVIDUAL_INFO_API_ENABLED=true,API_ONLY_MODE=true,MAX_CONCURRENT_API_REQUESTS=5,API_REQUEST_DELAY_MS=500,ENABLE_DATA_VALIDATION=true,MINIMUM_QUALITY_SCORE=80,ENABLE_TIMESERIES_INTEGRATION=true,LOG_LEVEL=info \
+            --set-env-vars NODE_ENV=production,FUNCTION_SIGNATURE_TYPE=cloudevent,FUNCTION_TARGET=fetchDLsiteUnifiedData,DLSITE_TIER_FILTERING_ENABLED=true \
             --memory 512Mi \
             --timeout 540s \
             --max-instances 1 \

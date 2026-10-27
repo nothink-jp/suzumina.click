@@ -15,6 +15,7 @@ import {
 import * as logger from "../../shared/logger";
 
 // バッチ処理設定
+// 並列度の正本はこの定数（env では上書きしない＝SPR-340）
 const MAX_CONCURRENT_API_REQUESTS = 5; // 6 → 3 → 5（バッチ処理を効率化: 50件を10回の並列処理で実行）
 const API_REQUEST_DELAY = 400;
 export const BATCH_SIZE = 50; // 100 → 50に削減（エラー率低下とタイムアウト回避）

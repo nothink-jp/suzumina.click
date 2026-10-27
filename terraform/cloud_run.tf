@@ -142,17 +142,6 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
         }
       }
 
-      # YouTube API Key (既存のSecret Managerから取得)
-      env {
-        name = "YOUTUBE_API_KEY"
-        value_source {
-          secret_key_ref {
-            secret  = google_secret_manager_secret.secrets["YOUTUBE_API_KEY"].secret_id
-            version = "latest"
-          }
-        }
-      }
-
       # Google Analytics Measurement ID
       env {
         name  = "NEXT_PUBLIC_GA_MEASUREMENT_ID"
