@@ -87,7 +87,10 @@ overrides:
   # >=6.14.2 <=6.15.3: bracket-key の comma parsing で arrayLimit を回避できる（GHSA-x5fp-wj9c-mxmx）。
   # どちらも 6.16.0 で修正。依存元の express@5 / body-parser は ^6.14.0 を要求しており範囲内だが、
   # 自然解決が 6.15.3 に留まるため引き上げ（apps/functions の functions-framework 経由＝本番ランタイム）。
-  qs: ">=6.16.0"
+  # >=6.7.0 <=6.16.0: arrayFormat 'comma' の stringify が非 callable な own toString を持つ要素で
+  # 未捕捉の TypeError を投げる DoS（GHSA-6pq8-jhm2-2vcw）。6.16.1 で修正。floor の 6.16.0 に解決値が
+  # 張り付いていたため引き上げ（経路は express / body-parser / googleapis-common）。
+  qs: ">=6.16.1"
   # @grpc/grpc-js >=1.14.0 <1.14.5: 特定構成で getAuthContext が未認可の証明書を認可済みとして返す
   # （GHSA-m9gg-hp2v-232j）/ method handler の例外メッセージを status message でクライアントへ送る（low）。
   # 1.14.5 で修正。依存元 google-gax（Firestore 経由＝本番ランタイム）は ^1.x を要求し範囲内だが、
