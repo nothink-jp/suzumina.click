@@ -95,9 +95,6 @@ describe("Audio Button Server Actions", () => {
 			isActive: true,
 		});
 
-		// Mock YouTube API key
-		(process.env as Record<string, string | undefined>).YOUTUBE_API_KEY = "test-api-key";
-
 		// Setup collection chain - collection should return a query that has all methods
 		const mockQuery = {
 			add: mockAdd,

@@ -13,9 +13,6 @@ declare namespace NodeJS {
 		// Google Cloud
 		readonly GOOGLE_CLOUD_PROJECT: string;
 
-		// YouTube API
-		readonly YOUTUBE_API_KEY?: string;
-
 		// Node Environment
 		readonly NODE_ENV: "development" | "production" | "test";
 	}
