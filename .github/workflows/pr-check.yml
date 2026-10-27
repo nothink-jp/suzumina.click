@@ -53,6 +53,8 @@ jobs:
             # どれかが変わったら全パッケージを変更扱いにする。各パッケージの tsconfig は
             # typescript-config を extends し、biome.json はルートを継承するため、
             # ここが変わると apps/** に差分がなくても結果が変わりうる。
+            # ルートの vitest.config.ts は projects の列挙のみで CI（各パッケージの vitest run）は
+            # 読まないが、ルートからの vitest 起動時の構成として安全側に含める。
             # pr-check.yml 自身も含め、本ジョブの改修を当該 PR 上で自己検証する。
             root:
               - 'package.json'
@@ -90,8 +92,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: changes
     if: needs.changes.outputs.web == 'true' || needs.changes.outputs.functions == 'true' || needs.changes.outputs.shared-types == 'true' || needs.changes.outputs.ui == 'true' || needs.changes.outputs.root == 'true'
-    # ルート設定変更時は全パッケージを一括実行するため、パッケージ単位の差分実行より長めに取る
-    timeout-minutes: 12
+    timeout-minutes: 8
     
     steps:
       - name: Checkout code
