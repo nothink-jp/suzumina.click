@@ -506,18 +506,7 @@ resource "google_project_iam_member" "fetch_youtube_videos_firestore_user" {
   depends_on = [google_service_account.fetch_youtube_videos_sa]
 }
 
-# サービスアカウントにYOUTUBE_API_KEYシークレットへのアクセス権限を付与
-resource "google_secret_manager_secret_iam_member" "youtube_api_key_accessor" {
-  project   = var.gcp_project_id
-  secret_id = google_secret_manager_secret.secrets["YOUTUBE_API_KEY"].secret_id
-  role      = "roles/secretmanager.secretAccessor" # シークレットアクセサーロール
-  member    = "serviceAccount:${google_service_account.fetch_youtube_videos_sa.email}"
-
-  depends_on = [
-    google_secret_manager_secret.secrets,
-    google_service_account.fetch_youtube_videos_sa,
-  ]
-}
+# YOUTUBE_API_KEY の読み取り権限は function_youtube_videos.tf の youtube_video_secret_accessor が正本（SPR-393）
 
 # サービスアカウントにログライターロールを付与
 resource "google_project_iam_member" "fetch_youtube_videos_log_writer" {
