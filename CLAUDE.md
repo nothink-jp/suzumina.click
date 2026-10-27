@@ -52,7 +52,7 @@ LLM に毎回全部読ませて再構築させない。能動的に効かせた�
 ## 1. 能動ルール（必ず守る）
 
 - **パッケージマネージャ**: pnpm のみ。npm は禁止（`pnpm test` / `pnpm dev:local` / `pnpm build`）
-- **完了前チェック**: 必ず **`pnpm verify`**（lint:docs + lint:tokens + lint:ga4 + lint + typecheck + test を一括・各 `vitest.config.ts` のカバレッジ閾値も強制）。
+- **完了前チェック**: 必ず **`pnpm verify`**（lint:docs + lint:tokens + lint:ga4 + test:scripts + lint + typecheck + test を一括・各 `vitest.config.ts` のカバレッジ閾値も強制）。
   これが手元の**完全版ゲート**。pre-push hook（lefthook）は変更パッケージの `typecheck:fast`（tsgo）のみで lint/test を含まず、
   CI（`pr-check.yml`）は変更パッケージ単位の差分実行と scope が異なる（＝同一判定ではない）。最終確認は `pnpm verify` を正とする。
   個別確認は `pnpm lint` / `pnpm typecheck` / `pnpm test`。doc・トークン・GA4 の整合は次の3つ:

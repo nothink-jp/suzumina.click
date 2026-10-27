@@ -336,6 +336,11 @@ jobs:
       - name: lint:ga4
         if: ${{ !cancelled() }}
         run: node --run lint:ga4
+      # scripts/ の node スクリプト自身のテスト（node:test・依存ゼロ）。audit-diff.mjs のように
+      # CI のゲートを担うスクリプトがあるため、パッケージ外でも PR ごとに検証する。
+      - name: test:scripts
+        if: ${{ !cancelled() }}
+        run: node --run test:scripts
 
   secret-scan:
     name: Secret Scan

@@ -18,6 +18,8 @@ on:
       - 'packages/*/package.json'
       - 'apps/web/Dockerfile'
       - '.github/workflows/security-scan.yml'
+      # 依存 audit の差分ゲート本体（改修を当該 PR 上で自己検証する）
+      - 'scripts/audit-diff.mjs'
   # マージ前にイメージ/依存スキャンを走らせる(以前は push 後の main でしか走らず、
   # PR 時点で脆弱性を検出できなかった)。paths は push と同一(アンカーで同期しドリフト再発を防ぐ)
   pull_request:
@@ -50,11 +52,35 @@ jobs:
       - name: Setup pnpm & install
         uses: ./.github/actions/setup-pnpm
       
-      # PR を止めるゲート（moderate 以上）。該当があれば一覧はこのステップのログに出る。
       # audit の結果は lockfile と pnpm-workspace.yaml の auditConfig.ignoreGhsas（除外する advisory の正本）で決まる。
-      # どちらもこの workflow の paths に入っているので、結果を変える PR は過不足なく拾える
-      # （PR タイトルの文字列で判定するより確実）。schedule / main push でも赤くなる＝新規 CVE の通知になる。
-      - name: Audit gate (moderate+)
+      # どちらもこの workflow の paths に入っているので、結果を変える PR は過不足なく拾える。
+      #
+      # PR は差分ゲート（SPR-392）: PR が新しく持ち込んだ advisory（moderate 以上）だけで落とし、
+      # main に元からある advisory は警告と job summary に一覧を出すだけにする。全量ゲートだった頃は
+      # main に新しい advisory が出ると依存 PR が全部赤くなり、脆弱性の修正 PR 同士が互いを塞いだ（#1067 / #1068）。
+      # base 側は lockfile だけを別ディレクトリに置いて audit する（audit は install 不要）。
+      # auditConfig は両側とも PR 側の pnpm-workspace.yaml を使い、除外の追加・削除を同じ基準で比べる。
+      - name: Audit gate (PR diff, moderate+)
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git fetch --no-tags --depth=1 origin "$BASE_SHA"
+          base_dir="$RUNNER_TEMP/audit-base"
+          mkdir -p "$base_dir"
+          git show "$BASE_SHA:pnpm-lock.yaml" > "$base_dir/pnpm-lock.yaml"
+          git show "$BASE_SHA:package.json" > "$base_dir/package.json"
+          cp pnpm-workspace.yaml "$base_dir/pnpm-workspace.yaml"
+
+          # advisory があると pnpm audit は非ゼロで終わるため終了コードは見ない。
+          # JSON として読めない出力（registry 障害等）は audit-diff.mjs が fail-closed で落とす。
+          (cd "$base_dir" && pnpm audit --json > "$RUNNER_TEMP/audit-base.json") || true
+          pnpm audit --json > "$RUNNER_TEMP/audit-head.json" || true
+          node scripts/audit-diff.mjs "$RUNNER_TEMP/audit-base.json" "$RUNNER_TEMP/audit-head.json"
+
+      # main（push / schedule）は全量ゲート。main に残っている既知の advisory はここで赤くなる。
+      - name: Audit gate (full, moderate+)
+        if: github.event_name != 'pull_request'
         run: pnpm audit --audit-level moderate
 
   container-scan:
