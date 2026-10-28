@@ -47,6 +47,7 @@ describe("refreshGuildStatusIfNeeded", () => {
 		vi.clearAllMocks();
 		vi.useFakeTimers();
 		vi.setSystemTime(NOW);
+		// guild-sync は NODE_ENV で分岐しない。isDev 限定ログの再混入を防ぐため本番環境で検証する
 		vi.stubEnv("NODE_ENV", "production");
 		mockFindMany.mockResolvedValue([discordAccount]);
 		mockUpdate.mockResolvedValue(undefined);
@@ -79,6 +80,29 @@ describe("refreshGuildStatusIfNeeded", () => {
 			reason: "token_missing",
 			discordId: "123",
 		});
+	});
+
+	it("トークン失効済みなら Discord API を呼ばず、warn（token_expired）", async () => {
+		mockFindMany.mockResolvedValue([
+			{ ...discordAccount, accessTokenExpiresAt: new Date("2026-05-31T00:00:00.000Z") },
+		]);
+		const user = makeUser();
+		expect(await refreshGuildStatusIfNeeded("123", "ba-1", user)).toBe(user);
+		expect(mockFetchMembership).not.toHaveBeenCalled();
+		expect(mockWarn).toHaveBeenCalledWith(SKIP_MESSAGE, {
+			reason: "token_expired",
+			discordId: "123",
+		});
+	});
+
+	it("失効前のトークンなら Discord API を呼ぶ", async () => {
+		mockFindMany.mockResolvedValue([
+			{ ...discordAccount, accessTokenExpiresAt: new Date("2026-06-02T00:00:00.000Z") },
+		]);
+		mockFetchMembership.mockResolvedValue({ guildId: "g", userId: "123", isMember: true });
+		await refreshGuildStatusIfNeeded("123", "ba-1", makeUser());
+		expect(mockFetchMembership).toHaveBeenCalledWith("token", "123");
+		expect(mockWarn).not.toHaveBeenCalled();
 	});
 
 	it("Discord API 失敗（null）は判定を更新せず、本番でも warn（membership_fetch_failed）", async () => {

@@ -15,8 +15,13 @@ import { firestoreOps } from "./firestore-adapter";
 // 直接 getFirestore().collection("ba_account") を叩くと Cloud SQL 差し替え時の局所性が崩れるため。
 const ops = firestoreOps();
 
-/** account モデルから Discord アクセストークンを取得（日次 guild チェック用 / アダプタ経由）。失敗は呼び出し側で扱う */
-async function getDiscordAccessToken(betterAuthUserId: string): Promise<string | undefined> {
+/**
+ * account モデルから Discord アクセストークンと失効時刻を取得（日次 guild チェック用 / アダプタ経由）。失敗は呼び出し側で扱う。
+ * ba_account の値を直接読むだけで refresh はしない（失効後は再ログインまで取り直されない）。
+ */
+async function getDiscordAccessToken(
+	betterAuthUserId: string,
+): Promise<{ accessToken: string; expiresAt?: Date } | undefined> {
 	const accounts = await ops.findMany({
 		model: "account",
 		where: [{ field: "userId", value: betterAuthUserId, operator: "eq", connector: "AND" }],
@@ -24,17 +29,25 @@ async function getDiscordAccessToken(betterAuthUserId: string): Promise<string |
 	for (const acc of accounts) {
 		const providerId = acc.providerId as string | undefined;
 		const accessToken = acc.accessToken as string | undefined;
-		if (providerId === "discord" && accessToken) return accessToken;
+		const expiresAt = acc.accessTokenExpiresAt;
+		if (providerId === "discord" && accessToken) {
+			return { accessToken, expiresAt: expiresAt instanceof Date ? expiresAt : undefined };
+		}
 	}
 	return undefined;
 }
 
 /** 同期を諦めて前回値を維持した理由（`reason` は監視のフィルタ対象＝英語の固定値） */
-type GuildSyncSkipReason = "token_missing" | "membership_fetch_failed" | "sync_failed";
+type GuildSyncSkipReason =
+	| "token_missing"
+	| "token_expired"
+	| "membership_fetch_failed"
+	| "sync_failed";
 
 /**
  * 同期スキップを本番でも warn に出す（無音で前回値を使い続けない）。
- * 失敗時は lastGuildCheckDate を進めないため、同日中は enrich のたび（cookieCache 切れごと）に再試行・再ログされる。
+ * 失敗時は lastGuildCheckDate を進めないため、enrich のたび（cookieCache 切れごと）に再試行・再ログされる。
+ * `token_expired` は再ログインまで解消しない定常状態なので、日をまたいで出続ける（一時障害と reason で区別する）。
  */
 function warnGuildSyncSkipped(reason: GuildSyncSkipReason, discordId: string, err?: unknown): void {
 	warn("better-auth: guild 同期をスキップ（前回値を維持）", {
@@ -61,7 +74,12 @@ export async function refreshGuildStatusIfNeeded(
 			warnGuildSyncSkipped("token_missing", discordId);
 			return userData;
 		}
-		const guildMembership = await fetchDiscordGuildMembership(token, discordId);
+		// 失効済みトークンで Discord API を叩いても 401 が確定しているため、呼ばずに理由を分けて返す
+		if (token.expiresAt && token.expiresAt.getTime() <= Date.now()) {
+			warnGuildSyncSkipped("token_expired", discordId);
+			return userData;
+		}
+		const guildMembership = await fetchDiscordGuildMembership(token.accessToken, discordId);
 		// null は API 呼び出し自体の失敗（トークン失効・レート制限等）を示す。
 		// 「非メンバー確定」と取り違えて false を書き込むと、以後ずっと復旧できなくなるため
 		// 失敗時は判定を更新せず現状の userData をそのまま維持する。
