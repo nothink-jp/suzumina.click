@@ -2,12 +2,13 @@
  * 初回 Discord 連携時にアプリ `users/{discordId}` を自動作成する。
  *
  * account フックは**新鮮なアクセストークン**を持つため、ここで guild を取得して
- * 初回から正しい isFamilyMember を反映する。既存ユーザー（正本 = 既存 users doc）は尊重する。
+ * 初回から正しい isFamilyMember を反映する。既存ユーザー（正本 = 既存 users doc）は尊重する
+ * （再連携などで account が作り直されても、`createUserIfAbsent` が上書きしない）。
  * better-auth の databaseHooks.account.create.after（auth.ts）から呼ばれる。
  */
 import { SUZUMINA_GUILD_ID } from "@suzumina.click/shared-types";
 import { error as logError, warn } from "@/lib/logger";
-import { createUser, userExists } from "@/lib/user-firestore";
+import { createUserIfAbsent } from "@/lib/user-firestore";
 import { extractAvatarHash, fetchDiscordGuildMembership } from "./discord-guild";
 import { type FirestoreOps, firestoreOps } from "./firestore-adapter";
 
@@ -52,7 +53,6 @@ export async function createAppUserOnFirstSignup(account: FirstSignupAccount): P
 	if (account.providerId !== "discord" || !account.accessToken) return;
 	const discordId = account.accountId;
 	try {
-		if (await userExists(discordId)) return;
 		// プロフィール（name/email/image）は better-auth user 側にあるため読み出す（アダプタ経由）
 		const baUser = await ops.findOne({
 			model: "user",
@@ -64,7 +64,7 @@ export async function createAppUserOnFirstSignup(account: FirstSignupAccount): P
 			image?: string;
 		};
 		const fetched = await fetchDiscordGuildMembership(account.accessToken, discordId);
-		// 取得失敗でも作成は止めず非メンバーで作る。createUser が lastGuildCheckDate を当日にするため
+		// 取得失敗でも作成は止めず非メンバーで作る。createUserIfAbsent が lastGuildCheckDate を当日にするため
 		// guild-sync の再判定は翌 JST 日になる（ファミリーでもその日は一般枠）。見えるよう warn に残す
 		if (!fetched.ok) {
 			warn("better-auth: 初回サインアップの guild 取得失敗（非メンバーとして作成）", {
@@ -80,7 +80,7 @@ export async function createAppUserOnFirstSignup(account: FirstSignupAccount): P
 					userId: discordId,
 					isMember: false,
 				};
-		await createUser({
+		await createUserIfAbsent({
 			discordUser: {
 				id: discordId,
 				username: bu.name || bu.email?.split("@")[0] || "Unknown",

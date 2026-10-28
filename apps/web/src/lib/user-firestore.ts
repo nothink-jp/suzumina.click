@@ -75,10 +75,19 @@ export async function getUserByDiscordId(discordId: string): Promise<FrontendUse
 	}
 }
 
+/** gRPC ステータス ALREADY_EXISTS（`.create()` の対象ドキュメントが既にあるときに Firestore が返す） */
+const FIRESTORE_ALREADY_EXISTS = 6;
+
 /**
- * 新しいユーザーを作成
+ * `users/{discordId}` が無ければ新規作成する。既にあれば何もせず `{ created: false }` を返す
+ * （既存ドキュメントが正本・上書きしない）。
+ * 存在判定は事前の読み取りではなく `.create()` の ALREADY_EXISTS で行うため、読み取りの失敗が
+ * 「存在しない」と誤判定されて既存ユーザーを初期値で上書きすることは構造的に起きない（SPR-396）。
+ * @throws ALREADY_EXISTS 以外の作成失敗（スキーマ検証・Firestore エラーは cause に残す）
  */
-export async function createUser(input: CreateUserInput): Promise<FrontendUserData> {
+export async function createUserIfAbsent(
+	input: CreateUserInput,
+): Promise<{ created: true; user: FrontendUserData } | { created: false }> {
 	try {
 		const firestore = getFirestore();
 		const now = new Date().toISOString();
@@ -123,10 +132,13 @@ export async function createUser(input: CreateUserInput): Promise<FrontendUserDa
 		// スキーマ検証
 		const validatedData = FirestoreUserSchema.parse(userData);
 
-		// Firestoreに保存
-		await firestore.collection("users").doc(input.discordUser.id).set(validatedData);
-		return convertToFrontendUser(validatedData);
+		// 既存ドキュメントがあれば ALREADY_EXISTS で失敗する（set と違い上書きしない）
+		await firestore.collection("users").doc(input.discordUser.id).create(validatedData);
+		return { created: true, user: convertToFrontendUser(validatedData) };
 	} catch (error) {
+		if ((error as { code?: unknown } | null)?.code === FIRESTORE_ALREADY_EXISTS) {
+			return { created: false };
+		}
 		throw new Error("ユーザー作成に失敗しました", { cause: error });
 	}
 }
@@ -180,18 +192,5 @@ export async function updateLastLogin(discordId: string): Promise<void> {
 	} catch (error) {
 		// ログイン時刻更新の失敗は致命的ではないため投げないが、本番でも観測できるよう warn に出す
 		warn("updateLastLogin 失敗", { discordId, error });
-	}
-}
-
-/**
- * ユーザーが存在するかチェック
- */
-export async function userExists(discordId: string): Promise<boolean> {
-	try {
-		const firestore = getFirestore();
-		const userDoc = await firestore.collection("users").doc(discordId).get();
-		return userDoc.exists;
-	} catch (_error) {
-		return false;
 	}
 }
