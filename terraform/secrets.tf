@@ -56,8 +56,18 @@ locals {
     }
   ]
 
+  # お問い合わせフォームのボット対策（Cloudflare Turnstile・SPR-398）
+  # ウィジェット自体は Cloudflare ダッシュボードで作る（cloudflare_turnstile_widget は secret を
+  # tfstate に平文で持つため使わない＝SPR-374 と同じ理由）。値は console 等で out-of-band に入れる
+  contact_secrets = [
+    {
+      id          = "TURNSTILE_SECRET_KEY"
+      description = "Cloudflare Turnstile secret key for contact form verification"
+    }
+  ]
+
   # すべてのシークレットをまとめる
-  all_secrets = concat(local.api_secrets, local.auth_secrets, local.email_secrets)
+  all_secrets = concat(local.api_secrets, local.auth_secrets, local.email_secrets, local.contact_secrets)
 }
 
 # シークレットの作成
@@ -71,7 +81,7 @@ resource "google_secret_manager_secret" "secrets" {
 
   # メタデータとしてシークレットの説明を追加
   labels = merge(local.common_secret_settings.labels, {
-    "category" = contains(["YOUTUBE_API_KEY", "GEMINI_API_KEY"], each.key) ? "api" : contains(["RESEND_API_KEY", "CONTACT_EMAIL_RECIPIENTS"], each.key) ? "email" : "auth"
+    "category" = contains(["YOUTUBE_API_KEY", "GEMINI_API_KEY"], each.key) ? "api" : contains(["RESEND_API_KEY", "CONTACT_EMAIL_RECIPIENTS"], each.key) ? "email" : contains(["TURNSTILE_SECRET_KEY"], each.key) ? "contact" : "auth"
   })
 
   annotations = {
@@ -130,7 +140,7 @@ output "secrets_info" {
     for id, secret in google_secret_manager_secret.secrets :
     id => {
       name     = secret.name
-      category = contains(["YOUTUBE_API_KEY", "GEMINI_API_KEY"], id) ? "api" : contains(["RESEND_API_KEY", "CONTACT_EMAIL_RECIPIENTS"], id) ? "email" : "auth"
+      category = contains(["YOUTUBE_API_KEY", "GEMINI_API_KEY"], id) ? "api" : contains(["RESEND_API_KEY", "CONTACT_EMAIL_RECIPIENTS"], id) ? "email" : contains(["TURNSTILE_SECRET_KEY"], id) ? "contact" : "auth"
     }
   }
   description = "作成されたシークレットの一覧"
