@@ -10,7 +10,9 @@ import { cache } from "react";
 import { sanitizeRelativePath } from "./auth-redirect";
 
 /**
- * 現在のログインユーザー（アプリの UserSession）を返す。未認証/無効ユーザーは null。
+ * 現在のログインユーザー（アプリの UserSession）を返す。null は未認証（または users 未作成・enrich 失敗）のみ。
+ * **`isActive=false` の無効ユーザーも返す**。無効ユーザーを弾く操作は呼び出し側で `!user.isActive` を併記する。
+ * 副作用: 初回取得時に enrich（`lib/better-auth/enrich-session.ts`）が日次 guild 同期・日次 lastLogin 更新を行う。
  * React `cache()` でリクエスト内メモ化する（site-header + ページ等で複数回呼んでも
  * better-auth の getSession＝Firestore read は 1 リクエスト 1 回に集約）（SPR-161）。
  */
