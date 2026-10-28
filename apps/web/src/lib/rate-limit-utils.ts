@@ -1,11 +1,11 @@
 import type { UserFlags } from "@suzumina.click/shared-types";
 
 /**
- * JST日付を取得（YYYY-MM-DD形式）
+ * JST日付を取得（YYYY-MM-DD形式）。省略時は現在時刻
  */
-export function getJSTDateString(): string {
+export function getJSTDateString(date: Date = new Date()): string {
 	// sv-SE ロケールはISO 8601形式（YYYY-MM-DD）を返す
-	return new Date().toLocaleDateString("sv-SE", {
+	return date.toLocaleDateString("sv-SE", {
 		timeZone: "Asia/Tokyo",
 	});
 }
@@ -41,6 +41,16 @@ export function calculateDailyLimit(flags: UserFlags | undefined): number {
 export function hasDateChangedJST(lastDate: string | undefined): boolean {
 	if (!lastDate) return true;
 	return lastDate !== getJSTDateString();
+}
+
+/**
+ * ISO 日時が JST で今日か（欠落・不正値は false）
+ */
+export function isTodayJST(iso: string | undefined): boolean {
+	if (!iso) return false;
+	const date = new Date(iso);
+	if (Number.isNaN(date.getTime())) return false;
+	return getJSTDateString(date) === getJSTDateString();
 }
 
 /**

@@ -5,6 +5,7 @@ import {
 	getJSTDateString,
 	getNextJSTMidnight,
 	hasDateChangedJST,
+	isTodayJST,
 } from "../rate-limit-utils";
 
 describe("rate-limit-utils", () => {
@@ -12,6 +13,19 @@ describe("rate-limit-utils", () => {
 		it("YYYY-MM-DD形式の日付文字列を返すこと", () => {
 			const result = getJSTDateString();
 			expect(result).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+		});
+	});
+
+	describe("isTodayJST", () => {
+		it("JST 日付境界で判定し、欠落・不正値は false", () => {
+			vi.useFakeTimers();
+			// 2026-06-01 12:00 JST
+			vi.setSystemTime(new Date("2026-06-01T03:00:00.000Z"));
+			expect(isTodayJST("2026-05-31T15:00:00.000Z")).toBe(true); // 06-01 00:00 JST
+			expect(isTodayJST("2026-05-31T14:59:59.000Z")).toBe(false); // 05-31 23:59 JST
+			expect(isTodayJST(undefined)).toBe(false);
+			expect(isTodayJST("not-a-date")).toBe(false);
+			vi.useRealTimers();
 		});
 	});
 
