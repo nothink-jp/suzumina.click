@@ -259,9 +259,6 @@ export default function PrivacyPage() {
 										<p>
 											<strong>範囲:</strong> お問い合わせページのみ
 										</p>
-										<p>
-											<strong>Cookie:</strong> 広告・追跡目的では使用しません
-										</p>
 									</div>
 								</div>
 							</div>
