@@ -97,13 +97,18 @@ User Agent: ${data.userAgent}
 			? process.env.CONTACT_EMAIL_RECIPIENTS.split(",").map((email) => email.trim())
 			: ["nothink@nothink.jp"];
 
-		await resend.emails.send({
+		// Resend は API エラー（鍵・ドメイン・レート制限等）では throw せず { error } を返すので、明示的に見る
+		const { error } = await resend.emails.send({
 			from: "suzumina.click <no-reply@suzumina.click>",
 			to: recipients,
 			subject: `[suzumina.click] ${categoryLabel} - ${data.subject}`,
 			html: emailHtml,
 			text: emailText,
 		});
+		if (error) {
+			logError("Resend rejected contact notification email", { error });
+			return false;
+		}
 
 		return true;
 	} catch (error) {

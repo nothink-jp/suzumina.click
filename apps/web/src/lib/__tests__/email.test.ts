@@ -10,6 +10,7 @@ vi.mock("resend", () => ({
 vi.mock("../logger", () => ({ error: vi.fn() }));
 
 const { sendContactNotification } = await import("../email");
+const { error: logError } = vi.mocked(await import("../logger"));
 
 const base: ContactEmailData = {
 	category: "bug",
@@ -24,7 +25,8 @@ const sentMail = () => send.mock.calls[0]?.[0] as { html: string; text: string; 
 
 beforeEach(() => {
 	send.mockReset();
-	send.mockResolvedValue({ id: "mail1" });
+	vi.mocked(logError).mockClear();
+	send.mockResolvedValue({ data: { id: "mail1" }, error: null });
 });
 
 describe("sendContactNotification", () => {
@@ -59,8 +61,19 @@ describe("sendContactNotification", () => {
 		expect(text).toContain("送信時刻: 2026/10/28 9:00:00");
 	});
 
-	it("送信失敗は false を返す", async () => {
+	it("通信例外は false を返す", async () => {
 		send.mockRejectedValue(new Error("resend down"));
 		expect(await sendContactNotification(base)).toBe(false);
+	});
+
+	it("Resend が API エラーを返したら（throw されなくても）ログに残して false を返す", async () => {
+		const resendError = {
+			name: "rate_limit_exceeded",
+			message: "Too many requests",
+			statusCode: 429,
+		};
+		send.mockResolvedValue({ data: null, error: resendError });
+		expect(await sendContactNotification(base)).toBe(false);
+		expect(logError).toHaveBeenCalledWith(expect.any(String), { error: resendError });
 	});
 });
