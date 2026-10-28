@@ -83,6 +83,22 @@ describe("createAppUserOnFirstSignup の既存ユーザー保護（SPR-396）", 
 		expect(mockLogError).toHaveBeenCalledWith("better-auth: app user 作成失敗", {
 			discordId: "123",
 			err,
+			// beforeEach で guild 取得も 503 失敗にしている。作成失敗のログに Discord 側の失敗も残す
+			guildFetch: { status: 503 },
+		});
+	});
+
+	it("guild 取得が成功していれば、作成失敗のログに guildFetch を付けない", async () => {
+		mockFetchMembership.mockResolvedValue({
+			ok: true,
+			membership: { guildId: SUZUMINA_GUILD_ID, userId: "123", isMember: true },
+		});
+		const err = new Error("ユーザー作成に失敗しました");
+		mockCreateUserIfAbsent.mockRejectedValue(err);
+		await createAppUserOnFirstSignup(account);
+		expect(mockLogError).toHaveBeenCalledWith("better-auth: app user 作成失敗", {
+			discordId: "123",
+			err,
 		});
 	});
 });

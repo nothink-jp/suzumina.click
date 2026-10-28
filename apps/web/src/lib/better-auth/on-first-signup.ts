@@ -9,7 +9,11 @@
 import { SUZUMINA_GUILD_ID } from "@suzumina.click/shared-types";
 import { error as logError, warn } from "@/lib/logger";
 import { createUserIfAbsent } from "@/lib/user-firestore";
-import { extractAvatarHash, fetchDiscordGuildMembership } from "./discord-guild";
+import {
+	extractAvatarHash,
+	fetchDiscordGuildMembership,
+	type GuildMembershipFetchResult,
+} from "./discord-guild";
 import { type FirestoreOps, firestoreOps } from "./firestore-adapter";
 
 // better-auth 標準モデル(user 等)へのアクセスはアダプタ境界(firestoreOps)を共有する。
@@ -49,9 +53,22 @@ export async function provisionDiscordIdOnAuthUser(
 	}
 }
 
+/** guild 取得の失敗内容（status / error のうち値があるものだけ）。成功・未取得なら undefined */
+function guildFetchFailure(
+	fetched: GuildMembershipFetchResult | undefined,
+): { status?: number; error?: unknown } | undefined {
+	if (!fetched || fetched.ok) return undefined;
+	return {
+		...(fetched.status === undefined ? {} : { status: fetched.status }),
+		...(fetched.error === undefined ? {} : { error: fetched.error }),
+	};
+}
+
 export async function createAppUserOnFirstSignup(account: FirstSignupAccount): Promise<void> {
 	if (account.providerId !== "discord" || !account.accessToken) return;
 	const discordId = account.accountId;
+	// 作成失敗の catch でも Discord 側の失敗を併記できるよう try の外で保持する
+	let fetched: GuildMembershipFetchResult | undefined;
 	try {
 		// プロフィール（name/email/image）は better-auth user 側にあるため読み出す（アダプタ経由）
 		const baUser = await ops.findOne({
@@ -63,7 +80,7 @@ export async function createAppUserOnFirstSignup(account: FirstSignupAccount): P
 			email?: string;
 			image?: string;
 		};
-		const fetched = await fetchDiscordGuildMembership(account.accessToken, discordId);
+		fetched = await fetchDiscordGuildMembership(account.accessToken, discordId);
 		// 取得失敗でも作成は止めず非メンバーで作る
 		const guildMembership = fetched.ok
 			? fetched.membership
@@ -86,16 +103,21 @@ export async function createAppUserOnFirstSignup(account: FirstSignupAccount): P
 		// 実際に非メンバーで作成したときだけ warn する（既存ユーザーは作成していないので出さない）。
 		// createUserIfAbsent が lastGuildCheckDate を当日にするため、guild-sync の再判定は翌 JST 日になる
 		// （ファミリーでもその日は一般枠）
-		if (created && !fetched.ok) {
+		const failure = guildFetchFailure(fetched);
+		if (created && failure) {
 			warn("better-auth: 初回サインアップの guild 取得失敗（非メンバーとして作成）", {
 				discordId,
-				...(fetched.status === undefined ? {} : { status: fetched.status }),
-				...(fetched.error === undefined ? {} : { error: fetched.error }),
+				...failure,
 			});
 		}
 	} catch (err) {
 		// discordId provisioning と同じく認証クリティカル（users/{discordId} 不在も appUser を null にする）。
 		// 本番でも検知できるよう常にエラーログを残す。
-		logError("better-auth: app user 作成失敗", { discordId, err });
+		const failure = guildFetchFailure(fetched);
+		logError("better-auth: app user 作成失敗", {
+			discordId,
+			err,
+			...(failure ? { guildFetch: failure } : {}),
+		});
 	}
 }
