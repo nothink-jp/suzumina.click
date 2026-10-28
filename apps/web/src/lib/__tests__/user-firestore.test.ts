@@ -1,5 +1,6 @@
 import type { FirestoreUserData } from "@suzumina.click/shared-types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { ZodError } from "zod";
 import {
 	convertToFrontendUser,
 	createUser,
@@ -94,7 +95,7 @@ describe("convertToFrontendUser のスキーマ不一致", () => {
 		}
 		expect(thrown).toBeInstanceOf(Error);
 		expect((thrown as Error).message).toBe("ユーザーデータの形式が無効です");
-		expect((thrown as Error).cause).toBeInstanceOf(Error);
+		expect((thrown as Error).cause).toBeInstanceOf(ZodError);
 	});
 });
 
@@ -105,6 +106,6 @@ describe("createUser の失敗", () => {
 		>[0];
 		const thrown = await createUser(input).catch((e: unknown) => e);
 		expect((thrown as Error).message).toBe("ユーザー作成に失敗しました");
-		expect((thrown as Error).cause).toBeInstanceOf(Error);
+		expect((thrown as Error).cause).toBeInstanceOf(ZodError);
 	});
 });
