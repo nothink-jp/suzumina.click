@@ -2,8 +2,9 @@
 
 > **この doc の約束（SPR-205）**: ここはコレクションの**台帳**——「在処・用途・ドキュメント ID・アクセス制御・運用」を記す。
 > **フィールド shape / 型定義は転記しない**（正本は `packages/shared-types` のコード、または書き込み元の Cloud Function）。
-> **複合インデックスの正本は `terraform/firestore_indexes*.tf` + live（`gcloud … list`）**、
-> **セキュリティルールの正本は `terraform/firestore_rules.tf`**。型・インデックスの実体はリンク先を直接読むこと。
+> **複合インデックスの正本は `terraform/firestore_indexes*.tf` + live（`gcloud … list`）**。
+> **Firestore セキュリティルールは管理していない**（web・functions とも Admin SDK のみでクライアント SDK を使わないため。下記「権限境界」）。
+> 型・インデックスの実体はリンク先を直接読むこと。
 
 ## コレクション一覧
 
@@ -25,7 +26,7 @@
 | `dlsite_failed_works` | Individual Info API で取得に失敗した作品の追跡（失敗回数・理由） | 作品 ID | 書き込み元 [failure-tracker.ts](../../apps/functions/src/services/dlsite/failure-tracker.ts) | Cloud Functions |
 
 > **クリエイター ⇔ 作品の関連はルートコレクションではない**: 旧記載の `creatorWorkMappings` は存在せず、実体は `creators/{creatorId}/works` サブコレクション（下表）。
-> **認証の正本は `ba_*`**: `users` はアプリプロファイル（Discord ID キー）。`ba_user` はログイン時に better-auth が作成するため `users` と件数は一致しない。`_firestore_rules` はシステム生成の内部コレクションで台帳管理外。
+> **認証の正本は `ba_*`**: `users` はアプリプロファイル（Discord ID キー）。`ba_user` はログイン時に better-auth が作成するため `users` と件数は一致しない。
 
 ### サブコレクション
 
@@ -47,7 +48,8 @@
 
 コードと Terraform に散る「振る舞い」の索引。**実効値はリンク先が正本**。
 
-**権限境界**（セキュリティルールの正本: [firestore_rules.tf](../../terraform/firestore_rules.tf)）
+**権限境界**（Firestore へのアクセスは web・functions とも **Admin SDK のみ**＝セキュリティルールを経由しない。
+境界の正本はサーバー側コード: 書き込みの認可は `getCurrentUser()` の null チェック（CLAUDE.md §2）、読み取りの公開範囲は各クエリ）
 - 公開読み取り: `videos` / `works` / 公開 `audioButtons` / `circles`
 - Cloud Functions のみ書き込み（自動収集）: `videos` / `works` / `circles` / `creators`（+ `creators/{id}/works`） / `priceHistory` / `dlsite_failed_works`
 - Server Actions のみ書き込み（認証済み）: `audioButtons` / `evaluations` / `favorites` / `top10` / `likes` / `dislikes` / `buttonDrafts` / `transcriptChunks` / `contacts`

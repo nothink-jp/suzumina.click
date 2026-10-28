@@ -126,7 +126,7 @@ CI での plan / apply は `.github/workflows/terraform.yml`、Deploy と IaC �
 | 権限・秘密 | `iam.tf`（CI 用 SA・WIF）/ `secrets.tf`（Secret Manager。値は TF 管理外） |
 | Web（Cloud Run） | `cloud_run.tf` / `artifact_registry.tf`（GC の例外は冒頭コメント） |
 | Functions | `function_common.tf` / `function_*.tf`（本体の spec は deploy-functions.yml が正本）/ `pubsub.tf` / `scheduler.tf` |
-| Firestore | `firestore_database.tf` / `firestore_rules.tf` / `firestore_indexes*.tf`（複合 index の正本） |
+| Firestore | `firestore_database.tf` / `firestore_indexes*.tf`（複合 index の正本。セキュリティルールは Admin SDK のみのため管理しない） |
 | ストレージ | `gcs.tf`（tfstate）/ `storage.tf`（Functions デプロイ用） |
 | CDN・DNS | `cloudflare.tf` / `cloudflare_dns.tf` |
 | 監視・ログ | `monitoring*.tf`（アラートと閾値の正本）/ `logging.tf` |
