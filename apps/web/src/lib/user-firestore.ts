@@ -16,8 +16,9 @@ import {
 	type UpdateUserInput,
 } from "@suzumina.click/shared-types";
 import { getFirestore } from "./firestore";
-import { error as logError } from "./logger";
-import { calculateDailyLimit, getJSTDateString, isTodayJST } from "./rate-limit-utils";
+import { getJSTDateString, isTodayJST } from "./jst-date";
+import { error as logError, warn } from "./logger";
+import { calculateDailyLimit } from "./rate-limit-utils";
 
 /**
  * Firestoreユーザーデータをフロントエンド表示用に変換
@@ -67,10 +68,8 @@ export async function getUserByDiscordId(discordId: string): Promise<FrontendUse
 		const userData = userDoc.data() as FirestoreUserData;
 		return convertToFrontendUser(userData);
 	} catch (error) {
-		// 開発環境でのみエラーログを出力
-		if (process.env.NODE_ENV === "development") {
-			logError("getUserByDiscordId error:", { discordId, error });
-		}
+		// 呼び出し側へは汎用エラーに包んで投げ直すため、元のエラーは本番でもここで残す
+		logError("getUserByDiscordId error:", { discordId, error });
 		throw new Error("ユーザー情報の取得に失敗しました");
 	}
 }
@@ -177,8 +176,9 @@ export async function updateLastLogin(discordId: string): Promise<void> {
 			lastLoginAt: now,
 			updatedAt: now,
 		});
-	} catch (_error) {
-		// ログイン時刻更新の失敗は致命的ではないため、エラーを投げない
+	} catch (error) {
+		// ログイン時刻更新の失敗は致命的ではないため投げないが、本番でも観測できるよう warn に出す
+		warn("updateLastLogin 失敗", { discordId, error });
 	}
 }
 

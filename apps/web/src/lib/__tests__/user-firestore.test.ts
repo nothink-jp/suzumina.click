@@ -1,8 +1,20 @@
 import type { FirestoreUserData } from "@suzumina.click/shared-types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { convertToFrontendUser } from "../user-firestore";
+import { convertToFrontendUser, getUserByDiscordId, updateLastLogin } from "../user-firestore";
 
-vi.mock("../firestore", () => ({ getFirestore: vi.fn() }));
+const { mockGet, mockUpdate, mockWarn, mockLogError } = vi.hoisted(() => ({
+	mockGet: vi.fn(),
+	mockUpdate: vi.fn(),
+	mockWarn: vi.fn(),
+	mockLogError: vi.fn(),
+}));
+
+vi.mock("../firestore", () => ({
+	getFirestore: () => ({
+		collection: () => ({ doc: () => ({ get: mockGet, update: mockUpdate }) }),
+	}),
+}));
+vi.mock("../logger", () => ({ warn: mockWarn, error: mockLogError }));
 
 // 2026-06-01 22:00 JST
 const NOW = new Date("2026-06-01T13:00:00.000Z");
@@ -38,5 +50,30 @@ describe("convertToFrontendUser の lastActiveText", () => {
 	it("前日以前は相対表示のまま", () => {
 		// 2026-05-31 22:00 JST（ちょうど 24 時間前）
 		expect(convertToFrontendUser(makeUser("2026-05-31T13:00:00.000Z")).lastActiveText).toBe("昨日");
+	});
+});
+
+describe("失敗の観測（本番でも無音にしない）", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		vi.stubEnv("NODE_ENV", "production");
+	});
+	afterEach(() => vi.unstubAllEnvs());
+
+	it("updateLastLogin の書き込み失敗は throw せず warn を出す", async () => {
+		const err = new Error("UNAVAILABLE");
+		mockUpdate.mockRejectedValue(err);
+		await expect(updateLastLogin("123")).resolves.toBeUndefined();
+		expect(mockWarn).toHaveBeenCalledWith("updateLastLogin 失敗", { discordId: "123", error: err });
+	});
+
+	it("getUserByDiscordId の読み取り失敗は元のエラーを残してから汎用エラーで投げる", async () => {
+		const err = new Error("UNAVAILABLE");
+		mockGet.mockRejectedValue(err);
+		await expect(getUserByDiscordId("123")).rejects.toThrow("ユーザー情報の取得に失敗しました");
+		expect(mockLogError).toHaveBeenCalledWith("getUserByDiscordId error:", {
+			discordId: "123",
+			error: err,
+		});
 	});
 });

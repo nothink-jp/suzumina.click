@@ -63,11 +63,14 @@ export async function createAppUserOnFirstSignup(account: FirstSignupAccount): P
 			email?: string;
 			image?: string;
 		};
-		const guildMembership = (await fetchDiscordGuildMembership(account.accessToken, discordId)) ?? {
-			guildId: SUZUMINA_GUILD_ID,
-			userId: discordId,
-			isMember: false,
-		};
+		const fetched = await fetchDiscordGuildMembership(account.accessToken, discordId);
+		const guildMembership = fetched.ok
+			? fetched.membership
+			: {
+					guildId: SUZUMINA_GUILD_ID,
+					userId: discordId,
+					isMember: false,
+				};
 		await createUser({
 			discordUser: {
 				id: discordId,

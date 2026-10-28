@@ -1,7 +1,8 @@
 import "server-only";
 import type { UserFlags } from "@suzumina.click/shared-types";
 import { getFirestore } from "@/lib/firestore";
-import { calculateDailyLimit, getJSTDateString } from "@/lib/rate-limit-utils";
+import { getJSTDateString } from "@/lib/jst-date";
+import { calculateDailyLimit } from "@/lib/rate-limit-utils";
 
 /**
  * レート制限チェックの結果

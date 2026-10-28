@@ -7,10 +7,10 @@
  */
 import type { FirestoreUserData, UserSession } from "@suzumina.click/shared-types";
 import { getFirestore } from "@/lib/firestore";
+import { isTodayJST } from "@/lib/jst-date";
 import { warn } from "@/lib/logger";
-import { isTodayJST } from "@/lib/rate-limit-utils";
 import { updateLastLogin } from "@/lib/user-firestore";
-import { refreshGuildStatusIfNeeded } from "./guild-sync";
+import { syncGuildStatusIfNeeded } from "./guild-sync";
 import { buildUserSessionFromFirestore } from "./user-session";
 
 /** better-auth が作成した user から Discord ID を取り出す（additionalField） */
@@ -44,10 +44,10 @@ export async function buildAppUserForSession(user: unknown): Promise<UserSession
 		if (!snap.exists) return null;
 
 		const userData = snap.data() as FirestoreUserData;
-		const refreshed = await refreshGuildStatusIfNeeded(discordId, betterAuthUserId, userData);
+		const synced = await syncGuildStatusIfNeeded(discordId, betterAuthUserId, userData);
 
 		if (shouldUpdateLastLogin(userData.lastLoginAt)) updateLastLogin(discordId).catch(() => {});
-		return buildUserSessionFromFirestore(refreshed);
+		return buildUserSessionFromFirestore(synced);
 	} catch (err) {
 		warn("better-auth: customSession enrich 失敗（未ログイン扱いで返す）", {
 			discordId,

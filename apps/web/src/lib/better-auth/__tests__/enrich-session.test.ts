@@ -15,9 +15,7 @@ vi.mock("@/lib/user-firestore", () => ({ updateLastLogin: mockUpdateLastLogin })
 vi.mock("@/lib/logger", () => ({ warn: mockWarn, error: vi.fn(), info: vi.fn() }));
 // guild 同期はこのテストの対象外（受け取った userData をそのまま返す）
 vi.mock("../guild-sync", () => ({
-	refreshGuildStatusIfNeeded: vi.fn(
-		async (_d: string, _u: string, data: FirestoreUserData) => data,
-	),
+	syncGuildStatusIfNeeded: vi.fn(async (_d: string, _u: string, data: FirestoreUserData) => data),
 }));
 
 // 2026-06-01 12:00 JST
