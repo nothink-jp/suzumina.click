@@ -15,31 +15,36 @@ import { firestoreOps } from "./firestore-adapter";
 // 直接 getFirestore().collection("ba_account") を叩くと Cloud SQL 差し替え時の局所性が崩れるため。
 const ops = firestoreOps();
 
-/**
- * account モデルから Discord アクセストークンと失効時刻を取得（日次 guild チェック用 / アダプタ経由）。失敗は呼び出し側で扱う。
- * ba_account の値を直接読むだけで refresh はしない（失効後は再ログインまで取り直されない）。
- */
-async function getDiscordAccessToken(
-	betterAuthUserId: string,
-): Promise<{ accessToken: string; expiresAt?: Date } | undefined> {
+/** account モデルから Discord 連携の account ID を探す（アダプタ経由）。トークン自体は読まない */
+async function findDiscordAccountId(betterAuthUserId: string): Promise<string | undefined> {
 	const accounts = await ops.findMany({
 		model: "account",
 		where: [{ field: "userId", value: betterAuthUserId, operator: "eq", connector: "AND" }],
 	});
-	for (const acc of accounts) {
-		const providerId = acc.providerId as string | undefined;
-		const accessToken = acc.accessToken as string | undefined;
-		const expiresAt = acc.accessTokenExpiresAt;
-		if (providerId === "discord" && accessToken) {
-			return { accessToken, expiresAt: expiresAt instanceof Date ? expiresAt : undefined };
-		}
-	}
-	return undefined;
+	const discord = accounts.find((acc) => acc.providerId === "discord");
+	return typeof discord?.id === "string" ? discord.id : undefined;
+}
+
+/**
+ * 有効な Discord アクセストークンを better-auth の getAccessToken で取得する。
+ * 失効していて refresh token があれば refresh し、新しいトークンを better-auth が ba_account へ書き戻す。
+ * refresh token が無ければ失効したトークンがそのまま返る（呼び出し側で expiresAt を見る）。
+ * @throws refresh 失敗・account 不一致（better-auth の APIError）
+ */
+async function getValidDiscordAccessToken(
+	betterAuthUserId: string,
+	accountId: string,
+): Promise<{ accessToken?: string; expiresAt?: Date }> {
+	// auth.ts → enrich-session → guild-sync の循環を避けるため動的 import（lib/auth/server.ts と同じ方式）
+	const { auth } = await import("./auth");
+	const tokens = await auth.api.getAccessToken({ body: { accountId, userId: betterAuthUserId } });
+	return { accessToken: tokens.accessToken, expiresAt: tokens.accessTokenExpiresAt };
 }
 
 /** 同期を諦めて前回値を維持した理由（`reason` は監視のフィルタ対象＝英語の固定値） */
 type GuildSyncSkipReason =
 	| "token_missing"
+	| "token_refresh_failed"
 	| "token_expired"
 	| "membership_fetch_failed"
 	| "sync_failed";
@@ -47,7 +52,8 @@ type GuildSyncSkipReason =
 /**
  * 同期スキップを本番でも warn に出す（無音で前回値を使い続けない）。
  * 失敗時は lastGuildCheckDate を進めないため、enrich のたび（cookieCache 切れごと）に再試行・再ログされる。
- * `token_expired` は再ログインまで解消しない定常状態なので、日をまたいで出続ける（一時障害と reason で区別する）。
+ * `token_expired`（失効済みかつ refresh token 無し）は再ログインまで解消しない定常状態なので、日をまたいで出続ける。
+ * `token_refresh_failed` は refresh token の失効・取り消しか Discord 側の一時障害（error で見分ける）。
  */
 function warnGuildSyncSkipped(reason: GuildSyncSkipReason, discordId: string, err?: unknown): void {
 	warn("better-auth: guild 同期をスキップ（前回値を維持）", {
@@ -69,12 +75,23 @@ export async function refreshGuildStatusIfNeeded(
 ): Promise<FirestoreUserData> {
 	if (!hasDateChangedJST(userData.flags?.lastGuildCheckDate)) return userData;
 	try {
-		const token = await getDiscordAccessToken(betterAuthUserId);
-		if (!token) {
+		const accountId = await findDiscordAccountId(betterAuthUserId);
+		if (!accountId) {
 			warnGuildSyncSkipped("token_missing", discordId);
 			return userData;
 		}
-		// 失効済みトークンで Discord API を叩いても 401 が確定しているため、呼ばずに理由を分けて返す
+		let token: { accessToken?: string; expiresAt?: Date };
+		try {
+			token = await getValidDiscordAccessToken(betterAuthUserId, accountId);
+		} catch (err) {
+			warnGuildSyncSkipped("token_refresh_failed", discordId, err);
+			return userData;
+		}
+		if (!token.accessToken) {
+			warnGuildSyncSkipped("token_missing", discordId);
+			return userData;
+		}
+		// refresh 後も失効のまま＝refresh token が無い。Discord API は 401 が確定しているため呼ばない
 		if (token.expiresAt && token.expiresAt.getTime() <= Date.now()) {
 			warnGuildSyncSkipped("token_expired", discordId);
 			return userData;
