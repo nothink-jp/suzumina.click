@@ -31,7 +31,7 @@ beforeEach(() => {
 		get: (k: string) =>
 			({ "x-forwarded-for": "1.2.3.4, 5.6.7.8", "user-agent": "UA/1.0" })[k] ?? null,
 	} as never);
-	sendContactNotification.mockResolvedValue(undefined as never);
+	sendContactNotification.mockResolvedValue(true);
 	verifyTurnstileToken.mockResolvedValue(true);
 });
 
@@ -77,9 +77,9 @@ describe("submitContactForm", () => {
 		expect(r.errors?.length).toBeGreaterThan(0);
 	});
 
-	it("メール通知失敗でもメイン処理は成功する", async () => {
+	it("メール通知失敗（false）でもメイン処理は成功する", async () => {
 		setupFirestore();
-		sendContactNotification.mockRejectedValue(new Error("smtp down"));
+		sendContactNotification.mockResolvedValue(false);
 		const r = await submitContactForm(validData, "tok");
 		expect(r.success).toBe(true);
 	});
