@@ -1,7 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/ui/card";
 import { AlertTriangle, Bug, HelpCircle, Lightbulb, MessageSquare } from "lucide-react";
 import type { Metadata } from "next";
-import { ContactFormClient as ContactForm } from "./components/contact-form-client";
+import { connection } from "next/server";
+import { Suspense } from "react";
+import { getTurnstileSiteKey } from "@/lib/turnstile";
+import { ContactFormClient, ContactFormSkeleton } from "./components/contact-form-client";
 
 export const metadata: Metadata = {
 	title: "お問い合わせ",
@@ -18,6 +21,15 @@ export const metadata: Metadata = {
 		canonical: "/contact",
 	},
 };
+
+/**
+ * サイトキーは Cloud Run の実行時 env にしか無いので、ビルド時の静的シェルに焼かず
+ * リクエスト時に読む（`connection()`）。Firestore には触れないため read コストは増えない
+ */
+async function ContactFormSection() {
+	await connection();
+	return <ContactFormClient turnstileSiteKey={getTurnstileSiteKey()} />;
+}
 
 export default function ContactPage() {
 	return (
@@ -132,7 +144,9 @@ export default function ContactPage() {
 						<CardTitle>お問い合わせフォーム</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<ContactForm />
+						<Suspense fallback={<ContactFormSkeleton />}>
+							<ContactFormSection />
+						</Suspense>
 					</CardContent>
 				</Card>
 

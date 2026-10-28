@@ -9,7 +9,7 @@ export default function PrivacyPage() {
 			<div className="text-center mb-8">
 				<h1 className="text-3xl font-bold text-foreground mb-4">プライバシーポリシー</h1>
 				<p className="text-lg text-muted-foreground">個人情報の取扱いに関する方針</p>
-				<p className="text-sm text-muted-foreground mt-2">最終更新: 2026年7月25日</p>
+				<p className="text-sm text-muted-foreground mt-2">最終更新: 2026年10月28日</p>
 			</div>
 
 			<div className="space-y-8">
@@ -245,6 +245,22 @@ export default function PrivacyPage() {
 										</p>
 									</div>
 								</div>
+								<div className="border border-border p-4 rounded-lg">
+									<h4 className="font-semibold text-foreground flex items-center gap-2">
+										<Badge variant="outline">Cloudflare Turnstile</Badge>
+									</h4>
+									<div className="text-sm text-muted-foreground mt-2 space-y-1">
+										<p>
+											<strong>目的:</strong> お問い合わせフォームの自動送信（スパム）防止
+										</p>
+										<p>
+											<strong>データ:</strong> ブラウザ・端末の情報、IPアドレス
+										</p>
+										<p>
+											<strong>範囲:</strong> お問い合わせページのみ
+										</p>
+									</div>
+								</div>
 							</div>
 						</div>
 					</CardContent>
@@ -346,6 +362,34 @@ export default function PrivacyPage() {
 												アナリティクス オプトアウト アドオン
 											</a>
 											をご利用ください。
+										</p>
+									</div>
+								</div>
+								<div className="bg-muted p-3 rounded-lg mt-2 space-y-3">
+									<div>
+										<h5 className="font-semibold text-foreground text-sm">送信先</h5>
+										<p className="text-xs text-muted-foreground">
+											Cloudflare, Inc.（Cloudflare Turnstile・お問い合わせページのみ）
+										</p>
+									</div>
+									<div>
+										<h5 className="font-semibold text-foreground text-sm">送信される情報の内容</h5>
+										<ul className="text-xs text-muted-foreground space-y-1">
+											<li>• IPアドレス、ブラウザ・OSの種類、言語設定などの端末情報</li>
+											<li>• 人による操作かどうかを判定するための、ブラウザ上での動作の情報</li>
+										</ul>
+									</div>
+									<div>
+										<h5 className="font-semibold text-foreground text-sm">利用目的</h5>
+										<p className="text-xs text-muted-foreground">
+											お問い合わせフォームへの自動送信（スパム）を防ぐためです。広告や追跡には利用しません。
+										</p>
+									</div>
+									<div>
+										<h5 className="font-semibold text-foreground text-sm">送信の停止方法</h5>
+										<p className="text-xs text-muted-foreground">
+											お問い合わせページを開かなければ送信されません。送信を停止した場合、
+											お問い合わせフォームはご利用いただけません。
 										</p>
 									</div>
 								</div>
