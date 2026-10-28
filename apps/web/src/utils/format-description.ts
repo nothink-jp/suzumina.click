@@ -1,3 +1,5 @@
+import { escapeHtml } from "./escape-html";
+
 /**
  * 作品の説明文をHTMLに整形する
  * - 改行を段落に変換
@@ -7,16 +9,6 @@
  */
 export function formatWorkDescription(description: string): string {
 	if (!description) return "";
-
-	// HTMLエスケープ（基本的なもののみ）
-	const escapeHtml = (text: string): string => {
-		return text
-			.replace(/&/g, "&amp;")
-			.replace(/</g, "&lt;")
-			.replace(/>/g, "&gt;")
-			.replace(/"/g, "&quot;")
-			.replace(/'/g, "&#039;");
-	};
 
 	// URLパターンを検出してリンクに変換
 	const linkifyUrls = (text: string): string => {
