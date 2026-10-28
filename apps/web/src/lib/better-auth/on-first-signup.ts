@@ -6,7 +6,7 @@
  * better-auth の databaseHooks.account.create.after（auth.ts）から呼ばれる。
  */
 import { SUZUMINA_GUILD_ID } from "@suzumina.click/shared-types";
-import { error as logError } from "@/lib/logger";
+import { error as logError, warn } from "@/lib/logger";
 import { createUser, userExists } from "@/lib/user-firestore";
 import { extractAvatarHash, fetchDiscordGuildMembership } from "./discord-guild";
 import { type FirestoreOps, firestoreOps } from "./firestore-adapter";
@@ -63,11 +63,23 @@ export async function createAppUserOnFirstSignup(account: FirstSignupAccount): P
 			email?: string;
 			image?: string;
 		};
-		const guildMembership = (await fetchDiscordGuildMembership(account.accessToken, discordId)) ?? {
-			guildId: SUZUMINA_GUILD_ID,
-			userId: discordId,
-			isMember: false,
-		};
+		const fetched = await fetchDiscordGuildMembership(account.accessToken, discordId);
+		// 取得失敗でも作成は止めず非メンバーで作る。createUser が lastGuildCheckDate を当日にするため
+		// guild-sync の再判定は翌 JST 日になる（ファミリーでもその日は一般枠）。見えるよう warn に残す
+		if (!fetched.ok) {
+			warn("better-auth: 初回サインアップの guild 取得失敗（非メンバーとして作成）", {
+				discordId,
+				...(fetched.status === undefined ? {} : { status: fetched.status }),
+				...(fetched.error === undefined ? {} : { error: fetched.error }),
+			});
+		}
+		const guildMembership = fetched.ok
+			? fetched.membership
+			: {
+					guildId: SUZUMINA_GUILD_ID,
+					userId: discordId,
+					isMember: false,
+				};
 		await createUser({
 			discordUser: {
 				id: discordId,

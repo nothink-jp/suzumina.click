@@ -18,9 +18,9 @@ vi.mock("@/lib/firestore", () => ({
 	}),
 }));
 
-// rate-limit-utilsのモック
+// 日付と上限計算のモック
+vi.mock("@/lib/jst-date", () => ({ getJSTDateString: vi.fn(() => "2024-01-01") }));
 vi.mock("@/lib/rate-limit-utils", () => ({
-	getJSTDateString: vi.fn(() => "2024-01-01"),
 	calculateDailyLimit: vi.fn((flags) => (flags?.isFamilyMember ? 110 : 10)),
 }));
 

@@ -1,13 +1,12 @@
 /**
  * Discord guild メンバーシップの日次同期（better-auth の session enrich から呼ぶ）。
- *
- * 成功時のみ users コレクションの flags / dailyButtonLimit を best-effort で更新し、
- * **更新後の値を返す**（引数は変異しない）。失敗時・対象日でない場合は受け取った userData をそのまま返す。
+ * 契約（best-effort・更新後の値を返す・失敗は warn）は `syncGuildStatusIfNeeded` の JSDoc を参照。
  */
 import { type FirestoreUserData, isValidGuildMember } from "@suzumina.click/shared-types";
 import { getFirestore } from "@/lib/firestore";
+import { getJSTDateString, hasDateChangedJST } from "@/lib/jst-date";
 import { warn } from "@/lib/logger";
-import { calculateDailyLimit, getJSTDateString, hasDateChangedJST } from "@/lib/rate-limit-utils";
+import { calculateDailyLimit } from "@/lib/rate-limit-utils";
 import { fetchDiscordGuildMembership } from "./discord-guild";
 import { firestoreOps } from "./firestore-adapter";
 
@@ -26,12 +25,12 @@ async function findDiscordAccountId(betterAuthUserId: string): Promise<string | 
 }
 
 /**
- * 有効な Discord アクセストークンを better-auth の getAccessToken で取得する。
- * 失効していて refresh token があれば refresh し、新しいトークンを better-auth が ba_account へ書き戻す。
+ * Discord アクセストークンを better-auth の getAccessToken で取得する（失効していれば refresh を試みる）。
+ * 副作用: refresh token があれば refresh し、新しいトークンを better-auth が ba_account へ書き戻す。
  * refresh token が無ければ失効したトークンがそのまま返る（呼び出し側で expiresAt を見る）。
  * @throws refresh 失敗・account 不一致（better-auth の APIError）
  */
-async function getValidDiscordAccessToken(
+async function getDiscordAccessTokenWithRefresh(
 	betterAuthUserId: string,
 	accountId: string,
 ): Promise<{ accessToken?: string; expiresAt?: Date }> {
@@ -54,21 +53,27 @@ type GuildSyncSkipReason =
  * 失敗時は lastGuildCheckDate を進めないため、enrich のたび（cookieCache 切れごと）に再試行・再ログされる。
  * `token_expired`（失効済みかつ refresh token 無し）は再ログインまで解消しない定常状態なので、日をまたいで出続ける。
  * `token_refresh_failed` は refresh token の失効・取り消しか Discord 側の一時障害（error で見分ける）。
+ * `membership_fetch_failed` は `status`（401=トークン無効 / 429・5xx=一時障害）か `error`（通信例外）を伴う。
  */
-function warnGuildSyncSkipped(reason: GuildSyncSkipReason, discordId: string, err?: unknown): void {
+function warnGuildSyncSkipped(
+	reason: GuildSyncSkipReason,
+	discordId: string,
+	detail: { error?: unknown; status?: number } = {},
+): void {
 	warn("better-auth: guild 同期をスキップ（前回値を維持）", {
 		reason,
 		discordId,
-		...(err === undefined ? {} : { error: err }),
+		...(detail.status === undefined ? {} : { status: detail.status }),
+		...(detail.error === undefined ? {} : { error: detail.error }),
 	});
 }
 
 /**
- * 日次 guild チェック（best-effort）。成功時のみ users の flags / dailyButtonLimit を更新し、
+ * 日次 guild 同期（best-effort）。成功時のみ users の flags / dailyButtonLimit を更新し、
  * **更新後の値を返す**（引数は変異しない）。失敗時・対象日でない場合は受け取った userData をそのまま返す。
  * 失敗は throw せず、本番でも warn に出す（`warnGuildSyncSkipped`）。
  */
-export async function refreshGuildStatusIfNeeded(
+export async function syncGuildStatusIfNeeded(
 	discordId: string,
 	betterAuthUserId: string,
 	userData: FirestoreUserData,
@@ -82,9 +87,9 @@ export async function refreshGuildStatusIfNeeded(
 		}
 		let token: { accessToken?: string; expiresAt?: Date };
 		try {
-			token = await getValidDiscordAccessToken(betterAuthUserId, accountId);
+			token = await getDiscordAccessTokenWithRefresh(betterAuthUserId, accountId);
 		} catch (err) {
-			warnGuildSyncSkipped("token_refresh_failed", discordId, err);
+			warnGuildSyncSkipped("token_refresh_failed", discordId, { error: err });
 			return userData;
 		}
 		if (!token.accessToken) {
@@ -96,14 +101,18 @@ export async function refreshGuildStatusIfNeeded(
 			warnGuildSyncSkipped("token_expired", discordId);
 			return userData;
 		}
-		const guildMembership = await fetchDiscordGuildMembership(token.accessToken, discordId);
-		// null は API 呼び出し自体の失敗（トークン失効・レート制限等）を示す。
+		const fetched = await fetchDiscordGuildMembership(token.accessToken, discordId);
+		// ok: false は API 呼び出し自体の失敗（トークン無効・レート制限等）を示す。
 		// 「非メンバー確定」と取り違えて false を書き込むと、以後ずっと復旧できなくなるため
 		// 失敗時は判定を更新せず現状の userData をそのまま維持する。
-		if (!guildMembership) {
-			warnGuildSyncSkipped("membership_fetch_failed", discordId);
+		if (!fetched.ok) {
+			warnGuildSyncSkipped("membership_fetch_failed", discordId, {
+				status: fetched.status,
+				error: fetched.error,
+			});
 			return userData;
 		}
+		const guildMembership = fetched.membership;
 		const isFamilyMember = isValidGuildMember(guildMembership);
 		const today = getJSTDateString();
 		const newLimit = calculateDailyLimit({ isFamilyMember });
@@ -133,7 +142,7 @@ export async function refreshGuildStatusIfNeeded(
 				: userData.dailyButtonLimit,
 		};
 	} catch (err) {
-		warnGuildSyncSkipped("sync_failed", discordId, err);
+		warnGuildSyncSkipped("sync_failed", discordId, { error: err });
 		return userData;
 	}
 }

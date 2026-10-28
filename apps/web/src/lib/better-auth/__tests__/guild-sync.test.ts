@@ -1,6 +1,6 @@
 import type { FirestoreUserData } from "@suzumina.click/shared-types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { refreshGuildStatusIfNeeded } from "../guild-sync";
+import { syncGuildStatusIfNeeded } from "../guild-sync";
 
 const { mockFindMany, mockGetAccessToken, mockFetchMembership, mockUpdate, mockWarn } = vi.hoisted(
 	() => ({
@@ -51,7 +51,7 @@ const validToken = {
 	accessTokenExpiresAt: new Date("2026-06-08T00:00:00.000Z"),
 };
 
-describe("refreshGuildStatusIfNeeded", () => {
+describe("syncGuildStatusIfNeeded", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		vi.useFakeTimers();
@@ -69,14 +69,17 @@ describe("refreshGuildStatusIfNeeded", () => {
 
 	it("当日チェック済みなら何もせずログも出さない", async () => {
 		const user = makeUser({ flags: { isFamilyMember: true, lastGuildCheckDate: "2026-06-01" } });
-		expect(await refreshGuildStatusIfNeeded("123", "ba-1", user)).toBe(user);
+		expect(await syncGuildStatusIfNeeded("123", "ba-1", user)).toBe(user);
 		expect(mockFindMany).not.toHaveBeenCalled();
 		expect(mockWarn).not.toHaveBeenCalled();
 	});
 
 	it("成功時は判定を更新して更新後の値を返し、warn は出さない", async () => {
-		mockFetchMembership.mockResolvedValue({ guildId: "g", userId: "123", isMember: false });
-		const result = await refreshGuildStatusIfNeeded("123", "ba-1", makeUser());
+		mockFetchMembership.mockResolvedValue({
+			ok: true,
+			membership: { guildId: "g", userId: "123", isMember: false },
+		});
+		const result = await syncGuildStatusIfNeeded("123", "ba-1", makeUser());
 		expect(result.flags).toMatchObject({ isFamilyMember: false, lastGuildCheckDate: "2026-06-01" });
 		expect(result.dailyButtonLimit).toMatchObject({ date: "2026-06-01", count: 0, limit: 10 });
 		expect(mockWarn).not.toHaveBeenCalled();
@@ -84,8 +87,11 @@ describe("refreshGuildStatusIfNeeded", () => {
 
 	it("better-auth の getAccessToken に Discord account を指定し、得たトークンで API を呼ぶ", async () => {
 		mockFindMany.mockResolvedValue([{ id: "acc-gh", providerId: "github" }, discordAccount]);
-		mockFetchMembership.mockResolvedValue({ guildId: "g", userId: "123", isMember: true });
-		await refreshGuildStatusIfNeeded("123", "ba-1", makeUser());
+		mockFetchMembership.mockResolvedValue({
+			ok: true,
+			membership: { guildId: "g", userId: "123", isMember: true },
+		});
+		await syncGuildStatusIfNeeded("123", "ba-1", makeUser());
 		expect(mockGetAccessToken).toHaveBeenCalledWith({
 			body: { accountId: "acc-1", userId: "ba-1" },
 		});
@@ -99,8 +105,11 @@ describe("refreshGuildStatusIfNeeded", () => {
 			accessToken: "refreshed",
 			accessTokenExpiresAt: new Date("2026-06-08T03:00:00.000Z"),
 		});
-		mockFetchMembership.mockResolvedValue({ guildId: "g", userId: "123", isMember: false });
-		const result = await refreshGuildStatusIfNeeded("123", "ba-1", makeUser());
+		mockFetchMembership.mockResolvedValue({
+			ok: true,
+			membership: { guildId: "g", userId: "123", isMember: false },
+		});
+		const result = await syncGuildStatusIfNeeded("123", "ba-1", makeUser());
 		expect(mockFetchMembership).toHaveBeenCalledWith("refreshed", "123");
 		expect(result.flags).toMatchObject({ isFamilyMember: false, lastGuildCheckDate: "2026-06-01" });
 		expect(mockWarn).not.toHaveBeenCalled();
@@ -109,7 +118,7 @@ describe("refreshGuildStatusIfNeeded", () => {
 	it("Discord account が無ければ getAccessToken を呼ばず warn（token_missing）", async () => {
 		mockFindMany.mockResolvedValue([{ id: "acc-gh", providerId: "github" }]);
 		const user = makeUser();
-		expect(await refreshGuildStatusIfNeeded("123", "ba-1", user)).toBe(user);
+		expect(await syncGuildStatusIfNeeded("123", "ba-1", user)).toBe(user);
 		expect(mockGetAccessToken).not.toHaveBeenCalled();
 		expect(mockWarn).toHaveBeenCalledWith(SKIP_MESSAGE, {
 			reason: "token_missing",
@@ -120,7 +129,7 @@ describe("refreshGuildStatusIfNeeded", () => {
 	it("アクセストークンが空なら warn（token_missing）", async () => {
 		mockGetAccessToken.mockResolvedValue({ accessToken: undefined });
 		const user = makeUser();
-		expect(await refreshGuildStatusIfNeeded("123", "ba-1", user)).toBe(user);
+		expect(await syncGuildStatusIfNeeded("123", "ba-1", user)).toBe(user);
 		expect(mockFetchMembership).not.toHaveBeenCalled();
 		expect(mockWarn).toHaveBeenCalledWith(SKIP_MESSAGE, {
 			reason: "token_missing",
@@ -132,7 +141,7 @@ describe("refreshGuildStatusIfNeeded", () => {
 		const err = new Error("FAILED_TO_GET_ACCESS_TOKEN");
 		mockGetAccessToken.mockRejectedValue(err);
 		const user = makeUser();
-		expect(await refreshGuildStatusIfNeeded("123", "ba-1", user)).toBe(user);
+		expect(await syncGuildStatusIfNeeded("123", "ba-1", user)).toBe(user);
 		expect(mockFetchMembership).not.toHaveBeenCalled();
 		expect(mockUpdate).not.toHaveBeenCalled();
 		expect(mockWarn).toHaveBeenCalledWith(SKIP_MESSAGE, {
@@ -148,7 +157,7 @@ describe("refreshGuildStatusIfNeeded", () => {
 			accessTokenExpiresAt: new Date("2026-05-31T00:00:00.000Z"),
 		});
 		const user = makeUser();
-		expect(await refreshGuildStatusIfNeeded("123", "ba-1", user)).toBe(user);
+		expect(await syncGuildStatusIfNeeded("123", "ba-1", user)).toBe(user);
 		expect(mockFetchMembership).not.toHaveBeenCalled();
 		expect(mockWarn).toHaveBeenCalledWith(SKIP_MESSAGE, {
 			reason: "token_expired",
@@ -156,14 +165,27 @@ describe("refreshGuildStatusIfNeeded", () => {
 		});
 	});
 
-	it("Discord API 失敗（null）は判定を更新せず、本番でも warn（membership_fetch_failed）", async () => {
-		mockFetchMembership.mockResolvedValue(null);
+	it("Discord API の HTTP 失敗は判定を更新せず、status 付きで warn（membership_fetch_failed）", async () => {
+		mockFetchMembership.mockResolvedValue({ ok: false, status: 429 });
 		const user = makeUser();
-		expect(await refreshGuildStatusIfNeeded("123", "ba-1", user)).toBe(user);
+		expect(await syncGuildStatusIfNeeded("123", "ba-1", user)).toBe(user);
 		expect(mockUpdate).not.toHaveBeenCalled();
 		expect(mockWarn).toHaveBeenCalledWith(SKIP_MESSAGE, {
 			reason: "membership_fetch_failed",
 			discordId: "123",
+			status: 429,
+		});
+	});
+
+	it("Discord API の通信例外は error 付きで warn（membership_fetch_failed）", async () => {
+		const err = new Error("network");
+		mockFetchMembership.mockResolvedValue({ ok: false, error: err });
+		const user = makeUser();
+		expect(await syncGuildStatusIfNeeded("123", "ba-1", user)).toBe(user);
+		expect(mockWarn).toHaveBeenCalledWith(SKIP_MESSAGE, {
+			reason: "membership_fetch_failed",
+			discordId: "123",
+			error: err,
 		});
 	});
 
@@ -171,7 +193,7 @@ describe("refreshGuildStatusIfNeeded", () => {
 		const err = new Error("UNAVAILABLE");
 		mockFindMany.mockRejectedValue(err);
 		const user = makeUser();
-		expect(await refreshGuildStatusIfNeeded("123", "ba-1", user)).toBe(user);
+		expect(await syncGuildStatusIfNeeded("123", "ba-1", user)).toBe(user);
 		expect(mockWarn).toHaveBeenCalledWith(SKIP_MESSAGE, {
 			reason: "sync_failed",
 			discordId: "123",
@@ -180,11 +202,14 @@ describe("refreshGuildStatusIfNeeded", () => {
 	});
 
 	it("users の update 失敗も throw せず、本番でも warn（sync_failed）", async () => {
-		mockFetchMembership.mockResolvedValue({ guildId: "g", userId: "123", isMember: true });
+		mockFetchMembership.mockResolvedValue({
+			ok: true,
+			membership: { guildId: "g", userId: "123", isMember: true },
+		});
 		const err = new Error("PERMISSION_DENIED");
 		mockUpdate.mockRejectedValue(err);
 		const user = makeUser();
-		expect(await refreshGuildStatusIfNeeded("123", "ba-1", user)).toBe(user);
+		expect(await syncGuildStatusIfNeeded("123", "ba-1", user)).toBe(user);
 		expect(mockWarn).toHaveBeenCalledWith(SKIP_MESSAGE, {
 			reason: "sync_failed",
 			discordId: "123",

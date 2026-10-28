@@ -34,7 +34,10 @@ describe("fetchDiscordGuildMembership", () => {
 			),
 		);
 		const r = await fetchDiscordGuildMembership("token", "123");
-		expect(r).toMatchObject({ guildId: SUZUMINA_GUILD_ID, userId: "123", isMember: true });
+		expect(r).toMatchObject({
+			ok: true,
+			membership: { guildId: SUZUMINA_GUILD_ID, userId: "123", isMember: true },
+		});
 	});
 
 	it("対象 Guild に非所属 → isMember false", async () => {
@@ -42,18 +45,19 @@ describe("fetchDiscordGuildMembership", () => {
 			Promise.resolve(new Response(JSON.stringify([{ id: "other" }]), { status: 200 })),
 		);
 		const r = await fetchDiscordGuildMembership("token", "123");
-		expect(r).toMatchObject({ isMember: false });
+		expect(r).toMatchObject({ ok: true, membership: { isMember: false } });
 	});
 
-	it("レスポンス NG → null", async () => {
+	it("レスポンス NG → ok: false と HTTP status（非メンバー確定と区別する）", async () => {
 		stubFetch(() => Promise.resolve(new Response("err", { status: 401 })));
-		expect(await fetchDiscordGuildMembership("token", "123")).toBeNull();
+		expect(await fetchDiscordGuildMembership("token", "123")).toEqual({ ok: false, status: 401 });
 	});
 
-	it("例外 → null", async () => {
+	it("例外 → ok: false と error", async () => {
+		const err = new Error("network");
 		stubFetch(() => {
-			throw new Error("network");
+			throw err;
 		});
-		expect(await fetchDiscordGuildMembership("token", "123")).toBeNull();
+		expect(await fetchDiscordGuildMembership("token", "123")).toEqual({ ok: false, error: err });
 	});
 });
