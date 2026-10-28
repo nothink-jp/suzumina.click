@@ -117,13 +117,15 @@ jobs:
           # env の正本はここ。--set-env-vars / --set-secrets は既存 env を全置換するため、ここに無い env は
           # live から消える（cloud_run.tf の env は ignore_changes で bootstrap 時の初期値のみ）。
           # ALLOWED_HOSTS が無いと proxy.ts の host 検証が素通しになり、run.app へ直アクセスできる（SPR-339）。
+          # TURNSTILE_SITE_KEY は公開値なので repo variable に置く（未設定ならフォームは送信不可＝fail closed・SPR-398）。
+          # TURNSTILE_SECRET_KEY は Secret Manager にバージョンが無いとデプロイ自体が失敗する。
           gcloud run deploy ${{ env.SERVICE_NAME }} \
             --image $IMAGE_TAG \
             --region ${{ env.REGION }} \
             --platform managed \
             --service-account="cloud-run-nextjs@${{ env.PROJECT_ID }}.iam.gserviceaccount.com" \
-            --set-env-vars="NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1,GOOGLE_CLOUD_PROJECT=${{ env.PROJECT_ID }},BETTER_AUTH_URL=https://suzumina.click,NEXT_PUBLIC_GA_MEASUREMENT_ID=G-9SYZ48LBPH,NEXT_PUBLIC_GTM_ID=GTM-W7QT5PCR,ALLOWED_HOSTS=suzumina.click" \
-            --set-secrets="DISCORD_CLIENT_ID=DISCORD_CLIENT_ID:latest,DISCORD_CLIENT_SECRET=DISCORD_CLIENT_SECRET:latest,BETTER_AUTH_SECRET=BETTER_AUTH_SECRET:latest,GEMINI_API_KEY=GEMINI_API_KEY:latest,RESEND_API_KEY=RESEND_API_KEY:latest,CONTACT_EMAIL_RECIPIENTS=CONTACT_EMAIL_RECIPIENTS:latest"
+            --set-env-vars="NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1,GOOGLE_CLOUD_PROJECT=${{ env.PROJECT_ID }},BETTER_AUTH_URL=https://suzumina.click,NEXT_PUBLIC_GA_MEASUREMENT_ID=G-9SYZ48LBPH,NEXT_PUBLIC_GTM_ID=GTM-W7QT5PCR,ALLOWED_HOSTS=suzumina.click,TURNSTILE_SITE_KEY=${{ vars.TURNSTILE_SITE_KEY }}" \
+            --set-secrets="DISCORD_CLIENT_ID=DISCORD_CLIENT_ID:latest,DISCORD_CLIENT_SECRET=DISCORD_CLIENT_SECRET:latest,BETTER_AUTH_SECRET=BETTER_AUTH_SECRET:latest,GEMINI_API_KEY=GEMINI_API_KEY:latest,RESEND_API_KEY=RESEND_API_KEY:latest,CONTACT_EMAIL_RECIPIENTS=CONTACT_EMAIL_RECIPIENTS:latest,TURNSTILE_SECRET_KEY=TURNSTILE_SECRET_KEY:latest"
           
           echo "✅ Deployment completed successfully"
       

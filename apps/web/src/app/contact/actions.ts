@@ -6,6 +6,7 @@ import { z } from "zod";
 import { sendContactNotification } from "@/lib/email";
 import { getFirestore } from "@/lib/firestore";
 import { error as logError } from "@/lib/logger";
+import { verifyTurnstileToken } from "@/lib/turnstile";
 
 export interface ContactSubmissionResult {
 	success: boolean;
@@ -16,8 +17,14 @@ export interface ContactSubmissionResult {
 
 /**
  * お問い合わせフォームを送信するServer Action
+ *
+ * Turnstile の検証に通ったときだけ Firestore に保存しメールを送る（SPR-398）。
+ * トークンは使い捨てなので、失敗したらクライアント側でウィジェットをリセットして取り直すこと
  */
-export async function submitContactForm(data: ContactFormData): Promise<ContactSubmissionResult> {
+export async function submitContactForm(
+	data: ContactFormData,
+	turnstileToken: string,
+): Promise<ContactSubmissionResult> {
 	try {
 		// バリデーション
 		const validatedData = ContactFormDataSchema.parse(data);
@@ -31,6 +38,13 @@ export async function submitContactForm(data: ContactFormData): Promise<ContactS
 			headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ||
 			"unknown";
 		const userAgent = headersList.get("user-agent") || "unknown";
+
+		if (!(await verifyTurnstileToken(turnstileToken, clientIp))) {
+			return {
+				success: false,
+				message: "送信前の確認に失敗しました。もう一度お試しください",
+			};
+		}
 
 		// Firestoreに保存するデータ
 		const now = new Date().toISOString();

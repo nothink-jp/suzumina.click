@@ -8,7 +8,7 @@ import dynamic from "next/dynamic";
  * 実フォーム (種別 select / 件名 / 内容 textarea / メール / 送信ボタン) の
  * 構造と高さに近づけて CLS を抑える。
  */
-function ContactFormSkeleton() {
+export function ContactFormSkeleton() {
 	return (
 		<div className="space-y-6" data-testid="contact-form-skeleton" aria-hidden>
 			{/* お問い合わせ種別 */}
@@ -50,6 +50,6 @@ const ContactForm = dynamic(() => import("./contact-form").then((m) => m.Contact
 	loading: () => <ContactFormSkeleton />,
 });
 
-export function ContactFormClient() {
-	return <ContactForm />;
+export function ContactFormClient({ turnstileSiteKey }: { turnstileSiteKey?: string }) {
+	return <ContactForm turnstileSiteKey={turnstileSiteKey} />;
 }

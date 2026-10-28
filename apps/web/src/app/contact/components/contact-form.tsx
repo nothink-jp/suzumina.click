@@ -17,6 +17,7 @@ import { useId, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { submitContactForm } from "../actions";
+import { TurnstileWidget } from "./turnstile-widget";
 
 // フォームスキーマ（エラーメッセージ付き）
 const contactFormSchema = z.object({
@@ -78,10 +79,25 @@ function getPlaceholder(category: string): string {
 	}
 }
 
-export function ContactForm() {
+/** 送信ボタンが押せない理由（押せるなら undefined） */
+function getSubmitBlockedReason(isValid: boolean, hasToken: boolean): string | undefined {
+	if (!isValid) return "必須項目をすべて入力してください";
+	if (!hasToken) return "送信前の確認が終わるまでお待ちください";
+	return undefined;
+}
+
+interface ContactFormProps {
+	/** Turnstile のサイトキー。未設定（本番の設定漏れ）なら送信不可を表示する */
+	turnstileSiteKey?: string;
+}
+
+export function ContactForm({ turnstileSiteKey }: ContactFormProps) {
 	const [isSubmitted, setIsSubmitted] = useState(false);
 	const [isPending, startTransition] = useTransition();
 	const [submitError, setSubmitError] = useState<string | null>(null);
+	const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+	const [turnstileResetSignal, setTurnstileResetSignal] = useState(0);
+	const [turnstileLoadFailed, setTurnstileLoadFailed] = useState(false);
 
 	// 一意なIDを生成
 	const subjectId = useId();
@@ -104,11 +120,12 @@ export function ContactForm() {
 	const content = watch("content");
 
 	const onSubmit = async (data: z.infer<typeof contactFormSchema>) => {
+		if (!turnstileToken) return;
 		setSubmitError(null);
 
 		startTransition(async () => {
 			try {
-				const result = await submitContactForm(data);
+				const result = await submitContactForm(data, turnstileToken);
 
 				if (result.success) {
 					setIsSubmitted(true);
@@ -119,12 +136,16 @@ export function ContactForm() {
 			} catch (_error) {
 				setSubmitError("送信に失敗しました。しばらく時間をおいてから再度お試しください。");
 			}
+			// トークンは使い捨てなので、成否にかかわらず次の送信用に取り直す
+			setTurnstileResetSignal((n) => n + 1);
 		});
 	};
 
 	if (isSubmitted) {
 		return <SuccessMessage onReset={() => setIsSubmitted(false)} />;
 	}
+
+	const submitBlockedReason = getSubmitBlockedReason(isValid, turnstileToken !== null);
 
 	const handleFormSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
@@ -211,6 +232,22 @@ export function ContactForm() {
 				</p>
 			</div>
 
+			{/* 送信前の確認（Turnstile） */}
+			{turnstileSiteKey && !turnstileLoadFailed ? (
+				<TurnstileWidget
+					siteKey={turnstileSiteKey}
+					onTokenChange={setTurnstileToken}
+					resetSignal={turnstileResetSignal}
+					onLoadError={() => setTurnstileLoadFailed(true)}
+				/>
+			) : (
+				<div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+					<p className="text-sm text-destructive">
+						送信前の確認を読み込めませんでした。時間をおいてページを再読み込みしてください。
+					</p>
+				</div>
+			)}
+
 			{/* エラーメッセージ */}
 			{submitError && (
 				<div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
@@ -222,9 +259,9 @@ export function ContactForm() {
 			<div className="pt-4">
 				<Button
 					type="submit"
-					disabled={!isValid || isPending}
+					disabled={submitBlockedReason !== undefined || isPending}
 					className="w-full flex items-center gap-2"
-					title={!isValid ? "必須項目をすべて入力してください" : undefined}
+					title={submitBlockedReason}
 				>
 					{isPending ? (
 						<>
