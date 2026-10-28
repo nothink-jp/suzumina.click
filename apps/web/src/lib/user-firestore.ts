@@ -17,7 +17,7 @@ import {
 } from "@suzumina.click/shared-types";
 import { getFirestore } from "./firestore";
 import { error as logError } from "./logger";
-import { calculateDailyLimit, getJSTDateString } from "./rate-limit-utils";
+import { calculateDailyLimit, getJSTDateString, isTodayJST } from "./rate-limit-utils";
 
 /**
  * Firestoreユーザーデータをフロントエンド表示用に変換
@@ -38,7 +38,8 @@ export function convertToFrontendUser(data: FirestoreUserData): FrontendUserData
 		// 表示用の追加情報
 		avatarUrl: createDiscordAvatarUrl(data.discordId, data.avatar),
 		memberSince: formatMemberSince(data.createdAt),
-		lastActiveText: formatRelativeTime(data.lastLoginAt),
+		// lastLoginAt は JST 日次でしか更新されない（updateLastLogin 参照）ため、当日分は時間単位で出さない
+		lastActiveText: isTodayJST(data.lastLoginAt) ? "今日" : formatRelativeTime(data.lastLoginAt),
 
 		// ファミリーメンバーシップ状態
 		isFamilyMember: data.flags?.isFamilyMember || false,
@@ -163,7 +164,9 @@ export async function updateUser(input: UpdateUserInput): Promise<FrontendUserDa
 }
 
 /**
- * 最終ログイン時刻を更新
+ * 最終ログイン時刻を更新（updatedAt も同時に動く）。
+ * session enrich からは JST 日次 1 回に間引いて呼ばれる（`shouldUpdateLastLogin`）ため、
+ * lastLoginAt は「JST でその日最初のセッション取得時刻」を表す。
  */
 export async function updateLastLogin(discordId: string): Promise<void> {
 	try {

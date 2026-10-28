@@ -44,6 +44,16 @@ export function hasDateChangedJST(lastDate: string | undefined): boolean {
 }
 
 /**
+ * ISO 日時が JST で今日か（欠落・不正値は false）
+ */
+export function isTodayJST(iso: string | undefined): boolean {
+	if (!iso) return false;
+	const date = new Date(iso);
+	if (Number.isNaN(date.getTime())) return false;
+	return getJSTDateString(date) === getJSTDateString();
+}
+
+/**
  * 残り時間を人間が読みやすい形式に変換
  */
 export function formatTimeUntilReset(): string {

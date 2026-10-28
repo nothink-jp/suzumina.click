@@ -8,7 +8,7 @@
 import type { FirestoreUserData, UserSession } from "@suzumina.click/shared-types";
 import { getFirestore } from "@/lib/firestore";
 import { warn } from "@/lib/logger";
-import { getJSTDateString, hasDateChangedJST } from "@/lib/rate-limit-utils";
+import { isTodayJST } from "@/lib/rate-limit-utils";
 import { updateLastLogin } from "@/lib/user-firestore";
 import { refreshGuildStatusIfNeeded } from "./guild-sync";
 import { buildUserSessionFromFirestore } from "./user-session";
@@ -25,10 +25,7 @@ function getDiscordId(user: unknown): string | undefined {
  * lastLogin の write を guild 同期と同じ日次 1 回に間引く判定。
  */
 export function shouldUpdateLastLogin(lastLoginAt: string | undefined): boolean {
-	if (!lastLoginAt) return true;
-	const last = new Date(lastLoginAt);
-	if (Number.isNaN(last.getTime())) return true;
-	return hasDateChangedJST(getJSTDateString(last));
+	return !isTodayJST(lastLoginAt);
 }
 
 /**
