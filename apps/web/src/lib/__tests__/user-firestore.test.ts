@@ -1,6 +1,11 @@
 import type { FirestoreUserData } from "@suzumina.click/shared-types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { convertToFrontendUser, getUserByDiscordId, updateLastLogin } from "../user-firestore";
+import {
+	convertToFrontendUser,
+	createUser,
+	getUserByDiscordId,
+	updateLastLogin,
+} from "../user-firestore";
 
 const { mockGet, mockUpdate, mockWarn, mockLogError } = vi.hoisted(() => ({
 	mockGet: vi.fn(),
@@ -89,6 +94,17 @@ describe("convertToFrontendUser のスキーマ不一致", () => {
 		}
 		expect(thrown).toBeInstanceOf(Error);
 		expect((thrown as Error).message).toBe("ユーザーデータの形式が無効です");
+		expect((thrown as Error).cause).toBeInstanceOf(Error);
+	});
+});
+
+describe("createUser の失敗", () => {
+	it("スキーマ検証の失敗を cause に残して投げる（初回サインアップのログで原因を追えるように）", async () => {
+		const input = { discordUser: { id: "", username: "" } } as unknown as Parameters<
+			typeof createUser
+		>[0];
+		const thrown = await createUser(input).catch((e: unknown) => e);
+		expect((thrown as Error).message).toBe("ユーザー作成に失敗しました");
 		expect((thrown as Error).cause).toBeInstanceOf(Error);
 	});
 });

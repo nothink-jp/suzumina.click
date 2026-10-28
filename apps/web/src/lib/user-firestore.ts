@@ -126,8 +126,8 @@ export async function createUser(input: CreateUserInput): Promise<FrontendUserDa
 		// Firestoreに保存
 		await firestore.collection("users").doc(input.discordUser.id).set(validatedData);
 		return convertToFrontendUser(validatedData);
-	} catch (_error) {
-		throw new Error("ユーザー作成に失敗しました");
+	} catch (error) {
+		throw new Error("ユーザー作成に失敗しました", { cause: error });
 	}
 }
 
@@ -158,8 +158,8 @@ export async function updateUser(input: UpdateUserInput): Promise<FrontendUserDa
 			throw new Error("更新後のユーザーデータが見つかりません");
 		}
 		return updatedUser;
-	} catch (_error) {
-		throw new Error("ユーザー更新に失敗しました");
+	} catch (error) {
+		throw new Error("ユーザー更新に失敗しました", { cause: error });
 	}
 }
 
