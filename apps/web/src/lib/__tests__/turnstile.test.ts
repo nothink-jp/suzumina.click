@@ -4,6 +4,7 @@ vi.mock("../logger", () => ({ error: vi.fn(), warn: vi.fn() }));
 
 const {
 	getTurnstileSiteKey,
+	logTurnstileSiteKeyMissing,
 	verifyTurnstileToken,
 	TURNSTILE_TEST_SECRET_KEY,
 	TURNSTILE_TEST_SITE_KEY,
@@ -98,6 +99,15 @@ describe("verifyTurnstileToken", () => {
 		fetchMock.mockResolvedValue(jsonResponse({ success: true }));
 		expect(await verifyTurnstileToken("tok")).toBe(true);
 		expect(sentBody().get("secret")).toBe(TURNSTILE_TEST_SECRET_KEY);
+	});
+});
+
+describe("logTurnstileSiteKeyMissing", () => {
+	it("監視が拾う alert（turnstile_site_key_missing）付きで ERROR を出す", () => {
+		logTurnstileSiteKeyMissing();
+		expect(logError).toHaveBeenCalledWith(expect.any(String), {
+			alert: "turnstile_site_key_missing",
+		});
 	});
 });
 

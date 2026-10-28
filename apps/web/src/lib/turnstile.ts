@@ -24,6 +24,18 @@ export function getTurnstileSiteKey(): string | undefined {
 	return process.env.TURNSTILE_SITE_KEY || (isProduction() ? undefined : TURNSTILE_TEST_SITE_KEY);
 }
 
+/**
+ * サイトキーが無くフォームを送信不可で表示したことを記録する（監視の契約: SPR-399）
+ *
+ * このときフォームはその場で送信を止め、サーバーの検証（{@link verifyTurnstileToken}）まで届かない。
+ * 検証側の alert だけでは鳴らないため、表示した側で出す
+ */
+export function logTurnstileSiteKeyMissing(): void {
+	logError("TURNSTILE_SITE_KEY が未設定のためお問い合わせフォームを送信不可で表示した", {
+		alert: "turnstile_site_key_missing",
+	});
+}
+
 function getSecretKey(): string | undefined {
 	return (
 		process.env.TURNSTILE_SECRET_KEY || (isProduction() ? undefined : TURNSTILE_TEST_SECRET_KEY)

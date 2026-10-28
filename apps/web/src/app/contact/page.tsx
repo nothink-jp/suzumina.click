@@ -3,7 +3,7 @@ import { AlertTriangle, Bug, HelpCircle, Lightbulb, MessageSquare } from "lucide
 import type { Metadata } from "next";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { getTurnstileSiteKey } from "@/lib/turnstile";
+import { getTurnstileSiteKey, logTurnstileSiteKeyMissing } from "@/lib/turnstile";
 import { ContactFormClient, ContactFormSkeleton } from "./components/contact-form-client";
 
 export const metadata: Metadata = {
@@ -28,7 +28,9 @@ export const metadata: Metadata = {
  */
 async function ContactFormSection() {
 	await connection();
-	return <ContactFormClient turnstileSiteKey={getTurnstileSiteKey()} />;
+	const turnstileSiteKey = getTurnstileSiteKey();
+	if (!turnstileSiteKey) logTurnstileSiteKeyMissing();
+	return <ContactFormClient turnstileSiteKey={turnstileSiteKey} />;
 }
 
 export default function ContactPage() {
