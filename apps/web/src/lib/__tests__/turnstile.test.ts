@@ -63,9 +63,14 @@ describe("verifyTurnstileToken", () => {
 	});
 
 	it("通信失敗・タイムアウトは false（fail closed）", async () => {
-		fetchMock.mockRejectedValue(new DOMException("timed out", "TimeoutError"));
+		const timeout = new DOMException("timed out", "TimeoutError");
+		fetchMock.mockRejectedValue(timeout);
 		expect(await verifyTurnstileToken("tok")).toBe(false);
-		expect(logError).toHaveBeenCalled();
+		// Cloudflare 障害で一番起きやすい経路なので、HTTP エラーと同じ alert で拾えること
+		expect(logError).toHaveBeenCalledWith(expect.any(String), {
+			alert: "turnstile_siteverify_unavailable",
+			error: timeout,
+		});
 	});
 
 	it("siteverify の HTTP エラーは false（fail closed）", async () => {

@@ -77,7 +77,10 @@ export async function verifyTurnstileToken(token: string, remoteIp?: string): Pr
 		}
 		return result.success === true;
 	} catch (err) {
-		logError("Turnstile siteverify に到達できなかった", err);
+		logError("Turnstile siteverify に到達できなかった", {
+			alert: "turnstile_siteverify_unavailable",
+			error: err,
+		});
 		return false;
 	}
 }

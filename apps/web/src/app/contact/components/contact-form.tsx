@@ -136,7 +136,9 @@ export function ContactForm({ turnstileSiteKey }: ContactFormProps) {
 			} catch (_error) {
 				setSubmitError("送信に失敗しました。しばらく時間をおいてから再度お試しください。");
 			}
-			// トークンは使い捨てなので、成否にかかわらず次の送信用に取り直す
+			// トークンは使い捨てなので、成否にかかわらず捨てて取り直す。成功時はウィジェットが
+			// アンマウントされ reset effect が走らないため、ここで直接捨てる（使用済みトークンで送れないように）
+			setTurnstileToken(null);
 			setTurnstileResetSignal((n) => n + 1);
 		});
 	};
