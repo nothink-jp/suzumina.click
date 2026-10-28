@@ -1,3 +1,4 @@
+import type { ContactCategory } from "@suzumina.click/shared-types";
 import { Resend } from "resend";
 import { escapeHtml } from "@/utils/escape-html";
 import { error as logError } from "./logger";
@@ -5,7 +6,7 @@ import { error as logError } from "./logger";
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export interface ContactEmailData {
-	category: string;
+	category: ContactCategory;
 	subject: string;
 	content: string;
 	email?: string;
@@ -14,23 +15,32 @@ export interface ContactEmailData {
 	timestamp: string;
 }
 
+const categoryLabels: Record<ContactCategory, string> = {
+	bug: "🐛 バグ報告",
+	feature: "💡 機能要望",
+	usage: "❓ 使い方",
+	other: "📢 その他",
+};
+
+/**
+ * 運営宛てにお問い合わせの通知メールを送る
+ *
+ * 失敗しても throw せず false を返す（通知は best-effort で、保存済みのお問い合わせを巻き戻さないため）
+ */
 export async function sendContactNotification(data: ContactEmailData): Promise<boolean> {
 	try {
-		const categoryLabels = {
-			bug: "🐛 バグ報告",
-			feature: "💡 機能要望",
-			usage: "❓ 使い方",
-			other: "📢 その他",
-		};
-
-		const categoryLabel =
-			categoryLabels[data.category as keyof typeof categoryLabels] || "📢 その他";
+		const categoryLabel = categoryLabels[data.category];
+		const senderEmail = data.email || "未入力";
+		// Cloud Run は UTC で動くので、タイムゾーンを明示しないと UTC の時刻がそのまま出る
+		const submittedAt = new Date(data.timestamp).toLocaleString("ja-JP", {
+			timeZone: "Asia/Tokyo",
+		});
 
 		// 件名・本文・UA 等は送信者が自由に決められるため、HTML 版だけエスケープする（テキスト版は生のまま）
 		const html = {
 			subject: escapeHtml(data.subject),
 			content: escapeHtml(data.content),
-			email: escapeHtml(data.email || "未入力"),
+			email: escapeHtml(senderEmail),
 			ipAddress: escapeHtml(data.ipAddress),
 			userAgent: escapeHtml(data.userAgent),
 		};
@@ -42,7 +52,7 @@ export async function sendContactNotification(data: ContactEmailData): Promise<b
 				<p><strong>種別:</strong> ${categoryLabel}</p>
 				<p><strong>件名:</strong> ${html.subject}</p>
 				<p><strong>送信者メール:</strong> ${html.email}</p>
-				<p><strong>送信時刻:</strong> ${new Date(data.timestamp).toLocaleString("ja-JP")}</p>
+				<p><strong>送信時刻:</strong> ${submittedAt}</p>
 			</div>
 			
 			<div style="background-color: #fff; padding: 20px; border: 1px solid #ddd; border-radius: 8px; margin: 20px 0;">
@@ -69,8 +79,8 @@ ${html.content}
 
 種別: ${categoryLabel}
 件名: ${data.subject}
-送信者メール: ${data.email || "未入力"}
-送信時刻: ${new Date(data.timestamp).toLocaleString("ja-JP")}
+送信者メール: ${senderEmail}
+送信時刻: ${submittedAt}
 
 お問い合わせ内容:
 ${data.content}

@@ -35,6 +35,8 @@ const contactFormSchema = z.object({
 	email: z.string().email("有効なメールアドレスを入力してください").optional().or(z.literal("")),
 });
 
+type ContactFormValues = z.infer<typeof contactFormSchema>;
+
 const categoryOptions = [
 	{ value: "bug", label: "🐛 バグ報告", description: "サイトの不具合" },
 	{ value: "feature", label: "💡 機能要望", description: "新機能の提案" },
@@ -111,7 +113,7 @@ export function ContactForm({ turnstileSiteKey }: ContactFormProps) {
 		watch,
 		formState: { errors, isValid },
 		reset,
-	} = useForm<z.infer<typeof contactFormSchema>>({
+	} = useForm<ContactFormValues>({
 		resolver: zodResolver(contactFormSchema),
 		mode: "onChange", // リアルタイムバリデーション
 	});
@@ -119,7 +121,7 @@ export function ContactForm({ turnstileSiteKey }: ContactFormProps) {
 	const selectedCategory = watch("category");
 	const content = watch("content");
 
-	const onSubmit = async (data: z.infer<typeof contactFormSchema>) => {
+	const onSubmit = async (data: ContactFormValues) => {
 		if (!turnstileToken) return;
 		setSubmitError(null);
 
@@ -149,13 +151,8 @@ export function ContactForm({ turnstileSiteKey }: ContactFormProps) {
 
 	const submitBlockedReason = getSubmitBlockedReason(isValid, turnstileToken !== null);
 
-	const handleFormSubmit = (e: React.FormEvent) => {
-		e.preventDefault();
-		handleSubmit(onSubmit)(e);
-	};
-
 	return (
-		<form onSubmit={handleFormSubmit} className="space-y-6">
+		<form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
 			{/* お問い合わせ種別 */}
 			<div className="space-y-2">
 				<Label htmlFor="category">
@@ -163,9 +160,7 @@ export function ContactForm({ turnstileSiteKey }: ContactFormProps) {
 				</Label>
 				<Select
 					items={categoryOptions}
-					onValueChange={(value) =>
-						setValue("category", value as z.infer<typeof contactFormSchema>["category"])
-					}
+					onValueChange={(value) => setValue("category", value as ContactFormValues["category"])}
 				>
 					<SelectTrigger>
 						<SelectValue placeholder="種別を選択してください" />

@@ -5,7 +5,6 @@ import { headers } from "next/headers";
 import { z } from "zod";
 import { sendContactNotification } from "@/lib/email";
 import { getFirestore } from "@/lib/firestore";
-import { error as logError } from "@/lib/logger";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 
 export interface ContactSubmissionResult {
@@ -63,21 +62,16 @@ export async function submitContactForm(
 		const firestoreDb = getFirestore();
 		const contactRef = await firestoreDb.collection("contacts").add(contactData);
 
-		// メール通知送信（非同期、失敗してもメイン処理は続行）
-		try {
-			await sendContactNotification({
-				category: validatedData.category,
-				subject: validatedData.subject,
-				content: validatedData.content,
-				email: validatedData.email === "" ? undefined : validatedData.email,
-				ipAddress: clientIp,
-				userAgent,
-				timestamp: now,
-			});
-		} catch (emailError) {
-			// メール送信失敗はログに記録するが、メイン処理は続行
-			logError("Failed to send contact notification email", emailError);
-		}
+		// 通知は best-effort（失敗は sendContactNotification 内でログに残り、ここには false が返るだけ）
+		await sendContactNotification({
+			category: validatedData.category,
+			subject: validatedData.subject,
+			content: validatedData.content,
+			email: contactData.email,
+			ipAddress: clientIp,
+			userAgent,
+			timestamp: now,
+		});
 
 		return {
 			success: true,

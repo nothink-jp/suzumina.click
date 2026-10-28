@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { ContactEmailData } from "../email";
 
 const send = vi.fn();
 vi.mock("resend", () => ({
@@ -10,7 +11,7 @@ vi.mock("../logger", () => ({ error: vi.fn() }));
 
 const { sendContactNotification } = await import("../email");
 
-const base = {
+const base: ContactEmailData = {
 	category: "bug",
 	subject: "件名",
 	content: "本文です",
@@ -49,6 +50,13 @@ describe("sendContactNotification", () => {
 	it("テキスト版は生のまま入る", async () => {
 		await sendContactNotification({ ...base, subject: "<b>太字</b>" });
 		expect(sentMail().text).toContain("件名: <b>太字</b>");
+	});
+
+	it("送信時刻はサーバーのタイムゾーンに関係なく JST で出る", async () => {
+		await sendContactNotification({ ...base, timestamp: "2026-10-28T00:00:00.000Z" });
+		const { html, text } = sentMail();
+		expect(html).toContain("2026/10/28 9:00:00");
+		expect(text).toContain("送信時刻: 2026/10/28 9:00:00");
 	});
 
 	it("送信失敗は false を返す", async () => {
