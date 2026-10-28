@@ -48,8 +48,9 @@ export function convertToFrontendUser(data: FirestoreUserData): FrontendUserData
 
 	try {
 		return FrontendUserSchema.parse(frontendData);
-	} catch (_error) {
-		throw new Error("ユーザーデータの形式が無効です");
+	} catch (error) {
+		// ZodError を cause に残し、呼び出し側のログでどのフィールドが不一致か分かるようにする
+		throw new Error("ユーザーデータの形式が無効です", { cause: error });
 	}
 }
 

@@ -77,3 +77,18 @@ describe("失敗の観測（本番でも無音にしない）", () => {
 		});
 	});
 });
+
+describe("convertToFrontendUser のスキーマ不一致", () => {
+	it("ZodError を cause に残して投げる（ログで不一致フィールドを追えるように）", () => {
+		const broken = { discordId: "123" } as unknown as FirestoreUserData;
+		let thrown: unknown;
+		try {
+			convertToFrontendUser(broken);
+		} catch (e) {
+			thrown = e;
+		}
+		expect(thrown).toBeInstanceOf(Error);
+		expect((thrown as Error).message).toBe("ユーザーデータの形式が無効です");
+		expect((thrown as Error).cause).toBeInstanceOf(Error);
+	});
+});
