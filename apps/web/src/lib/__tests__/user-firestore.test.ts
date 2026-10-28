@@ -3,21 +3,25 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ZodError } from "zod";
 import {
 	convertToFrontendUser,
-	createUser,
+	createUserIfAbsent,
 	getUserByDiscordId,
 	updateLastLogin,
 } from "../user-firestore";
 
-const { mockGet, mockUpdate, mockWarn, mockLogError } = vi.hoisted(() => ({
+const { mockGet, mockUpdate, mockCreate, mockSet, mockWarn, mockLogError } = vi.hoisted(() => ({
 	mockGet: vi.fn(),
 	mockUpdate: vi.fn(),
+	mockCreate: vi.fn(),
+	mockSet: vi.fn(),
 	mockWarn: vi.fn(),
 	mockLogError: vi.fn(),
 }));
 
 vi.mock("../firestore", () => ({
 	getFirestore: () => ({
-		collection: () => ({ doc: () => ({ get: mockGet, update: mockUpdate }) }),
+		collection: () => ({
+			doc: () => ({ get: mockGet, update: mockUpdate, create: mockCreate, set: mockSet }),
+		}),
 	}),
 }));
 vi.mock("../logger", () => ({ warn: mockWarn, error: mockLogError }));
@@ -99,13 +103,47 @@ describe("convertToFrontendUser のスキーマ不一致", () => {
 	});
 });
 
-describe("createUser の失敗", () => {
+describe("createUserIfAbsent", () => {
+	const input = {
+		discordUser: { id: "123", username: "alice", globalName: "Alice", verified: true },
+		guildMembership: { guildId: "g", userId: "123", isMember: false },
+	} as Parameters<typeof createUserIfAbsent>[0];
+
+	beforeEach(() => vi.clearAllMocks());
+
+	it("set ではなく create で、検証済みの初期値を書き込む", async () => {
+		mockCreate.mockResolvedValue(undefined);
+		expect(await createUserIfAbsent(input)).toEqual({ created: true });
+		expect(mockCreate).toHaveBeenCalledWith(
+			expect.objectContaining({ discordId: "123", isActive: true, displayName: "Alice" }),
+		);
+		expect(mockCreate).toHaveBeenCalledTimes(1);
+		expect(mockSet).not.toHaveBeenCalled();
+	});
+
+	it("既存ドキュメントがあれば（ALREADY_EXISTS）上書きせず created: false を返し、投げない", async () => {
+		mockCreate.mockRejectedValue(
+			Object.assign(new Error("6 ALREADY_EXISTS: Document already exists"), { code: 6 }),
+		);
+		await expect(createUserIfAbsent(input)).resolves.toEqual({ created: false });
+		expect(mockSet).not.toHaveBeenCalled();
+	});
+
+	it("ALREADY_EXISTS 以外の Firestore エラーは cause に残して投げる", async () => {
+		const err = Object.assign(new Error("14 UNAVAILABLE"), { code: 14 });
+		mockCreate.mockRejectedValue(err);
+		const thrown = await createUserIfAbsent(input).catch((e: unknown) => e);
+		expect((thrown as Error).message).toBe("ユーザー作成に失敗しました");
+		expect((thrown as Error).cause).toBe(err);
+	});
+
 	it("スキーマ検証の失敗を cause に残して投げる（初回サインアップのログで原因を追えるように）", async () => {
-		const input = { discordUser: { id: "", username: "" } } as unknown as Parameters<
-			typeof createUser
+		const broken = { discordUser: { id: "", username: "" } } as unknown as Parameters<
+			typeof createUserIfAbsent
 		>[0];
-		const thrown = await createUser(input).catch((e: unknown) => e);
+		const thrown = await createUserIfAbsent(broken).catch((e: unknown) => e);
 		expect((thrown as Error).message).toBe("ユーザー作成に失敗しました");
 		expect((thrown as Error).cause).toBeInstanceOf(ZodError);
+		expect(mockCreate).not.toHaveBeenCalled();
 	});
 });
