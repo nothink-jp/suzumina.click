@@ -24,7 +24,8 @@ export async function submitContactForm(data: ContactFormData): Promise<ContactS
 
 		// ヘッダー情報の取得（スパム対策用）
 		const headersList = await headers();
-		// Cloudflare 配下では x-forwarded-for の先頭はクライアントが偽装できる。cf-connecting-ip が正
+		// Cloudflare 経由なら cf-connecting-ip が正（x-forwarded-for の先頭はクライアントが偽装できる）。
+		// ただしオリジン迂回（SPR-366/367）では cf-connecting-ip もクライアントが付けられるため信頼キーにしない
 		const clientIp =
 			headersList.get("cf-connecting-ip")?.trim() ||
 			headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ||
