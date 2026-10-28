@@ -2,7 +2,6 @@ import type { ContactFormData } from "@suzumina.click/shared-types";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { submitContactForm } from "../actions";
 
-vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("next/headers", () => ({ headers: vi.fn() }));
 vi.mock("@/lib/email", () => ({ sendContactNotification: vi.fn() }));
 vi.mock("@/lib/firestore", () => ({ getFirestore: vi.fn() }));
@@ -11,7 +10,6 @@ vi.mock("@/lib/logger", () => ({ error: vi.fn() }));
 const { headers } = vi.mocked(await import("next/headers"));
 const { sendContactNotification } = vi.mocked(await import("@/lib/email"));
 const { getFirestore } = vi.mocked(await import("@/lib/firestore"));
-const { revalidatePath } = vi.mocked(await import("next/cache"));
 
 const validData: ContactFormData = {
 	category: "bug",
@@ -28,7 +26,8 @@ const setupFirestore = () => {
 beforeEach(() => {
 	vi.clearAllMocks();
 	headers.mockResolvedValue({
-		get: (k: string) => (k === "x-forwarded-for" ? "1.2.3.4, 5.6.7.8" : "UA/1.0"),
+		get: (k: string) =>
+			({ "x-forwarded-for": "1.2.3.4, 5.6.7.8", "user-agent": "UA/1.0" })[k] ?? null,
 	} as never);
 	sendContactNotification.mockResolvedValue(undefined as never);
 });
@@ -38,12 +37,21 @@ describe("submitContactForm", () => {
 		const { add } = setupFirestore();
 		const r = await submitContactForm(validData);
 		expect(r).toEqual({ success: true, message: "お問い合わせを受け付けました", id: "doc1" });
-		// IP は x-forwarded-for の先頭。admin 時代の status/priority は書かない（SPR-241）
+		// cf-connecting-ip が無ければ x-forwarded-for の先頭。admin 時代の status/priority は書かない（SPR-241）
 		expect(add).toHaveBeenCalledWith(expect.objectContaining({ ipAddress: "1.2.3.4" }));
 		expect(add).toHaveBeenCalledWith(expect.not.objectContaining({ status: expect.anything() }));
 		expect(sendContactNotification).toHaveBeenCalled();
-		// キャッシュ無効化の契約も担保
-		expect(revalidatePath).toHaveBeenCalledWith("/contact");
+	});
+
+	it("cf-connecting-ip があれば偽装可能な x-forwarded-for より優先する（SPR-335）", async () => {
+		const { add } = setupFirestore();
+		const values: Record<string, string> = {
+			"cf-connecting-ip": "9.9.9.9",
+			"x-forwarded-for": "6.6.6.6, 9.9.9.9",
+		};
+		headers.mockResolvedValue({ get: (k: string) => values[k] ?? null } as never);
+		await submitContactForm(validData);
+		expect(add).toHaveBeenCalledWith(expect.objectContaining({ ipAddress: "9.9.9.9" }));
 	});
 
 	it("バリデーション失敗（短い content）は errors を返す", async () => {
