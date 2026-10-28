@@ -12,8 +12,8 @@
 # 検証の失敗（success: false＝ボットや期限切れトークン）は WARN で alert を付けておらず、対象外。
 # alert の値は監視の契約。turnstile.ts 側を変えたらこのフィルタも同じ PR で直す（CLAUDE.md §1）。
 
-resource "google_logging_metric" "turnstile_verification_unavailable" {
-  name    = "turnstile_verification_unavailable"
+resource "google_logging_metric" "turnstile_unavailable" {
+  name    = "turnstile_unavailable"
   project = var.gcp_project_id
 
   filter = <<-EOT
@@ -25,7 +25,7 @@ resource "google_logging_metric" "turnstile_verification_unavailable" {
   metric_descriptor {
     metric_kind  = "DELTA"
     value_type   = "INT64"
-    display_name = "Turnstile verification unavailable"
+    display_name = "Turnstile unavailable"
 
     labels {
       key         = "alert"
@@ -40,8 +40,8 @@ resource "google_logging_metric" "turnstile_verification_unavailable" {
   }
 }
 
-resource "google_monitoring_alert_policy" "turnstile_verification_unavailable" {
-  display_name = "Turnstile Verification Unavailable Alert"
+resource "google_monitoring_alert_policy" "turnstile_unavailable" {
+  display_name = "Turnstile Unavailable Alert"
   project      = var.gcp_project_id
   combiner     = "OR"
 
@@ -50,7 +50,7 @@ resource "google_monitoring_alert_policy" "turnstile_verification_unavailable" {
 
     condition_threshold {
       # metric type は .name で参照する（.id は provider 差でフルパス化し得るため・#703 レビュー）
-      filter = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.turnstile_verification_unavailable.name}\" resource.type=\"cloud_run_revision\""
+      filter = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.turnstile_unavailable.name}\" resource.type=\"cloud_run_revision\""
 
       aggregations {
         alignment_period   = "300s"
@@ -96,7 +96,7 @@ resource "google_monitoring_alert_policy" "turnstile_verification_unavailable" {
 
     ## ログ確認
     ```bash
-    gcloud logging read 'resource.type="cloud_run_revision" AND jsonPayload.alert=~"^turnstile_"' --project=PROJECT_ID --freshness=1d --limit=20
+    gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="${var.cloud_run_service_name}" AND jsonPayload.alert=~"^turnstile_"' --project=PROJECT_ID --freshness=1d --limit=20
     ```
     EOT
     mime_type = "text/markdown"
@@ -104,6 +104,6 @@ resource "google_monitoring_alert_policy" "turnstile_verification_unavailable" {
 
   depends_on = [
     google_monitoring_notification_channel.email,
-    google_logging_metric.turnstile_verification_unavailable
+    google_logging_metric.turnstile_unavailable
   ]
 }
