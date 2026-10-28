@@ -9,6 +9,7 @@ import {
 	parseSuggestionResponse,
 	validateSegment,
 } from "@/lib/gemini/suggestion-core";
+import { consumeGeminiQuota } from "@/lib/gemini-rate-limit";
 import * as logger from "@/lib/logger";
 
 const VIDEO_ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
@@ -51,6 +52,11 @@ export async function generateAudioButtonSuggestions(
 		const segmentError = validateSegment(input.startTime, input.endTime);
 		if (segmentError) {
 			return { success: false, error: segmentError };
+		}
+
+		const quota = await consumeGeminiQuota(user.discordId, "suggestion");
+		if (!quota.allowed) {
+			return { success: false, error: quota.error };
 		}
 
 		const { startOffsetSeconds, endOffsetSeconds } = clipRange(input.startTime, input.endTime);

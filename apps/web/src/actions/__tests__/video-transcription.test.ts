@@ -6,6 +6,9 @@ vi.mock("@/lib/auth/server", () => ({ getCurrentUser: mockGetCurrentUser }));
 const mockGenerateClipContent = vi.fn();
 vi.mock("@/lib/gemini/client", () => ({ generateClipContent: mockGenerateClipContent }));
 
+const mockConsumeGeminiQuota = vi.fn();
+vi.mock("@/lib/gemini-rate-limit", () => ({ consumeGeminiQuota: mockConsumeGeminiQuota }));
+
 vi.mock("@/lib/logger", () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() }));
 
 const mockGetFirestore = vi.fn();
@@ -57,6 +60,7 @@ describe("getVideoTranscriptChunk (SPR-292)", () => {
 		vi.clearAllMocks();
 		mockGetCurrentUser.mockResolvedValue({ discordId: "u1", isActive: true });
 		mockGenerateClipContent.mockResolvedValue({ success: true, text: GEMINI_TEXT });
+		mockConsumeGeminiQuota.mockResolvedValue({ allowed: true });
 	});
 
 	it("未ログインは生成せず失敗を返す（認可ゲート正本 = getCurrentUser null チェック）", async () => {
@@ -94,6 +98,18 @@ describe("getVideoTranscriptChunk (SPR-292)", () => {
 		expect(mockGenerateClipContent).not.toHaveBeenCalled();
 	});
 
+	it("日次上限に達していたら Gemini を呼ばずにエラーを返す（保存しない・SPR-336）", async () => {
+		const { mockSet } = setupFirestore();
+		mockConsumeGeminiQuota.mockResolvedValue({ allowed: false, error: "本日のAI生成の上限" });
+
+		const result = await getVideoTranscriptChunk(VALID_INPUT);
+
+		expect(result).toEqual({ success: false, error: "本日のAI生成の上限" });
+		expect(mockConsumeGeminiQuota).toHaveBeenCalledWith("u1", "transcription");
+		expect(mockGenerateClipContent).not.toHaveBeenCalled();
+		expect(mockSet).not.toHaveBeenCalled();
+	});
+
 	it("キャッシュがあれば Gemini を呼ばずに返す", async () => {
 		setupFirestore({
 			cachedChunk: {
@@ -109,6 +125,8 @@ describe("getVideoTranscriptChunk (SPR-292)", () => {
 			data: { chunkIndex: 1, utterances: [{ start: 601, end: 603, text: "キャッシュ済み" }] },
 		});
 		expect(mockGenerateClipContent).not.toHaveBeenCalled();
+		// キャッシュ命中は日次枠を消費しない
+		expect(mockConsumeGeminiQuota).not.toHaveBeenCalled();
 	});
 
 	it("キャッシュが無ければ生成して保存する（オーバーラップ窓・SPR-291 の生成パラメータ）", async () => {

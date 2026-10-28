@@ -11,6 +11,7 @@ import {
 	parseTranscriptionResponse,
 	type TranscriptUtterance,
 } from "@/lib/gemini/transcription-core";
+import { consumeGeminiQuota } from "@/lib/gemini-rate-limit";
 import * as logger from "@/lib/logger";
 
 const VIDEO_ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
@@ -46,7 +47,7 @@ function chunkCollection(videoId: string) {
 	return getFirestore().collection("videos").doc(videoId).collection("transcriptChunks");
 }
 
-/** 生成本体: 動画の実在確認 → Gemini 生成 → 検証 → キャッシュ保存 */
+/** 生成本体: 動画の実在確認 → 日次枠の消費 → Gemini 生成 → 検証 → キャッシュ保存 */
 async function generateAndCacheChunk(
 	input: GetTranscriptChunkInput,
 	userId: string,
@@ -59,6 +60,11 @@ async function generateAndCacheChunk(
 	const videoDuration = parseDurationToSeconds(videoDoc.data()?.duration as string | undefined);
 	if (videoDuration <= 0 || input.chunkIndex > maxChunkIndex(videoDuration)) {
 		return { success: false, error: "チャンク指定が不正です" };
+	}
+
+	const quota = await consumeGeminiQuota(userId, "transcription");
+	if (!quota.allowed) {
+		return { success: false, error: quota.error };
 	}
 
 	const { chunkStart, chunkEnd, requestStart, requestEnd } = chunkRange(

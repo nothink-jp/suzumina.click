@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { calculateDailyLimit, formatTimeUntilReset } from "../rate-limit-utils";
+import {
+	calculateDailyLimit,
+	calculateGeminiDailyLimit,
+	formatTimeUntilReset,
+} from "../rate-limit-utils";
 
 describe("rate-limit-utils", () => {
 	describe("calculateDailyLimit", () => {
@@ -16,6 +20,15 @@ describe("rate-limit-utils", () => {
 		it("フラグが未定義の場合は10を返すこと", () => {
 			const limit = calculateDailyLimit(undefined);
 			expect(limit).toBe(10);
+		});
+	});
+
+	describe("calculateGeminiDailyLimit (SPR-336)", () => {
+		it("一般ユーザーは基本値、ファミリーは基本値 + ボーナス", () => {
+			expect(calculateGeminiDailyLimit(undefined, "transcription")).toBe(6);
+			expect(calculateGeminiDailyLimit({ isFamilyMember: true }, "transcription")).toBe(36);
+			expect(calculateGeminiDailyLimit({ isFamilyMember: false }, "suggestion")).toBe(30);
+			expect(calculateGeminiDailyLimit({ isFamilyMember: true }, "suggestion")).toBe(330);
 		});
 	});
 

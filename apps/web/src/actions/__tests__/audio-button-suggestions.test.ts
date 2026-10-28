@@ -6,6 +6,9 @@ vi.mock("@/lib/auth/server", () => ({ getCurrentUser: mockGetCurrentUser }));
 const mockGenerateClipContent = vi.fn();
 vi.mock("@/lib/gemini/client", () => ({ generateClipContent: mockGenerateClipContent }));
 
+const mockConsumeGeminiQuota = vi.fn();
+vi.mock("@/lib/gemini-rate-limit", () => ({ consumeGeminiQuota: mockConsumeGeminiQuota }));
+
 vi.mock("@/lib/logger", () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() }));
 
 const { generateAudioButtonSuggestions } = await import("../audio-button-suggestions");
@@ -27,6 +30,7 @@ describe("generateAudioButtonSuggestions (SPR-148)", () => {
 		vi.clearAllMocks();
 		mockGetCurrentUser.mockResolvedValue({ discordId: "u1", isActive: true });
 		mockGenerateClipContent.mockResolvedValue({ success: true, text: GEMINI_TEXT });
+		mockConsumeGeminiQuota.mockResolvedValue({ allowed: true });
 	});
 
 	it("区間±2秒のクリップで生成し、検証済み候補を返す", async () => {
@@ -80,6 +84,16 @@ describe("generateAudioButtonSuggestions (SPR-148)", () => {
 		});
 		expect(tooLong.success).toBe(false);
 
+		expect(mockGenerateClipContent).not.toHaveBeenCalled();
+	});
+
+	it("日次上限に達していたら Gemini を呼ばずにエラーを返す（SPR-336）", async () => {
+		mockConsumeGeminiQuota.mockResolvedValue({ allowed: false, error: "本日のAI生成の上限" });
+
+		const result = await generateAudioButtonSuggestions(VALID_INPUT);
+
+		expect(result).toEqual({ success: false, error: "本日のAI生成の上限" });
+		expect(mockConsumeGeminiQuota).toHaveBeenCalledWith("u1", "suggestion");
 		expect(mockGenerateClipContent).not.toHaveBeenCalled();
 	});
 

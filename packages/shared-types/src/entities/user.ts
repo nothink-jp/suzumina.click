@@ -80,6 +80,14 @@ export const FirestoreUserSchema = z.object({
 			guildChecked: z.boolean().default(false),
 		})
 		.optional(),
+	// Gemini 呼び出しの日次カウンタ（SPR-336）。上限は保存せず flags から都度計算する（正本は web の rate-limit-utils）
+	dailyGeminiUsage: z
+		.object({
+			date: z.string(), // YYYY-MM-DD形式（JST）
+			transcription: z.number().int().min(0).default(0),
+			suggestion: z.number().int().min(0).default(0),
+		})
+		.optional(),
 
 	// 管理情報
 	createdAt: z.string().datetime({
