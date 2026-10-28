@@ -64,15 +64,7 @@ export async function createAppUserOnFirstSignup(account: FirstSignupAccount): P
 			image?: string;
 		};
 		const fetched = await fetchDiscordGuildMembership(account.accessToken, discordId);
-		// 取得失敗でも作成は止めず非メンバーで作る。createUserIfAbsent が lastGuildCheckDate を当日にするため
-		// guild-sync の再判定は翌 JST 日になる（ファミリーでもその日は一般枠）。見えるよう warn に残す
-		if (!fetched.ok) {
-			warn("better-auth: 初回サインアップの guild 取得失敗（非メンバーとして作成）", {
-				discordId,
-				...(fetched.status === undefined ? {} : { status: fetched.status }),
-				...(fetched.error === undefined ? {} : { error: fetched.error }),
-			});
-		}
+		// 取得失敗でも作成は止めず非メンバーで作る
 		const guildMembership = fetched.ok
 			? fetched.membership
 			: {
@@ -80,7 +72,7 @@ export async function createAppUserOnFirstSignup(account: FirstSignupAccount): P
 					userId: discordId,
 					isMember: false,
 				};
-		await createUserIfAbsent({
+		const { created } = await createUserIfAbsent({
 			discordUser: {
 				id: discordId,
 				username: bu.name || bu.email?.split("@")[0] || "Unknown",
@@ -91,6 +83,16 @@ export async function createAppUserOnFirstSignup(account: FirstSignupAccount): P
 			},
 			guildMembership,
 		});
+		// 実際に非メンバーで作成したときだけ warn する（既存ユーザーは作成していないので出さない）。
+		// createUserIfAbsent が lastGuildCheckDate を当日にするため、guild-sync の再判定は翌 JST 日になる
+		// （ファミリーでもその日は一般枠）
+		if (created && !fetched.ok) {
+			warn("better-auth: 初回サインアップの guild 取得失敗（非メンバーとして作成）", {
+				discordId,
+				...(fetched.status === undefined ? {} : { status: fetched.status }),
+				...(fetched.error === undefined ? {} : { error: fetched.error }),
+			});
+		}
 	} catch (err) {
 		// discordId provisioning と同じく認証クリティカル（users/{discordId} 不在も appUser を null にする）。
 		// 本番でも検知できるよう常にエラーログを残す。

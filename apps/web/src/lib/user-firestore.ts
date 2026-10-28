@@ -79,15 +79,13 @@ export async function getUserByDiscordId(discordId: string): Promise<FrontendUse
 const FIRESTORE_ALREADY_EXISTS = 6;
 
 /**
- * `users/{discordId}` が無ければ新規作成する。既にあれば何もせず `{ created: false }` を返す
+ * `users/{discordId}` が無ければ新規作成し `{ created: true }`、既にあれば何もせず `{ created: false }` を返す
  * （既存ドキュメントが正本・上書きしない）。
  * 存在判定は事前の読み取りではなく `.create()` の ALREADY_EXISTS で行うため、読み取りの失敗が
  * 「存在しない」と誤判定されて既存ユーザーを初期値で上書きすることは構造的に起きない（SPR-396）。
  * @throws ALREADY_EXISTS 以外の作成失敗（スキーマ検証・Firestore エラーは cause に残す）
  */
-export async function createUserIfAbsent(
-	input: CreateUserInput,
-): Promise<{ created: true; user: FrontendUserData } | { created: false }> {
+export async function createUserIfAbsent(input: CreateUserInput): Promise<{ created: boolean }> {
 	try {
 		const firestore = getFirestore();
 		const now = new Date().toISOString();
@@ -134,7 +132,7 @@ export async function createUserIfAbsent(
 
 		// 既存ドキュメントがあれば ALREADY_EXISTS で失敗する（set と違い上書きしない）
 		await firestore.collection("users").doc(input.discordUser.id).create(validatedData);
-		return { created: true, user: convertToFrontendUser(validatedData) };
+		return { created: true };
 	} catch (error) {
 		if ((error as { code?: unknown } | null)?.code === FIRESTORE_ALREADY_EXISTS) {
 			return { created: false };

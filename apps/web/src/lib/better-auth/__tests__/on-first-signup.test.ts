@@ -2,18 +2,17 @@ import { SUZUMINA_GUILD_ID } from "@suzumina.click/shared-types";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createAppUserOnFirstSignup } from "../on-first-signup";
 
-const { mockCreateUser, mockFindOne, mockFetchMembership, mockWarn, mockLogError } = vi.hoisted(
-	() => ({
-		mockCreateUser: vi.fn(),
+const { mockCreateUserIfAbsent, mockFindOne, mockFetchMembership, mockWarn, mockLogError } =
+	vi.hoisted(() => ({
+		mockCreateUserIfAbsent: vi.fn(),
 		mockLogError: vi.fn(),
 		mockFindOne: vi.fn(),
 		mockFetchMembership: vi.fn(),
 		mockWarn: vi.fn(),
-	}),
-);
+	}));
 
 vi.mock("@/lib/user-firestore", () => ({
-	createUserIfAbsent: mockCreateUser,
+	createUserIfAbsent: mockCreateUserIfAbsent,
 }));
 vi.mock("../firestore-adapter", () => ({ firestoreOps: () => ({ findOne: mockFindOne }) }));
 vi.mock("../discord-guild", () => ({
@@ -28,14 +27,14 @@ describe("createAppUserOnFirstSignup の guild 取得", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		mockFindOne.mockResolvedValue({ name: "alice" });
-		mockCreateUser.mockResolvedValue({ created: true, user: {} });
+		mockCreateUserIfAbsent.mockResolvedValue({ created: true });
 	});
 
 	it("取得成功ならその membership で作成し、warn は出さない", async () => {
 		const membership = { guildId: SUZUMINA_GUILD_ID, userId: "123", isMember: true };
 		mockFetchMembership.mockResolvedValue({ ok: true, membership });
 		await createAppUserOnFirstSignup(account);
-		expect(mockCreateUser).toHaveBeenCalledWith(
+		expect(mockCreateUserIfAbsent).toHaveBeenCalledWith(
 			expect.objectContaining({ guildMembership: membership }),
 		);
 		expect(mockWarn).not.toHaveBeenCalled();
@@ -44,7 +43,7 @@ describe("createAppUserOnFirstSignup の guild 取得", () => {
 	it("取得失敗でも作成は止めず非メンバーで作り、status 付きで warn を出す", async () => {
 		mockFetchMembership.mockResolvedValue({ ok: false, status: 503 });
 		await createAppUserOnFirstSignup(account);
-		expect(mockCreateUser).toHaveBeenCalledWith(
+		expect(mockCreateUserIfAbsent).toHaveBeenCalledWith(
 			expect.objectContaining({
 				guildMembership: { guildId: SUZUMINA_GUILD_ID, userId: "123", isMember: false },
 			}),
@@ -64,16 +63,22 @@ describe("createAppUserOnFirstSignup の既存ユーザー保護（SPR-396）", 
 	});
 
 	it("事前の存在確認（読み取り）に頼らず createUserIfAbsent に任せる", async () => {
-		mockCreateUser.mockResolvedValue({ created: false });
+		mockCreateUserIfAbsent.mockResolvedValue({ created: false });
 		await createAppUserOnFirstSignup(account);
-		expect(mockCreateUser).toHaveBeenCalledTimes(1);
+		expect(mockCreateUserIfAbsent).toHaveBeenCalledTimes(1);
 		// 既存ユーザー（created: false）は正常系。エラーログは出さない
 		expect(mockLogError).not.toHaveBeenCalled();
 	});
 
+	it("既存ユーザーなら guild 取得に失敗していても「非メンバーとして作成」の warn を出さない", async () => {
+		mockCreateUserIfAbsent.mockResolvedValue({ created: false });
+		await createAppUserOnFirstSignup(account);
+		expect(mockWarn).not.toHaveBeenCalled();
+	});
+
 	it("作成が失敗したら throw せずエラーログを残す（サインアップは止めない）", async () => {
 		const err = new Error("ユーザー作成に失敗しました");
-		mockCreateUser.mockRejectedValue(err);
+		mockCreateUserIfAbsent.mockRejectedValue(err);
 		await expect(createAppUserOnFirstSignup(account)).resolves.toBeUndefined();
 		expect(mockLogError).toHaveBeenCalledWith("better-auth: app user 作成失敗", {
 			discordId: "123",

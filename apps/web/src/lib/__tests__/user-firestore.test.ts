@@ -111,10 +111,12 @@ describe("createUserIfAbsent", () => {
 
 	beforeEach(() => vi.clearAllMocks());
 
-	it("set ではなく create で書き込み、作成したユーザーを返す", async () => {
+	it("set ではなく create で、検証済みの初期値を書き込む", async () => {
 		mockCreate.mockResolvedValue(undefined);
-		const result = await createUserIfAbsent(input);
-		expect(result).toMatchObject({ created: true, user: { discordId: "123", isActive: true } });
+		expect(await createUserIfAbsent(input)).toEqual({ created: true });
+		expect(mockCreate).toHaveBeenCalledWith(
+			expect.objectContaining({ discordId: "123", isActive: true, displayName: "Alice" }),
+		);
 		expect(mockCreate).toHaveBeenCalledTimes(1);
 		expect(mockSet).not.toHaveBeenCalled();
 	});
