@@ -77,16 +77,6 @@ export async function getAudioButtonsList(
 		search?: string;
 		videoId?: string;
 		tags?: string[];
-		createdAfter?: string;
-		createdBefore?: string;
-		playCountMin?: number;
-		playCountMax?: number;
-		likeCountMin?: number;
-		likeCountMax?: number;
-		favoriteCountMin?: number;
-		favoriteCountMax?: number;
-		durationMin?: number;
-		durationMax?: number;
 	} = {},
 ): Promise<
 	| {
