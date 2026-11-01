@@ -45,24 +45,6 @@ function makeUser(lastLoginAt: string): FirestoreUserData {
 	};
 }
 
-describe("convertToFrontendUser の lastActiveText", () => {
-	beforeEach(() => {
-		vi.useFakeTimers();
-		vi.setSystemTime(NOW);
-	});
-	afterEach(() => vi.useRealTimers());
-
-	it("lastLoginAt は日次更新のため、当日分は「N時間前」ではなく「今日」", () => {
-		// 2026-06-01 07:00 JST（同日の朝。時間単位なら「15時間前」になる）
-		expect(convertToFrontendUser(makeUser("2026-05-31T22:00:00.000Z")).lastActiveText).toBe("今日");
-	});
-
-	it("前日以前は相対表示のまま", () => {
-		// 2026-05-31 22:00 JST（ちょうど 24 時間前）
-		expect(convertToFrontendUser(makeUser("2026-05-31T13:00:00.000Z")).lastActiveText).toBe("昨日");
-	});
-});
-
 describe("失敗の観測（本番でも無音にしない）", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -85,6 +67,19 @@ describe("失敗の観測（本番でも無音にしない）", () => {
 			discordId: "123",
 			error: err,
 		});
+	});
+});
+
+describe("convertToFrontendUser は現在時刻に依存しない", () => {
+	afterEach(() => vi.useRealTimers());
+
+	it("時刻を進めても変換結果が同じ（相対時刻は表示側で計算する＝SPR-401）", () => {
+		vi.useFakeTimers();
+		vi.setSystemTime(NOW);
+		const user = makeUser("2026-05-31T22:00:00.000Z");
+		const early = convertToFrontendUser(user);
+		vi.setSystemTime(new Date("2027-06-01T13:00:00.000Z"));
+		expect(convertToFrontendUser(user)).toEqual(early);
 	});
 });
 

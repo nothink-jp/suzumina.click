@@ -34,6 +34,7 @@ import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { useAgeVerification } from "@/contexts/age-verification-context";
 import { getCurrentConsentState, resetAllConsent } from "@/lib/consent/google-consent-mode";
+import { formatLastActiveText } from "@/lib/jst-date";
 import { FAMILY_DAILY_BUTTON_LIMIT, GENERAL_DAILY_BUTTON_LIMIT } from "@/lib/rate-limit-utils";
 import { updateUserProfile } from "../actions";
 
@@ -459,7 +460,9 @@ export function UnifiedSettingsContent({ user }: UnifiedSettingsContentProps) {
 											<UserCheck className="w-4 h-4" />
 											<span>最終ログイン</span>
 										</div>
-										<span className="font-medium">{user.lastActiveText}</span>
+										<span className="font-medium" suppressHydrationWarning>
+											{formatLastActiveText(user.lastLoginAt)}
+										</span>
 									</div>
 								</CardContent>
 							</Card>

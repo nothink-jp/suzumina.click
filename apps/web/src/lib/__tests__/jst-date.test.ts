@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
-import { getJSTDateString, hasDateChangedJST, isTodayJST } from "../jst-date";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { formatLastActiveText, getJSTDateString, hasDateChangedJST, isTodayJST } from "../jst-date";
 
 describe("jst-date", () => {
 	describe("getJSTDateString", () => {
@@ -40,5 +40,31 @@ describe("jst-date", () => {
 		it("lastDateが未定義の場合はtrueを返すこと", () => {
 			expect(hasDateChangedJST(undefined)).toBe(true);
 		});
+	});
+});
+
+describe("formatLastActiveText", () => {
+	beforeEach(() => {
+		vi.useFakeTimers();
+		// 2026-06-01 22:00 JST
+		vi.setSystemTime(new Date("2026-06-01T13:00:00.000Z"));
+	});
+	afterEach(() => vi.useRealTimers());
+
+	it("lastLoginAt は日次更新のため、当日分は「N時間前」ではなく「今日」", () => {
+		// 2026-06-01 07:00 JST（同日の朝。時間単位なら「15時間前」になる）
+		expect(formatLastActiveText("2026-05-31T22:00:00.000Z")).toBe("今日");
+	});
+
+	it("前日以前は相対表示のまま", () => {
+		// 2026-05-31 22:00 JST（ちょうど 24 時間前）
+		expect(formatLastActiveText("2026-05-31T13:00:00.000Z")).toBe("昨日");
+	});
+
+	it("呼んだ時刻を基準にする（変換時の値を持ち越さない）", () => {
+		const lastLoginAt = "2026-06-01T00:00:00.000Z"; // 2026-06-01 09:00 JST
+		expect(formatLastActiveText(lastLoginAt)).toBe("今日");
+		vi.setSystemTime(new Date("2026-06-04T13:00:00.000Z"));
+		expect(formatLastActiveText(lastLoginAt)).toBe("3日前");
 	});
 });
