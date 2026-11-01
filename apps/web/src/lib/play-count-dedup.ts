@@ -18,7 +18,7 @@ import { getFirestore } from "@/lib/firestore";
 export const PLAY_COUNT_DEDUP_COLLECTION = "playCountDedup";
 
 /** 同じクライアント × 同じボタンを 1 回とみなす窓 */
-export const PLAY_COUNT_DEDUP_WINDOW_MS = 10 * 60 * 1000;
+export const PLAY_COUNT_DEDUP_WINDOW_MS = 60 * 1000;
 
 /**
  * 抑止キーの HMAC 鍵。IPv4 は総当たりできるため素のハッシュにしない。
