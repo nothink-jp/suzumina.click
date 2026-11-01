@@ -50,8 +50,16 @@ describe("validateVideoForAudioButton", () => {
 		expect(r).toEqual({ valid: true });
 	});
 
-	it("videoType=archived は valid", async () => {
-		expect(await validate({ videoType: "archived" })).toEqual({ valid: true });
+	it("Firestore Timestamp の actualEndTime でも判定できる", async () => {
+		const r = await validate({
+			liveStreamingDetails: { actualEndTime: { toDate: () => new Date("2024-01-01T01:00:00Z") } },
+			duration: "PT20M",
+		});
+		expect(r).toEqual({ valid: true });
+	});
+
+	it("保存済み videoType=archived だけでは valid にしない（判定の正本は determineVideoType）", async () => {
+		expect((await validate({ videoType: "archived" })).valid).toBe(false);
 	});
 });
 

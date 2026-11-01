@@ -4,7 +4,7 @@
  * These types are used for Server/Client Component boundary in Next.js
  */
 
-import type { FirestoreServerVideoData } from "../types/firestore/video";
+import type { FirestoreServerVideoData, VideoType } from "../types/firestore/video";
 
 /**
  * Video list result for paginated queries
@@ -26,7 +26,8 @@ export interface VideoComputedProperties {
 	isLive: boolean;
 	isUpcoming: boolean;
 	canCreateButton: boolean;
-	videoType: "normal" | "archived" | "premiere" | "live" | "upcoming" | "possibly_live" | "short";
+	/** 正本は operations/video-type.ts の determineVideoType（読み取り時に毎回算出） */
+	videoType: VideoType;
 	thumbnailUrl: string;
 	youtubeUrl: string;
 }

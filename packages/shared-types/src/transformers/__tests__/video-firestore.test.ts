@@ -75,10 +75,28 @@ describe("fromFirestore", () => {
 			expect(r._computed.isUpcoming).toBe(true);
 		});
 
-		it("scheduledStartTime が過去（未終了）→ live", () => {
+		it("scheduledStartTime が過去（未開始のまま）→ possibly_live（live とは断定しない）", () => {
 			const r = fromFirestore(doc({ liveStreamingDetails: { scheduledStartTime: PAST } as never }));
+			expect(r._computed.videoType).toBe("possibly_live");
+			expect(r._computed.isLive).toBe(false);
+		});
+
+		it("actualStartTime あり（未終了）→ live", () => {
+			const r = fromFirestore(doc({ liveStreamingDetails: { actualStartTime: PAST } as never }));
 			expect(r._computed.videoType).toBe("live");
 			expect(r._computed.isLive).toBe(true);
+		});
+
+		it("#shorts は読み取り側でも short（書き込み側と同じ正本の判定）", () => {
+			const r = fromFirestore(doc({ title: "曲 #shorts" }));
+			expect(r._computed.videoType).toBe("short");
+		});
+
+		it("保存済み videoType ではなく再判定した値を使う", () => {
+			const r = fromFirestore(
+				doc({ videoType: "upcoming", liveStreamingDetails: { scheduledStartTime: PAST } as never }),
+			);
+			expect(r._computed.videoType).toBe("possibly_live");
 		});
 
 		it("liveBroadcastContent が live なら isLive", () => {

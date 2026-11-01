@@ -27,6 +27,16 @@ interface VideoFilterParams {
 }
 
 /**
+ * 動画種別フィルタの UI 値 → 対象とする videoType。ここに無い値（premiere 等）は同名の videoType と完全一致。
+ * short は専用の選択肢が無く、バッジも「通常動画」と表示するので regular に含める。
+ */
+const VIDEO_TYPE_FILTER = new Map<string, readonly string[]>([
+	["live_archive", ["archived"]],
+	["regular", ["normal", "short"]],
+	["live_upcoming", ["live", "upcoming", "possibly_live"]],
+]);
+
+/**
  * Video配列をフィルタリングするヘルパー関数
  */
 function filterVideos(videos: VideoPlainObject[], params: VideoFilterParams): VideoPlainObject[] {
@@ -68,29 +78,11 @@ function filterVideos(videos: VideoPlainObject[], params: VideoFilterParams): Vi
 		});
 	}
 
-	// 動画タイプフィルタ
-	if (params.videoType) {
-		filtered = filtered.filter((video) => {
-			const videoType = video._computed.videoType;
-
-			// UIとEntity間の値のマッピング
-			const typeMapping: Record<string, string> = {
-				live_archive: "archived",
-				regular: "normal",
-				live_upcoming: "live", // または 'upcoming'
-			};
-
-			const expectedType = params.videoType
-				? typeMapping[params.videoType] || params.videoType
-				: "normal";
-
-			// live_upcomingは特別な処理
-			if (params.videoType === "live_upcoming") {
-				return videoType === "live" || videoType === "upcoming" || videoType === "possibly_live";
-			}
-
-			return videoType === expectedType;
-		});
+	// 動画タイプフィルタ（UI の選択肢 → 対象とする _computed.videoType）
+	const { videoType: selectedType } = params;
+	if (selectedType) {
+		const acceptedTypes = VIDEO_TYPE_FILTER.get(selectedType) ?? [selectedType];
+		filtered = filtered.filter((video) => acceptedTypes.includes(video._computed.videoType));
 	}
 
 	return filtered;

@@ -5,6 +5,7 @@
  */
 
 import { videoOperations } from "../operations/video";
+import { determineVideoType } from "../operations/video-type";
 import type { VideoComputedProperties, VideoPlainObject } from "../plain-objects/video-plain";
 import type { FirestoreServerVideoData } from "../types/firestore/video";
 
@@ -100,54 +101,13 @@ export function toFirestore(video: VideoPlainObject): FirestoreServerVideoData {
 }
 
 /**
- * Parse ISO 8601 duration to seconds
- */
-function parseDurationToSeconds(duration: string): number {
-	const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-	if (!match) return 0;
-
-	const hours = Number.parseInt(match[1] || "0", 10);
-	const minutes = Number.parseInt(match[2] || "0", 10);
-	const seconds = Number.parseInt(match[3] || "0", 10);
-
-	return hours * 3600 + minutes * 60 + seconds;
-}
-
-/**
- * Determine video type based on live streaming details
- */
-function determineVideoType(
-	video: FirestoreServerVideoData | VideoPlainObject,
-): VideoComputedProperties["videoType"] {
-	if (!video.liveStreamingDetails) {
-		return "normal";
-	}
-
-	if (video.liveStreamingDetails.actualEndTime) {
-		// Check if it's long enough to be a live stream archive
-		const duration = video.duration;
-		const durationSeconds = duration ? parseDurationToSeconds(duration) : 0;
-		return durationSeconds > 15 * 60 ? "archived" : "premiere";
-	}
-
-	if (video.liveStreamingDetails.scheduledStartTime) {
-		const scheduledTime =
-			video.liveStreamingDetails.scheduledStartTime instanceof Date
-				? video.liveStreamingDetails.scheduledStartTime
-				: new Date(video.liveStreamingDetails.scheduledStartTime as string);
-		return scheduledTime > new Date() ? "upcoming" : "live";
-	}
-
-	return "normal";
-}
-
-/**
  * Computes derived properties for a video
  */
 function computeProperties(
 	video: FirestoreServerVideoData | VideoPlainObject,
 ): VideoComputedProperties {
 	const temp = video as VideoPlainObject;
+	// 保存済み videoType ではなく正本の判定関数で毎回算出する（時刻依存のため。video-type.ts 参照）
 	const videoType = determineVideoType(video);
 
 	// Computed properties based on the determined video type

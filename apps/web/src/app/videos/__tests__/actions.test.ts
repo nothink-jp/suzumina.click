@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import * as logger from "@/lib/logger";
 import { getPopularVideoTags, getVideoById, getVideosList, getVideoTitles } from "../actions";
 
 // Mock Firestore
@@ -302,6 +303,70 @@ describe("Video Server Actions", () => {
 
 			// getVideoTitlesが正しいパラメータで呼ばれることを確認
 			expect(mockGet).toHaveBeenCalled();
+		});
+
+		it("動画種別=通常動画（regular）は short も含める（バッジ表示と一致させる）", async () => {
+			const doc = (id: string, over: Record<string, unknown>) => ({
+				id,
+				data: () => ({
+					videoId: id,
+					title: `動画${id}`,
+					description: "",
+					channelId: "channel-1",
+					channelTitle: "チャンネル1",
+					publishedAt: new Date("2024-01-01").toISOString(),
+					thumbnailUrl: "https://example.com/thumb.jpg",
+					status: { privacyStatus: "public", uploadStatus: "processed" },
+					lastFetchedAt: new Date().toISOString(),
+					...over,
+				}),
+			});
+			mockGet.mockResolvedValue({
+				docs: [
+					doc("normal", { duration: "PT5M" }),
+					doc("short", { duration: "PT30S" }),
+					doc("archived", {
+						duration: "PT1H",
+						liveStreamingDetails: { actualEndTime: "2024-01-01T02:00:00.000Z" },
+					}),
+				],
+			});
+
+			const result = await getVideosList({ page: 1, limit: 12, filters: { videoType: "regular" } });
+
+			expect(result.items.map((v) => v.id).sort()).toEqual(["normal", "short"]);
+		});
+
+		it("動画種別の未知の値（プロトタイプ名を含む）は同名 videoType の完全一致で、例外にならない", async () => {
+			mockGet.mockResolvedValue({
+				docs: [
+					{
+						id: "v1",
+						data: () => ({
+							videoId: "v1",
+							title: "動画",
+							description: "",
+							channelId: "channel-1",
+							channelTitle: "チャンネル1",
+							publishedAt: new Date("2024-01-01").toISOString(),
+							thumbnailUrl: "https://example.com/thumb.jpg",
+							status: { privacyStatus: "public", uploadStatus: "processed" },
+							lastFetchedAt: new Date().toISOString(),
+							duration: "PT5M",
+						}),
+					},
+				],
+			});
+
+			const result = await getVideosList({
+				page: 1,
+				limit: 12,
+				filters: { videoType: "constructor" },
+			});
+
+			expect(result.items).toEqual([]);
+			// getVideosList は例外を catch して空を返すため、空であることだけでは「例外にならない」を示せない
+			expect(logger.error).not.toHaveBeenCalled();
 		});
 
 		it("フィルタ無しの深いページも全件の切り出しで、count()・読み捨てをしない（SPR-349）", async () => {
