@@ -12,17 +12,4 @@ export interface AudioButtonQuery {
 	page?: number;
 	limit?: number;
 	videoId?: string;
-	includeTotalCount?: boolean;
-	// Advanced filters
-	playCountMin?: number;
-	playCountMax?: number;
-	likeCountMin?: number;
-	likeCountMax?: number;
-	favoriteCountMin?: number;
-	favoriteCountMax?: number;
-	createdAfter?: string;
-	createdBefore?: string;
-	createdBy?: string;
-	durationMin?: number;
-	durationMax?: number;
 }

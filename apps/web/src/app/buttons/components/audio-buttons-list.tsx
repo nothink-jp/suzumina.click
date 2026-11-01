@@ -27,15 +27,6 @@ interface AudioButtonsListProps {
 				page?: string;
 				limit?: string;
 				sourceVideoId?: string;
-				playCountMin?: string;
-				playCountMax?: string;
-				likeCountMin?: string;
-				likeCountMax?: string;
-				favoriteCountMin?: string;
-				favoriteCountMax?: string;
-				createdAfter?: string;
-				createdBefore?: string;
-				createdBy?: string;
 		  };
 	initialData?: {
 		success: boolean;

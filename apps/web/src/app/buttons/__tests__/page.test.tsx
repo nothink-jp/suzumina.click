@@ -151,4 +151,23 @@ describe("AudioButtonsPage", () => {
 			}),
 		);
 	});
+
+	it("一覧が対応していない詳細フィルタの URL パラメータは Server Action に渡さない（SPR-382）", async () => {
+		const { getAudioButtonsList } = await import("../actions");
+		vi.mocked(getAudioButtonsList).mockClear();
+		// 旧 URL・手打ちで来うるパラメータ。型から外したので unknown 経由で渡す
+		const searchParams = Promise.resolve({
+			playCountMin: "10",
+			createdAfter: "2024-01-01",
+			creatorId: "user-1",
+		} as unknown as Record<string, string>);
+
+		render(await AudioButtonsPage({ searchParams }));
+
+		const [query] = vi.mocked(getAudioButtonsList).mock.calls[0] ?? [];
+		expect(query).toBeDefined();
+		expect(query).not.toHaveProperty("playCountMin");
+		expect(query).not.toHaveProperty("createdAfter");
+		expect(query).not.toHaveProperty("createdBy");
+	});
 });

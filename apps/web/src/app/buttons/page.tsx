@@ -24,16 +24,6 @@ interface SearchParams {
 	videoId?: string;
 	/** 表示切替（すべて/用途別/動画ごと・SPR-257） */
 	view?: string;
-	// 高度フィルタパラメータ
-	playCountMin?: string;
-	playCountMax?: string;
-	likeCountMin?: string;
-	likeCountMax?: string;
-	favoriteCountMin?: string;
-	favoriteCountMax?: string;
-	createdAfter?: string;
-	createdBefore?: string;
-	creatorId?: string;
 }
 
 /** グループビューが一度に扱う取得上限（本番80件・in-memory 基盤のため一括取得で足りる） */
@@ -47,20 +37,7 @@ function parseView(view: string | undefined): ButtonsView {
 
 /** featured（よく押されてる/新着）を出すか＝絞り込み・ページ送りのない素の一覧のみ */
 function isUnfiltered(params: SearchParams): boolean {
-	const filterKeys: Array<keyof SearchParams> = [
-		"q",
-		"tags",
-		"videoId",
-		"creatorId",
-		"playCountMin",
-		"playCountMax",
-		"likeCountMin",
-		"likeCountMax",
-		"favoriteCountMin",
-		"favoriteCountMax",
-		"createdAfter",
-		"createdBefore",
-	];
+	const filterKeys: Array<keyof SearchParams> = ["q", "tags", "videoId"];
 	if (filterKeys.some((key) => params[key])) return false;
 	return !params.page || Number(params.page) <= 1;
 }
@@ -155,28 +132,6 @@ export default async function AudioButtonsPage({ searchParams }: AudioButtonsPag
 		sortBy: (resolvedSearchParams.sort as AudioButtonQuery["sortBy"]) || "newest",
 		page: resolvedSearchParams.page ? Number(resolvedSearchParams.page) : 1,
 		videoId: resolvedSearchParams.videoId,
-		// 高度フィルタ
-		playCountMin: resolvedSearchParams.playCountMin
-			? Number(resolvedSearchParams.playCountMin)
-			: undefined,
-		playCountMax: resolvedSearchParams.playCountMax
-			? Number(resolvedSearchParams.playCountMax)
-			: undefined,
-		likeCountMin: resolvedSearchParams.likeCountMin
-			? Number(resolvedSearchParams.likeCountMin)
-			: undefined,
-		likeCountMax: resolvedSearchParams.likeCountMax
-			? Number(resolvedSearchParams.likeCountMax)
-			: undefined,
-		favoriteCountMin: resolvedSearchParams.favoriteCountMin
-			? Number(resolvedSearchParams.favoriteCountMin)
-			: undefined,
-		favoriteCountMax: resolvedSearchParams.favoriteCountMax
-			? Number(resolvedSearchParams.favoriteCountMax)
-			: undefined,
-		createdAfter: resolvedSearchParams.createdAfter,
-		createdBefore: resolvedSearchParams.createdBefore,
-		createdBy: resolvedSearchParams.creatorId,
 		limit: validLimit,
 	};
 
