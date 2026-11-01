@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatMemberSince, formatRelativeTime } from "../formatters/relative-time";
+import { formatDaysAgo, formatMemberSince, formatRelativeTime } from "../formatters/relative-time";
 
 const ago = (ms: number): string => new Date(Date.now() - ms).toISOString();
 const MIN = 60 * 1000;
@@ -48,5 +48,19 @@ describe("formatMemberSince", () => {
 
 	it("月は 1 始まりで返す", () => {
 		expect(formatMemberSince("2023-12-01T12:00:00.000Z")).toBe("2023年12月から");
+	});
+});
+
+describe("formatDaysAgo", () => {
+	it.each([
+		{ days: 1, expected: "昨日" },
+		{ days: 6, expected: "6日前" },
+		{ days: 7, expected: "1週間前" },
+		{ days: 29, expected: "4週間前" },
+		{ days: 30, expected: "1ヶ月前" },
+		{ days: 364, expected: "12ヶ月前" },
+		{ days: 365, expected: "1年前" },
+	])("$days 日 → $expected", ({ days, expected }) => {
+		expect(formatDaysAgo(days)).toBe(expected);
 	});
 });

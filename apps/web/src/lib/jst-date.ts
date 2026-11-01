@@ -1,4 +1,6 @@
-import { formatRelativeTime } from "@suzumina.click/shared-types";
+import { formatDaysAgo } from "@suzumina.click/shared-types";
+
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
  * JST（Asia/Tokyo）の暦日を扱うユーティリティ。
@@ -34,11 +36,23 @@ export function isTodayJST(iso: string | undefined): boolean {
 }
 
 /**
+ * JST の暦日の差（日数）。経過時間ではなく日付で数える（前日 23:00 → 翌 01:00 は 1）
+ */
+function jstCalendarDaysBetween(from: Date, to: Date): number {
+	// "YYYY-MM-DD" は UTC 0 時として解釈されるので、両者の差はちょうど日数の倍数になる
+	return Math.round(
+		(Date.parse(getJSTDateString(to)) - Date.parse(getJSTDateString(from))) / DAY_MS,
+	);
+}
+
+/**
  * 最終ログインの表示文言（「今日」/「昨日」/「3日前」…）。現在時刻に依存するので表示側で呼ぶ
  *
- * lastLoginAt は JST 日次でしか更新されない（updateLastLogin 参照）ため、当日分は時間単位で出さず「今日」にする。
+ * lastLoginAt は JST 日次でしか更新されない（updateLastLogin 参照）ため、時間単位では出さず JST の暦日の差で数える
+ * （前日 23:00 のログインは翌 01:00 でも「昨日」。SPR-402）。未来の時刻（時計ずれ）は「今日」に寄せる。
  * 変換時に計算して FrontendUserData に持たせない：use cache 等を通ると計算時点の値が残り続ける（SPR-401）
  */
 export function formatLastActiveText(lastLoginAt: string): string {
-	return isTodayJST(lastLoginAt) ? "今日" : formatRelativeTime(lastLoginAt);
+	const days = jstCalendarDaysBetween(new Date(lastLoginAt), new Date());
+	return days <= 0 ? "今日" : formatDaysAgo(days);
 }
