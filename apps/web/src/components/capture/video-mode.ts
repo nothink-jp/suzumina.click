@@ -1,4 +1,4 @@
-import type { VideoPlainObject } from "@suzumina.click/shared-types";
+import { isLiveVideoType, type VideoPlainObject } from "@suzumina.click/shared-types";
 
 /**
  * マーキング画面から見た動画のモード。
@@ -16,7 +16,7 @@ export type CaptureVideoMode = "live" | "upcoming" | "archived";
 
 export function resolveCaptureVideoMode(video: VideoPlainObject): CaptureVideoMode {
 	const videoType = video._computed.videoType;
-	if (videoType === "live" || videoType === "possibly_live") {
+	if (isLiveVideoType(videoType)) {
 		return "live";
 	}
 	if (videoType === "upcoming") {

@@ -27,16 +27,30 @@ const video = (over: Partial<VideoPlainObject> = {}): VideoPlainObject =>
 	}) as VideoPlainObject;
 
 describe("状態判定", () => {
-	it("isArchived は _computed を優先し、無ければ videoType を見る", () => {
+	it("isArchived は _computed を優先し、無ければ正本の判定関数で算出する（保存済み videoType は見ない）", () => {
 		expect(isArchived(video({ _computed: { isArchived: true } } as never))).toBe(true);
-		expect(isArchived(video({ videoType: "archived" } as never))).toBe(true);
-		expect(isArchived(video({ videoType: "normal" } as never))).toBe(false);
+		expect(
+			isArchived(
+				video({
+					duration: "PT1H",
+					liveStreamingDetails: { actualEndTime: "2024-01-01T02:00:00.000Z" },
+				} as never),
+			),
+		).toBe(true);
+		expect(isArchived(video({ videoType: "archived" } as never))).toBe(false);
 	});
 
-	it("isPremiere は _computed を優先し、無ければ videoType を見る", () => {
+	it("isPremiere は _computed を優先し、無ければ正本の判定関数で算出する", () => {
 		expect(isPremiere(video({ _computed: { isPremiere: true } } as never))).toBe(true);
-		expect(isPremiere(video({ videoType: "premiere" } as never))).toBe(true);
-		expect(isPremiere(video())).toBe(false);
+		expect(
+			isPremiere(
+				video({
+					duration: "PT5M",
+					liveStreamingDetails: { actualEndTime: "2024-01-01T02:00:00.000Z" },
+				} as never),
+			),
+		).toBe(true);
+		expect(isPremiere(video({ videoType: "premiere" } as never))).toBe(false);
 	});
 
 	it("isLive は _computed.videoType が live / possibly_live、isUpcoming は upcoming", () => {
@@ -74,9 +88,16 @@ describe("canCreateButton / エラーメッセージ", () => {
 		expect(canCreateButton(video({ _computed: { canCreateButton: false } } as never))).toBe(false);
 	});
 
-	it("_computed が無ければ archived のみ作成可", () => {
-		expect(canCreateButton(video({ videoType: "archived" } as never))).toBe(true);
-		expect(canCreateButton(video({ videoType: "normal" } as never))).toBe(false);
+	it("_computed が無ければ archived（正本の判定関数で算出）のみ作成可", () => {
+		expect(
+			canCreateButton(
+				video({
+					duration: "PT1H",
+					liveStreamingDetails: { actualEndTime: "2024-01-01T02:00:00.000Z" },
+				} as never),
+			),
+		).toBe(true);
+		expect(canCreateButton(video())).toBe(false);
 	});
 
 	it("ライブ中・配信中（推定）・配信予定・長さ不明はエラーメッセージを返す", () => {

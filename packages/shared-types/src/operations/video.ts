@@ -22,24 +22,20 @@ function currentVideoType(video: VideoPlainObject): VideoType {
  * Checks if a video is archived (older streams)
  */
 export function isArchived(video: VideoPlainObject): boolean {
-	// Use _computed properties if available
 	if (video._computed?.isArchived !== undefined) {
 		return video._computed.isArchived;
 	}
-	// Fallback to videoType check
-	return video.videoType === "archived";
+	return currentVideoType(video) === "archived";
 }
 
 /**
  * Checks if a video is a premiere
  */
 export function isPremiere(video: VideoPlainObject): boolean {
-	// Use _computed properties if available
 	if (video._computed?.isPremiere !== undefined) {
 		return video._computed.isPremiere;
 	}
-	// Fallback to videoType check
-	return video.videoType === "premiere";
+	return currentVideoType(video) === "premiere";
 }
 
 /**
