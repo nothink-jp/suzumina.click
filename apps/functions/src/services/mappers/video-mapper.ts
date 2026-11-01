@@ -6,52 +6,8 @@
  */
 
 import type { youtube_v3 } from "@googleapis/youtube";
-import type { VideoPlainObject } from "@suzumina.click/shared-types";
-import { parseDurationToSeconds } from "@suzumina.click/shared-types";
+import { determineVideoType, type VideoPlainObject } from "@suzumina.click/shared-types";
 import * as logger from "../../shared/logger";
-
-/**
- * Helper function to determine video type
- */
-function determineVideoType(
-	youtubeVideo: youtube_v3.Schema$Video,
-): "normal" | "short" | "live" | "premiere" | "archived" | "upcoming" {
-	const snippet = youtubeVideo.snippet;
-	const contentDetails = youtubeVideo.contentDetails;
-	const liveStreamingDetails = youtubeVideo.liveStreamingDetails;
-
-	// Check for shorts
-	if (snippet?.title?.includes("#shorts") || snippet?.description?.includes("#shorts")) {
-		return "short";
-	}
-
-	const duration = contentDetails?.duration;
-	if (duration && parseDurationToSeconds(duration) < 60) {
-		return "short";
-	}
-
-	// Check for live content
-	if (liveStreamingDetails) {
-		if (!liveStreamingDetails.actualEndTime) {
-			if (liveStreamingDetails.actualStartTime) {
-				return "live";
-			}
-			// Check if it's upcoming
-			if (liveStreamingDetails.scheduledStartTime && !liveStreamingDetails.actualStartTime) {
-				return "upcoming";
-			}
-			return "premiere";
-		}
-
-		// Archived stream
-		if (duration && parseDurationToSeconds(duration) > 15 * 60) {
-			return "archived";
-		}
-		return "premiere";
-	}
-
-	return "normal";
-}
 
 /**
  * Maps YouTube API video data to VideoPlainObject
@@ -81,8 +37,13 @@ export function mapYouTubeToVideoPlainObject(
 		const statistics = youtubeVideo.statistics;
 		const liveStreamingDetails = youtubeVideo.liveStreamingDetails;
 
-		// Determine video type using helper
-		const videoType = determineVideoType(youtubeVideo);
+		// 判定の正本は shared-types の determineVideoType（読み取り側の fromFirestore も同じ関数）
+		const videoType = determineVideoType({
+			title: snippet.title,
+			description: snippet.description,
+			duration: contentDetails?.duration,
+			liveStreamingDetails,
+		});
 
 		// Create live streaming details
 		const liveDetails: VideoPlainObject["liveStreamingDetails"] = liveStreamingDetails
@@ -149,6 +110,7 @@ export function mapYouTubeToVideoPlainObject(
 			// audioButtonCount は web 側（ボタン作成/削除）が維持する非正規化カウンタのため
 			// YouTube 更新では書かない。hasAudioButtons は意味が二重（作成可否 vs 実在）だったため
 			// 撤去（SPR-239）。作成可否は _computed.canCreateButton、実在は audioButtonCount > 0 が正。
+			// _computed は型を満たすためだけのもので、toFirestore で落ちて保存されない（読み取り時に再算出）。
 			_computed: {
 				isArchived: videoType === "archived",
 				isPremiere: videoType === "premiere",

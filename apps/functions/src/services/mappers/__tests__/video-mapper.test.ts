@@ -97,36 +97,25 @@ describe("mapYouTubeToVideoPlainObject", () => {
 		expect(v?.tags?.contentTags).toEqual([]);
 	});
 
-	describe("determineVideoType", () => {
+	// 判定ルール自体の網羅は shared-types の video-type.test.ts（正本）。ここは YouTube API の
+	// フィールドが正しく正本の判定関数へ渡っているか（配線）だけを見る。
+	describe("videoType（shared-types の determineVideoType へ委譲）", () => {
 		const typeOf = (o: Partial<youtube_v3.Schema$Video>) =>
 			mapYouTubeToVideoPlainObject(ytVideo(o))?.videoType;
 
-		it("#shorts をタイトル/説明に含むと short", () => {
+		it("snippet の title/description の #shorts と contentDetails の長さで short", () => {
 			expect(typeOf({ snippet: { title: "曲 #shorts" } })).toBe("short");
 			expect(typeOf({ snippet: { title: "x", description: "#shorts" } })).toBe("short");
-		});
-
-		it("60秒未満は short", () => {
 			expect(typeOf({ contentDetails: { duration: "PT30S" } })).toBe("short");
 		});
 
-		it("配信中（actualStartTime あり・未終了）は live", () => {
+		it("liveStreamingDetails の各時刻を渡す（live / upcoming / archived / premiere）", () => {
 			expect(typeOf({ liveStreamingDetails: { actualStartTime: "2024-01-01T00:00:00Z" } })).toBe(
 				"live",
 			);
-		});
-
-		it("配信予定（scheduledStartTime のみ）は upcoming", () => {
 			expect(typeOf({ liveStreamingDetails: { scheduledStartTime: "2099-01-01T00:00:00Z" } })).toBe(
 				"upcoming",
 			);
-		});
-
-		it("liveStreamingDetails あり・開始終了情報なしは premiere", () => {
-			expect(typeOf({ liveStreamingDetails: {} })).toBe("premiere");
-		});
-
-		it("終了済み・15分超は archived、15分以下は premiere", () => {
 			expect(
 				typeOf({
 					contentDetails: { duration: "PT20M" },
@@ -139,6 +128,13 @@ describe("mapYouTubeToVideoPlainObject", () => {
 					liveStreamingDetails: { actualEndTime: "2024-01-01T01:00:00Z" },
 				}),
 			).toBe("premiere");
+		});
+
+		it("_computed.videoType はトップレベル videoType と同じ値", () => {
+			const v = mapYouTubeToVideoPlainObject(
+				ytVideo({ liveStreamingDetails: { actualStartTime: "2024-01-01T00:00:00Z" } }),
+			);
+			expect(v?._computed.videoType).toBe(v?.videoType);
 		});
 	});
 

@@ -1,0 +1,89 @@
+/**
+ * 動画タイプ（VideoType）判定の正本。
+ *
+ * 判定はこの関数 1 つだけ。書き込み側（functions の video-mapper が YouTube API から写像して
+ * Firestore のトップレベル `videoType` に保存）と読み取り側（videoTransformers.fromFirestore が
+ * `_computed.videoType` を算出）の両方がここを呼ぶ。以前は両側に別ルールの判定があり、
+ * short・live・premiere の境界が食い違っていた。
+ *
+ * 読み取り側は保存済み `videoType` を信用せずに毎回ここで判定し直す。判定に「今」が入る
+ * （予定時刻を過ぎたか）ため、保存値は取得時点のスナップショットでしかない。
+ * `_computed` は toFirestore で落とされ Firestore には保存されない。
+ */
+
+import type { VideoType } from "../types/firestore/video";
+import { parseDurationToSeconds } from "../utilities/formatters/time-format";
+
+/** これを超える長さで終了した配信は配信アーカイブ（音声ボタン作成可）。以下はプレミア公開扱い */
+const ARCHIVE_MIN_SECONDS = 15 * 60;
+/** これ未満の通常動画は short */
+const SHORT_MAX_SECONDS = 60;
+
+/**
+ * 判定に必要なフィールドだけを持つ入力。YouTube API・Firestore 生データ・VideoPlainObject の
+ * どれでも渡せるよう、時刻は string / Date / Firestore Timestamp を受け付ける。
+ */
+export interface VideoTypeSource {
+	title?: string | null;
+	description?: string | null;
+	duration?: string | null;
+	liveStreamingDetails?: {
+		scheduledStartTime?: unknown;
+		actualStartTime?: unknown;
+		actualEndTime?: unknown;
+	} | null;
+}
+
+function toDate(value: unknown): Date | undefined {
+	if (!value) return undefined;
+	if (value instanceof Date) return value;
+	if (typeof value === "object" && "toDate" in value && typeof value.toDate === "function") {
+		return value.toDate() as Date;
+	}
+	if (typeof value === "string" || typeof value === "number") {
+		const date = new Date(value);
+		return Number.isNaN(date.getTime()) ? undefined : date;
+	}
+	return undefined;
+}
+
+/**
+ * 動画タイプを判定する（純関数。`now` を渡せば決定論的）。
+ *
+ * 配信情報（liveStreamingDetails）があれば #shorts や長さより優先する:
+ * - actualEndTime あり → 長さ 15 分超なら `archived`、以下なら `premiere`
+ * - actualStartTime あり（未終了）→ `live`
+ * - scheduledStartTime が未来 → `upcoming`
+ * - scheduledStartTime が過去（未開始のまま）→ `possibly_live`。最後の取得時点では未開始で、
+ *   その後再取得されていない状態。配信中の可能性が高いが、遅延・中止もありうるので `live` と断定しない
+ * - 時刻情報が 1 つもない → 配信の根拠がないので通常動画として扱う
+ *
+ * 配信情報がなければ、タイトル/説明に `#shorts` を含むか 60 秒未満なら `short`、それ以外は `normal`。
+ */
+export function determineVideoType(video: VideoTypeSource, now: Date = new Date()): VideoType {
+	return determineStreamType(video, now) ?? determineUploadType(video);
+}
+
+/** 配信情報から判定する。配信の根拠となる時刻が 1 つもなければ undefined */
+function determineStreamType(video: VideoTypeSource, now: Date): VideoType | undefined {
+	const live = video.liveStreamingDetails;
+	if (!live) return undefined;
+	if (live.actualEndTime) {
+		return parseDurationToSeconds(video.duration ?? undefined) > ARCHIVE_MIN_SECONDS
+			? "archived"
+			: "premiere";
+	}
+	if (live.actualStartTime) return "live";
+	const scheduled = toDate(live.scheduledStartTime);
+	if (!scheduled) return undefined;
+	return scheduled > now ? "upcoming" : "possibly_live";
+}
+
+/** 配信でない動画を short / normal に分ける */
+function determineUploadType(video: VideoTypeSource): VideoType {
+	if (video.title?.includes("#shorts") || video.description?.includes("#shorts")) {
+		return "short";
+	}
+	const seconds = parseDurationToSeconds(video.duration ?? undefined);
+	return seconds > 0 && seconds < SHORT_MAX_SECONDS ? "short" : "normal";
+}

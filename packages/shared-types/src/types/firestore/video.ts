@@ -11,7 +11,8 @@
 export type LiveBroadcastContent = "none" | "live" | "upcoming";
 
 /**
- * Video type classification
+ * 動画タイプ。判定ルールの正本は operations/video-type.ts の determineVideoType
+ * （possibly_live = 予定時刻を過ぎたが最後の取得時点では未開始）。
  */
 export type VideoType =
 	| "normal"
@@ -43,6 +44,7 @@ export interface FirestoreServerVideoData {
 		maxres?: { url: string; width?: number; height?: number };
 	};
 	lastFetchedAt: unknown; // Firestore Timestamp
+	/** 書き込み時点のスナップショット（判定は determineVideoType）。読み取り側は信用せず再判定する */
 	videoType?: VideoType;
 	liveBroadcastContent?: LiveBroadcastContent;
 

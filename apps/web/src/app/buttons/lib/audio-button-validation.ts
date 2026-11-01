@@ -1,4 +1,4 @@
-import { parseDurationToSeconds } from "@suzumina.click/shared-types";
+import { determineVideoType } from "@suzumina.click/shared-types";
 import type { getFirestore } from "@/lib/firestore";
 import * as logger from "@/lib/logger";
 
@@ -26,13 +26,8 @@ export async function validateVideoForAudioButton(
 		};
 	}
 
-	// 配信アーカイブチェック
-	const hasLiveStreamingDetails = videoData?.liveStreamingDetails?.actualEndTime;
-	const duration = videoData?.duration;
-	const isArchivedStream =
-		hasLiveStreamingDetails && duration && parseDurationToSeconds(duration) > 15 * 60;
-
-	if (!isArchivedStream && videoData?.videoType !== "archived") {
+	// 配信アーカイブチェック（判定の正本は determineVideoType。保存済み videoType は取得時点の値なので見ない）
+	if (!videoData || determineVideoType(videoData) !== "archived") {
 		return { valid: false, error: "音声ボタンを作成できるのは配信アーカイブのみです" };
 	}
 

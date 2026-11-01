@@ -65,6 +65,7 @@ export {
 	isUpcoming,
 	videoOperations,
 } from "./operations/video";
+export { determineVideoType, type VideoTypeSource } from "./operations/video-type";
 // === Plain Objects ===
 export * from "./plain-objects/circle-plain";
 export * from "./plain-objects/video-plain";
