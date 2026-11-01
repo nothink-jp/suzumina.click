@@ -45,7 +45,6 @@ const buildAudioButton = (id: string, title: string): AudioButtonPlainObject =>
 			popularityScore: 0,
 			searchableText: title,
 			durationText: "1秒",
-			relativeTimeText: "今",
 		},
 	}) as unknown as AudioButtonPlainObject;
 
