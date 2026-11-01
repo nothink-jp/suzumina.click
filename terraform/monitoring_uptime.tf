@@ -61,6 +61,8 @@ resource "google_monitoring_alert_policy" "web_uptime" {
   # REDUCE_COUNT_FALSE で「失敗しているリージョン数」にまとめる。
   # alignment_period は check の間隔（300s）の 2 倍にして、結果の届く遅れで欠測扱いにならないようにする。
   # 1 リージョンだけの失敗はそのリージョン側の経路の揺れとして無視し、2 リージョン以上が 5 分続いたら鳴らす。
+  # 「5 分」は duration のこと。check の間隔（5 分）が加わるので、障害から通知まではおおむね 5〜10 分。
+  # 復旧後も ALIGN_NEXT_OLDER が最大 10 分前の失敗結果を拾うため、インシデントが閉じるのもその分遅れる。
   conditions {
     display_name = "/api/health が 2 リージョン以上で 5 分間失敗"
 
@@ -100,7 +102,7 @@ resource "google_monitoring_alert_policy" "web_uptime" {
     利用者から見てサイトが落ちている可能性が高いです。
 
     ## 切り分け（外側から順に）
-    1. オリジンを直接: `curl -sS https://$(gcloud run services describe suzumina-click-web --region asia-northeast1 --format 'value(status.url)')/api/health`
+    1. オリジンを直接（status.url は https:// 付き）: `curl -sS "$(gcloud run services describe suzumina-click-web --region ${var.region} --format 'value(status.url)')/api/health"`
        - 失敗 → Cloud Run 側（最新デプロイ・起動失敗のログ）。5xx 比率アラートも併せて見る
        - 成功 → 経路側（下へ）
     2. `curl -sSI https://${var.custom_domain}/api/health` の応答
