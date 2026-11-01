@@ -1,4 +1,3 @@
-import type { AudioButtonDocument } from "@suzumina.click/shared-types";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	getAudioButtonsByUser,
