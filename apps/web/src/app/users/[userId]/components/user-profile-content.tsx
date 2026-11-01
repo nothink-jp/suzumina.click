@@ -23,6 +23,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { AudioButtonWithPlayCount } from "@/components/audio/audio-button-with-play-count";
 import type { UserPublicAudioButtonStats } from "@/lib/audio-buttons-firestore";
+import { formatLastActiveText } from "@/lib/jst-date";
 
 interface UserProfileContentProps {
 	user: FrontendUserData;
@@ -181,7 +182,9 @@ export function UserProfileContent({
 									</div>
 									<div className="flex items-center gap-1">
 										<Users className="w-4 h-4" />
-										<span>最終ログイン: {user.lastActiveText}</span>
+										<span suppressHydrationWarning>
+											最終ログイン: {formatLastActiveText(user.lastLoginAt)}
+										</span>
 									</div>
 									{user.isPublicProfile ? (
 										<Badge variant="outline" className="text-xs">
@@ -329,7 +332,9 @@ export function UserProfileContent({
 								</div>
 								<div className="flex justify-between">
 									<span>最終ログイン</span>
-									<span className="font-semibold">{user.lastActiveText}</span>
+									<span className="font-semibold" suppressHydrationWarning>
+										{formatLastActiveText(user.lastLoginAt)}
+									</span>
 								</div>
 								<div className="flex justify-between">
 									<span>プロフィール</span>

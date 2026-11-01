@@ -119,7 +119,6 @@ export const FrontendUserSchema = z.object({
 	// 表示用の追加情報
 	avatarUrl: z.string().url().optional(),
 	memberSince: z.string(), // "2024年1月から" のような表示用テキスト
-	lastActiveText: z.string(), // "3日前" のような表示用テキスト
 
 	// ファミリーメンバーシップ状態
 	isFamilyMember: z.boolean().optional(),

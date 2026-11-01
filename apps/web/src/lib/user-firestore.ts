@@ -10,13 +10,12 @@ import {
 	type FrontendUserData,
 	FrontendUserSchema,
 	formatMemberSince,
-	formatRelativeTime,
 	isValidGuildMember,
 	resolveDisplayName,
 	type UpdateUserInput,
 } from "@suzumina.click/shared-types";
 import { getFirestore } from "./firestore";
-import { getJSTDateString, isTodayJST } from "./jst-date";
+import { getJSTDateString } from "./jst-date";
 import { error as logError, warn } from "./logger";
 import { calculateDailyLimit } from "./rate-limit-utils";
 
@@ -39,8 +38,6 @@ export function convertToFrontendUser(data: FirestoreUserData): FrontendUserData
 		// 表示用の追加情報
 		avatarUrl: createDiscordAvatarUrl(data.discordId, data.avatar),
 		memberSince: formatMemberSince(data.createdAt),
-		// lastLoginAt は JST 日次でしか更新されない（updateLastLogin 参照）ため、当日分は時間単位で出さない
-		lastActiveText: isTodayJST(data.lastLoginAt) ? "今日" : formatRelativeTime(data.lastLoginAt),
 
 		// ファミリーメンバーシップ状態
 		isFamilyMember: data.flags?.isFamilyMember || false,
