@@ -2,29 +2,52 @@
  * monitoring.tf
  * Cloud Monitoring関連のリソース定義
  */
-# 重要なアラートポリシー
+# web の 5xx 比率（SPR-365）
+# 以前は 5xx の request_count を ALIGN_RATE（毎秒の件数）にして 0.05 と比べていた＝名前は「5xx > 5%」なのに
+# 中身は「5xx が毎秒 0.05 件（=3 件/分）超」で、分母のない件数アラートだった。
+# 比率は 5xx ÷ 全リクエストを PromQL で書く（MQL は新規非推奨）。
+#
+# 低トラフィックなので比率だけだと 1 件の 500 で鳴る（実測 2026-10-02〜11-01: 5 分あたりの全リクエストは
+# 中央値 8 件・5 パーセンタイル 2 件）。そこで「5xx が窓内に min_count 件以上」を AND で併記し、単発の 500 は
+# 拾わず、連続して落ちているときだけ鳴らす。同期間の 5xx は 6 件で、この条件で鳴るのは 2026-10-11 の
+# 1 窓（10 件中 4 件が 500）だけだった。
+# 分母には uptime check（monitoring_uptime.tf）の 2xx も入る（5 分あたり約 3 件）。比率は薄まるが、
+# 発火を決めるのは主に件数の下限の方なので許容する。
+locals {
+  web_5xx_alert = {
+    window    = "5m"
+    ratio     = 0.05
+    min_count = 3
+  }
+  web_request_count_selector = "monitored_resource=\"cloud_run_revision\",service_name=\"${google_cloud_run_v2_service.nextjs_app.name}\""
+}
+
 resource "google_monitoring_alert_policy" "cloud_run_error_rate" {
   display_name = "Cloud Run エラー率アラート"
   combiner     = "OR"
 
   conditions {
-    display_name = "高エラー率検知 (5xx > 5%)"
+    display_name = "5xx 比率 > ${local.web_5xx_alert.ratio * 100}%（${local.web_5xx_alert.window} 窓・5xx ${local.web_5xx_alert.min_count} 件以上）"
 
-    condition_threshold {
-      filter          = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"suzumina-click-web\" AND metric.type=\"run.googleapis.com/request_count\" AND metric.labels.response_code_class=\"5xx\""
-      duration        = "60s"
-      comparison      = "COMPARISON_GT"
-      threshold_value = 0.05 # 5%
-
-      aggregations {
-        alignment_period   = "60s"
-        per_series_aligner = "ALIGN_RATE"
-      }
-
-      trigger {
-        count = 1
-      }
+    # sum() で revision / response_code を 1 本にまとめてから割る（ラベル無しのベクトル同士なので and も素直に一致する）。
+    condition_prometheus_query_language {
+      query               = <<-EOT
+        (
+          sum(increase(run_googleapis_com:request_count{${local.web_request_count_selector},response_code_class="5xx"}[${local.web_5xx_alert.window}]))
+            /
+          sum(increase(run_googleapis_com:request_count{${local.web_request_count_selector}}[${local.web_5xx_alert.window}]))
+        ) > ${local.web_5xx_alert.ratio}
+        and
+        sum(increase(run_googleapis_com:request_count{${local.web_request_count_selector},response_code_class="5xx"}[${local.web_5xx_alert.window}])) >= ${local.web_5xx_alert.min_count}
+      EOT
+      duration            = "0s" # 窓（5 分）自体が継続判定を兼ねる
+      evaluation_interval = "60s"
     }
+  }
+
+  # 5xx が止まるとクエリ結果が空になり条件が外れる。無トラフィック帯で OPEN が残らないよう短めに閉じる
+  alert_strategy {
+    auto_close = "1800s"
   }
 
   notification_channels = [
@@ -33,18 +56,20 @@ resource "google_monitoring_alert_policy" "cloud_run_error_rate" {
 
   documentation {
     content   = <<-EOT
-    # Cloud Run エラー率が閾値を超過
-    
-    suzumina-click-web サービスでエラーレート(5xx)が 5% を超えました。
-    緊急対応が必要です。
-    
+    # Cloud Run の 5xx 比率が閾値を超過
+
+    suzumina-click-web で、直近 ${local.web_5xx_alert.window} の 5xx が全リクエストの ${local.web_5xx_alert.ratio * 100}% を超え、
+    かつ ${local.web_5xx_alert.min_count} 件以上ありました（単発の 500 では鳴らない）。
+
     ## 確認事項
-    1. Cloud Loggingでエラー詳細を確認
+    1. Cloud Logging でエラー詳細を確認（`severity>=ERROR` と requests ログの `httpRequest.status>=500`）
     2. 最新のデプロイとの関連を確認
-    3. 必要に応じて自動/手動ロールバック
+    3. 必要に応じてロールバック（`gcloud run services update-traffic suzumina-click-web --to-revisions=<前リビジョン>=100`）
     EOT
     mime_type = "text/markdown"
   }
+
+  project = var.gcp_project_id
 
   depends_on = [google_monitoring_notification_channel.email]
 }
