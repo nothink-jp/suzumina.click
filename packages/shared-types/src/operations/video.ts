@@ -46,15 +46,6 @@ export function isUpcoming(video: VideoPlainObject): boolean {
 }
 
 /**
- * Checks if a video might be live (uncertain state)
- * Note: This is a legacy state that may not be used anymore
- */
-export function isPossiblyLive(_video: VideoPlainObject): boolean {
-	// "possibly_live" is not a valid VideoType, always return false
-	return false;
-}
-
-/**
  * Checks if audio buttons can be created for this video
  */
 export function canCreateButton(video: VideoPlainObject): boolean {
@@ -223,7 +214,6 @@ export const videoOperations = {
 	isPremiere,
 	isLive,
 	isUpcoming,
-	isPossiblyLive,
 	canCreateButton,
 	canCreateAudioButton,
 	getAudioButtonCreationErrorMessage,

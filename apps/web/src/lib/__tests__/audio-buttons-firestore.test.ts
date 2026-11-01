@@ -1,7 +1,5 @@
-import type { AudioButtonDocument } from "@suzumina.click/shared-types";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
-	convertToAudioButtonPlainObject,
 	getAudioButtonsByUser,
 	getPublicAudioButtonStartTimesByVideo,
 	getUserPublicAudioButtonStats,
@@ -66,149 +64,13 @@ describe("audio-buttons-firestore", () => {
 		});
 	});
 
-	describe("convertToAudioButtonPlainObject", () => {
-		it("should convert Firestore data to frontend format", () => {
-			const mockFirestoreData: AudioButtonDocument & { id: string } = {
-				id: "test-button-1",
-				buttonText: "テスト音声ボタン",
-				tags: ["テスト", "音声"],
-				videoId: "test-video-123",
-				videoTitle: "テスト動画",
-				startTime: 10,
-				endTime: 25,
-				duration: 15,
-				creatorId: "discord-user-123",
-				creatorName: "テストユーザー",
-				isPublic: true,
-				stats: {
-					playCount: 100,
-					likeCount: 50,
-					dislikeCount: 0,
-					favoriteCount: 25,
-					engagementRate: 0.5,
-				},
-				createdAt: "2025-01-01T00:00:00.000Z",
-				updatedAt: "2025-01-01T00:00:00.000Z",
-			};
-
-			const result = convertToAudioButtonPlainObject(mockFirestoreData);
-
-			expect(result).toMatchObject({
-				id: "test-button-1",
-				buttonText: "テスト音声ボタン",
-				tags: ["テスト", "音声"],
-				videoId: "test-video-123",
-				videoTitle: "テスト動画",
-				videoThumbnailUrl: "https://img.youtube.com/vi/test-video-123/maxresdefault.jpg",
-				startTime: 10,
-				endTime: 25,
-				duration: 15,
-				creatorId: "discord-user-123",
-				creatorName: "テストユーザー",
-				isPublic: true,
-				stats: {
-					playCount: 100,
-					likeCount: 50,
-					dislikeCount: 0,
-					favoriteCount: 25,
-					engagementRate: 0.5,
-				},
-			});
-
-			expect(result._computed).toBeDefined();
-			expect(result._computed.durationText).toBe("15秒"); // 25-10=15秒
-			expect(result._computed.relativeTimeText).toBeDefined();
-		});
-
-		it("should handle duration formatting correctly", () => {
-			const shortDurationData: AudioButtonDocument & { id: string } = {
-				id: "short-button",
-				buttonText: "短い音声",
-				tags: [],
-				videoId: "video-123",
-				videoTitle: "動画",
-				startTime: 0,
-				endTime: 5,
-				duration: 5,
-				creatorId: "user-123",
-				creatorName: "ユーザー",
-				isPublic: true,
-				stats: {
-					playCount: 0,
-					likeCount: 0,
-					dislikeCount: 0,
-					favoriteCount: 0,
-					engagementRate: 0,
-				},
-				createdAt: "2025-01-01T00:00:00.000Z",
-				updatedAt: "2025-01-01T00:00:00.000Z",
-			};
-
-			const result = convertToAudioButtonPlainObject(shortDurationData);
-			expect(result._computed.durationText).toBe("5秒");
-		});
-
-		it("should handle equal start and end time", () => {
-			const equalTimeData: AudioButtonDocument & { id: string } = {
-				id: "equal-time-button",
-				buttonText: "同じ開始終了時間",
-				tags: [],
-				videoId: "video-123",
-				videoTitle: "動画",
-				startTime: 10,
-				endTime: 10, // Same as startTime
-				duration: 0,
-				creatorId: "user-123",
-				creatorName: "ユーザー",
-				isPublic: true,
-				stats: {
-					playCount: 0,
-					likeCount: 0,
-					dislikeCount: 0,
-					favoriteCount: 0,
-					engagementRate: 0,
-				},
-				createdAt: "2025-01-01T00:00:00.000Z",
-				updatedAt: "2025-01-01T00:00:00.000Z",
-			};
-
-			const result = convertToAudioButtonPlainObject(equalTimeData);
-			expect(result._computed.durationText).toBe("再生");
-		});
-
-		it("should handle missing favoriteCount", () => {
-			const noFavoriteCountData: AudioButtonDocument & { id: string } = {
-				id: "no-favorite-button",
-				buttonText: "お気に入り数なし",
-				tags: [],
-				videoId: "video-123",
-				videoTitle: "動画",
-				startTime: 0,
-				endTime: 10,
-				duration: 10,
-				creatorId: "user-123",
-				creatorName: "ユーザー",
-				isPublic: true,
-				stats: {
-					playCount: 0,
-					likeCount: 0,
-					dislikeCount: 0,
-					favoriteCount: 0,
-					engagementRate: 0,
-				},
-				createdAt: "2025-01-01T00:00:00.000Z",
-				updatedAt: "2025-01-01T00:00:00.000Z",
-			};
-
-			const result = convertToAudioButtonPlainObject(noFavoriteCountData);
-			expect(result.stats.favoriteCount).toBe(0);
-		});
-	});
-
 	describe("getAudioButtonsByUser", () => {
-		const doc = (id: string, isPublic: boolean, createdAt = "2025-01-01T00:00:00.000Z") => ({
-			id,
-			data: () => ({
+		const doc = (
+			id: string,
+			isPublic: boolean | undefined,
+			createdAt = "2025-01-01T00:00:00.000Z",
+		) => {
+			const data = {
 				buttonText: id,
 				tags: [],
 				videoId: "video-1",
@@ -227,8 +89,9 @@ describe("audio-buttons-firestore", () => {
 				},
 				createdAt,
 				updatedAt: createdAt,
-			}),
-		});
+			};
+			return { id, data: () => data, get: (field: keyof typeof data) => data[field] };
+		};
 
 		it("公開・新しい順・表示件数分の limit で Firestore に問い合わせる（SPR-380）", async () => {
 			mockGet.mockResolvedValue({ docs: [doc("button-1", true)] });
@@ -283,6 +146,16 @@ describe("audio-buttons-firestore", () => {
 
 			expect(mockGet).toHaveBeenCalledTimes(2);
 			expect(result.map((b) => b.id)).toEqual(["newest", "middle"]);
+		});
+
+		it("フォールバック経路でも isPublic が無い doc は返さない（変換器の既定値 true に頼らない）", async () => {
+			mockGet
+				.mockRejectedValueOnce(Object.assign(new Error("9 FAILED_PRECONDITION"), { code: 9 }))
+				.mockResolvedValueOnce({ docs: [doc("public", true), doc("missing", undefined)] });
+
+			const result = await getAudioButtonsByUser("user-123");
+
+			expect(result.map((b) => b.id)).toEqual(["public"]);
 		});
 
 		it("インデックス不足以外のエラー（UNAVAILABLE 等）では全件取得にフォールバックしない", async () => {

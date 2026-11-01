@@ -61,7 +61,6 @@ export {
 	isArchived,
 	isLive as isVideoLive,
 	isOlderThan,
-	isPossiblyLive,
 	isPremiere,
 	isUpcoming,
 	videoOperations,

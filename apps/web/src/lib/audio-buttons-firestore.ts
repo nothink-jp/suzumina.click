@@ -6,111 +6,10 @@ import { AggregateField } from "@google-cloud/firestore";
 import {
 	type AudioButton,
 	type AudioButtonDocument,
-	formatRelativeTime,
+	audioButtonTransformers,
 } from "@suzumina.click/shared-types";
 import { getFirestore } from "./firestore";
 import { error as logError } from "./logger";
-
-/**
- * Format duration from start and end time
- */
-function formatDuration(startTime: number, endTime?: number): string {
-	const duration = (endTime || startTime) - startTime;
-
-	// 0秒の場合は "再生" を返す
-	if (duration === 0) {
-		return "再生";
-	}
-
-	// 60秒未満の場合は "X秒" 形式
-	if (duration < 60) {
-		return `${Math.floor(duration)}秒`;
-	}
-
-	// 60秒以上の場合は "X:XX" 形式
-	const minutes = Math.floor(duration / 60);
-	const seconds = Math.floor(duration % 60);
-	return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-}
-
-/**
- * Ensure date is converted to string
- */
-function ensureDateString(date: string | Date | unknown): string {
-	if (typeof date === "string") return date;
-	if (date instanceof Date) return date.toISOString();
-	return new Date().toISOString();
-}
-
-/**
- * Firestore音声ボタンデータをPlain Object形式に変換
- */
-export function convertToAudioButtonPlainObject(
-	data:
-		| (AudioButtonDocument & { id?: string })
-		| (AudioButtonDocument & { id?: string; createdAt: Date; updatedAt: Date }),
-): AudioButton {
-	const createdAtStr = ensureDateString(data.createdAt);
-	const updatedAtStr = ensureDateString(data.updatedAt);
-
-	// Calculate computed properties
-	const viewCount = data.stats?.playCount || 0;
-	const likeCount = data.stats?.likeCount || 0;
-	const dislikeCount = data.stats?.dislikeCount || 0;
-
-	// Calculate engagement metrics
-	const totalEngagements = likeCount + dislikeCount;
-	const engagementRate = viewCount > 0 ? totalEngagements / viewCount : 0;
-	const engagementRatePercentage = Math.round(engagementRate * 100);
-
-	// Calculate popularity score
-	const popularityScore = viewCount + likeCount * 2 - dislikeCount;
-
-	// Check if popular (threshold: 100+ views or 50+ engagements)
-	const isPopular = viewCount >= 100 || totalEngagements >= 50;
-
-	// Build searchable text
-	const searchableText = [
-		data.buttonText.toLowerCase(),
-		...(data.tags || []).map((tag: string) => tag.toLowerCase()),
-		(data.videoTitle || "").toLowerCase(),
-		(data.creatorName || "").toLowerCase(),
-	].join(" ");
-
-	return {
-		id: data.id || "",
-		buttonText: data.buttonText,
-		tags: data.tags || [],
-		videoId: data.videoId,
-		videoTitle: data.videoTitle,
-		videoThumbnailUrl:
-			data.videoThumbnailUrl || `https://img.youtube.com/vi/${data.videoId}/maxresdefault.jpg`,
-		startTime: data.startTime,
-		endTime: data.endTime || data.startTime,
-		duration: (data.endTime || data.startTime) - data.startTime,
-		creatorId: data.creatorId,
-		creatorName: data.creatorName,
-		isPublic: data.isPublic,
-		stats: {
-			playCount: viewCount,
-			likeCount: likeCount,
-			dislikeCount: dislikeCount,
-			favoriteCount: data.stats?.favoriteCount || 0,
-			engagementRate: engagementRate,
-		},
-		createdAt: createdAtStr,
-		updatedAt: updatedAtStr,
-		_computed: {
-			isPopular,
-			engagementRate,
-			engagementRatePercentage,
-			popularityScore,
-			searchableText,
-			durationText: formatDuration(data.startTime, data.endTime || data.startTime),
-			relativeTimeText: formatRelativeTime(createdAtStr),
-		},
-	};
-}
 
 /** gRPC ステータス FAILED_PRECONDITION（Firestore が複合インデックス不足のときに返す） */
 const FIRESTORE_FAILED_PRECONDITION = 9;
@@ -156,24 +55,18 @@ export async function getAudioButtonsByUser(
 
 		return (
 			docs
+				// 正常経路では where 済み。フォールバック経路のためと fail-closed の二重防御。
+				// 変換器は isPublic 欠落を true に補うため、変換前の元 doc で isPublic === true を判定する
+				.filter((doc) => doc.get("isPublic") === true)
 				.map((doc) => {
-					try {
-						const data = doc.data() as AudioButtonDocument;
-						return convertToAudioButtonPlainObject({ ...data, id: doc.id });
-					} catch (conversionError) {
-						logError("Failed to convert audio button data:", {
-							docId: doc.id,
-							error:
-								conversionError instanceof Error
-									? conversionError.message
-									: String(conversionError),
-						});
-						return null;
-					}
+					const button = audioButtonTransformers.fromFirestore({
+						...(doc.data() as AudioButtonDocument),
+						id: doc.id,
+					});
+					if (!button) logError("Failed to convert audio button data:", { docId: doc.id });
+					return button;
 				})
 				.filter((button): button is AudioButton => button !== null)
-				// 正常経路では where 済み。フォールバック経路のためと fail-closed の二重防御
-				.filter((button) => button.isPublic)
 				.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 				.slice(0, limit)
 		);
