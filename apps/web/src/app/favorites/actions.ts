@@ -64,7 +64,7 @@ export async function getFavoritesList(
 				audioButtons.push(plainObject);
 				audioButtonIds.push(plainObject.id);
 			} else {
-				logger.warn("AudioButton変換スキップ（必須フィールド欠落）", {
+				logger.warn("AudioButton変換スキップ（fromFirestore が null）", {
 					buttonId: fav.audioButtonId,
 				});
 			}
