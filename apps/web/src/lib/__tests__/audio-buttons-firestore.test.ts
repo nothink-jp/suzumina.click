@@ -65,9 +65,12 @@ describe("audio-buttons-firestore", () => {
 	});
 
 	describe("getAudioButtonsByUser", () => {
-		const doc = (id: string, isPublic: boolean, createdAt = "2025-01-01T00:00:00.000Z") => ({
-			id,
-			data: () => ({
+		const doc = (
+			id: string,
+			isPublic: boolean | undefined,
+			createdAt = "2025-01-01T00:00:00.000Z",
+		) => {
+			const data = {
 				buttonText: id,
 				tags: [],
 				videoId: "video-1",
@@ -86,8 +89,9 @@ describe("audio-buttons-firestore", () => {
 				},
 				createdAt,
 				updatedAt: createdAt,
-			}),
-		});
+			};
+			return { id, data: () => data, get: (field: keyof typeof data) => data[field] };
+		};
 
 		it("公開・新しい順・表示件数分の limit で Firestore に問い合わせる（SPR-380）", async () => {
 			mockGet.mockResolvedValue({ docs: [doc("button-1", true)] });
@@ -142,6 +146,16 @@ describe("audio-buttons-firestore", () => {
 
 			expect(mockGet).toHaveBeenCalledTimes(2);
 			expect(result.map((b) => b.id)).toEqual(["newest", "middle"]);
+		});
+
+		it("フォールバック経路でも isPublic が無い doc は返さない（変換器の既定値 true に頼らない）", async () => {
+			mockGet
+				.mockRejectedValueOnce(Object.assign(new Error("9 FAILED_PRECONDITION"), { code: 9 }))
+				.mockResolvedValueOnce({ docs: [doc("public", true), doc("missing", undefined)] });
+
+			const result = await getAudioButtonsByUser("user-123");
+
+			expect(result.map((b) => b.id)).toEqual(["public"]);
 		});
 
 		it("インデックス不足以外のエラー（UNAVAILABLE 等）では全件取得にフォールバックしない", async () => {

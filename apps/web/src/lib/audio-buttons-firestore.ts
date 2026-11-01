@@ -55,6 +55,9 @@ export async function getAudioButtonsByUser(
 
 		return (
 			docs
+				// 正常経路では where 済み。フォールバック経路のためと fail-closed の二重防御。
+				// 変換器は isPublic 欠落を true に補うため、変換前の元 doc で isPublic === true を判定する
+				.filter((doc) => doc.get("isPublic") === true)
 				.map((doc) => {
 					const button = audioButtonTransformers.fromFirestore({
 						...(doc.data() as AudioButtonDocument),
@@ -64,8 +67,6 @@ export async function getAudioButtonsByUser(
 					return button;
 				})
 				.filter((button): button is AudioButton => button !== null)
-				// 正常経路では where 済み。フォールバック経路のためと fail-closed の二重防御
-				.filter((button) => button.isPublic)
 				.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 				.slice(0, limit)
 		);
