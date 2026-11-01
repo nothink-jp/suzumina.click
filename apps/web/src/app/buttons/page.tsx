@@ -75,7 +75,7 @@ async function GroupedView({ view }: { view: "usage" | "video" }) {
 		return null;
 	});
 	const buttons = result ? result.audioButtons : [];
-	// 見出しの総数は count() 集計の実総数を使う（取得上限で切られた件数を「総数」と偽らない）
+	// 見出しの総数は公開ボタン全件の件数を使う（取得上限で切られた件数を「総数」と偽らない）
 	const totalCount = result ? result.totalCount : buttons.length;
 	if (totalCount > buttons.length) {
 		// 上限到達＝グルーピング対象から静かに欠落する状態。無警告にしない（§1 silent fallback 禁止の精神）
