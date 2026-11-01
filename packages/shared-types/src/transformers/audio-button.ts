@@ -55,16 +55,16 @@ interface LegacyAudioButtonData {
 }
 
 /**
- * Convert timestamp to ISO string
+ * 時刻を ISO 文字列にする。解釈できなければ null（現在時刻で埋めない＝変換結果を時刻に依存させない。SPR-400）
  */
-function toISOString(timestamp: TimestampLike | undefined): string {
-	if (typeof timestamp === "string") return timestamp;
+function toISOString(timestamp: TimestampLike | undefined): string | null {
+	if (typeof timestamp === "string") return timestamp || null;
 	if (timestamp instanceof Date) return timestamp.toISOString();
 	if (timestamp?.toDate) return timestamp.toDate().toISOString();
-	if (timestamp?._seconds) {
+	if (typeof timestamp?._seconds === "number") {
 		return new Date(timestamp._seconds * 1000).toISOString();
 	}
-	return new Date().toISOString();
+	return null;
 }
 
 /**
@@ -157,22 +157,23 @@ function buildComputedProperties(
 /**
  * audioButtons ドキュメント → AudioButton（PlainObject）の唯一の変換器（読み取りの正本）
  *
- * 旧フィールド名のゆれも吸収する。buttonText / videoId が無ければ null を返す（throw しない）。
+ * 旧フィールド名のゆれも吸収する。buttonText / videoId / createdAt が無ければ null を返す（throw しない）。
+ * createdAt は作成経路（buttons/actions.ts の add）が必ず書くため、欠落は壊れたドキュメントとして扱う。
+ * updatedAt が無ければ createdAt を使う。
  * web 側に別ルールの変換器を作らない（SPR-354 で統合済み）
  */
 export function fromFirestore(data: LegacyAudioButtonData & { id?: string }): AudioButton | null {
 	try {
 		const basic = extractBasicFields(data);
 
-		// Basic validation
-		if (!basic.buttonText || !basic.videoId) {
+		const createdAt = toISOString(data.createdAt);
+		if (!basic.buttonText || !basic.videoId || !createdAt) {
 			return null;
 		}
 
 		const stats = extractStats(data);
 		const time = calculateTimeFields(data);
 		const tags = data.tags || [];
-		const createdAt = toISOString(data.createdAt);
 
 		const computed = buildComputedProperties(
 			stats,
@@ -198,7 +199,7 @@ export function fromFirestore(data: LegacyAudioButtonData & { id?: string }): Au
 			isPublic: data.isPublic ?? true,
 			stats,
 			createdAt,
-			updatedAt: toISOString(data.updatedAt || data.createdAt),
+			updatedAt: toISOString(data.updatedAt) ?? createdAt,
 			_computed: computed,
 		};
 	} catch (_error) {

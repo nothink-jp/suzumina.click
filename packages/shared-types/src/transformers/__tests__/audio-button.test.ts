@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import { fromFirestore, toFirestore } from "../audio-button";
 
+const CREATED_AT = "2024-01-01T00:00:00.000Z";
+/** fromFirestore が受け付ける最小の必須フィールド（buttonText / videoId / createdAt） */
+const minimal = { buttonText: "a", videoId: "v", createdAt: CREATED_AT };
+
 // createAudioButton 操作は削除されたため fromFirestore で AudioButton fixture を作る（SPR-197）
 const base = () => {
 	const ab = fromFirestore({
@@ -13,16 +17,25 @@ const base = () => {
 		tags: ["tag"],
 		creatorId: "c1",
 		creatorName: "作者",
+		createdAt: CREATED_AT,
 	});
 	if (!ab) throw new Error("fixture 生成に失敗");
 	return ab;
 };
 
 describe("fromFirestore", () => {
-	it("buttonText / videoId が無ければ null", () => {
+	it("buttonText / videoId / createdAt のいずれかが無ければ null", () => {
 		expect(fromFirestore({})).toBeNull();
-		expect(fromFirestore({ buttonText: "a" })).toBeNull();
-		expect(fromFirestore({ videoId: "v" })).toBeNull();
+		expect(fromFirestore({ buttonText: "a", createdAt: CREATED_AT })).toBeNull();
+		expect(fromFirestore({ videoId: "v", createdAt: CREATED_AT })).toBeNull();
+		expect(fromFirestore({ buttonText: "a", videoId: "v" })).toBeNull();
+	});
+
+	it.each([
+		{ label: "空文字", createdAt: "" },
+		{ label: "解釈できない形", createdAt: {} },
+	])("createdAt が $label なら null（現在時刻で埋めない）", ({ createdAt }) => {
+		expect(fromFirestore({ ...minimal, createdAt })).toBeNull();
 	});
 
 	it("レガシーなフィールド名のゆれを吸収する", () => {
@@ -33,6 +46,7 @@ describe("fromFirestore", () => {
 			sourceVideoTitle: "旧動画", // → videoTitle
 			createdBy: "creator-legacy", // → creatorId
 			createdByName: "作者旧", // → creatorName
+			createdAt: CREATED_AT,
 		});
 		expect(result).not.toBeNull();
 		expect(result?.buttonText).toBe("旧タイトル");
@@ -42,15 +56,14 @@ describe("fromFirestore", () => {
 	});
 
 	it("creatorId/creatorName 欠落時は unknown/Unknown", () => {
-		const result = fromFirestore({ buttonText: "a", videoId: "v" });
+		const result = fromFirestore(minimal);
 		expect(result?.creatorId).toBe("unknown");
 		expect(result?.creatorName).toBe("Unknown");
 	});
 
 	it("stats はネスト優先・フラットにフォールバックする", () => {
 		const nested = fromFirestore({
-			buttonText: "a",
-			videoId: "v",
+			...minimal,
 			stats: { playCount: 200, likeCount: 5, dislikeCount: 1 },
 			playCount: 999, // ネストがあるので無視される
 		});
@@ -58,7 +71,7 @@ describe("fromFirestore", () => {
 		// engagementRate = (5+1)/200
 		expect(nested?.stats.engagementRate).toBeCloseTo(0.03);
 
-		const flat = fromFirestore({ buttonText: "a", videoId: "v", playCount: 50, likeCount: 10 });
+		const flat = fromFirestore({ ...minimal, playCount: 50, likeCount: 10 });
 		expect(flat?.stats.playCount).toBe(50);
 	});
 
@@ -69,16 +82,13 @@ describe("fromFirestore", () => {
 	])(
 		"isPopular は 再生数>=100 または 高評価+低評価>=50（$stats → $expected）",
 		({ stats, expected }) => {
-			expect(fromFirestore({ buttonText: "a", videoId: "v", stats })?._computed.isPopular).toBe(
-				expected,
-			);
+			expect(fromFirestore({ ...minimal, stats })?._computed.isPopular).toBe(expected);
 		},
 	);
 
 	it("engagementRatePercentage は整数に丸める", () => {
 		const r = fromFirestore({
-			buttonText: "a",
-			videoId: "v",
+			...minimal,
 			stats: { playCount: 3, likeCount: 1, dislikeCount: 0 },
 		});
 		expect(r?._computed.engagementRatePercentage).toBe(33);
@@ -86,8 +96,7 @@ describe("fromFirestore", () => {
 
 	it("isPopular は playCount>=100、popularityScore を算出する", () => {
 		const result = fromFirestore({
-			buttonText: "a",
-			videoId: "v",
+			...minimal,
 			stats: { playCount: 100, likeCount: 3, dislikeCount: 1 },
 		});
 		expect(result?._computed?.isPopular).toBe(true);
@@ -97,53 +106,52 @@ describe("fromFirestore", () => {
 
 	it("時間フィールドは startTime/endTime/duration を補完する", () => {
 		// endTime 未指定 → startTime と同値、duration=0
-		const r1 = fromFirestore({ buttonText: "a", videoId: "v", startTime: 5 });
+		const r1 = fromFirestore({ ...minimal, startTime: 5 });
 		expect(r1?.endTime).toBe(5);
 		expect(r1?.duration).toBe(0);
 		// duration は endTime-startTime
-		const r2 = fromFirestore({ buttonText: "a", videoId: "v", startTime: 2, endTime: 8 });
+		const r2 = fromFirestore({ ...minimal, startTime: 2, endTime: 8 });
 		expect(r2?.duration).toBe(6);
 	});
 
 	it("isPublic は未指定で true", () => {
-		expect(fromFirestore({ buttonText: "a", videoId: "v" })?.isPublic).toBe(true);
-		expect(fromFirestore({ buttonText: "a", videoId: "v", isPublic: false })?.isPublic).toBe(false);
+		expect(fromFirestore(minimal)?.isPublic).toBe(true);
+		expect(fromFirestore({ ...minimal, isPublic: false })?.isPublic).toBe(false);
 	});
 
 	it("createdAt の各形式を ISO 文字列に変換する", () => {
 		const fromStr = fromFirestore({
-			buttonText: "a",
-			videoId: "v",
+			...minimal,
 			createdAt: "2024-01-01T00:00:00.000Z",
 		});
 		expect(fromStr?.createdAt).toBe("2024-01-01T00:00:00.000Z");
 
 		const fromToDate = fromFirestore({
-			buttonText: "a",
-			videoId: "v",
+			...minimal,
 			createdAt: { toDate: () => new Date("2024-02-02T00:00:00.000Z") },
 		});
 		expect(fromToDate?.createdAt).toBe("2024-02-02T00:00:00.000Z");
 
 		const fromSeconds = fromFirestore({
-			buttonText: "a",
-			videoId: "v",
+			...minimal,
 			createdAt: { _seconds: 1700000000 },
 		});
 		expect(fromSeconds?.createdAt).toBe(new Date(1700000000 * 1000).toISOString());
+
+		const fromEpoch = fromFirestore({ ...minimal, createdAt: { _seconds: 0 } });
+		expect(fromEpoch?.createdAt).toBe("1970-01-01T00:00:00.000Z");
 	});
 
 	it("createdAt が Date でも ISO 文字列に変換する", () => {
 		const r = fromFirestore({
-			buttonText: "a",
-			videoId: "v",
+			...minimal,
 			createdAt: new Date("2024-03-03T00:00:00.000Z"),
 		});
 		expect(r?.createdAt).toBe("2024-03-03T00:00:00.000Z");
 	});
 
 	it("変換結果は現在時刻に依存しない（キャッシュ越しでも値がずれない）", () => {
-		const input = { buttonText: "a", videoId: "v", createdAt: "2024-01-10T09:00:00.000Z" };
+		const input = { ...minimal, createdAt: "2024-01-10T09:00:00.000Z" };
 		try {
 			vi.useFakeTimers();
 			vi.setSystemTime(new Date("2024-01-10T12:00:00.000Z"));
@@ -155,13 +163,12 @@ describe("fromFirestore", () => {
 		}
 	});
 
-	it("updatedAt 未指定時は createdAt にフォールバックする", () => {
-		const r = fromFirestore({
-			buttonText: "a",
-			videoId: "v",
-			createdAt: "2024-01-01T00:00:00.000Z",
-		});
-		expect(r?.updatedAt).toBe("2024-01-01T00:00:00.000Z");
+	it("updatedAt があればそれを、未指定・解釈できなければ createdAt を使う", () => {
+		expect(fromFirestore({ ...minimal, updatedAt: "2024-05-05T00:00:00.000Z" })?.updatedAt).toBe(
+			"2024-05-05T00:00:00.000Z",
+		);
+		expect(fromFirestore(minimal)?.updatedAt).toBe(CREATED_AT);
+		expect(fromFirestore({ ...minimal, updatedAt: {} })?.updatedAt).toBe(CREATED_AT);
 	});
 
 	// durationText は formatDuration を正本とし、createAudioButton と同一表記に統一済み。
@@ -175,13 +182,13 @@ describe("fromFirestore", () => {
 	])(
 		"fromFirestore の durationText は $expected（start=$startTime end=$endTime）",
 		({ startTime, endTime, expected }) => {
-			const r = fromFirestore({ buttonText: "a", videoId: "v", startTime, endTime });
+			const r = fromFirestore({ ...minimal, startTime, endTime });
 			expect(r?._computed?.durationText).toBe(expected);
 		},
 	);
 
 	it("duration から durationText を算出する（formatDuration 正本）", () => {
-		const fromFs = fromFirestore({ buttonText: "a", videoId: "v", startTime: 0, endTime: 5 });
+		const fromFs = fromFirestore({ ...minimal, startTime: 0, endTime: 5 });
 		expect(fromFs?._computed?.durationText).toBe("5秒");
 	});
 });
