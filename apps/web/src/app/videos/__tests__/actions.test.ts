@@ -28,6 +28,9 @@ vi.mock("@/lib/logger", () => ({
 // getPopularVideoTags が unstable_cache 経由になったため、Next ランタイム外では
 // ラップ対象の関数をそのまま返すパススルーにする。
 vi.mock("next/cache", () => ({
+	// 一覧の全件ローダーは "use cache"（テストでは素通し）
+	cacheLife: vi.fn(),
+	cacheTag: vi.fn(),
 	unstable_cache: (fn: (...args: unknown[]) => unknown) => fn,
 }));
 
@@ -138,12 +141,6 @@ describe("Video Server Actions", () => {
 				docs: mockVideoDocs,
 				size: 2,
 			});
-			// デフォルトパスの総数は count() 集計から取得する（SPR-88）。
-			// getVisibleVideoCount は「全件数」→「status ありかつ non-public 件数」の順で
-			// count() を 2 回呼び差分を取る（SPR-246）。
-			mockCount
-				.mockReturnValueOnce({ get: vi.fn().mockResolvedValue({ data: () => ({ count: 2 }) }) })
-				.mockReturnValueOnce({ get: vi.fn().mockResolvedValue({ data: () => ({ count: 0 }) }) });
 
 			const result = await getVideoTitles();
 
@@ -205,13 +202,18 @@ describe("Video Server Actions", () => {
 				docs: mockVideoDocs,
 			});
 
-			await getVideoTitles({
+			const result = await getVideoTitles({
 				sort: "oldest",
 				page: 1,
 				limit: 12,
 			});
 
-			expect(mockOrderBy).toHaveBeenCalledWith("publishedAt", "asc");
+			// 全件は新しい順の 1 クエリ（キャッシュ境界）で取り、oldest はメモリ上で反転する
+			expect(mockOrderBy).toHaveBeenCalledTimes(1);
+			expect(mockOrderBy).toHaveBeenCalledWith("publishedAt", "desc");
+			expect(result.videos.map((v) => v.id)).toEqual(
+				[...mockVideoDocs].reverse().map((doc) => doc.id),
+			);
 		});
 
 		it("エラー時に空の結果を返す", async () => {
@@ -302,20 +304,34 @@ describe("Video Server Actions", () => {
 			expect(mockGet).toHaveBeenCalled();
 		});
 
-		it("フィルタ無しのデフォルトパスは count() 集計で総数を取得する（全件スキャン回避, SPR-88）", async () => {
-			mockGet.mockResolvedValue({ docs: [], size: 0 });
-			// getVisibleVideoCount は「全件数」→「status ありかつ non-public 件数」の順で
-			// count() を 2 回呼び差分を取る（SPR-246: 表示フィルタとの非対称修正）。
-			mockCount
-				.mockReturnValueOnce({ get: vi.fn().mockResolvedValue({ data: () => ({ count: 99 }) }) })
-				.mockReturnValueOnce({ get: vi.fn().mockResolvedValue({ data: () => ({ count: 0 }) }) });
+		it("フィルタ無しの深いページも全件の切り出しで、count()・読み捨てをしない（SPR-349）", async () => {
+			const doc = (id: string, privacyStatus: string) => ({
+				id,
+				data: () => ({
+					videoId: id,
+					title: `動画${id}`,
+					description: "",
+					channelId: "channel-1",
+					channelTitle: "チャンネル1",
+					publishedAt: new Date("2024-01-01").toISOString(),
+					thumbnailUrl: "https://example.com/thumb.jpg",
+					status: { privacyStatus, uploadStatus: "processed" },
+					lastFetchedAt: new Date().toISOString(),
+				}),
+			});
+			mockGet.mockResolvedValue({
+				docs: [doc("a", "public"), doc("b", "private"), doc("c", "public"), doc("d", "public")],
+			});
 
-			const result = await getVideosList({ page: 1, limit: 12 });
+			const result = await getVideosList({ page: 2, limit: 2 });
 
-			// count() + where(!=, public) 集計（non-public 件数）が使われる
-			expect(mockWhere).toHaveBeenCalledWith("status.privacyStatus", "!=", "public");
-			expect(mockCount).toHaveBeenCalledTimes(2);
-			expect(result.totalCount).toBe(99);
+			expect(result.items.map((v) => v.id)).toEqual(["d"]);
+			// 総数は表示フィルタと同じ述語で数える（非公開を含めない＝SPR-246 の非対称が起きない）
+			expect(result.totalCount).toBe(3);
+			expect(mockGet).toHaveBeenCalledTimes(1);
+			expect(mockCount).not.toHaveBeenCalled();
+			expect(mockLimit).not.toHaveBeenCalled();
+			expect(mockStartAfter).not.toHaveBeenCalled();
 		});
 
 		it("playlistTags が単一文字列（URL由来）でもクラッシュせず絞り込む（SPR-111: /videos タグリンク）", async () => {

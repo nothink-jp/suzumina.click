@@ -540,7 +540,8 @@ resource "google_firestore_index" "videos_livebroadcastcontent_lastfetchedat_asc
 # 【管理対象（query-backed）】
 # - works_category_*（6）: /works のカテゴリ閲覧（work-query-builder.ts。category 単独は simple path で
 #   Firestore where(category)+orderBy を実行）
-# - audiobuttons_ispublic_createdat_desc（1）: 音声ボタン一覧 newest / autocomplete tags
+# - audiobuttons_ispublic_createdat_desc（1）: グループビュー getRecentPublicAudioButtons / autocomplete tags
+#   （一覧 getAudioButtonsList は SPR-349 で全件 + in-memory に移行済み）
 # - works.workId COLLECTION_GROUP（google_firestore_field・SPR-204）: creator-firestore.ts
 # - videos_livebroadcastcontent_lastfetchedat_asc（1・2026-07-06 SPR-230回帰対応で追加）:
 #   getStaleLiveVideoIds()（youtube-firestore.ts）の配信中/配信予定固着動画の再取得

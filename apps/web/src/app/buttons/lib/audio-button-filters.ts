@@ -24,7 +24,7 @@ export function applyFilters(
  */
 export function applySorting(
 	queryRef: FirebaseFirestore.Query,
-	sortBy: "newest" | "oldest" | "popular" | "mostPlayed",
+	sortBy: AudioButtonSortBy,
 ): FirebaseFirestore.Query {
 	switch (sortBy) {
 		case "newest":
@@ -38,6 +38,31 @@ export function applySorting(
 		default:
 			return queryRef.orderBy("createdAt", "desc") as typeof queryRef;
 	}
+}
+
+type AudioButtonSortBy = "newest" | "oldest" | "popular" | "mostPlayed";
+
+function compareBySortKey(a: AudioButton, b: AudioButton, sortBy: AudioButtonSortBy): number {
+	switch (sortBy) {
+		case "oldest":
+			return a.createdAt.localeCompare(b.createdAt);
+		case "popular":
+			return (b.stats?.likeCount ?? 0) - (a.stats?.likeCount ?? 0);
+		case "mostPlayed":
+			return (b.stats?.playCount ?? 0) - (a.stats?.playCount ?? 0);
+		default:
+			return b.createdAt.localeCompare(a.createdAt);
+	}
+}
+
+/**
+ * in-memory 版の並べ替え（applySorting と同じ並び順）。同値は id 昇順で決定的にする。
+ * 入力はキャッシュ共有されうるので破壊せず、新しい配列を返す
+ */
+export function sortAudioButtons(buttons: AudioButton[], sortBy: AudioButtonSortBy): AudioButton[] {
+	return [...buttons].sort(
+		(a, b) => compareBySortKey(a, b, sortBy) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+	);
 }
 
 /**

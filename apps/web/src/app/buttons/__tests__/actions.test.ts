@@ -70,8 +70,13 @@ vi.mock("next/headers", () => ({
 }));
 
 // Mock cache revalidation
+const mockUpdateTag = vi.fn();
 vi.mock("next/cache", () => ({
 	revalidatePath: vi.fn(),
+	// 一覧の全件ローダーは "use cache"（テストでは素通し）。書き込み系は updateTag で失効させる
+	cacheLife: vi.fn(),
+	cacheTag: vi.fn(),
+	updateTag: (...args: unknown[]) => mockUpdateTag(...args),
 	// getPopularAudioButtonTags が unstable_cache 経由になったため、テストでは
 	// ラップ対象の関数をそのまま返すパススルーにする（Next ランタイム外で動かすため）。
 	unstable_cache: (fn: (...args: unknown[]) => unknown) => fn,
@@ -89,6 +94,37 @@ vi.mock("@/components/system/protected-route", () => ({
 		role: "member",
 	}),
 }));
+
+const ZERO_STATS = {
+	playCount: 0,
+	likeCount: 0,
+	dislikeCount: 0,
+	favoriteCount: 0,
+	engagementRate: 0,
+};
+
+/** 一覧用の最小ドキュメント（createdAt は id 順に揃えず固定＝並び順は sortBy と id で決まる） */
+function listDoc(id: string, overrides: Record<string, unknown> = {}) {
+	return {
+		id,
+		data: () => ({
+			buttonText: `ボタン${id}`,
+			tags: [],
+			videoId: "video-1",
+			videoTitle: "動画1",
+			startTime: 0,
+			endTime: 10,
+			duration: 10,
+			creatorId: "user-1",
+			creatorName: "User 1",
+			isPublic: true,
+			stats: ZERO_STATS,
+			createdAt: "2024-01-01T00:00:00Z",
+			updatedAt: "2024-01-01T00:00:00Z",
+			...overrides,
+		}),
+	};
+}
 
 describe("Audio Button Server Actions", () => {
 	beforeEach(() => {
@@ -239,6 +275,9 @@ describe("Audio Button Server Actions", () => {
 			expect(mockAdd).toHaveBeenCalled();
 			// SPR-241: add 直後の update({ id }) は冗長 write のため廃止（ID は doc.id が正）
 			expect(mockUpdate).not.toHaveBeenCalledWith({ id: "new-audio-button-id" });
+			// 一覧の全件キャッシュと、audioButtonCount を持つ動画の全件キャッシュを失効させる（SPR-349）
+			expect(mockUpdateTag).toHaveBeenCalledWith("public-audio-buttons");
+			expect(mockUpdateTag).toHaveBeenCalledWith("visible-videos");
 		});
 
 		it("無効な入力でエラーが返される", async () => {
@@ -446,7 +485,8 @@ describe("Audio Button Server Actions", () => {
 			expect(result.success).toBe(true);
 			if (result.success) {
 				expect(result.data.audioButtons).toHaveLength(2);
-				expect(result.data.audioButtons[0]!.buttonText).toBe("音声ボタン1");
+				// 並べ替えは in-memory（newest = createdAt 降順）
+				expect(result.data.audioButtons[0]!.buttonText).toBe("音声ボタン2");
 				expect(result.data.hasMore).toBe(false);
 			}
 		});
@@ -479,30 +519,83 @@ describe("Audio Button Server Actions", () => {
 			} as Parameters<typeof getAudioButtonsList>[0]);
 
 			expect(result.success).toBe(true);
-			// 一覧クエリと count クエリの両方に isPublic == true が掛かる
+			// 全件ローダーの唯一のクエリに isPublic == true が掛かる（count() は使わない＝SPR-349）
 			const publicWheres = mockWhere.mock.calls.filter(
 				(args) => args[0] === "isPublic" && args[1] === "==" && args[2] === true,
 			);
-			expect(publicWheres).toHaveLength(2);
+			expect(publicWheres).toHaveLength(1);
 			expect(mockWhere).not.toHaveBeenCalledWith("isPublic", "==", false);
 		});
 
-		it("limit は上限 100 に切り詰めて問い合わせる（SPR-378）", async () => {
-			mockGet.mockResolvedValue({ docs: [] });
+		it("limit は上限 100 に切り詰める（SPR-378）", async () => {
+			mockGet.mockResolvedValue({ docs: Array.from({ length: 150 }, (_, i) => listDoc(`b${i}`)) });
 
 			const result = await getAudioButtonsList({ limit: 5000 });
 
 			expect(result.success).toBe(true);
-			expect(mockLimit).toHaveBeenCalledWith(100);
-			expect(mockLimit).not.toHaveBeenCalledWith(5000);
+			if (result.success) {
+				expect(result.data.audioButtons).toHaveLength(100);
+				expect(result.data.totalCount).toBe(150);
+				expect(result.data.hasMore).toBe(true);
+			}
 		});
 
 		it("上限以下の limit はそのまま使う", async () => {
-			mockGet.mockResolvedValue({ docs: [] });
+			mockGet.mockResolvedValue({ docs: Array.from({ length: 60 }, (_, i) => listDoc(`b${i}`)) });
 
-			await getAudioButtonsList({ limit: 48 });
+			const result = await getAudioButtonsList({ limit: 48 });
 
-			expect(mockLimit).toHaveBeenCalledWith(48);
+			expect(result.success && result.data.audioButtons).toHaveLength(48);
+		});
+
+		it("素の一覧の深いページも全件の切り出しで、読み捨て（limit/startAfter）をしない（SPR-349）", async () => {
+			mockGet.mockResolvedValue({ docs: ["a", "b", "c", "d", "e"].map((id) => listDoc(id)) });
+
+			const result = await getAudioButtonsList({ limit: 2, page: 3, sortBy: "newest" });
+
+			expect(result.success).toBe(true);
+			if (result.success) {
+				expect(result.data.audioButtons.map((b) => b.id)).toEqual(["e"]);
+				expect(result.data.totalCount).toBe(5);
+				expect(result.data.hasMore).toBe(false);
+			}
+			expect(mockGet).toHaveBeenCalledTimes(1);
+			expect(mockLimit).not.toHaveBeenCalled();
+			expect(mockStartAfter).not.toHaveBeenCalled();
+			expect(mockOrderBy).not.toHaveBeenCalled();
+		});
+
+		it("videoId はメモリ上で絞り込み、総数も絞り込み後の件数になる", async () => {
+			mockGet.mockResolvedValue({
+				docs: [
+					listDoc("a", { videoId: "video-1" }),
+					listDoc("b", { videoId: "video-2" }),
+					listDoc("c", { videoId: "video-1" }),
+				],
+			});
+
+			const result = await getAudioButtonsList({ videoId: "video-1", limit: 20 });
+
+			expect(result.success).toBe(true);
+			if (result.success) {
+				expect(result.data.audioButtons.map((b) => b.id).sort()).toEqual(["a", "c"]);
+				expect(result.data.totalCount).toBe(2);
+			}
+			expect(mockWhere).not.toHaveBeenCalledWith("videoId", "==", "video-1");
+		});
+
+		it("mostPlayed は再生数の降順、同数は id 昇順で並べる", async () => {
+			mockGet.mockResolvedValue({
+				docs: [
+					listDoc("b", { stats: { ...ZERO_STATS, playCount: 3 } }),
+					listDoc("a", { stats: { ...ZERO_STATS, playCount: 3 } }),
+					listDoc("c", { stats: { ...ZERO_STATS, playCount: 9 } }),
+				],
+			});
+
+			const result = await getAudioButtonsList({ sortBy: "mostPlayed", limit: 20 });
+
+			expect(result.success && result.data.audioButtons.map((b) => b.id)).toEqual(["c", "a", "b"]);
 		});
 
 		it("検索パラメータが正しく処理される", async () => {
@@ -738,6 +831,7 @@ describe("Audio Button Server Actions", () => {
 
 			expect(result.success).toBe(true);
 			expect(mockDelete).toHaveBeenCalled();
+			expect(mockUpdateTag).toHaveBeenCalledWith("public-audio-buttons");
 		});
 
 		it("権限がないユーザーは削除できない", async () => {
@@ -904,6 +998,14 @@ describe("Audio Button Server Actions", () => {
 			});
 			const r = await updateAudioButton("ab1", { buttonText: "新", isPublic: false });
 			expect(r.success).toBe(true);
+			// 非公開化は一覧から消えるべき変更なので失効させる
+			expect(mockUpdateTag).toHaveBeenCalledWith("public-audio-buttons");
+		});
+
+		it("権限エラー時はキャッシュを失効させない", async () => {
+			mockGet.mockResolvedValue({ exists: true, data: () => ({ creatorId: "other-user" }) });
+			await updateAudioButton("ab1", { buttonText: "新" });
+			expect(mockUpdateTag).not.toHaveBeenCalled();
 		});
 	});
 
@@ -916,6 +1018,7 @@ describe("Audio Button Server Actions", () => {
 		it("ログインユーザーはタグ更新成功（作成者でなくても可）", async () => {
 			mockGet.mockResolvedValue({ exists: true, data: () => ({ creatorId: "other-user" }) });
 			expect((await updateAudioButtonTags("ab1", ["t1", "t2"])).success).toBe(true);
+			expect(mockUpdateTag).toHaveBeenCalledWith("public-audio-buttons");
 		});
 	});
 
