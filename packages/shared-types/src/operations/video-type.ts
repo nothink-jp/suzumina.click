@@ -20,6 +20,14 @@ const ARCHIVE_MIN_SECONDS = 15 * 60;
 const SHORT_MAX_SECONDS = 60;
 
 /**
+ * 配信中として扱う videoType か。possibly_live（予定時刻を過ぎたが未確認）も含める。
+ * マーキング画面（video-mode）・/watch・バッジ（配信中（推定））がいずれも配信中側に寄せているのに揃える。
+ */
+export function isLiveVideoType(videoType: VideoType): boolean {
+	return videoType === "live" || videoType === "possibly_live";
+}
+
+/**
  * 判定に必要なフィールドだけを持つ入力。YouTube API・Firestore 生データ・VideoPlainObject の
  * どれでも渡せるよう、時刻は string / Date / Firestore Timestamp を受け付ける。
  */

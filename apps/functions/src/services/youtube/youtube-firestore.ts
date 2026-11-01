@@ -80,8 +80,8 @@ const MAX_STALE_LIVE_VIDEO_IDS = 50;
  *
  * SPR-230回帰対応: incremental discoveryは新着（未知）動画IDしか返さないため、一度保存された
  * 動画は配信終了後も再取得されず、liveBroadcastContent/liveStreamingDetails.actualEndTimeが
- * 固着する（video-firestore.tsのisLive/isUpcomingはliveBroadcastContent自体をOR条件に使うため
- * フロントエンド側では直せない）。対象は通常0〜数件だが、異常系の暴走防止として
+ * 固着する（表示側の判定は determineVideoType で liveBroadcastContent を見ないが、終了・開始時刻は
+ * 再取得しない限り更新されないため、配信終了後もアーカイブ化されない）。対象は通常0〜数件だが、異常系の暴走防止として
  * MAX_STALE_LIVE_VIDEO_IDSで打ち切る。`lastFetchedAt`昇順にすることで、50件を超える固着が
  * 発生した場合でも最も長く再取得されていない動画から優先的に救済され、再取得後は
  * `lastFetchedAt`が更新され順位が下がるため複数runでローテーションし全件が解消に向かう

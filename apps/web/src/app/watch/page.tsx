@@ -1,4 +1,8 @@
-import { parseDurationToSeconds, type VideoPlainObject } from "@suzumina.click/shared-types";
+import {
+	isLiveVideoType,
+	parseDurationToSeconds,
+	type VideoPlainObject,
+} from "@suzumina.click/shared-types";
 import type { Metadata } from "next";
 import { getMyButtonDrafts } from "@/actions/button-drafts";
 import { getVideoById, getVideosList } from "@/app/videos/actions";
@@ -41,9 +45,7 @@ async function findTargetVideo(manualVideoId?: string): Promise<VideoPlainObject
 
 	// 判定の正本は _computed.videoType（video-card-actions / video-badge と同一。
 	// raw の liveBroadcastContent は stale がありうるため使わない）
-	const live = items.find(
-		(v) => v._computed.videoType === "live" || v._computed.videoType === "possibly_live",
-	);
+	const live = items.find((v) => isLiveVideoType(v._computed.videoType));
 	if (live) {
 		return live;
 	}

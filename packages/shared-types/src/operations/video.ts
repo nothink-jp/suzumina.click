@@ -6,43 +6,50 @@
  */
 
 import type { VideoPlainObject } from "../plain-objects/video-plain";
+import type { VideoType } from "../types/firestore/video";
+import { determineVideoType, isLiveVideoType } from "./video-type";
+
+/**
+ * 配信状態の判定に使う videoType。正本は fromFirestore が算出した `_computed.videoType`。
+ * `_computed` を持たない入力だけ正本の判定関数で算出する（取得時点の liveBroadcastContent や
+ * 保存済み videoType は stale になりうるので見ない。SPR-403）。
+ */
+function currentVideoType(video: VideoPlainObject): VideoType {
+	return video._computed?.videoType ?? determineVideoType(video);
+}
 
 /**
  * Checks if a video is archived (older streams)
  */
 export function isArchived(video: VideoPlainObject): boolean {
-	// Use _computed properties if available
 	if (video._computed?.isArchived !== undefined) {
 		return video._computed.isArchived;
 	}
-	// Fallback to videoType check
-	return video.videoType === "archived";
+	return currentVideoType(video) === "archived";
 }
 
 /**
  * Checks if a video is a premiere
  */
 export function isPremiere(video: VideoPlainObject): boolean {
-	// Use _computed properties if available
 	if (video._computed?.isPremiere !== undefined) {
 		return video._computed.isPremiere;
 	}
-	// Fallback to videoType check
-	return video.videoType === "premiere";
+	return currentVideoType(video) === "premiere";
 }
 
 /**
- * Checks if a video is currently live
+ * 配信中か（possibly_live を含む。isLiveVideoType 参照）
  */
 export function isLive(video: VideoPlainObject): boolean {
-	return video.liveBroadcastContent === "live";
+	return isLiveVideoType(currentVideoType(video));
 }
 
 /**
- * Checks if a video is upcoming (scheduled)
+ * 配信予定か
  */
 export function isUpcoming(video: VideoPlainObject): boolean {
-	return video.liveBroadcastContent === "upcoming";
+	return currentVideoType(video) === "upcoming";
 }
 
 /**
@@ -63,16 +70,20 @@ export function canCreateButton(video: VideoPlainObject): boolean {
  */
 export const canCreateAudioButton = canCreateButton;
 
+/** 配信状態（videoType）ごとの作成不可理由。ここに無い videoType は配信状態では弾かない */
+const STREAM_STATE_ERROR_MESSAGES: Partial<Record<VideoType, string>> = {
+	live: "ライブ配信中は音声ボタンを作成できません",
+	possibly_live: "配信中の可能性があるため、アーカイブが公開されるまで音声ボタンを作成できません",
+	upcoming: "配信予定の動画には音声ボタンを作成できません",
+};
+
 /**
  * Gets error message explaining why audio button cannot be created
  */
 export function getAudioButtonCreationErrorMessage(video: VideoPlainObject): string | null {
-	if (isLive(video)) {
-		return "ライブ配信中は音声ボタンを作成できません";
-	}
-
-	if (isUpcoming(video)) {
-		return "配信予定の動画には音声ボタンを作成できません";
+	const streamMessage = STREAM_STATE_ERROR_MESSAGES[currentVideoType(video)];
+	if (streamMessage) {
+		return streamMessage;
 	}
 
 	if (!video.duration || video.duration === "PT0S") {

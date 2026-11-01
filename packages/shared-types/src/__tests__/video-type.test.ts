@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { determineVideoType, type VideoTypeSource } from "../operations/video-type";
+import {
+	determineVideoType,
+	isLiveVideoType,
+	type VideoTypeSource,
+} from "../operations/video-type";
 
 const NOW = new Date("2026-01-01T00:00:00.000Z");
 const PAST = "2025-12-31T00:00:00.000Z";
@@ -68,5 +72,14 @@ describe("determineVideoType（動画タイプ判定の正本）", () => {
 			expect(typeOf({ duration: "P0D" })).toBe("normal");
 			expect(typeOf({})).toBe("normal");
 		});
+	});
+});
+
+describe("isLiveVideoType", () => {
+	it("live と possibly_live だけが配信中", () => {
+		expect(isLiveVideoType("live")).toBe(true);
+		expect(isLiveVideoType("possibly_live")).toBe(true);
+		expect(isLiveVideoType("upcoming")).toBe(false);
+		expect(isLiveVideoType("archived")).toBe(false);
 	});
 });

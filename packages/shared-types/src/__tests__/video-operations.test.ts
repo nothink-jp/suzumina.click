@@ -27,23 +27,58 @@ const video = (over: Partial<VideoPlainObject> = {}): VideoPlainObject =>
 	}) as VideoPlainObject;
 
 describe("状態判定", () => {
-	it("isArchived は _computed を優先し、無ければ videoType を見る", () => {
+	it("isArchived は _computed を優先し、無ければ正本の判定関数で算出する（保存済み videoType は見ない）", () => {
 		expect(isArchived(video({ _computed: { isArchived: true } } as never))).toBe(true);
-		expect(isArchived(video({ videoType: "archived" } as never))).toBe(true);
-		expect(isArchived(video({ videoType: "normal" } as never))).toBe(false);
+		expect(
+			isArchived(
+				video({
+					duration: "PT1H",
+					liveStreamingDetails: { actualEndTime: "2024-01-01T02:00:00.000Z" },
+				} as never),
+			),
+		).toBe(true);
+		expect(isArchived(video({ videoType: "archived" } as never))).toBe(false);
 	});
 
-	it("isPremiere は _computed を優先し、無ければ videoType を見る", () => {
+	it("isPremiere は _computed を優先し、無ければ正本の判定関数で算出する", () => {
 		expect(isPremiere(video({ _computed: { isPremiere: true } } as never))).toBe(true);
-		expect(isPremiere(video({ videoType: "premiere" } as never))).toBe(true);
-		expect(isPremiere(video())).toBe(false);
+		expect(
+			isPremiere(
+				video({
+					duration: "PT5M",
+					liveStreamingDetails: { actualEndTime: "2024-01-01T02:00:00.000Z" },
+				} as never),
+			),
+		).toBe(true);
+		expect(isPremiere(video({ videoType: "premiere" } as never))).toBe(false);
 	});
 
-	it("isLive / isUpcoming は liveBroadcastContent を見る", () => {
-		expect(isLive(video({ liveBroadcastContent: "live" } as never))).toBe(true);
-		expect(isLive(video({ liveBroadcastContent: "none" } as never))).toBe(false);
-		expect(isUpcoming(video({ liveBroadcastContent: "upcoming" } as never))).toBe(true);
-		expect(isUpcoming(video())).toBe(false);
+	it("isLive は _computed.videoType が live / possibly_live、isUpcoming は upcoming", () => {
+		const typed = (videoType: string) => video({ _computed: { videoType } } as never);
+		expect(isLive(typed("live"))).toBe(true);
+		expect(isLive(typed("possibly_live"))).toBe(true);
+		expect(isLive(typed("archived"))).toBe(false);
+		expect(isUpcoming(typed("upcoming"))).toBe(true);
+		expect(isUpcoming(typed("possibly_live"))).toBe(false);
+	});
+
+	it("取得時点の liveBroadcastContent が残っていても videoType を優先する（SPR-403）", () => {
+		const stale = video({
+			liveBroadcastContent: "upcoming",
+			_computed: { videoType: "possibly_live" },
+		} as never);
+		expect(isUpcoming(stale)).toBe(false);
+		expect(isLive(stale)).toBe(true);
+		expect(isLive(video({ liveBroadcastContent: "live" } as never))).toBe(false);
+	});
+
+	it("_computed が無ければ正本の判定関数で算出する（保存済み videoType は見ない）", () => {
+		const raw = video({
+			videoType: "upcoming",
+			liveStreamingDetails: { actualStartTime: "2024-01-01T00:00:00.000Z" },
+		} as never);
+		expect(isLive(raw)).toBe(true);
+		expect(isUpcoming(raw)).toBe(false);
 	});
 });
 
@@ -53,24 +88,43 @@ describe("canCreateButton / エラーメッセージ", () => {
 		expect(canCreateButton(video({ _computed: { canCreateButton: false } } as never))).toBe(false);
 	});
 
-	it("_computed が無ければ archived のみ作成可", () => {
-		expect(canCreateButton(video({ videoType: "archived" } as never))).toBe(true);
-		expect(canCreateButton(video({ videoType: "normal" } as never))).toBe(false);
+	it("_computed が無ければ archived（正本の判定関数で算出）のみ作成可", () => {
+		expect(
+			canCreateButton(
+				video({
+					duration: "PT1H",
+					liveStreamingDetails: { actualEndTime: "2024-01-01T02:00:00.000Z" },
+				} as never),
+			),
+		).toBe(true);
+		expect(canCreateButton(video())).toBe(false);
 	});
 
-	it("ライブ中・配信予定・長さ不明はエラーメッセージを返す", () => {
-		expect(
-			getAudioButtonCreationErrorMessage(video({ liveBroadcastContent: "live" } as never)),
-		).toBe("ライブ配信中は音声ボタンを作成できません");
-		expect(
-			getAudioButtonCreationErrorMessage(video({ liveBroadcastContent: "upcoming" } as never)),
-		).toBe("配信予定の動画には音声ボタンを作成できません");
+	it("ライブ中・配信中（推定）・配信予定・長さ不明はエラーメッセージを返す", () => {
+		const typed = (videoType: string) => video({ _computed: { videoType } } as never);
+		expect(getAudioButtonCreationErrorMessage(typed("live"))).toBe(
+			"ライブ配信中は音声ボタンを作成できません",
+		);
+		expect(getAudioButtonCreationErrorMessage(typed("possibly_live"))).toBe(
+			"配信中の可能性があるため、アーカイブが公開されるまで音声ボタンを作成できません",
+		);
+		expect(getAudioButtonCreationErrorMessage(typed("upcoming"))).toBe(
+			"配信予定の動画には音声ボタンを作成できません",
+		);
 		expect(getAudioButtonCreationErrorMessage(video({ duration: "PT0S" }))).toBe(
 			"動画の長さが不明なため音声ボタンを作成できません",
 		);
 		expect(getAudioButtonCreationErrorMessage(video({ duration: undefined } as never))).toBe(
 			"動画の長さが不明なため音声ボタンを作成できません",
 		);
+	});
+
+	it("stale な liveBroadcastContent では配信系の文言を出さない（SPR-403）", () => {
+		expect(
+			getAudioButtonCreationErrorMessage(
+				video({ liveBroadcastContent: "live", _computed: { videoType: "normal" } } as never),
+			),
+		).toBeNull();
 	});
 
 	it("条件を満たせば null（作成可）", () => {

@@ -23,8 +23,8 @@ type MarkGate = { mode: "archived" | "live" | "upcoming" } | { mode: "disabled";
  * 配信アーカイブでない動画（マークしてもボタンに仕上げられない）。
  *
  * モード判定の正本は resolveCaptureVideoMode（video-detail / /watch / /drafts と同一関数）。
- * その内部で使う _computed.videoType が唯一 stale に強い（raw の liveBroadcastContent や
- * raw を OR する _computed.isLive は、アーカイブ済みでも live のまま残ることがある）。
+ * その内部で使う _computed.videoType が stale に強い（raw の liveBroadcastContent は、
+ * アーカイブ済みでも live のまま残ることがある）。
  */
 function evaluateMarkGate(video: VideoPlainObject): MarkGate {
 	// 埋め込み不可はモードより先（プレイヤーが動かない事実は行為の選択に優先する）
