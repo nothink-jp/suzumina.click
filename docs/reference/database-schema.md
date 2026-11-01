@@ -21,6 +21,7 @@
 | `creators` | DLsite クリエイター（`workCount`/`types` は非正規化統計） | クリエイター ID（Individual Info API の `creater.id`） | [creator.ts](../../packages/shared-types/src/types/firestore/creator.ts) `CreatorDocument` | Cloud Functions |
 | `contacts` | お問い合わせ（通知の正は Resend メール = [email.ts](../../apps/web/src/lib/email.ts)。Firestore は送信記録のアーカイブで読み手なし） | 自動生成 ID | [contact.ts](../../packages/shared-types/src/entities/contact.ts) `FirestoreContactData` | Server Actions |
 | `ba_user` / `ba_session` / `ba_account` | better-auth の認証データ（認証の正本） | better-auth 採番 | 書き込み元 [firestore-adapter.ts](../../apps/web/src/lib/better-auth/firestore-adapter.ts)（better-auth 標準モデル・prefix `ba_`） | better-auth |
+| `playCountDedup` | 再生数の重複計上抑止（同じ IP × ボタンは 10 分に 1 回。`expiresAt` で TTL 削除） | HMAC(IP, ボタン ID)（生の IP は保存しない） | 書き込み元 [play-count-dedup.ts](../../apps/web/src/lib/play-count-dedup.ts) | Server Actions（匿名可） |
 | `youtubeMetadata` | YouTube 取得処理のメタデータ | `fetch_metadata` | 書き込み元 [fetch-metadata.ts](../../apps/functions/src/endpoints/youtube/fetch-metadata.ts)（`FetchMetadata`） | Cloud Functions |
 | `dlsiteMetadata` | DLsite 収集・整合性チェックのメタデータ | `unified_data_collection_metadata` / `dataIntegrityCheck` | 書き込み元 Cloud Function（[dlsite](../../apps/functions/src/endpoints/dlsite/collection-metadata.ts) / [integrity](../../apps/functions/src/endpoints/data-integrity/run-integrity-check.ts)） | Cloud Functions |
 | `dlsite_failed_works` | Individual Info API で取得に失敗した作品の追跡（失敗回数・理由） | 作品 ID | 書き込み元 [failure-tracker.ts](../../apps/functions/src/services/dlsite/failure-tracker.ts) | Cloud Functions |
@@ -53,6 +54,7 @@
 - 公開読み取り: `videos` / `works` / 公開 `audioButtons` / `circles`
 - Cloud Functions のみ書き込み（自動収集）: `videos` / `works` / `circles` / `creators`（+ `creators/{id}/works`） / `priceHistory` / `dlsite_failed_works`
 - Server Actions のみ書き込み（認証済み）: `audioButtons` / `evaluations` / `favorites` / `top10` / `likes` / `dislikes` / `buttonDrafts` / `transcriptChunks` / `contacts`
+- Server Actions から匿名で書き込み: `audioButtons.stats.playCount` / `playCountDedup`（認可ではなく IP 単位の抑止のみ＝ `incrementPlayCount`）
 - better-auth（サーバーのみ）: `ba_user` / `ba_session` / `ba_account`
 - 本人のみ読み取り: `users` サブコレクション（`favorites` / `top10`）・`evaluations`
 

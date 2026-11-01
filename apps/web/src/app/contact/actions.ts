@@ -3,6 +3,7 @@
 import { type ContactFormData, ContactFormDataSchema } from "@suzumina.click/shared-types";
 import { headers } from "next/headers";
 import { z } from "zod";
+import { getClientIp } from "@/lib/client-ip";
 import { sendContactNotification } from "@/lib/email";
 import { getFirestore } from "@/lib/firestore";
 import { verifyTurnstileToken } from "@/lib/turnstile";
@@ -30,12 +31,7 @@ export async function submitContactForm(
 
 		// ヘッダー情報の取得（スパム対策用）
 		const headersList = await headers();
-		// Cloudflare 経由なら cf-connecting-ip が正（x-forwarded-for の先頭はクライアントが偽装できる）。
-		// ただしオリジン迂回（SPR-366/367）では cf-connecting-ip もクライアントが付けられるため信頼キーにしない
-		const clientIp =
-			headersList.get("cf-connecting-ip")?.trim() ||
-			headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-			"unknown";
+		const clientIp = getClientIp(headersList);
 		const userAgent = headersList.get("user-agent") || "unknown";
 
 		if (!(await verifyTurnstileToken(turnstileToken, clientIp))) {

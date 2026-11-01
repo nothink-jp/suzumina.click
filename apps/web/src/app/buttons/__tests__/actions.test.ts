@@ -49,6 +49,11 @@ vi.mock("@/lib/firestore-helpers", () => ({
 	updateCounter: (...args: unknown[]) => mockUpdateCounter(...args),
 }));
 
+const mockClaimPlayCount = vi.fn();
+vi.mock("@/lib/play-count-dedup", () => ({
+	claimPlayCount: (...args: unknown[]) => mockClaimPlayCount(...args),
+}));
+
 // Mock logger
 vi.mock("@/lib/logger", () => ({
 	info: vi.fn(),
@@ -824,17 +829,57 @@ describe("Audio Button Server Actions", () => {
 	});
 
 	describe("カウンタ操作（updateCounter 委譲）", () => {
-		it("incrementPlayCount は updateCounter に正しい引数で委譲する", async () => {
-			mockUpdateCounter.mockResolvedValue({ success: true });
-			await incrementPlayCount("ab1");
+		it("incrementPlayCount は計上権を取れたときだけ updateCounter に委譲する（updatedAt は触らない）", async () => {
+			mockClaimPlayCount.mockResolvedValue("claimed");
+			mockUpdateCounter.mockResolvedValue({ success: true, newValue: 3 });
+			expect(await incrementPlayCount("ab1")).toEqual({
+				success: true,
+				counted: true,
+				error: undefined,
+			});
+			expect(mockClaimPlayCount).toHaveBeenCalledWith("ab1", "127.0.0.1");
 			expect(mockUpdateCounter).toHaveBeenCalledWith("audioButtons", "ab1", "stats.playCount", 1, {
 				min: 0,
+				updateTimestamp: false,
 			});
 		});
 
-		it("updateCounter の結果をそのまま返す", async () => {
+		it("窓内の重複は成功扱いで計上しない（SPR-334）", async () => {
+			mockClaimPlayCount.mockResolvedValue("duplicate");
+			expect(await incrementPlayCount("ab1")).toEqual({ success: true, counted: false });
+			expect(mockUpdateCounter).not.toHaveBeenCalled();
+		});
+
+		it("存在しない・非公開ボタンには書き込まない", async () => {
+			mockClaimPlayCount.mockResolvedValue("not_found");
+			expect((await incrementPlayCount("missing")).success).toBe(false);
+			expect(mockUpdateCounter).not.toHaveBeenCalled();
+		});
+
+		it("不正な ID は Firestore に触れずに弾く", async () => {
+			for (const id of ["", "a/b", 1 as unknown as string]) {
+				expect((await incrementPlayCount(id)).success).toBe(false);
+			}
+			expect(mockClaimPlayCount).not.toHaveBeenCalled();
+		});
+
+		it("重複判定が失敗したら計上しない", async () => {
+			mockClaimPlayCount.mockRejectedValue(new Error("boom"));
+			expect(await incrementPlayCount("ab1")).toEqual({
+				success: false,
+				error: "再生数の更新に失敗しました",
+			});
+			expect(mockUpdateCounter).not.toHaveBeenCalled();
+		});
+
+		it("updateCounter の失敗をそのまま返す", async () => {
+			mockClaimPlayCount.mockResolvedValue("claimed");
 			mockUpdateCounter.mockResolvedValue({ success: false, error: "x" });
-			expect(await incrementPlayCount("ab1")).toEqual({ success: false, error: "x" });
+			expect(await incrementPlayCount("ab1")).toEqual({
+				success: false,
+				counted: false,
+				error: "x",
+			});
 		});
 	});
 

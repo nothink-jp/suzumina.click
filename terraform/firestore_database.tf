@@ -49,3 +49,18 @@ resource "google_firestore_field" "ba_session_expires_at_ttl" {
 
   ttl_config {}
 }
+
+# 再生数の重複計上抑止（SPR-334・apps/web/src/lib/play-count-dedup.ts）の期限切れドキュメントを自動削除する。
+# 窓の判定はコード側で expiresAt を比較するため、TTL 削除が遅れても挙動は変わらない（溜まらないための掃除）。
+# expiresAt は単調増加の Timestamp を高頻度で書くだけで誰もクエリしないため、単一フィールド index を外す
+# （index_config {} = 無効化。TTL フィールドのホットスポット回避の推奨設定）。
+resource "google_firestore_field" "play_count_dedup_expires_at_ttl" {
+  project    = var.gcp_project_id
+  database   = google_firestore_database.database.name
+  collection = "playCountDedup"
+  field      = "expiresAt"
+
+  index_config {}
+
+  ttl_config {}
+}

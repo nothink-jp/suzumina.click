@@ -5,11 +5,14 @@ import type {
 	CreateAudioButtonInput,
 	UpdateAudioButtonInput,
 } from "@suzumina.click/shared-types";
+import { headers } from "next/headers";
 import { getCurrentUser } from "@/lib/auth/server";
 import { checkRateLimit, incrementButtonCount } from "@/lib/button-rate-limit";
+import { getClientIp } from "@/lib/client-ip";
 import { getFirestore } from "@/lib/firestore";
 import { updateCounter } from "@/lib/firestore-helpers";
 import * as logger from "@/lib/logger";
+import { claimPlayCount } from "@/lib/play-count-dedup";
 import {
 	withAuthenticatedAction,
 	withErrorHandling,
@@ -339,12 +342,41 @@ export async function deleteAudioButton(
 }
 
 /**
- * Increment play count
+ * 再生数を 1 増やす（匿名でも呼べる）。
+ *
+ * 同じクライアント IP × 同じボタンは `PLAY_COUNT_DEDUP_WINDOW_MS` の間 1 回だけ計上する（SPR-334）。
+ * 重複は失敗ではないので `success: true, counted: false` を返す。存在しない・非公開のボタンには書き込まない。
+ * 再生は「ボタンの更新」ではないため `updatedAt` は触らない。
  */
 export async function incrementPlayCount(
 	audioButtonId: string,
-): Promise<{ success: boolean; error?: string }> {
-	return updateCounter("audioButtons", audioButtonId, "stats.playCount", 1, { min: 0 });
+): Promise<{ success: boolean; counted?: boolean; error?: string }> {
+	if (typeof audioButtonId !== "string" || !audioButtonId || audioButtonId.includes("/")) {
+		return { success: false, error: "音声ボタンIDが不正です" };
+	}
+
+	try {
+		const claim = await claimPlayCount(audioButtonId, getClientIp(await headers()));
+		if (claim === "not_found") {
+			return { success: false, error: "音声ボタンが見つかりません" };
+		}
+		if (claim === "duplicate") {
+			return { success: true, counted: false };
+		}
+	} catch (error) {
+		logger.error("再生数の重複判定に失敗", {
+			action: "incrementPlayCount",
+			audioButtonId,
+			error: error instanceof Error ? error.message : String(error),
+		});
+		return { success: false, error: "再生数の更新に失敗しました" };
+	}
+
+	const result = await updateCounter("audioButtons", audioButtonId, "stats.playCount", 1, {
+		min: 0,
+		updateTimestamp: false,
+	});
+	return { success: result.success, counted: result.success, error: result.error };
 }
 
 /**
