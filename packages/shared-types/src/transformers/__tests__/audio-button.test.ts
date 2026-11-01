@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { fromFirestore, toFirestore } from "../audio-button";
 
 // createAudioButton 操作は削除されたため fromFirestore で AudioButton fixture を作る（SPR-197）
@@ -142,21 +142,17 @@ describe("fromFirestore", () => {
 		expect(r?.createdAt).toBe("2024-03-03T00:00:00.000Z");
 	});
 
-	describe("relativeTimeText は createdAt から算出する", () => {
-		afterEach(() => {
-			vi.useRealTimers();
-		});
-
-		it.each([
-			{ createdAt: "2024-01-10T11:59:30.000Z", expected: "たった今" },
-			{ createdAt: "2024-01-10T09:00:00.000Z", expected: "3時間前" },
-			{ createdAt: "2024-01-07T12:00:00.000Z", expected: "3日前" },
-		])("$createdAt → $expected", ({ createdAt, expected }) => {
+	it("変換結果は現在時刻に依存しない（キャッシュ越しでも値がずれない）", () => {
+		const input = { buttonText: "a", videoId: "v", createdAt: "2024-01-10T09:00:00.000Z" };
+		try {
 			vi.useFakeTimers();
 			vi.setSystemTime(new Date("2024-01-10T12:00:00.000Z"));
-			const r = fromFirestore({ buttonText: "a", videoId: "v", createdAt });
-			expect(r?._computed.relativeTimeText).toBe(expected);
-		});
+			const early = fromFirestore(input);
+			vi.setSystemTime(new Date("2025-01-10T12:00:00.000Z"));
+			expect(fromFirestore(input)).toEqual(early);
+		} finally {
+			vi.useRealTimers();
+		}
 	});
 
 	it("updatedAt 未指定時は createdAt にフォールバックする", () => {

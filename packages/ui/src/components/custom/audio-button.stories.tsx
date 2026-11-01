@@ -44,7 +44,6 @@ const mockAudioButton: AudioButtonType = {
 		popularityScore: 1801,
 		searchableText: "おはよう！ 朝の挨拶音声 挨拶 朝",
 		durationText: "3秒",
-		relativeTimeText: "1日前",
 	},
 };
 

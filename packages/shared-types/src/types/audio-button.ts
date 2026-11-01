@@ -33,7 +33,11 @@ export interface AudioButtonDocument {
 }
 
 /**
- * Computed properties that are calculated at runtime
+ * 変換時（fromFirestore）に保存データだけから決まる派生値。
+ *
+ * 現在時刻に依存する値（相対時刻表示など）はここに置かない：`use cache` やインスタンスを
+ * 通ると変換時点の値が残り続け、名前と中身がずれるため。相対時刻は表示側で
+ * `formatRelativeTime(button.createdAt)` を呼ぶ（SPR-354 フォローアップ）
  */
 export interface AudioButtonComputedProperties {
 	isPopular: boolean;
@@ -42,7 +46,6 @@ export interface AudioButtonComputedProperties {
 	popularityScore: number;
 	searchableText: string;
 	durationText: string;
-	relativeTimeText: string;
 }
 
 /**

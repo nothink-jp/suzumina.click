@@ -50,7 +50,6 @@ const audioButton: AudioButtonPlainObject = {
 		popularityScore: 0,
 		searchableText: "",
 		durationText: "3秒",
-		relativeTimeText: "",
 	},
 };
 
