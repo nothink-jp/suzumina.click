@@ -19,27 +19,6 @@ export function applyFilters(
 	return filteredQuery;
 }
 
-/**
- * Firestoreクエリにソート条件を適用
- */
-export function applySorting(
-	queryRef: FirebaseFirestore.Query,
-	sortBy: AudioButtonSortBy,
-): FirebaseFirestore.Query {
-	switch (sortBy) {
-		case "newest":
-			return queryRef.orderBy("createdAt", "desc") as typeof queryRef;
-		case "oldest":
-			return queryRef.orderBy("createdAt", "asc") as typeof queryRef;
-		case "popular":
-			return queryRef.orderBy("stats.likeCount", "desc") as typeof queryRef;
-		case "mostPlayed":
-			return queryRef.orderBy("stats.playCount", "desc") as typeof queryRef;
-		default:
-			return queryRef.orderBy("createdAt", "desc") as typeof queryRef;
-	}
-}
-
 type AudioButtonSortBy = "newest" | "oldest" | "popular" | "mostPlayed";
 
 function compareBySortKey(a: AudioButton, b: AudioButton, sortBy: AudioButtonSortBy): number {
@@ -56,7 +35,9 @@ function compareBySortKey(a: AudioButton, b: AudioButton, sortBy: AudioButtonSor
 }
 
 /**
- * in-memory 版の並べ替え（applySorting と同じ並び順）。同値は id 昇順で決定的にする。
+ * 一覧の並べ替え（newest/oldest = createdAt、popular = いいね数、mostPlayed = 再生数）。
+ * 同値は id 昇順で決定的にする。stats 欠損は 0 として末尾側に並べる
+ * （旧 Firestore orderBy はフィールド欠損ドキュメントを結果から外していた）。
  * 入力はキャッシュ共有されうるので破壊せず、新しい配列を返す
  */
 export function sortAudioButtons(buttons: AudioButton[], sortBy: AudioButtonSortBy): AudioButton[] {

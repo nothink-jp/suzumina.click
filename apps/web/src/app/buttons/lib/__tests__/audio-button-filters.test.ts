@@ -2,7 +2,6 @@ import type { AudioButton } from "@suzumina.click/shared-types";
 import { describe, expect, it, vi } from "vitest";
 import {
 	applyFilters,
-	applySorting,
 	filterBySearch,
 	filterByTags,
 	sortAudioButtons,
@@ -36,20 +35,6 @@ describe("applyFilters", () => {
 		const { q, calls } = makeQuery();
 		applyFilters(q as never);
 		expect(calls).toEqual([{ method: "where", args: ["isPublic", "==", true] }]);
-	});
-});
-
-describe("applySorting", () => {
-	it("sortBy 種別ごとに orderBy を切り替える", () => {
-		const orderOf = (sortBy: Parameters<typeof applySorting>[1]) => {
-			const { q, calls } = makeQuery();
-			applySorting(q as never, sortBy);
-			return calls.find((c) => c.method === "orderBy")?.args;
-		};
-		expect(orderOf("newest")).toEqual(["createdAt", "desc"]);
-		expect(orderOf("oldest")).toEqual(["createdAt", "asc"]);
-		expect(orderOf("popular")).toEqual(["stats.likeCount", "desc"]);
-		expect(orderOf("mostPlayed")).toEqual(["stats.playCount", "desc"]);
 	});
 });
 
@@ -94,7 +79,7 @@ describe("sortAudioButtons", () => {
 	const ids = (sortBy: Parameters<typeof sortAudioButtons>[1]) =>
 		sortAudioButtons(buttons, sortBy).map((b) => b.id);
 
-	it("applySorting と同じ並び順を in-memory で返し、同値は id 昇順", () => {
+	it("sortBy ごとの並び順を返し、同値は id 昇順", () => {
 		expect(ids("newest")).toEqual(["c", "b", "a"]);
 		expect(ids("oldest")).toEqual(["a", "b", "c"]);
 		expect(ids("mostPlayed")).toEqual(["a", "b", "c"]);

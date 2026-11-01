@@ -1,15 +1,33 @@
-import type { AudioButton } from "@suzumina.click/shared-types";
+import type { AudioButton, AudioButtonDocument } from "@suzumina.click/shared-types";
 import { cacheLife, cacheTag } from "next/cache";
 import { getFirestore } from "@/lib/firestore";
 import { applyFilters } from "./lib/audio-button-filters";
-import { AUDIO_BUTTON_LIST_FIELDS } from "./lib/audio-button-list-query";
 import { fetchAndConvertButtons } from "./utils/audio-button-converters";
+
+/** 一覧表示に要るフィールドだけを読む（AudioButtonDocument のうち一覧で使うもの） */
+export const AUDIO_BUTTON_LIST_FIELDS = [
+	"buttonText",
+	"tags",
+	"videoId",
+	"videoTitle",
+	"videoThumbnailUrl",
+	"startTime",
+	"endTime",
+	"duration",
+	"creatorId",
+	"creatorName",
+	"isPublic",
+	"stats",
+	"createdAt",
+	"updatedAt",
+] as const satisfies readonly (keyof AudioButtonDocument)[];
 
 /** 公開音声ボタン全件キャッシュのタグ。書き込み系 Server Action が updateTag で失効させる */
 export const PUBLIC_AUDIO_BUTTONS_TAG = "public-audio-buttons";
 
 /**
- * 公開音声ボタン一覧の読み取り正本（SPR-349）。
+ * 公開音声ボタン一覧の読み取り正本（SPR-349）。一覧 Server Action・グループビュー
+ * （getRecentPublicAudioButtons）・動画詳細/関連ボタンはすべてここから導出する。
  *
  * 旧実装は素の一覧を `.limit(offset).get()` → `startAfter` のオフセット・エミュレーションで
  * ページ送りしており、読み捨て分も課金されるため 1 リクエストの read が page 番号に比例していた。
