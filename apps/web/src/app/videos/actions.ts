@@ -88,6 +88,10 @@ function filterVideos(videos: VideoPlainObject[], params: VideoFilterParams): Vi
 			if (params.videoType === "live_upcoming") {
 				return videoType === "live" || videoType === "upcoming" || videoType === "possibly_live";
 			}
+			// short には専用の選択肢が無く、バッジも「通常動画」と表示するので通常動画に含める
+			if (params.videoType === "regular") {
+				return videoType === "normal" || videoType === "short";
+			}
 
 			return videoType === expectedType;
 		});

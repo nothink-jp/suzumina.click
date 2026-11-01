@@ -304,6 +304,38 @@ describe("Video Server Actions", () => {
 			expect(mockGet).toHaveBeenCalled();
 		});
 
+		it("動画種別=通常動画（regular）は short も含める（バッジ表示と一致させる）", async () => {
+			const doc = (id: string, over: Record<string, unknown>) => ({
+				id,
+				data: () => ({
+					videoId: id,
+					title: `動画${id}`,
+					description: "",
+					channelId: "channel-1",
+					channelTitle: "チャンネル1",
+					publishedAt: new Date("2024-01-01").toISOString(),
+					thumbnailUrl: "https://example.com/thumb.jpg",
+					status: { privacyStatus: "public", uploadStatus: "processed" },
+					lastFetchedAt: new Date().toISOString(),
+					...over,
+				}),
+			});
+			mockGet.mockResolvedValue({
+				docs: [
+					doc("normal", { duration: "PT5M" }),
+					doc("short", { duration: "PT30S" }),
+					doc("archived", {
+						duration: "PT1H",
+						liveStreamingDetails: { actualEndTime: "2024-01-01T02:00:00.000Z" },
+					}),
+				],
+			});
+
+			const result = await getVideosList({ page: 1, limit: 12, filters: { videoType: "regular" } });
+
+			expect(result.items.map((v) => v.id).sort()).toEqual(["normal", "short"]);
+		});
+
 		it("フィルタ無しの深いページも全件の切り出しで、count()・読み捨てをしない（SPR-349）", async () => {
 			const doc = (id: string, privacyStatus: string) => ({
 				id,
