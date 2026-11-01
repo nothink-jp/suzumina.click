@@ -57,7 +57,7 @@ interface LegacyAudioButtonData {
 /**
  * 時刻を ISO 文字列にする。解釈できなければ null（現在時刻で埋めない＝変換結果を時刻に依存させない。SPR-400）
  */
-function toISOString(timestamp: TimestampLike | undefined): string | null {
+function toISOStringOrNull(timestamp: TimestampLike | undefined): string | null {
 	if (typeof timestamp === "string") return timestamp || null;
 	if (timestamp instanceof Date) return timestamp.toISOString();
 	if (timestamp?.toDate) return timestamp.toDate().toISOString();
@@ -166,7 +166,7 @@ export function fromFirestore(data: LegacyAudioButtonData & { id?: string }): Au
 	try {
 		const basic = extractBasicFields(data);
 
-		const createdAt = toISOString(data.createdAt);
+		const createdAt = toISOStringOrNull(data.createdAt);
 		if (!basic.buttonText || !basic.videoId || !createdAt) {
 			return null;
 		}
@@ -199,7 +199,7 @@ export function fromFirestore(data: LegacyAudioButtonData & { id?: string }): Au
 			isPublic: data.isPublic ?? true,
 			stats,
 			createdAt,
-			updatedAt: toISOString(data.updatedAt) ?? createdAt,
+			updatedAt: toISOStringOrNull(data.updatedAt) ?? createdAt,
 			_computed: computed,
 		};
 	} catch (_error) {

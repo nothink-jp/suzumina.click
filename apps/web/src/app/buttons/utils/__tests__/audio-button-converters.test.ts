@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import * as logger from "@/lib/logger";
 import { convertFirestoreToAudioButton, fetchAndConvertButtons } from "../audio-button-converters";
 
 vi.mock("@/lib/logger", () => ({ error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() }));
@@ -30,6 +31,16 @@ describe("convertFirestoreToAudioButton", () => {
 
 	it("必須フィールドが空文字なら null", () => {
 		expect(convertFirestoreToAudioButton(fsButton({ buttonText: "", videoId: "" }))).toBeNull();
+	});
+
+	it("createdAt 欠落で null になったら buttonId を warn に残す（黙って消さない）", () => {
+		expect(convertFirestoreToAudioButton(fsButton({ createdAt: undefined }))).toBeNull();
+		expect(logger.warn).toHaveBeenCalledWith(expect.any(String), { buttonId: "ab1" });
+	});
+
+	it("変換できたときは warn しない", () => {
+		convertFirestoreToAudioButton(fsButton());
+		expect(logger.warn).not.toHaveBeenCalled();
 	});
 });
 

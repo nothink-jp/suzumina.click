@@ -7,12 +7,19 @@ import * as logger from "@/lib/logger";
 
 /**
  * FirestoreデータをAudioButtonに変換するヘルパー関数
+ *
+ * 変換器が null（必須フィールド欠落の壊れた doc）を返したら warn を残す。
+ * 呼び出し側は null を黙って除外するため、ここで記録しないと一覧から消えたことに気づけない
  */
 export function convertFirestoreToAudioButton(
 	button: AudioButtonDocument & { id: string },
 ): AudioButton | null {
 	try {
-		return audioButtonTransformers.fromFirestore(button);
+		const converted = audioButtonTransformers.fromFirestore(button);
+		if (!converted) {
+			logger.warn("AudioButton変換スキップ（必須フィールド欠落）", { buttonId: button.id });
+		}
+		return converted;
 	} catch (error) {
 		logger.error("AudioButton変換エラー", {
 			buttonId: button.id,

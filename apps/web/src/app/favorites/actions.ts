@@ -11,6 +11,7 @@ import {
 	getUserFavorites,
 	getUserFavoritesCount,
 } from "@/lib/favorites-firestore";
+import * as logger from "@/lib/logger";
 
 interface FetchFavoriteAudioButtonsParams {
 	page?: number;
@@ -62,6 +63,10 @@ export async function getFavoritesList(
 			if (plainObject) {
 				audioButtons.push(plainObject);
 				audioButtonIds.push(plainObject.id);
+			} else {
+				logger.warn("AudioButton変換スキップ（必須フィールド欠落）", {
+					buttonId: fav.audioButtonId,
+				});
 			}
 		});
 
