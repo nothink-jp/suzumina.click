@@ -6,7 +6,11 @@
  */
 
 import type { youtube_v3 } from "@googleapis/youtube";
-import { determineVideoType, type VideoPlainObject } from "@suzumina.click/shared-types";
+import {
+	determineVideoType,
+	isLiveVideoType,
+	type VideoPlainObject,
+} from "@suzumina.click/shared-types";
 import * as logger from "../../shared/logger";
 
 /**
@@ -114,7 +118,7 @@ export function mapYouTubeToVideoPlainObject(
 			_computed: {
 				isArchived: videoType === "archived",
 				isPremiere: videoType === "premiere",
-				isLive: videoType === "live",
+				isLive: isLiveVideoType(videoType),
 				isUpcoming: videoType === "upcoming",
 				canCreateButton: videoType === "archived",
 				videoType,

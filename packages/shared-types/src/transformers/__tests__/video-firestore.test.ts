@@ -78,7 +78,7 @@ describe("fromFirestore", () => {
 		it("scheduledStartTime が過去（未開始のまま）→ possibly_live（live とは断定しない）", () => {
 			const r = fromFirestore(doc({ liveStreamingDetails: { scheduledStartTime: PAST } as never }));
 			expect(r._computed.videoType).toBe("possibly_live");
-			expect(r._computed.isLive).toBe(false);
+			expect(r._computed.isLive).toBe(true);
 		});
 
 		it("actualStartTime あり（未終了）→ live", () => {
@@ -99,14 +99,19 @@ describe("fromFirestore", () => {
 			expect(r._computed.videoType).toBe("possibly_live");
 		});
 
-		it("liveBroadcastContent が live なら isLive", () => {
-			const r = fromFirestore(doc({ liveBroadcastContent: "live" } as never));
-			expect(r._computed.isLive).toBe(true);
-		});
-
-		it("liveBroadcastContent が upcoming なら isUpcoming", () => {
-			const r = fromFirestore(doc({ liveBroadcastContent: "upcoming" } as never));
-			expect(r._computed.isUpcoming).toBe(true);
+		it("取得時点の liveBroadcastContent は isLive / isUpcoming に影響しない（SPR-403）", () => {
+			expect(fromFirestore(doc({ liveBroadcastContent: "live" } as never))._computed.isLive).toBe(
+				false,
+			);
+			const stale = fromFirestore(
+				doc({
+					liveBroadcastContent: "upcoming",
+					liveStreamingDetails: { scheduledStartTime: PAST },
+				} as never),
+			);
+			expect(stale._computed.videoType).toBe("possibly_live");
+			expect(stale._computed.isUpcoming).toBe(false);
+			expect(stale._computed.isLive).toBe(true);
 		});
 	});
 });

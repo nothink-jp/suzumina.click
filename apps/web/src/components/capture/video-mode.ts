@@ -5,8 +5,8 @@ import type { VideoPlainObject } from "@suzumina.click/shared-types";
  *
  * この関数がモード判定の正本で、video-card-actions / video-detail / /watch / /drafts は
  * すべてここを経由する（video-badge も同じ `_computed.videoType` を見る）。
- * raw の liveBroadcastContent や `_computed.isLive` は raw を OR するため stale に弱く、
- * アーカイブ済みでも live のまま残ることがあるので使わない。
+ * raw の liveBroadcastContent は取得時点の値で stale に弱く、アーカイブ済みでも live のまま
+ * 残ることがあるので使わない（`_computed.isLive` / `isUpcoming` も videoType 由来＝SPR-403）。
  *
  * モードは下書きに保存しない。「仕上げてよいか」の実体は *マーク時に配信だったか* ではなく
  * *今アーカイブになっているか* であり、時間で変わる状態を凍結すると配信終了後の遷移を

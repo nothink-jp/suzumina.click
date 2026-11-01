@@ -23,7 +23,9 @@ export interface VideoListResult {
 export interface VideoComputedProperties {
 	isArchived: boolean;
 	isPremiere: boolean;
+	/** videoType が live / possibly_live（isLiveVideoType）。liveBroadcastContent は見ない */
 	isLive: boolean;
+	/** videoType が upcoming。liveBroadcastContent は見ない */
 	isUpcoming: boolean;
 	canCreateButton: boolean;
 	/** 正本は operations/video-type.ts の determineVideoType（読み取り時に毎回算出） */

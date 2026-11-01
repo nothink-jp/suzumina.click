@@ -5,7 +5,7 @@
  */
 
 import { videoOperations } from "../operations/video";
-import { determineVideoType } from "../operations/video-type";
+import { determineVideoType, isLiveVideoType } from "../operations/video-type";
 import type { VideoComputedProperties, VideoPlainObject } from "../plain-objects/video-plain";
 import type { FirestoreServerVideoData } from "../types/firestore/video";
 
@@ -113,8 +113,9 @@ function computeProperties(
 	// Computed properties based on the determined video type
 	const isArchived = videoType === "archived";
 	const isPremiere = videoType === "premiere";
-	const isLive = video.liveBroadcastContent === "live" || videoType === "live";
-	const isUpcoming = video.liveBroadcastContent === "upcoming" || videoType === "upcoming";
+	// 取得時点の liveBroadcastContent は OR しない（stale のまま残り videoType と食い違うため。SPR-403）
+	const isLive = isLiveVideoType(videoType);
+	const isUpcoming = videoType === "upcoming";
 	const canCreateButton = isArchived; // Only archived videos can have buttons
 
 	return {
