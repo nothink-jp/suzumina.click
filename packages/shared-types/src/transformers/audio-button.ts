@@ -6,6 +6,15 @@
  */
 
 import type { AudioButton, AudioButtonDocument } from "../types/audio-button";
+import { formatRelativeTime } from "../utilities/formatters/relative-time";
+
+/** isPopular の閾値: 再生数がこれ以上、または… */
+const POPULAR_PLAY_COUNT = 100;
+/** …高評価＋低評価の合計がこれ以上なら人気とみなす */
+const POPULAR_ENGAGEMENT_COUNT = 50;
+
+/** 文字列 ISO（現行の保存形式）/ Date / Firestore Timestamp（toDate・_seconds）を受ける */
+type TimestampLike = string | Date | { toDate?: () => Date; _seconds?: number };
 
 /**
  * Legacy data format (for migration)
@@ -42,17 +51,16 @@ interface LegacyAudioButtonData {
 		favoriteCount?: number;
 		engagementRate?: number;
 	};
-	createdAt?: string | { toDate?: () => Date; _seconds?: number };
-	updatedAt?: string | { toDate?: () => Date; _seconds?: number };
+	createdAt?: TimestampLike;
+	updatedAt?: TimestampLike;
 }
 
 /**
  * Convert timestamp to ISO string
  */
-function toISOString(
-	timestamp: string | { toDate?: () => Date; _seconds?: number } | undefined,
-): string {
+function toISOString(timestamp: TimestampLike | undefined): string {
 	if (typeof timestamp === "string") return timestamp;
+	if (timestamp instanceof Date) return timestamp.toISOString();
 	if (timestamp?.toDate) return timestamp.toDate().toISOString();
 	if (timestamp?._seconds) {
 		return new Date(timestamp._seconds * 1000).toISOString();
@@ -121,9 +129,11 @@ function buildComputedProperties(
 	videoTitle: string,
 	creatorName: string,
 	tags: string[],
+	createdAt: string,
 ) {
 	const { playCount, likeCount, dislikeCount, engagementRate } = stats;
-	const isPopular = playCount >= 100;
+	const isPopular =
+		playCount >= POPULAR_PLAY_COUNT || likeCount + dislikeCount >= POPULAR_ENGAGEMENT_COUNT;
 	const popularityScore = playCount + likeCount * 2 - dislikeCount;
 
 	// durationText の正本は formatDuration（0秒→"再生" / <60秒→"N秒" / それ以上→"m:ss"）。
@@ -139,17 +149,19 @@ function buildComputedProperties(
 	return {
 		isPopular,
 		engagementRate,
-		engagementRatePercentage: engagementRate * 100,
+		engagementRatePercentage: Math.round(engagementRate * 100),
 		popularityScore,
 		searchableText,
 		durationText,
-		relativeTimeText: "たった今", // TODO: Calculate from createdAt
+		relativeTimeText: formatRelativeTime(createdAt),
 	};
 }
 
 /**
- * Transforms legacy Firestore data to unified AudioButton format
- * Handles all historical field name variations
+ * audioButtons ドキュメント → AudioButton（PlainObject）の唯一の変換器（読み取りの正本）
+ *
+ * 旧フィールド名のゆれも吸収する。buttonText / videoId が無ければ null を返す（throw しない）。
+ * web 側に別ルールの変換器を作らない（SPR-354 で統合済み）
  */
 export function fromFirestore(data: LegacyAudioButtonData & { id?: string }): AudioButton | null {
 	try {
@@ -163,6 +175,7 @@ export function fromFirestore(data: LegacyAudioButtonData & { id?: string }): Au
 		const stats = extractStats(data);
 		const time = calculateTimeFields(data);
 		const tags = data.tags || [];
+		const createdAt = toISOString(data.createdAt);
 
 		const computed = buildComputedProperties(
 			stats,
@@ -171,6 +184,7 @@ export function fromFirestore(data: LegacyAudioButtonData & { id?: string }): Au
 			basic.videoTitle,
 			basic.creatorName,
 			tags,
+			createdAt,
 		);
 
 		return {
@@ -187,7 +201,7 @@ export function fromFirestore(data: LegacyAudioButtonData & { id?: string }): Au
 			creatorName: basic.creatorName,
 			isPublic: data.isPublic ?? true,
 			stats,
-			createdAt: toISOString(data.createdAt),
+			createdAt,
 			updatedAt: toISOString(data.updatedAt || data.createdAt),
 			_computed: computed,
 		};

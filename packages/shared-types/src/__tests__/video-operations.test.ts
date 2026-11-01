@@ -12,7 +12,6 @@ import {
 	isArchived,
 	isLive,
 	isOlderThan,
-	isPossiblyLive,
 	isPremiere,
 	isUpcoming,
 } from "../operations/video";
@@ -45,10 +44,6 @@ describe("状態判定", () => {
 		expect(isLive(video({ liveBroadcastContent: "none" } as never))).toBe(false);
 		expect(isUpcoming(video({ liveBroadcastContent: "upcoming" } as never))).toBe(true);
 		expect(isUpcoming(video())).toBe(false);
-	});
-
-	it("isPossiblyLive は常に false", () => {
-		expect(isPossiblyLive(video())).toBe(false);
 	});
 });
 

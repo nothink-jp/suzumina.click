@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { fromFirestore, toFirestore } from "../audio-button";
 
 // createAudioButton 操作は削除されたため fromFirestore で AudioButton fixture を作る（SPR-197）
@@ -62,6 +62,28 @@ describe("fromFirestore", () => {
 		expect(flat?.stats.playCount).toBe(50);
 	});
 
+	it.each([
+		{ stats: { playCount: 99, likeCount: 49, dislikeCount: 0 }, expected: false },
+		{ stats: { playCount: 100, likeCount: 0, dislikeCount: 0 }, expected: true },
+		{ stats: { playCount: 0, likeCount: 40, dislikeCount: 10 }, expected: true },
+	])(
+		"isPopular は 再生数>=100 または 高評価+低評価>=50（$stats → $expected）",
+		({ stats, expected }) => {
+			expect(fromFirestore({ buttonText: "a", videoId: "v", stats })?._computed.isPopular).toBe(
+				expected,
+			);
+		},
+	);
+
+	it("engagementRatePercentage は整数に丸める", () => {
+		const r = fromFirestore({
+			buttonText: "a",
+			videoId: "v",
+			stats: { playCount: 3, likeCount: 1, dislikeCount: 0 },
+		});
+		expect(r?._computed.engagementRatePercentage).toBe(33);
+	});
+
 	it("isPopular は playCount>=100、popularityScore を算出する", () => {
 		const result = fromFirestore({
 			buttonText: "a",
@@ -109,6 +131,32 @@ describe("fromFirestore", () => {
 			createdAt: { _seconds: 1700000000 },
 		});
 		expect(fromSeconds?.createdAt).toBe(new Date(1700000000 * 1000).toISOString());
+	});
+
+	it("createdAt が Date でも ISO 文字列に変換する", () => {
+		const r = fromFirestore({
+			buttonText: "a",
+			videoId: "v",
+			createdAt: new Date("2024-03-03T00:00:00.000Z"),
+		});
+		expect(r?.createdAt).toBe("2024-03-03T00:00:00.000Z");
+	});
+
+	describe("relativeTimeText は createdAt から算出する", () => {
+		afterEach(() => {
+			vi.useRealTimers();
+		});
+
+		it.each([
+			{ createdAt: "2024-01-10T11:59:30.000Z", expected: "たった今" },
+			{ createdAt: "2024-01-10T09:00:00.000Z", expected: "3時間前" },
+			{ createdAt: "2024-01-07T12:00:00.000Z", expected: "3日前" },
+		])("$createdAt → $expected", ({ createdAt, expected }) => {
+			vi.useFakeTimers();
+			vi.setSystemTime(new Date("2024-01-10T12:00:00.000Z"));
+			const r = fromFirestore({ buttonText: "a", videoId: "v", createdAt });
+			expect(r?._computed.relativeTimeText).toBe(expected);
+		});
 	});
 
 	it("updatedAt 未指定時は createdAt にフォールバックする", () => {
