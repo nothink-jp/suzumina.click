@@ -42,7 +42,6 @@ function makeButton(id: string, buttonText: string, playCount = 0): AudioButtonP
 			popularityScore: 0,
 			searchableText: buttonText,
 			durationText: "1秒",
-			relativeTimeText: "1日前",
 		},
 	} as AudioButtonPlainObject;
 }

@@ -24,7 +24,6 @@ const sampleAudioButton: AudioButton = {
 		popularityScore: 10,
 		searchableText: "よわよわ〜",
 		durationText: "3.4秒",
-		relativeTimeText: "1日前",
 	},
 } as AudioButton;
 

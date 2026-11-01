@@ -470,7 +470,6 @@ describe("Homepage Actions", () => {
 					createdAt: "2023-01-01T00:00:00Z",
 					updatedAt: "2023-01-01T00:00:00Z",
 					durationText: "10秒",
-					relativeTimeText: "1日前",
 				},
 				{
 					id: "audio-2",
@@ -492,7 +491,6 @@ describe("Homepage Actions", () => {
 					createdAt: "2023-01-02T00:00:00Z",
 					updatedAt: "2023-01-02T00:00:00Z",
 					durationText: "15秒",
-					relativeTimeText: "2日前",
 				},
 			];
 
@@ -575,7 +573,6 @@ describe("Homepage Actions", () => {
 					createdAt: "2023-01-01T00:00:00Z",
 					updatedAt: "2023-01-01T00:00:00Z",
 					durationText: "5秒",
-					relativeTimeText: "今",
 				},
 			];
 
@@ -677,7 +674,6 @@ describe("Homepage Actions", () => {
 					createdAt: "2023-01-01T00:00:00Z",
 					updatedAt: "2023-01-01T00:00:00Z",
 					durationText: "5秒",
-					relativeTimeText: "今",
 				},
 			];
 

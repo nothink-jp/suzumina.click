@@ -47,7 +47,6 @@ const mockAudioButton: AudioButtonType = {
 		popularityScore: 0,
 		searchableText: "よわよわ〜",
 		durationText: "3.4秒",
-		relativeTimeText: "1日前",
 	},
 } as AudioButtonType;
 

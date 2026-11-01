@@ -45,7 +45,6 @@ const mockAudioButton: FrontendAudioButtonData = {
 	createdAt: "2024-06-26T00:00:00.000Z",
 	updatedAt: "2024-06-26T00:00:00.000Z",
 	durationText: "3秒",
-	relativeTimeText: "1日前",
 };
 
 export const Default: Story = {

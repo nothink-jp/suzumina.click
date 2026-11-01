@@ -6,7 +6,6 @@
  */
 
 import type { AudioButton, AudioButtonDocument } from "../types/audio-button";
-import { formatRelativeTime } from "../utilities/formatters/relative-time";
 
 /** isPopular の閾値: 再生数がこれ以上、または… */
 const POPULAR_PLAY_COUNT = 100;
@@ -129,7 +128,6 @@ function buildComputedProperties(
 	videoTitle: string,
 	creatorName: string,
 	tags: string[],
-	createdAt: string,
 ) {
 	const { playCount, likeCount, dislikeCount, engagementRate } = stats;
 	const isPopular =
@@ -153,7 +151,6 @@ function buildComputedProperties(
 		popularityScore,
 		searchableText,
 		durationText,
-		relativeTimeText: formatRelativeTime(createdAt),
 	};
 }
 
@@ -184,7 +181,6 @@ export function fromFirestore(data: LegacyAudioButtonData & { id?: string }): Au
 			basic.videoTitle,
 			basic.creatorName,
 			tags,
-			createdAt,
 		);
 
 		return {
