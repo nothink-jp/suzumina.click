@@ -347,6 +347,7 @@ export async function deleteAudioButton(
  * 同じクライアント IP × 同じボタンは `PLAY_COUNT_DEDUP_WINDOW_MS` の間 1 回だけ計上する（SPR-334）。
  * 重複は失敗ではないので `success: true, counted: false` を返す。存在しない・非公開のボタンには書き込まない。
  * 再生は「ボタンの更新」ではないため `updatedAt` は触らない。
+ * 抑止の確定とカウンタ更新は別トランザクションで、後者が失敗するとその窓は計上されない（過少計上に倒す・意図的）。
  */
 export async function incrementPlayCount(
 	audioButtonId: string,

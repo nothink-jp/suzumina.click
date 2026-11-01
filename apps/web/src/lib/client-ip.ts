@@ -6,6 +6,7 @@ import "server-only";
  * Cloudflare 経由なら cf-connecting-ip が正（x-forwarded-for の先頭はクライアントが偽装できる）。
  * ただしオリジン迂回（SPR-366/367）では cf-connecting-ip もクライアントが付けられるため、
  * 認可の信頼キーにはしない（抑止・スパム判定の手掛かりに留める）。
+ * 迂回が塞がるまでは、この値をキーにした抑止（play-count-dedup 等）はヘッダー偽装で無効化される。
  */
 export function getClientIp(headersList: Pick<Headers, "get">): string {
 	return (

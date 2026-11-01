@@ -14,6 +14,8 @@ import { getFirestore } from "@/lib/firestore";
  * - `expiresAt`（Timestamp）は TTL ポリシーの対象（terraform `firestore_database.tf`）。TTL 削除は即時ではないため、
  *   窓の判定は TTL に頼らず `expiresAt` と現在時刻の比較で行う
  * - IP 単位なので IP を回されると防げない（抑止であって認可ではない）。同一 NAT 配下の別人は 1 回にまとまる＝過少計上側に倒す
+ * - **オリジン迂回中は無効**: IP は `getClientIp`（cf-connecting-ip 優先）なので、Cloudflare を迂回して直接つなぐと
+ *   ヘッダー偽装だけで毎回別キーになり抑止をすり抜けられる。塞ぐのはオリジン遮断（SPR-367）の責務とし、ここでは扱わない
  */
 export const PLAY_COUNT_DEDUP_COLLECTION = "playCountDedup";
 
@@ -22,10 +24,17 @@ export const PLAY_COUNT_DEDUP_WINDOW_MS = 60 * 1000;
 
 /**
  * 抑止キーの HMAC 鍵。IPv4 は総当たりできるため素のハッシュにしない。
- * 専用 secret は持たず BETTER_AUTH_SECRET を流用する（ローテートすると窓が一度リセットされるだけで実害なし）
+ * 専用 secret は持たず BETTER_AUTH_SECRET を流用する（ローテートすると窓が一度リセットされるだけで実害なし）。
+ * 未設定の本番では throw する
  */
 function getDedupKeySecret(): string {
-	return process.env.BETTER_AUTH_SECRET || "local-play-count-dedup";
+	const secret = process.env.BETTER_AUTH_SECRET;
+	if (secret) return secret;
+	// 公開リポジトリの固定鍵では HMAC の意味が無いため、本番では計上を止める（fail-closed）
+	if (process.env.NODE_ENV === "production") {
+		throw new Error("BETTER_AUTH_SECRET が未設定のため再生数の重複判定ができません");
+	}
+	return "local-play-count-dedup";
 }
 
 /** クライアント IP とボタン ID から抑止ドキュメント ID を作る（純粋関数） */

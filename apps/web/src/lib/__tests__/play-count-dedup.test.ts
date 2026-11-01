@@ -88,6 +88,17 @@ describe("play-count-dedup", () => {
 			expect(store.size).toBe(before);
 		});
 
+		it("本番で HMAC 鍵が無ければ計上せず throw する（fail-closed）", async () => {
+			vi.stubEnv("NODE_ENV", "production");
+			vi.stubEnv("BETTER_AUTH_SECRET", "");
+			try {
+				await expect(claimPlayCount("ab1", "1.2.3.4", T0)).rejects.toThrow("BETTER_AUTH_SECRET");
+				expect(store.size).toBe(3);
+			} finally {
+				vi.unstubAllEnvs();
+			}
+		});
+
 		it("抑止ドキュメントは expiresAt（Timestamp・TTL 対象）だけを持つ", async () => {
 			await claimPlayCount("ab1", "1.2.3.4", T0);
 			const [key] = [...store.keys()].filter((k) =>
