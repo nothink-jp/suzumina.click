@@ -11,29 +11,12 @@
 # 新しいフィールド名でのインデックス定義
 # ===================================================================
 
-# audioButtons - videoId（昇順）、isPublic（昇順）、createdAt（降順）
-# 動画詳細ページでの音声ボタン取得用
-resource "google_firestore_index" "audiobuttons_videoid_ispublic_createdat_desc" {
-  project    = var.gcp_project_id
-  collection = "audioButtons"
-
-  fields {
-    field_path = "videoId"
-    order      = "ASCENDING"
-  }
-
-  fields {
-    field_path = "isPublic"
-    order      = "ASCENDING"
-  }
-
-  fields {
-    field_path = "createdAt"
-    order      = "DESCENDING"
-  }
-}
+# 一覧 getAudioButtonsList は全件 + in-memory（app/buttons/audio-buttons-source.ts・SPR-349）に移ったため、
+# それ専用だった videoid_ispublic_createdat_desc / videoid_ispublic_stats_playcount_desc /
+# videoid_ispublic_stats_likecount_desc / ispublic_stats_likecount_desc は撤去
 
 # audioButtons - isPublic（昇順）、stats.playCount（降順）
+# 検索候補 getTitleSuggestions（apps/web/src/actions/autocomplete.ts）で使う
 resource "google_firestore_index" "audiobuttons_ispublic_stats_playcount_desc" {
   project    = var.gcp_project_id
   collection = "audioButtons"
@@ -45,64 +28,6 @@ resource "google_firestore_index" "audiobuttons_ispublic_stats_playcount_desc" {
 
   fields {
     field_path = "stats.playCount"
-    order      = "DESCENDING"
-  }
-}
-
-# audioButtons - isPublic（昇順）、stats.likeCount（降順）
-resource "google_firestore_index" "audiobuttons_ispublic_stats_likecount_desc" {
-  project    = var.gcp_project_id
-  collection = "audioButtons"
-
-  fields {
-    field_path = "isPublic"
-    order      = "ASCENDING"
-  }
-
-  fields {
-    field_path = "stats.likeCount"
-    order      = "DESCENDING"
-  }
-}
-
-# audioButtons - videoId（昇順）、isPublic（昇順）、stats.playCount（降順）
-resource "google_firestore_index" "audiobuttons_videoid_ispublic_stats_playcount_desc" {
-  project    = var.gcp_project_id
-  collection = "audioButtons"
-
-  fields {
-    field_path = "videoId"
-    order      = "ASCENDING"
-  }
-
-  fields {
-    field_path = "isPublic"
-    order      = "ASCENDING"
-  }
-
-  fields {
-    field_path = "stats.playCount"
-    order      = "DESCENDING"
-  }
-}
-
-# audioButtons - videoId（昇順）、isPublic（昇順）、stats.likeCount（降順）
-resource "google_firestore_index" "audiobuttons_videoid_ispublic_stats_likecount_desc" {
-  project    = var.gcp_project_id
-  collection = "audioButtons"
-
-  fields {
-    field_path = "videoId"
-    order      = "ASCENDING"
-  }
-
-  fields {
-    field_path = "isPublic"
-    order      = "ASCENDING"
-  }
-
-  fields {
-    field_path = "stats.likeCount"
     order      = "DESCENDING"
   }
 }

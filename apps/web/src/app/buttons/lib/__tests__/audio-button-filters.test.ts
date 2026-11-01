@@ -1,6 +1,11 @@
 import type { AudioButton } from "@suzumina.click/shared-types";
 import { describe, expect, it, vi } from "vitest";
-import { applyFilters, applySorting, filterBySearch, filterByTags } from "../audio-button-filters";
+import {
+	applyFilters,
+	filterBySearch,
+	filterByTags,
+	sortAudioButtons,
+} from "../audio-button-filters";
 
 const makeQuery = () => {
 	const calls: { method: string; args: unknown[] }[] = [];
@@ -33,20 +38,6 @@ describe("applyFilters", () => {
 	});
 });
 
-describe("applySorting", () => {
-	it("sortBy 種別ごとに orderBy を切り替える", () => {
-		const orderOf = (sortBy: Parameters<typeof applySorting>[1]) => {
-			const { q, calls } = makeQuery();
-			applySorting(q as never, sortBy);
-			return calls.find((c) => c.method === "orderBy")?.args;
-		};
-		expect(orderOf("newest")).toEqual(["createdAt", "desc"]);
-		expect(orderOf("oldest")).toEqual(["createdAt", "asc"]);
-		expect(orderOf("popular")).toEqual(["stats.likeCount", "desc"]);
-		expect(orderOf("mostPlayed")).toEqual(["stats.playCount", "desc"]);
-	});
-});
-
 describe("filterBySearch", () => {
 	const buttons = [
 		button({ buttonText: "おはよう", tags: ["挨拶"] }),
@@ -74,5 +65,29 @@ describe("filterByTags", () => {
 		expect(filterByTags(buttons, ["挨拶", "Morning"]).map((b) => b.buttonText)).toEqual(["a"]);
 		// タグ無しは除外
 		expect(filterByTags(buttons, ["挨拶", "夜"])).toHaveLength(0);
+	});
+});
+
+describe("sortAudioButtons", () => {
+	const stats = (playCount: number, likeCount: number) =>
+		({ playCount, likeCount }) as AudioButton["stats"];
+	const buttons = [
+		button({ id: "b", createdAt: "2024-01-02T00:00:00Z", stats: stats(1, 5) }),
+		button({ id: "a", createdAt: "2024-01-01T00:00:00Z", stats: stats(9, 5) }),
+		button({ id: "c", createdAt: "2024-01-03T00:00:00Z", stats: stats(1, 0) }),
+	];
+	const ids = (sortBy: Parameters<typeof sortAudioButtons>[1]) =>
+		sortAudioButtons(buttons, sortBy).map((b) => b.id);
+
+	it("sortBy ごとの並び順を返し、同値は id 昇順", () => {
+		expect(ids("newest")).toEqual(["c", "b", "a"]);
+		expect(ids("oldest")).toEqual(["a", "b", "c"]);
+		expect(ids("mostPlayed")).toEqual(["a", "b", "c"]);
+		expect(ids("popular")).toEqual(["a", "b", "c"]);
+	});
+
+	it("入力（キャッシュ共有されうる配列）を破壊しない", () => {
+		sortAudioButtons(buttons, "oldest");
+		expect(buttons.map((b) => b.id)).toEqual(["b", "a", "c"]);
 	});
 });

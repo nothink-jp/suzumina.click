@@ -1,16 +1,12 @@
 "use server";
 
-import type { DocumentSnapshot } from "@google-cloud/firestore";
-import {
-	type FirestoreServerVideoData,
-	type VideoListResult,
-	type VideoPlainObject,
-	videoTransformers,
-} from "@suzumina.click/shared-types";
+import type { VideoListResult, VideoPlainObject } from "@suzumina.click/shared-types";
 import { getYouTubeCategoryName } from "@suzumina.click/ui/lib/youtube-category-utils";
 import { unstable_cache } from "next/cache";
 import { getFirestore } from "@/lib/firestore";
 import * as logger from "@/lib/logger";
+import { convertToVideo } from "./utils/video-converters";
+import { loadAllVisibleVideos } from "./videos-source";
 
 /**
  * 人気タグ集計は全件スキャンを伴うため、revalidate でキャッシュして
@@ -18,32 +14,6 @@ import * as logger from "@/lib/logger";
  * タグは緩やかにしか変化しないので長めの TTL を採用する。
  */
 const POPULAR_TAGS_REVALIDATE_SECONDS = 60 * 60;
-
-/**
- * 表示可能な動画の総数を取得する。
- *
- * 一覧の表示フィルタ（`video.status?.privacyStatus === "public" || !video.status`）と
- * 一致させる必要がある。count() では「status 未設定」を直接問い合わせられないため、
- * 全件数から「status はあるが public でない」件数を引く方式で算出する
- * （Firestore の `!=` はフィールド未設定ドキュメントを対象外にする性質を利用）。
- *
- * 旧実装は `where("status.privacyStatus","==","public")` のみで数えており、
- * status 未設定ドキュメント（表示フィルタでは表示される）を total から漏らしていた。
- * total は ConfigurableList のページ数計算に使われるため、この非対称は
- * 一覧末尾のページが実在するのに到達できない不具合を生んでいた（SPR-246）。
- *
- * 注意: Firestore の `!=` は「フィールド未設定」だけでなく値が `null` のドキュメントも
- * 対象外にする。そのため status はあるが privacyStatus が欠損/null という中間状態が
- * 発生すると、表示フィルタでは非表示なのに本関数では visible 側に誤って計上される
- * （本番データでは 2026-07-05 時点でこのパターンは 0 件を確認済み）。
- */
-async function getVisibleVideoCount(firestore: FirebaseFirestore.Firestore): Promise<number> {
-	const [totalSnapshot, nonPublicSnapshot] = await Promise.all([
-		firestore.collection("videos").count().get(),
-		firestore.collection("videos").where("status.privacyStatus", "!=", "public").count().get(),
-	]);
-	return totalSnapshot.data().count - nonPublicSnapshot.data().count;
-}
 
 /**
  * ビデオフィルタリングパラメータの型
@@ -129,7 +99,7 @@ function filterVideos(videos: VideoPlainObject[], params: VideoFilterParams): Vi
 /**
  * フィルター値を string[] に正規化する。
  * URL 由来の単一値は string、ConfigurableList の tags フィルタは string[] で渡るため両対応。
- * 空（空文字・空配列）は undefined にして、filterVideos / hasFilters の誤発火を防ぐ。
+ * 空（空文字・空配列）は undefined にして、filterVideos の誤発火を防ぐ。
  */
 function toStringArray(value: unknown): string[] | undefined {
 	const arr = Array.isArray(value) ? value : value != null ? [value] : [];
@@ -172,183 +142,62 @@ export async function getVideosList(params: {
 	// データ取得
 	const data = await getVideoTitles(videoParams);
 
-	// getVideoTitlesが返すtotalを使用（実際のフィルタリング結果の件数）
-	const filteredCount = data.total;
-
-	const hasFilters = !!(
-		videoParams.year ||
-		videoParams.search ||
-		videoParams.playlistTags ||
-		videoParams.categoryNames ||
-		videoParams.videoType
-	);
-
-	// フィルタ無し時、data.total は getVideosWithFiltering 内で既に getVisibleVideoCount で
-	// 算出済みのため再計算しない（同じ集計を二重に投げる count() クエリの重複回避）
-	const totalCount = hasFilters ? filteredCount : data.total;
+	// total は絞り込み後の件数（絞り込み無しなら表示可能な全件）。どちらも同じ全件から導出する（SPR-349）
+	const totalCount = data.total;
 
 	return {
 		items: data.videos,
 		totalCount,
-		filteredCount,
+		filteredCount: totalCount,
 	};
 }
 
 /**
- * Firestore Timestampを変換するヘルパー関数
+ * 並べ替え済みの新しい配列を返す（入力はキャッシュ共有されうるので破壊しない）。
+ * 全件は新しい順で来るので oldest は反転、least_buttons は
+ * ボタンが少ない順 → 同数なら新しい順（まだ誰も拾っていない配信を先頭へ）
  */
-function convertTimestamp(value: unknown): Date | string | undefined {
-	if (value && typeof value === "object" && "toDate" in value) {
-		return (value as { toDate(): Date }).toDate();
+function sortVideos(videos: VideoPlainObject[], sort: string): VideoPlainObject[] {
+	if (sort === "oldest") return [...videos].reverse();
+	if (sort === "least_buttons") {
+		return [...videos].sort(
+			(a, b) =>
+				(a.audioButtonCount ?? 0) - (b.audioButtonCount ?? 0) ||
+				b.publishedAt.localeCompare(a.publishedAt),
+		);
 	}
-	return value as Date | string | undefined;
-}
-
-/**
- * FirestoreデータをVideoに変換
- */
-function convertToVideo(doc: DocumentSnapshot): VideoPlainObject | null {
-	try {
-		const data = doc.data() as FirestoreServerVideoData;
-
-		// Firestore Timestampを変換
-		const normalizedData = {
-			...data,
-			id: data.videoId || doc.id, // videoIdフィールドを優先、なければドキュメントID
-			videoId: data.videoId || doc.id, // videoIdフィールドを優先
-			publishedAt: convertTimestamp(data.publishedAt),
-			lastFetchedAt: convertTimestamp(data.lastFetchedAt),
-			liveStreamingDetails: data.liveStreamingDetails
-				? {
-						...data.liveStreamingDetails,
-						scheduledStartTime: convertTimestamp(data.liveStreamingDetails.scheduledStartTime),
-						scheduledEndTime: convertTimestamp(data.liveStreamingDetails.scheduledEndTime),
-						actualStartTime: convertTimestamp(data.liveStreamingDetails.actualStartTime),
-						actualEndTime: convertTimestamp(data.liveStreamingDetails.actualEndTime),
-					}
-				: undefined,
-		};
-
-		// VideoPlainObjectに変換
-		return videoTransformers.fromFirestore(normalizedData);
-	} catch (error) {
-		logger.error("Video変換エラー", {
-			videoId: doc.id,
-			error: error instanceof Error ? error.message : String(error),
-		});
-		return null;
-	}
+	return videos;
 }
 
 /**
  * 動画を取得（フィルタリング対応）
+ *
+ * 全件（キャッシュ境界）+ in-memory 導出。read は page 番号ではなく動画件数 ×
+ * キャッシュ世代数に比例する（SPR-349）
  */
-async function getVideosWithFiltering(
-	firestore: FirebaseFirestore.Firestore,
-	params: {
-		page: number;
-		limit: number;
-		sort: string;
-		search?: string;
-		year?: string;
-		playlistTags?: string[];
-		categoryNames?: string[];
-		videoType?: string;
-	},
-): Promise<VideoListResult> {
+async function getVideosWithFiltering(params: {
+	page: number;
+	limit: number;
+	sort: string;
+	search?: string;
+	year?: string;
+	playlistTags?: string[];
+	categoryNames?: string[];
+	videoType?: string;
+}): Promise<VideoListResult> {
 	const { page, limit, sort } = params;
-	const sortOrder = sort === "oldest" ? "asc" : "desc";
-	let query: FirebaseFirestore.Query = firestore
-		.collection("videos")
-		.orderBy("publishedAt", sortOrder);
 
-	// 年代フィルタがある場合、全データを取得する必要がある
-	// （フィルタリング後のページネーションを正確に行うため）
-	// least_buttons（拾える配信・導線再設計 段3）は audioButtonCount の in-memory ソートが
-	// 必要なため全件取得側に倒す（複合インデックスは足さない＝SPR-213 の既定に従う）
-	if (
-		params.year ||
-		params.search ||
-		params.playlistTags?.length ||
-		params.categoryNames?.length ||
-		params.videoType ||
-		sort === "least_buttons"
-	) {
-		// フィルタがある場合は全件取得
-		const snapshot = await query.get();
+	const filteredVideos = sortVideos(filterVideos(await loadAllVisibleVideos(), params), sort);
 
-		// VideoPlainObjectに変換してフィルタリング
-		const allVideos = snapshot.docs
-			.map((doc) => convertToVideo(doc))
-			.filter((video): video is VideoPlainObject => video !== null)
-			.filter((video) => video.status?.privacyStatus === "public" || !video.status);
-
-		// フィルタリング処理
-		const filteredVideos = filterVideos(allVideos, params);
-
-		// 拾える配信順: ボタンが少ない順 → 同数なら新しい順（まだ誰も拾っていない配信を先頭へ）
-		if (sort === "least_buttons") {
-			filteredVideos.sort(
-				(a, b) =>
-					(a.audioButtonCount ?? 0) - (b.audioButtonCount ?? 0) ||
-					b.publishedAt.localeCompare(a.publishedAt),
-			);
-		}
-
-		// ページネーション
-		const startOffset = (page - 1) * limit;
-		const paginatedVideos = filteredVideos.slice(startOffset, startOffset + limit + 1);
-		const hasMore = paginatedVideos.length > limit;
-		const videos = hasMore ? paginatedVideos.slice(0, limit) : paginatedVideos;
-
-		// すでにPlainObjectなのでそのまま使用
-		const plainVideos = videos;
-
-		return {
-			items: plainVideos,
-			videos: plainVideos,
-			total: filteredVideos.length,
-			page,
-			pageSize: plainVideos.length,
-		};
-	}
-
-	// フィルタがない場合は、効率的なページネーションを行う
 	const startOffset = (page - 1) * limit;
-	if (startOffset > 0) {
-		const offsetSnapshot = await firestore
-			.collection("videos")
-			.orderBy("publishedAt", sortOrder)
-			.limit(startOffset)
-			.get();
-
-		if (offsetSnapshot.size > 0) {
-			const lastDoc = offsetSnapshot.docs[offsetSnapshot.docs.length - 1];
-			query = query.startAfter(lastDoc);
-		}
-	}
-
-	query = query.limit(limit + 1);
-	const snapshot = await query.get();
-
-	const videos = snapshot.docs
-		.slice(0, limit)
-		.map((doc) => convertToVideo(doc))
-		.filter((video): video is VideoPlainObject => video !== null)
-		.filter((video) => video.status?.privacyStatus === "public" || !video.status);
-
-	const plainVideos = videos; // すでにPlainObject
-	const _hasMore = snapshot.size > limit;
-
-	// 表示可能総数を取得（SPR-88: count() 集計で全件 .get() スキャンを回避、SPR-246: 表示フィルタと非対称だった算出を修正）
-	const total = await getVisibleVideoCount(firestore);
+	const videos = filteredVideos.slice(startOffset, startOffset + limit);
 
 	return {
-		items: plainVideos,
-		videos: plainVideos,
-		total,
+		items: videos,
+		videos,
+		total: filteredVideos.length,
 		page,
-		pageSize: plainVideos.length,
+		pageSize: videos.length,
 	};
 }
 
@@ -368,10 +217,7 @@ export async function getVideoTitles(params?: {
 	try {
 		const { page = 1, limit = 12, sort = "newest" } = params || {};
 
-		const firestore = getFirestore();
-
-		// 統一された処理を使用
-		const result = await getVideosWithFiltering(firestore, {
+		const result = await getVideosWithFiltering({
 			page,
 			limit,
 			sort,

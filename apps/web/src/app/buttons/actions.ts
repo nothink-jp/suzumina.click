@@ -5,6 +5,7 @@ import type {
 	CreateAudioButtonInput,
 	UpdateAudioButtonInput,
 } from "@suzumina.click/shared-types";
+import { updateTag } from "next/cache";
 import { headers } from "next/headers";
 import { getCurrentUser } from "@/lib/auth/server";
 import { checkRateLimit, incrementButtonCount } from "@/lib/button-rate-limit";
@@ -20,22 +21,15 @@ import {
 } from "@/lib/server-action-wrapper";
 
 // Internal modules
-import {
-	applyFilters,
-	applySorting,
-	filterBySearch,
-	filterByTags,
-} from "./lib/audio-button-filters";
-import { AUDIO_BUTTON_LIST_FIELDS } from "./lib/audio-button-list-query";
+import { VISIBLE_VIDEOS_TAG } from "../videos/videos-source";
+import { loadAllPublicAudioButtons, PUBLIC_AUDIO_BUTTONS_TAG } from "./audio-buttons-source";
+import { filterBySearch, filterByTags, sortAudioButtons } from "./lib/audio-button-filters";
 import {
 	getAudioButtonCount as getButtonCount,
 	getPopularAudioButtonTags as getPopularTags,
 } from "./lib/audio-button-stats";
 import { updateVideoButtonCount, validateVideoForAudioButton } from "./lib/audio-button-validation";
-import {
-	convertFirestoreToAudioButton,
-	fetchAndConvertButtons,
-} from "./utils/audio-button-converters";
+import { convertFirestoreToAudioButton } from "./utils/audio-button-converters";
 
 /**
  * Entityを使用した新着音声ボタンの取得
@@ -66,7 +60,7 @@ const AUDIO_BUTTON_LIST_MAX_LIMIT = 100;
  * 公開音声ボタンの一覧を取得（ConfigurableList用）
  *
  * クライアントから任意の引数で呼べる Server Action なので、非公開ボタンは引数に関わらず返さない
- * （`isPublic == true` を applyFilters で強制。旧 `onlyPublic` 引数は SPR-332 で撤去）。
+ * （`isPublic == true` を loadAllPublicAudioButtons のクエリで強制。旧 `onlyPublic` 引数は SPR-332 で撤去）。
  * limit も同じ理由で AUDIO_BUTTON_LIST_MAX_LIMIT に切り詰める
  */
 export async function getAudioButtonsList(
@@ -104,50 +98,24 @@ export async function getAudioButtonsList(
 			} = validatedQuery;
 			const limit = Math.min(requestedLimit, AUDIO_BUTTON_LIST_MAX_LIMIT);
 
-			const firestore = getFirestore();
-			const listQueryRef = applySorting(
-				applyFilters(
-					firestore.collection("audioButtons").select(...AUDIO_BUTTON_LIST_FIELDS),
-					videoId,
-				),
+			// 全件（キャッシュ境界）+ in-memory 導出。read は page 番号ではなく公開ボタン件数 ×
+			// キャッシュ世代数に比例する（SPR-349）。件数で打ち切らない（超過分が黙って欠ける＝SPR-322）
+			const allButtons = await loadAllPublicAudioButtons();
+			const byVideo = videoId
+				? allButtons.filter((button) => button.videoId === videoId)
+				: allButtons;
+			const tagFiltered = tags.length > 0 ? filterByTags(byVideo, tags) : byVideo;
+			const filteredButtons = sortAudioButtons(
+				search ? filterBySearch(tagFiltered, search) : tagFiltered,
 				sortBy,
 			);
 
-			// タグ/検索は Firestore で絞れないため全件取得 + in-memory。件数で打ち切ると
-			// 超過分が黙って結果から欠けるので上限は掛けない（SPR-322。read は公開ボタン件数に比例）
-			if (tags.length > 0 || search) {
-				const allButtons = await fetchAndConvertButtons(listQueryRef);
-				const tagFiltered = tags.length > 0 ? filterByTags(allButtons, tags) : allButtons;
-				const filteredButtons = search ? filterBySearch(tagFiltered, search) : tagFiltered;
-
-				const startIdx = (page - 1) * limit;
-				const endIdx = startIdx + limit;
-				return {
-					audioButtons: filteredButtons.slice(startIdx, endIdx),
-					totalCount: filteredButtons.length,
-					hasMore: endIdx < filteredButtons.length,
-				};
-			}
-
-			const countSnapshot = await applyFilters(firestore.collection("audioButtons"), videoId)
-				.count()
-				.get();
-			const totalCount = countSnapshot.data().count;
-
-			const offset = (page - 1) * limit;
-			let queryRef = listQueryRef.limit(limit) as typeof listQueryRef;
-			if (offset > 0) {
-				const skipSnapshot = await queryRef.limit(offset).get();
-				if (skipSnapshot.docs.length > 0) {
-					const lastDoc = skipSnapshot.docs[skipSnapshot.docs.length - 1];
-					queryRef = queryRef.startAfter(lastDoc) as typeof queryRef;
-				}
-			}
-
+			const startIdx = (page - 1) * limit;
+			const endIdx = startIdx + limit;
 			return {
-				audioButtons: await fetchAndConvertButtons(queryRef),
-				totalCount,
-				hasMore: offset + limit < totalCount,
+				audioButtons: filteredButtons.slice(startIdx, endIdx),
+				totalCount: filteredButtons.length,
+				hasMore: endIdx < filteredButtons.length,
 			};
 		},
 		{
@@ -229,6 +197,9 @@ export async function createAudioButton(
 
 			// 動画カウント更新（非同期）
 			await updateVideoButtonCount(validatedInput.videoId, firestore);
+			// 一覧はインスタンスローカルの全件キャッシュ。作成者自身の次の表示に反映させる（SPR-349）
+			updateTag(PUBLIC_AUDIO_BUTTONS_TAG);
+			updateTag(VISIBLE_VIDEOS_TAG);
 
 			return { id: docRef.id };
 		},
@@ -317,6 +288,8 @@ export async function deleteAudioButton(
 			if (videoId) {
 				await updateVideoButtonCount(videoId, firestore, -1);
 			}
+			updateTag(PUBLIC_AUDIO_BUTTONS_TAG);
+			updateTag(VISIBLE_VIDEOS_TAG);
 
 			return true;
 		},
@@ -406,6 +379,7 @@ export async function updateAudioButton(
 			if (input.isPublic !== undefined) updates.isPublic = input.isPublic;
 
 			await docRef.update(updates);
+			updateTag(PUBLIC_AUDIO_BUTTONS_TAG);
 			return true;
 		},
 		{
@@ -449,6 +423,7 @@ export async function updateAudioButtonTags(
 				tags,
 				updatedAt: new Date().toISOString(),
 			});
+			updateTag(PUBLIC_AUDIO_BUTTONS_TAG);
 
 			return true;
 		},
