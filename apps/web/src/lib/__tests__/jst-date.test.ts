@@ -61,6 +61,23 @@ describe("formatLastActiveText", () => {
 		expect(formatLastActiveText("2026-05-31T13:00:00.000Z")).toBe("昨日");
 	});
 
+	it.each([
+		// 前日 23:00 JST → 翌 01:00 JST（経過 2 時間でも暦日は 1 日差）
+		{ now: "2026-06-01T16:00:00.000Z", lastLoginAt: "2026-06-01T14:00:00.000Z", expected: "昨日" },
+		// UTC では同日でも JST では前日（05-31 23:59 JST → 06-01 00:01 JST）
+		{ now: "2026-05-31T15:01:00.000Z", lastLoginAt: "2026-05-31T14:59:00.000Z", expected: "昨日" },
+		// 経過 25.5 時間でも暦日は 2 日差（06-01 23:00 JST → 06-03 00:30 JST。経過時間なら「昨日」）
+		{ now: "2026-06-02T15:30:00.000Z", lastLoginAt: "2026-06-01T14:00:00.000Z", expected: "2日前" },
+		// 未来の時刻（時計ずれ）は「今日」
+		{ now: "2026-06-01T13:00:00.000Z", lastLoginAt: "2026-06-01T14:00:00.000Z", expected: "今日" },
+	])(
+		"JST の暦日の差で数える（$lastLoginAt @ $now → $expected）",
+		({ now, lastLoginAt, expected }) => {
+			vi.setSystemTime(new Date(now));
+			expect(formatLastActiveText(lastLoginAt)).toBe(expected);
+		},
+	);
+
 	it("呼んだ時刻を基準にする（変換時の値を持ち越さない）", () => {
 		const lastLoginAt = "2026-06-01T00:00:00.000Z"; // 2026-06-01 09:00 JST
 		expect(formatLastActiveText(lastLoginAt)).toBe("今日");

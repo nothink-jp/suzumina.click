@@ -12,22 +12,31 @@ export function formatRelativeTime(dateString: string): string {
 		}
 		return `${diffHours}時間前`;
 	}
-	if (diffDays === 1) {
+	return formatDaysAgo(diffDays);
+}
+
+/**
+ * 1 日以上前の日数を「昨日」「N日前」「N週間前」「Nヶ月前」「N年前」にする（しきい値の正本）
+ *
+ * 日数の数え方は呼び出し側が決める（経過時間で切り捨てるか、暦日の差か）。
+ * 1 以上を前提にした表記で、1 未満（0・負数・NaN）は意味のある文言にならない。
+ * 0 以下の扱い（「今日」「たった今」等）は呼び出し側で先に分岐する
+ * （formatRelativeTime は未来日時で負数を渡し「-1日前」になる＝既存挙動のまま）
+ */
+export function formatDaysAgo(days: number): string {
+	if (days === 1) {
 		return "昨日";
 	}
-	if (diffDays < 7) {
-		return `${diffDays}日前`;
+	if (days < 7) {
+		return `${days}日前`;
 	}
-	if (diffDays < 30) {
-		const diffWeeks = Math.floor(diffDays / 7);
-		return `${diffWeeks}週間前`;
+	if (days < 30) {
+		return `${Math.floor(days / 7)}週間前`;
 	}
-	if (diffDays < 365) {
-		const diffMonths = Math.floor(diffDays / 30);
-		return `${diffMonths}ヶ月前`;
+	if (days < 365) {
+		return `${Math.floor(days / 30)}ヶ月前`;
 	}
-	const diffYears = Math.floor(diffDays / 365);
-	return `${diffYears}年前`;
+	return `${Math.floor(days / 365)}年前`;
 }
 
 export function formatMemberSince(dateString: string): string {
