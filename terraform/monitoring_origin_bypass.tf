@@ -9,8 +9,9 @@
 # requests ログの httpRequest.remoteIp は GFE から見た接続元で、Cloudflare 経由なら Cloudflare の IP 帯になる。
 # 実測（2026-10-19・直近 24h の 5,000 件）: Cloudflare 帯 4,979 件 / それ以外は検証とデプロイの curl だけ。
 # 限界: 他人が自分の Cloudflare アカウント経由で来ると Cloudflare 帯になるため、この方法では検知できない。
-# 104.28.0.0/14 は Cloudflare の持ち物だが WARP 等の出口で、オリジンへの接続には使われない（下の一覧に含めない）。
-# ここから届くのは、うちのゾーンを通っていない本物の迂回。
+# 104.28.0.0/14 は Cloudflare の持ち物だが WARP 等の出口で、うちのゾーンからオリジンへの接続には使われない（下の一覧に含めない）。
+# ここから届くのは、うちのゾーンを通っていない本物の迂回。既知の例外は Cloudflare Security Center のスキャンで、
+# 104.30.x から毎週 1 回 `HEAD /` を数回、ドメインマッピングへ直接送ってくる（UA に security-center。2026-11-01 確認・SPR-367）。
 
 locals {
   # 出典: https://www.cloudflare.com/ips/ （2026-10-19 取得）。めったに変わらないので自動追従はしない。
@@ -73,9 +74,9 @@ resource "google_monitoring_alert_policy" "origin_bypass" {
   project      = var.gcp_project_id
   combiner     = "OR"
 
-  # 閾値は「調査の curl や死活監視では鳴らず、継続的な巡回では鳴る」境界。実測（2026-10-19 時点の 30 日）では
+  # 閾値は「調査の curl や Security Center のスキャンでは鳴らず、継続的な巡回では鳴る」境界。実測（2026-10-19 時点の 30 日）では
   # このメトリクスの対象は 15 件・1 時間あたり最大 4 件だった（調査の curl と、毎週 1 回 HEAD を 3 回送ってくる
-  # 何かの死活監視）。迂回経路を見つけたクローラなら 1 時間で数十〜数百件になる。
+  # Cloudflare Security Center のスキャン＝上の冒頭コメント）。迂回経路を見つけたクローラなら 1 時間で数十〜数百件になる。
   # リビジョンごとに分かれる時系列（デプロイをまたぐ場合）を REDUCE_SUM で 1 本にまとめてから比べる。
   conditions {
     display_name = "Cloudflare 以外からの成功リクエストが 1 時間に 20 件超"
