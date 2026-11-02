@@ -46,6 +46,9 @@ COPY packages/ui/package.json ./packages/ui/
 COPY apps/web/package.json ./apps/web/
 
 # Install all dependencies with cache optimization
+# devEngines.runtime の onFail: download により、ここで nodejs.org から musl 版の Node（ベースイメージと同じ版）も
+# 取得する（SPR-405）。ベースイメージで足りているので無駄で、ビルドが nodejs.org の可用性にも依存する。
+# pnpm の `install --no-runtime` が 12.15 では unknown option で弾かれるため今は外せない。使えるようになったら足す。
 RUN --mount=type=cache,id=pnpm,target=/pnpm \
     pnpm install --frozen-lockfile
 

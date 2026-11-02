@@ -8,20 +8,22 @@
  * 正本を直接読めない場所が 2 種類ある:
  *   - `apps/web/Dockerfile` の `FROM node:<ver>-alpine`: 写しとして残す（Dependabot docker が新しい版を
  *     知らせる役を持ち、Dockerfile を読んだときに版が見えるようにするため）。正本と完全一致を要求する
- *   - workflows: 版は正本から導く（deploy-functions.yml の `--runtime` 等）。リテラルの版を書き戻すと
+ *   - workflows と composite action（`.github/workflows/*.yml` / `.github/actions/<name>/action.yml`）: 版は正本から
+ *     導く（deploy-functions.yml の `--runtime` 等。setup-pnpm は CI の Node の入口）。リテラルの版を書き戻すと
  *     drift の入口になるので、`--runtime nodejs<数字>` と `node-version: <数字>` を禁止する
  *
  * Dependabot docker の PR は Dockerfile だけを上げるので、ここで落ちる＝正本を揃えてからマージする合図。
  */
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const DOCKERFILE = "apps/web/Dockerfile";
 const WORKFLOWS_DIR = ".github/workflows";
+const ACTIONS_DIR = ".github/actions";
 
-/** workflows に版をリテラルで書いている箇所（正本から導くべきもの） */
+/** workflows / composite action に版をリテラルで書いている箇所（正本から導くべきもの） */
 const LITERAL_VERSION_PATTERNS = [/--runtime[ =]+["']?nodejs\d+/, /node-version:\s*["']?\d/];
 
 /**
@@ -52,11 +54,11 @@ export function checkDockerfile(dockerfile, canonical) {
 }
 
 /**
- * @param {string} name ファイル名
- * @param {string} body workflow の本文
+ * @param {string} path リポジトリルートからの相対パス（メッセージ用）
+ * @param {string} body workflow / action.yml の本文
  * @returns {string[]} リテラルの版を書いている行
  */
-export function checkWorkflow(name, body) {
+export function checkWorkflow(path, body) {
 	return body
 		.split("\n")
 		.map((line, i) => ({ line, no: i + 1 }))
@@ -64,8 +66,20 @@ export function checkWorkflow(name, body) {
 		.filter(({ line }) => LITERAL_VERSION_PATTERNS.some((p) => p.test(line)))
 		.map(
 			({ line, no }) =>
-				`${WORKFLOWS_DIR}/${name}:${no}: Node の版をリテラルで書いています（正本から導く）: ${line.trim()}`,
+				`${path}:${no}: Node の版をリテラルで書いています（正本から導く）: ${line.trim()}`,
 		);
+}
+
+/** @returns {string[]} 走査する workflow と composite action の相対パス */
+function listWorkflowFiles() {
+	const workflows = readdirSync(join(repoRoot, WORKFLOWS_DIR))
+		.filter((f) => /\.ya?ml$/.test(f))
+		.map((f) => `${WORKFLOWS_DIR}/${f}`);
+	const actions = readdirSync(join(repoRoot, ACTIONS_DIR), { withFileTypes: true })
+		.filter((d) => d.isDirectory())
+		.flatMap((d) => ["action.yml", "action.yaml"].map((f) => `${ACTIONS_DIR}/${d.name}/${f}`))
+		.filter((p) => existsSync(join(repoRoot, p)));
+	return [...workflows, ...actions];
 }
 
 function main() {
@@ -73,8 +87,8 @@ function main() {
 		JSON.parse(readFileSync(join(repoRoot, "package.json"), "utf8")),
 	);
 	const errors = [...checkDockerfile(readFileSync(join(repoRoot, DOCKERFILE), "utf8"), canonical)];
-	for (const name of readdirSync(join(repoRoot, WORKFLOWS_DIR)).filter((f) => /\.ya?ml$/.test(f))) {
-		errors.push(...checkWorkflow(name, readFileSync(join(repoRoot, WORKFLOWS_DIR, name), "utf8")));
+	for (const path of listWorkflowFiles()) {
+		errors.push(...checkWorkflow(path, readFileSync(join(repoRoot, path), "utf8")));
 	}
 	if (errors.length > 0) {
 		console.error("Node の版が正本（package.json の devEngines.runtime.version）とずれています:");

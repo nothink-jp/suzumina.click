@@ -56,6 +56,14 @@ describe("checkWorkflow", () => {
 		assert.equal(checkWorkflow("x.yml", "          node-version: '24.22.1'\n").length, 1);
 	});
 
+	it("メッセージに渡したパスと行番号を出す", () => {
+		const [msg] = checkWorkflow(
+			".github/actions/setup-pnpm/action.yml",
+			"a: 1\n    node-version: 24\n",
+		);
+		assert.match(msg, /^\.github\/actions\/setup-pnpm\/action\.yml:2: /);
+	});
+
 	it("コメント行は見ない", () => {
 		assert.deepEqual(checkWorkflow("x.yml", "          # 以前は --runtime nodejs22 だった\n"), []);
 	});

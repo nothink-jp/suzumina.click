@@ -90,9 +90,11 @@ updates:
     commit-message:
       prefix: "chore(docker)"
     # major は ignore しない。Node 27 以降は奇数・偶数の区別がなく、年 1 回の major がすべて LTS になる
-    # （nodejs.org「Evolving the Node.js Release Schedule」2026-03）ので、major の PR は年 1 本の乗り換えの合図になる。
-    # minor/patch とは別の PR になる（グループは minor/patch だけ）。Cloud Functions のランタイムも変わるので、
-    # 正本を上げる前に nodejsNN が gcloud functions deploy で選べるかを確かめる。
+    # （nodejs.org「Evolving the Node.js Release Schedule」2026-03）ので、major の PR は年 1 本の乗り換えの予告になる。
+    # minor/patch とは別の PR になる（グループは minor/patch だけ）。
+    # **PR が来るのは LTS に上がる前**（4 月の Current 公開時。LTS は 10 月）。届いてもすぐには上げず、
+    # LTS に上がり、かつ Cloud Functions で nodejsNN が選べる（gcloud functions runtimes list）まで開いたまま待つ。
+    # close すると Dependabot はその版を二度と提案しない（同じ major の次の版はまた来る）ので、待つなら閉じない。
     groups:
       docker-minor:
         update-types: ["minor", "patch"]

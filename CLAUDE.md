@@ -59,7 +59,7 @@ LLM に毎回全部読ませて再構築させない。能動的に効かせた�
   - `pnpm lint:docs`: docs のリンク整合 + 型 shape 転記禁止。ポインタ doc のリンク腐敗＝#652 型 drift・転記の再混入を弾く（`scripts/lint-docs.mjs`・SPR-205）
   - `pnpm lint:tokens`: globals.css の `:root` トークンで「定義あり・参照なし」を弾く＝chart-*/a11y 型の死にトークン再混入防止（`scripts/lint-css-tokens.mjs`）
   - `pnpm lint:ga4`: gtag に送っている GA4 パラメータで「宣言なし」を弾く＝遡及不可なカスタムディメンション登録漏れの防止（`scripts/lint-ga4-params.mjs`）
-  - `pnpm lint:node-version`: Node の版の正本（ルート `package.json` の `devEngines.runtime.version`）と Dockerfile の `FROM node:` の不一致、workflows へのリテラルの版の書き戻しを弾く（`scripts/lint-node-version.mjs`・SPR-405）
+  - `pnpm lint:node-version`: Node の版の正本（ルート `package.json` の `devEngines.runtime.version`）と Dockerfile の `FROM node:` の不一致、workflows / composite action へのリテラルの版の書き戻しを弾く（`scripts/lint-node-version.mjs`・SPR-405）
 - **テスト配置**: `__tests__` ディレクトリに置く（ソースと同居させない）
 - **コード品質**: TypeScript strict / Biome 準拠 / 型は `@suzumina.click/shared-types` を使う
 - **コード設計**: 純粋関数・短い関数・単一責務を基本に重複を避ける。関連コードは**近接配置（collocation）**し可読性を最優先（軸2の予測可能性に直結）
