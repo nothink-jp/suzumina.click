@@ -4,35 +4,53 @@ import { pickWatchTarget } from "../pick-watch-target";
 
 const NOW = new Date("2026-01-10T00:00:00.000Z");
 
-const video = (id: string, videoType: string, scheduledStartTime?: string): VideoPlainObject =>
+/**
+ * `_computed.videoType` はキャッシュ作成時刻の値を模すため、あえて実データと食い違う値を入れられるようにする。
+ * pickWatchTarget はこれを見ずに liveStreamingDetails から判定し直す。
+ */
+const video = (
+	id: string,
+	liveStreamingDetails?: VideoPlainObject["liveStreamingDetails"],
+	cachedType = "normal",
+): VideoPlainObject =>
 	({
 		videoId: id,
-		liveStreamingDetails: scheduledStartTime ? { scheduledStartTime } : undefined,
-		_computed: { videoType },
+		title: id,
+		duration: "PT1H",
+		liveStreamingDetails,
+		_computed: { videoType: cachedType },
 	}) as VideoPlainObject;
 
 describe("pickWatchTarget（/watch の自動選択）", () => {
-	it("配信中（possibly_live を含む）を配信予定より優先する", () => {
+	it("配信中を配信予定より優先する", () => {
 		const items = [
-			video("next", "upcoming", "2026-01-10T01:00:00.000Z"),
-			video("live", "possibly_live", "2026-01-09T23:00:00.000Z"),
+			video("next", { scheduledStartTime: "2026-01-10T01:00:00.000Z" }),
+			video("live", { actualStartTime: "2026-01-09T23:00:00.000Z" }),
 		];
 		expect(pickWatchTarget(items, NOW)?.videoId).toBe("live");
 	});
 
-	it("配信予定は予定時刻が近い順で、過去の予定時刻の放置枠は選ばない（SPR-404）", () => {
+	it("キャッシュ上は upcoming でも、リクエスト時刻に予定時刻を過ぎていれば配信中（推定）として選ぶ", () => {
 		const items = [
-			video("later", "upcoming", "2026-01-12T00:00:00.000Z"),
-			video("abandoned", "upcoming", "2025-12-01T00:00:00.000Z"),
-			video("next", "upcoming", "2026-01-10T01:00:00.000Z"),
+			video("next", { scheduledStartTime: "2026-01-10T01:00:00.000Z" }, "upcoming"),
+			video("starting", { scheduledStartTime: "2026-01-09T23:55:00.000Z" }, "upcoming"),
+		];
+		expect(pickWatchTarget(items, NOW)?.videoId).toBe("starting");
+	});
+
+	it("配信予定は予定時刻が近い順で、24 時間を過ぎた放置枠は選ばない（SPR-404）", () => {
+		const items = [
+			video("later", { scheduledStartTime: "2026-01-12T00:00:00.000Z" }),
+			video("abandoned", { scheduledStartTime: "2025-12-01T00:00:00.000Z" }),
+			video("next", { scheduledStartTime: "2026-01-10T01:00:00.000Z" }),
 		];
 		expect(pickWatchTarget(items, NOW)?.videoId).toBe("next");
 	});
 
 	it("放置枠しか無ければ何も選ばない（選択状態にする）", () => {
 		const items = [
-			video("abandoned", "upcoming", "2025-12-01T00:00:00.000Z"),
-			video("archived", "archived"),
+			video("abandoned", { scheduledStartTime: "2025-12-01T00:00:00.000Z" }),
+			video("archived", { actualEndTime: "2025-12-01T03:00:00.000Z" }),
 		];
 		expect(pickWatchTarget(items, NOW)).toBeNull();
 	});
