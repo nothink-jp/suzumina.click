@@ -72,3 +72,48 @@ updates:
     groups:
       github-actions:
         patterns: ["*"]
+
+  # --- Docker ベースイメージ（apps/web/Dockerfile の node:*-alpine）---
+  # Node の版は Dockerfile のほかに package.json の engines / devEngines、apps/functions の engines、
+  # mise.toml にも書いてある。Dependabot が書き換えるのは Dockerfile だけなので、PR を取り込むときは
+  # 残りの 4 か所を同じ版に揃える（ずれると CI の node-version-file と本番イメージの Node が食い違う）。
+  - package-ecosystem: "docker"
+    directory: "/apps/web"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 5
+    cooldown:
+      default-days: 2
+    commit-message:
+      prefix: "chore(docker)"
+    groups:
+      docker-minor:
+        update-types: ["minor", "patch"]
+    ignore:
+      # Node の major（LTS の乗り換え）は engines・Cloud Functions のランタイムと一緒に手動で上げる
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]
+
+  # --- Terraform provider（terraform/ の required_providers と .terraform.lock.hcl）---
+  - package-ecosystem: "terraform"
+    directory: "/terraform"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 5
+    cooldown:
+      default-days: 2
+    commit-message:
+      prefix: "chore(infra)"
+    groups:
+      terraform-minor:
+        update-types: ["minor", "patch"]
+    ignore:
+      # cloudflare v5 はリソースの書き換えを伴う移行で、SPR-348 の infra チェックリストで別に扱う
+      - dependency-name: "cloudflare/cloudflare"
+        update-types: ["version-update:semver-major"]

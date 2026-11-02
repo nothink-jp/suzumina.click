@@ -14,7 +14,7 @@ runs:
     # バイナリを直接取得し、Node も同時に用意する（actions/setup-node 不要）。
     # バージョンの正本は package.json の packageManager / devEngines.runtime。
     - name: Setup pnpm & Node.js
-      uses: pnpm/setup@v3
+      uses: pnpm/setup@fa36a5ef7dcdefc3a7cb25655c122e00cf6e636e # v3.1.2
       with:
         # pnpm store はキャッシュしない。v3 は保存キーに runId+UUID を含み、ヒット時もジョブ毎に
         # 約 450MB を保存して GHA の 10GB 共有プール（docker build cache と共用）を食い潰すため。
