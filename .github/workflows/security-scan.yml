@@ -47,7 +47,7 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       
       - name: Setup pnpm & install
         uses: ./.github/actions/setup-pnpm
@@ -91,7 +91,7 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # ホストの pnpm install は不要（node_modules は .dockerignore で除外され、Dockerfile 内で入れ直す）
       - name: Build Docker image
@@ -99,8 +99,9 @@ jobs:
           docker build -f apps/web/Dockerfile -t suzumina-click:latest .
       
       - name: Run Trivy vulnerability scanner
-        # @master は未検証の最新 commit 追跡になるためタグ固定（Dependabot github-actions が自動更新する）
-        uses: aquasecurity/trivy-action@v0.36.0
+        # タグは付け替えられる（CVE-2026-33634 で trivy-action のタグが改ざんされた）ため commit SHA で固定する。
+        # 全 uses: 共通の方針（SPR-363）。Dependabot github-actions が SHA と末尾のバージョンコメントを更新する
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: 'suzumina-click:latest'
           format: 'sarif'
@@ -108,7 +109,7 @@ jobs:
           severity: 'CRITICAL,HIGH,MEDIUM'
       
       - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v4
+        uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
         if: always()
         with:
           sarif_file: 'trivy-results.sarif'
@@ -117,7 +118,7 @@ jobs:
       # 脆弱性確認の正本は SARIF（GitHub Security タブ）。旧ステップは同一イメージの再スキャン＋未固定イメージ（aquasec/trivy:latest）だったため撤去。
 
       - name: Upload container scan results
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: container-scan-results
