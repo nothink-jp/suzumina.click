@@ -32,9 +32,6 @@
 		"tools:backfill-missing-videos": "dotenv -e .env -- tsx src/tools/backfill-missing-videos.ts"
 	},
 	"main": "lib/index.js",
-	"engines": {
-		"node": "24.22.1"
-	},
 	"dependencies": {
 		"@google-cloud/firestore": "^9.4.0",
 		"@google-cloud/functions-framework": "^5.0.5",
