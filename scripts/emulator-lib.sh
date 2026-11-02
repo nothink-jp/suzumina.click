@@ -24,8 +24,10 @@ emulator_ensure() {
     echo "[emulator] 既存の Emulator (${HOST_PORT}) を利用します"
     return 0
   fi
+  # component 導入（初回は約65MBのダウンロード）は同期で済ませ、下の待ち時間は Emulator 本体の起動だけに使う
+  bash "${root}/scripts/firestore-emulator.sh" --ensure-component || return 1
   echo "[emulator] Emulator を起動します..."
-  bash "${root}/scripts/firestore-emulator.sh" &
+  bash "${root}/scripts/firestore-emulator.sh" --skip-component-check &
   EMULATOR_PID=$!
   STARTED_EMULATOR=1
   for _ in $(seq 1 60); do

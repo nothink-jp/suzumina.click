@@ -4,24 +4,51 @@
 # firebase コマンドは使わない（CLAUDE.md の方針: Firebase 未使用）。
 # @google-cloud/firestore SDK は FIRESTORE_EMULATOR_HOST を見て自動接続するため、
 # このポートに合わせて web / functions 側の環境変数を設定すること。
+#
+# 使い方:
+#   firestore-emulator.sh                         component を（未導入なら）導入して起動する（`pnpm emulator`）
+#   firestore-emulator.sh --ensure-component      component の導入だけ同期で行って終了する（起動しない）
+#   firestore-emulator.sh --skip-component-check  導入確認を省いて起動する
+#
+# 起動待ちループ（emulator-lib.sh の emulator_ensure 等）から使う側は、先に --ensure-component を
+# 同期で済ませてから --skip-component-check でバックグラウンド起動する。初回の component
+# ダウンロード（約65MB・所要時間はネットワーク次第）を起動待ちのタイムアウトに含めないため。
 set -euo pipefail
 
 HOST_PORT="${FIRESTORE_EMULATOR_HOST:-127.0.0.1:8080}"
+MODE="${1:-}"
+
+case "${MODE}" in
+  "" | --ensure-component | --skip-component-check) ;;
+  *)
+    echo "[emulator] 不明な引数です: ${MODE}" >&2
+    exit 2
+    ;;
+esac
 
 if ! command -v gcloud >/dev/null 2>&1; then
   echo "[emulator] gcloud が見つかりません。Google Cloud SDK を導入してください。" >&2
   exit 1
 fi
 
-# cloud-firestore-emulator コンポーネントが未導入なら導入する
-if ! gcloud components list --format="value(state.name)" \
-    --filter="id=cloud-firestore-emulator" 2>/dev/null | grep -qix "installed"; then
-  echo "[emulator] cloud-firestore-emulator component を導入します..."
+ensure_component() {
+  if gcloud components list --format="value(state.name)" \
+      --filter="id=cloud-firestore-emulator" 2>/dev/null | grep -qix "installed"; then
+    return 0
+  fi
+  echo "[emulator] cloud-firestore-emulator component を導入します（初回のみ・約65MB）..."
   if ! gcloud components install cloud-firestore-emulator --quiet; then
     echo "[emulator] component 導入に失敗しました。手動で次を実行してください:" >&2
     echo "           gcloud components install cloud-firestore-emulator" >&2
     exit 1
   fi
+}
+
+if [[ "${MODE}" != "--skip-component-check" ]]; then
+  ensure_component
+fi
+if [[ "${MODE}" == "--ensure-component" ]]; then
+  exit 0
 fi
 
 echo "[emulator] Firestore Emulator (native mode) を ${HOST_PORT} で起動します"

@@ -35,8 +35,10 @@ emulator_up() {
 if emulator_up; then
   echo "[itest] 既存の Emulator (${HOST_PORT}) を利用します"
 else
+  # component 導入は同期で済ませ、下の待ち時間は Emulator 本体の起動だけに使う（emulator-lib.sh と同じ）
+  bash "${ROOT}/scripts/firestore-emulator.sh" --ensure-component
   echo "[itest] Emulator を ${HOST_PORT} で起動します..."
-  bash "${ROOT}/scripts/firestore-emulator.sh" &
+  bash "${ROOT}/scripts/firestore-emulator.sh" --skip-component-check &
   EMULATOR_PID=$!
   STARTED_EMULATOR=1
   for _ in $(seq 1 60); do
