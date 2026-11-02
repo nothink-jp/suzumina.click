@@ -1,15 +1,18 @@
 import { Skeleton } from "@suzumina.click/ui/components/ui/skeleton";
 
 /**
- * セッションを読むページ（`getCurrentUser()` / `ProtectedRoute` を page 直下で await するもの）の
- * `loading.tsx` 共通フォールバック。各セグメントの `loading.tsx` から default re-export して使う。
+ * page 直下で uncached / runtime data を await するページの `loading.tsx` 共通フォールバック。
+ * 各セグメントの `loading.tsx` から default re-export して使う。
+ * 代表例はセッション（`getCurrentUser()` / `ProtectedRoute`）だが、`searchParams`・`cookies()`・
+ * `headers()`・キャッシュしない Firestore read なども同じ条件に当たる（例: `/buttons/create` は `searchParams`）。
  *
  * なぜ各セグメントに `loading.tsx` が要るか（Cache Components の規約）:
- * セッション取得は request ごとの Firestore read（uncached）なので `<Suspense>` の内側に置く必要がある。
- * ルートレイアウトの `<Suspense>` は**直接アクセス**しか覆わず、クライアント遷移では共有レイアウトより
- * 上にあるため効かない（dev の instant navigation 検証が "encountered uncached data" を出す）。
+ * これらは `<Suspense>` の内側に置く必要がある。ルートレイアウトの `<Suspense>` は**直接アクセス**しか
+ * 覆わず、クライアント遷移では共有レイアウトより上にあるため効かない（dev の instant navigation 検証が
+ * "encountered uncached data" / "encountered runtime data" を出す）。
  * `loading.tsx` は自セグメント内に境界を作るので、どこから遷移してきても覆える。
- * セッションを読むページを新設したら同じく `loading.tsx` を置く。
+ * セッションを読まないページでも、page 直下でこれらを await するなら同じく `loading.tsx` を置く
+ * （ページ内で自前の `<Suspense>` を切っているなら不要）。
  */
 export default function SessionPageLoading() {
 	return (
