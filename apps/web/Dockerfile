@@ -1,6 +1,8 @@
 # suzumina.click Web Application Dockerfile for Cloud Run
 # Optimized for Next.js with advanced caching and monorepo structure
 
+# Node の版の正本はルート package.json の devEngines.runtime.version。ここは写しで、
+# 一致は pnpm lint:node-version が強制する（Dependabot docker が上げたら正本も揃える＝SPR-405）。
 FROM node:24.22.1-alpine AS base
 # ベースイメージ同梱の OS パッケージ(openssl libssl3/libcrypto3 等)に既知 CVE が出るため
 # Alpine の security backport を取り込んでから必要パッケージを追加する

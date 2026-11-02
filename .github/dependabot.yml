@@ -74,9 +74,9 @@ updates:
         patterns: ["*"]
 
   # --- Docker ベースイメージ（apps/web/Dockerfile の node:*-alpine）---
-  # Node の版は Dockerfile のほかに package.json の engines / devEngines、apps/functions の engines、
-  # mise.toml にも書いてある。Dependabot が書き換えるのは Dockerfile だけなので、PR を取り込むときは
-  # 残りの 4 か所を同じ版に揃える（ずれると CI の node-version-file と本番イメージの Node が食い違う）。
+  # Node の版の正本はルート package.json の devEngines.runtime.version で、Dockerfile はその写し（SPR-405）。
+  # Dependabot が書き換えるのは Dockerfile だけなので、この PR は lint:node-version で必ず落ちる。
+  # それが「新しい版が出た」合図で、正本を同じ版に上げて pnpm install（lockfile の node も更新）してからマージする。
   - package-ecosystem: "docker"
     directory: "/apps/web"
     schedule:
@@ -93,7 +93,7 @@ updates:
       docker-minor:
         update-types: ["minor", "patch"]
     ignore:
-      # Node の major（LTS の乗り換え）は engines・Cloud Functions のランタイムと一緒に手動で上げる
+      # Node の major（LTS の乗り換え）は Cloud Functions のランタイムも変わるので、正本から手動で上げる
       - dependency-name: "node"
         update-types: ["version-update:semver-major"]
 

@@ -309,7 +309,7 @@ jobs:
         if: always()
         run: docker rm -f web-smoke || true
 
-  # リポジトリ横断の整合チェック（pnpm verify の lint:docs / lint:tokens / lint:ga4 / test:scripts）。
+  # リポジトリ横断の整合チェック（pnpm verify の lint:docs / lint:tokens / lint:ga4 / lint:node-version / test:scripts）。
   # ジョブ名はブランチ保護の必須チェック名と結びつくため据え置き、test:scripts も同居させる。
   # パスフィルタなし: docs のみの PR では parallel-check が丸ごと skip されるため、ここで必ず拾う。
   repo-lint:
@@ -326,7 +326,7 @@ jobs:
         with:
           node-version-file: package.json
 
-      # 3 スクリプトとも npm 依存ゼロ（node: 組み込みのみ）なので install 不要。
+      # どのスクリプトも npm 依存ゼロ（node: 組み込みのみ）なので install 不要。
       # node --run は package.json の scripts を実行する＝コマンドの正本は package.json のまま。
       # 1 つ落ちても残りを走らせ、全件の結果を 1 回の run で見られるようにする。
       - name: lint:docs
@@ -337,6 +337,9 @@ jobs:
       - name: lint:ga4
         if: ${{ !cancelled() }}
         run: node --run lint:ga4
+      - name: lint:node-version
+        if: ${{ !cancelled() }}
+        run: node --run lint:node-version
       # scripts/ の node スクリプト自身のテスト（node:test・依存ゼロ）。audit-diff.mjs のように
       # CI のゲートを担うスクリプトがあるため、パッケージ外でも PR ごとに検証する。
       - name: test:scripts

@@ -6,7 +6,7 @@
 #   1. .worktreeinclude に列挙された gitignore 対象ファイルを main チェックアウトからコピー
 #      （手動 `git worktree add` 用フォールバック。Claude 作成の worktree は .worktreeinclude
 #       がネイティブに処理するため通常はここでは何もしない）
-#   2. node_modules が無ければ mise trust + pnpm install を実行
+#   2. node_modules が無ければ pnpm install を実行（Node は devEngines.runtime の onFail: download で pnpm が入れる）
 set -u
 
 cd "${CLAUDE_PROJECT_DIR:-$PWD}" 2>/dev/null || exit 0
@@ -36,17 +36,12 @@ fi
 
 log "node_modules not found - initializing this worktree (one-time setup)"
 
-if command -v mise >/dev/null 2>&1; then
-	mise trust >/dev/null 2>&1 || true
-	mise install >/dev/null 2>&1 || true
-fi
-
 if command -v pnpm >/dev/null 2>&1; then
 	log "running 'pnpm install' (may take a few minutes)..."
 	pnpm install || log "pnpm install failed - run it manually"
 	log "setup complete"
 else
-	log "pnpm not on PATH - run 'mise install && pnpm install' manually"
+	log "pnpm not on PATH - install pnpm, then run 'pnpm install' manually"
 fi
 
 exit 0
