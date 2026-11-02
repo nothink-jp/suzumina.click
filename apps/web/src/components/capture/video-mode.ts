@@ -7,6 +7,10 @@ import { isLiveVideoType, type VideoPlainObject } from "@suzumina.click/shared-t
  * すべてここを経由する（video-badge も同じ `_computed.videoType` を見る）。
  * raw の liveBroadcastContent は取得時点の値で stale に弱く、アーカイブ済みでも live のまま
  * 残ることがあるので使わない（`_computed.isLive` / `isUpcoming` も videoType 由来＝SPR-403）。
+ * 例外は /watch の無指定時の**自動選択**だけで、こちらは `_computed`（一覧キャッシュ作成時刻の判定）ではなく
+ * determineVideoType(v, now) でリクエスト時刻に判定し直す（app/watch/pick-watch-target.ts）。表示モードは
+ * この関数のままなので、キャッシュ後に予定時刻を過ぎた枠は「配信中（推定）として選ばれ、配信開始前として描かれる」
+ * ずれがキャッシュ更新まで残りうる。
  *
  * モードは下書きに保存しない。「仕上げてよいか」の実体は *マーク時に配信だったか* ではなく
  * *今アーカイブになっているか* であり、時間で変わる状態を凍結すると配信終了後の遷移を
