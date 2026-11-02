@@ -41,7 +41,7 @@
 		"@secretlint/secretlint-rule-preset-recommend": "^13.1.0",
 		"@typescript/native-preview": "7.0.0-dev.20260707.2",
 		"@vitest/coverage-v8": "^5.0.5",
-		"knip": "^6.44.0",
+		"knip": "^6.44.1",
 		"lefthook": "^2.2.2",
 		"rimraf": "^6.1.3",
 		"secretlint": "^13.1.0",
