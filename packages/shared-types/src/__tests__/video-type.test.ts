@@ -6,7 +6,7 @@ import {
 } from "../operations/video-type";
 
 const NOW = new Date("2026-01-01T00:00:00.000Z");
-const PAST = "2025-12-31T00:00:00.000Z";
+const PAST = "2025-12-31T23:00:00.000Z";
 const FUTURE = "2026-01-02T00:00:00.000Z";
 
 const typeOf = (v: VideoTypeSource) => determineVideoType(v, NOW);
@@ -31,6 +31,19 @@ describe("determineVideoType（動画タイプ判定の正本）", () => {
 		it("予定時刻が未来なら upcoming、過去で未開始なら possibly_live", () => {
 			expect(typeOf({ liveStreamingDetails: { scheduledStartTime: FUTURE } })).toBe("upcoming");
 			expect(typeOf({ liveStreamingDetails: { scheduledStartTime: PAST } })).toBe("possibly_live");
+		});
+
+		it("予定時刻から 24 時間以上経っても未開始なら upcoming に戻す（SPR-404）", () => {
+			const hoursBefore = (h: number) => new Date(NOW.getTime() - h * 60 * 60 * 1000);
+			expect(typeOf({ liveStreamingDetails: { scheduledStartTime: hoursBefore(23.99) } })).toBe(
+				"possibly_live",
+			);
+			expect(typeOf({ liveStreamingDetails: { scheduledStartTime: hoursBefore(24) } })).toBe(
+				"upcoming",
+			);
+			expect(typeOf({ liveStreamingDetails: { scheduledStartTime: hoursBefore(24 * 30) } })).toBe(
+				"upcoming",
+			);
 		});
 
 		it("時刻は string / Date / Firestore Timestamp を受け付ける", () => {
