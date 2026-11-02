@@ -5,6 +5,8 @@ import { fromFirestore, toFirestore } from "../video-firestore";
 
 const FUTURE = "2999-01-01T00:00:00.000Z";
 const PAST = "2000-01-01T00:00:00.000Z";
+// possibly_live は予定時刻から 24 時間以内に限る（SPR-404）。fromFirestore は実時刻で判定するので相対で作る
+const RECENT_PAST = new Date(Date.now() - 60 * 60 * 1000).toISOString();
 
 const doc = (over: Partial<FirestoreServerVideoData> = {}): FirestoreServerVideoData =>
 	({
@@ -76,9 +78,18 @@ describe("fromFirestore", () => {
 		});
 
 		it("scheduledStartTime が過去（未開始のまま）→ possibly_live（live とは断定しない）", () => {
-			const r = fromFirestore(doc({ liveStreamingDetails: { scheduledStartTime: PAST } as never }));
+			const r = fromFirestore(
+				doc({ liveStreamingDetails: { scheduledStartTime: RECENT_PAST } as never }),
+			);
 			expect(r._computed.videoType).toBe("possibly_live");
 			expect(r._computed.isLive).toBe(true);
+		});
+
+		it("予定時刻から 24 時間以上経っても未開始なら upcoming（SPR-404）", () => {
+			const r = fromFirestore(doc({ liveStreamingDetails: { scheduledStartTime: PAST } as never }));
+			expect(r._computed.videoType).toBe("upcoming");
+			expect(r._computed.isUpcoming).toBe(true);
+			expect(r._computed.isLive).toBe(false);
 		});
 
 		it("actualStartTime あり（未終了）→ live", () => {
@@ -94,7 +105,10 @@ describe("fromFirestore", () => {
 
 		it("保存済み videoType ではなく再判定した値を使う", () => {
 			const r = fromFirestore(
-				doc({ videoType: "upcoming", liveStreamingDetails: { scheduledStartTime: PAST } as never }),
+				doc({
+					videoType: "upcoming",
+					liveStreamingDetails: { scheduledStartTime: RECENT_PAST } as never,
+				}),
 			);
 			expect(r._computed.videoType).toBe("possibly_live");
 		});
@@ -106,7 +120,7 @@ describe("fromFirestore", () => {
 			const stale = fromFirestore(
 				doc({
 					liveBroadcastContent: "upcoming",
-					liveStreamingDetails: { scheduledStartTime: PAST },
+					liveStreamingDetails: { scheduledStartTime: RECENT_PAST },
 				} as never),
 			);
 			expect(stale._computed.videoType).toBe("possibly_live");

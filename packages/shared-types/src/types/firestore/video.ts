@@ -12,7 +12,7 @@ export type LiveBroadcastContent = "none" | "live" | "upcoming";
 
 /**
  * 動画タイプ。判定ルールの正本は operations/video-type.ts の determineVideoType
- * （possibly_live = 予定時刻を過ぎたが最後の取得時点では未開始）。
+ * （possibly_live = 予定時刻を過ぎて 24 時間以内・最後の取得時点では未開始）。
  */
 export type VideoType =
 	| "normal"

@@ -1,14 +1,11 @@
-import {
-	isLiveVideoType,
-	parseDurationToSeconds,
-	type VideoPlainObject,
-} from "@suzumina.click/shared-types";
+import { parseDurationToSeconds, type VideoPlainObject } from "@suzumina.click/shared-types";
 import type { Metadata } from "next";
 import { getMyButtonDrafts } from "@/actions/button-drafts";
 import { getVideoById, getVideosList } from "@/app/videos/actions";
 import { CaptureView } from "@/components/capture/capture-view";
 import ProtectedRoute from "@/components/system/protected-route";
 import { getPublicAudioButtonStartTimesByVideo } from "@/lib/audio-buttons-firestore";
+import { pickWatchTarget } from "./pick-watch-target";
 
 export const metadata: Metadata = {
 	title: "マーキング",
@@ -43,21 +40,7 @@ async function findTargetVideo(manualVideoId?: string): Promise<VideoPlainObject
 		filters: { videoType: "live_upcoming" },
 	});
 
-	// 判定の正本は _computed.videoType（video-card-actions / video-badge と同一。
-	// raw の liveBroadcastContent は stale がありうるため使わない）
-	const live = items.find((v) => isLiveVideoType(v._computed.videoType));
-	if (live) {
-		return live;
-	}
-
-	const upcoming = items
-		.filter((v) => v._computed.videoType === "upcoming")
-		.sort((a, b) =>
-			(a.liveStreamingDetails?.scheduledStartTime ?? "9999").localeCompare(
-				b.liveStreamingDetails?.scheduledStartTime ?? "9999",
-			),
-		);
-	return upcoming[0] ?? null;
+	return pickWatchTarget(items);
 }
 
 /**
