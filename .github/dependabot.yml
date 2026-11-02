@@ -89,13 +89,13 @@ updates:
       default-days: 2
     commit-message:
       prefix: "chore(docker)"
+    # major は ignore しない。Node 27 以降は奇数・偶数の区別がなく、年 1 回の major がすべて LTS になる
+    # （nodejs.org「Evolving the Node.js Release Schedule」2026-03）ので、major の PR は年 1 本の乗り換えの合図になる。
+    # minor/patch とは別の PR になる（グループは minor/patch だけ）。Cloud Functions のランタイムも変わるので、
+    # 正本を上げる前に nodejsNN が gcloud functions deploy で選べるかを確かめる。
     groups:
       docker-minor:
         update-types: ["minor", "patch"]
-    ignore:
-      # Node の major（LTS の乗り換え）は Cloud Functions のランタイムも変わるので、正本から手動で上げる
-      - dependency-name: "node"
-        update-types: ["version-update:semver-major"]
 
   # --- Terraform provider（terraform/ の required_providers と .terraform.lock.hcl）---
   - package-ecosystem: "terraform"
