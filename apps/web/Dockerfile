@@ -31,8 +31,6 @@ RUN corepack enable pnpm && corepack install \
          [ "$attempt" = 3 ] && exit 1; \
          sleep 5; \
        done
-# Ensure yarn is disabled to prevent conflicts
-RUN npm config delete prefix 2>/dev/null || true
 
 # Install dependencies only when needed
 FROM pnpm AS deps
