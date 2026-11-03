@@ -107,6 +107,15 @@ overrides:
   # smol-toml <=1.8.0: parseKey が文書末尾まで再走査する二乗時間の parse（GHSA-r4xh-jqrq-34v2）。
   # 1.9.0 で修正。依存元 knip は ^1.8.0 を要求し範囲内だが、自然解決が 1.8.0 に留まるため引き上げ。
   smol-toml: ">=1.9.0"
+  # glob >=9.0.0 <=14.0.1: AbortSignal で中断しても async の walk がディレクトリを読み続ける（GHSA-3g3m-2fjr-6pw4）。
+  # 14.0.2 で修正。14 は minimatch ^11.0.2 に依存するので、glob 経由でしか入っていない minimatch <11.0.1 の
+  # globparts 膨張による DoS（GHSA-g3hv-75wg-m249）もこれで解消する（minimatch の override は置かない）。
+  # 依存元は rimraf@5（google-gax 経由＝本番ランタイム）・rimraf@6（root devDependency）・
+  # @joshwooding/vite-plugin-react-docgen-typescript（Storybook）で、どれも `glob` / `globSync` しか使わない。
+  # 10〜13 の破壊的変更は Node 対応版と CLI、14 は内部クラスの API と ignore の端のケースだけ。
+  # 上限 <15 は、この互換の判断を 14 までの changelog でしか確かめていないため。15 が出たら
+  # 依存元の使い方と changelog を見直してから上げる（上限なしだと lockfile の再生成で黙って入る）。
+  glob: ">=14.0.2 <15"
 
 allowBuilds:
   esbuild: true
