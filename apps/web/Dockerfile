@@ -1,7 +1,9 @@
 # suzumina.click Web Application Dockerfile for Cloud Run
 # Optimized for Next.js with advanced caching and monorepo structure
 
-FROM node:24.22.1-alpine AS base
+# Node の版の正本はルート package.json の devEngines.runtime.version。ここは写しで、
+# 一致は pnpm lint:node-version が強制する（Dependabot docker が上げたら正本も揃える＝SPR-405）。
+FROM node:24.22.2-alpine AS base
 # ベースイメージ同梱の OS パッケージ(openssl libssl3/libcrypto3 等)に既知 CVE が出るため
 # Alpine の security backport を取り込んでから必要パッケージを追加する
 # base image は patch まで pin しているため中身が凍結される。
@@ -44,6 +46,9 @@ COPY packages/ui/package.json ./packages/ui/
 COPY apps/web/package.json ./apps/web/
 
 # Install all dependencies with cache optimization
+# devEngines.runtime の onFail: download により、ここで nodejs.org から musl 版の Node（ベースイメージと同じ版）も
+# 取得する（SPR-405）。ベースイメージで足りているので無駄で、ビルドが nodejs.org の可用性にも依存する。
+# pnpm の `install --no-runtime` が 12.15.0・12.16.1 では unknown option で弾かれるため今は外せない。使えるようになったら足す。
 RUN --mount=type=cache,id=pnpm,target=/pnpm \
     pnpm install --frozen-lockfile
 

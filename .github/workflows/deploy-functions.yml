@@ -85,9 +85,11 @@ jobs:
             delete pkg.scripts;
             delete pkg.devDependencies;
             delete pkg.optionalDependencies;
-            // Node の版は --runtime nodejs24 が正本。pnpm は lockfile を書いた版に揃える
-            // （buildpack は engines.pnpm で pnpm の版を決める。未指定だと最新版になる）
-            pkg.engines = { node: '24', pnpm: root.engines.pnpm };
+            // Node の版の正本はルート package.json の devEngines.runtime（SPR-405）。Cloud Functions は
+            // major しか選べないので major だけ渡す（--runtime も同じ値から導く）。
+            // pnpm は lockfile を書いた版に揃える（buildpack は engines.pnpm で pnpm の版を決める。未指定だと最新版になる）
+            const nodeMajor = root.devEngines.runtime.version.split('.')[0];
+            pkg.engines = { node: nodeMajor, pnpm: root.engines.pnpm };
             fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
           "
 
@@ -127,6 +129,10 @@ jobs:
           BUILD_SERVICE_ACCOUNT: projects/${{ secrets.GCP_PROJECT_ID }}/serviceAccounts/functions-build-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com
         run: |
           echo "🚀 Deploying functions in parallel..."
+
+          # ランタイムは devEngines.runtime の major から導く（正本は 1 か所＝SPR-405。ここに版を書くと drift する）
+          NODE_RUNTIME="nodejs$(node -p "require('./package.json').devEngines.runtime.version.split('.')[0]")"
+          echo "Runtime: $NODE_RUNTIME"
           
           # env / secrets の正本はここ（ADR-009）。--set-env-vars / --set-secrets は既存の値を全置換するため、
           # ここに無いものは live から消える。src が読まない env は置かない（SPR-340）。
@@ -150,7 +156,7 @@ jobs:
           gcloud functions deploy fetchYouTubeVideos \
             --gen2 \
             --source ${{ env.DEPLOYMENT_SOURCE }} \
-            --runtime nodejs24 \
+            --runtime "$NODE_RUNTIME" \
             --entry-point fetchYouTubeVideos \
             --trigger-topic youtube-video-fetch-trigger \
             --region asia-northeast1 \
@@ -174,7 +180,7 @@ jobs:
           gcloud functions deploy fetchDLsiteUnifiedData \
             --gen2 \
             --source ${{ env.DEPLOYMENT_SOURCE }} \
-            --runtime nodejs24 \
+            --runtime "$NODE_RUNTIME" \
             --entry-point fetchDLsiteUnifiedData \
             --trigger-topic dlsite-individual-api-trigger \
             --region asia-northeast1 \
@@ -192,7 +198,7 @@ jobs:
           gcloud functions deploy checkDataIntegrity \
             --gen2 \
             --source ${{ env.DEPLOYMENT_SOURCE }} \
-            --runtime nodejs24 \
+            --runtime "$NODE_RUNTIME" \
             --entry-point checkDataIntegrity \
             --trigger-topic data-integrity-check-trigger \
             --region asia-northeast1 \

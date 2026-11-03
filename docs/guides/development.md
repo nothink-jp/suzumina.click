@@ -9,7 +9,7 @@
 
 Claude Code は worktree を既定で `.claude/worktrees/<name>/` に作成する（[ADR-008](../decisions/architecture/ADR-008-git-worktree-friendly-monorepo.md)）。本リポジトリは worktree 開発を以下で自動化している。
 
-- **依存の自動初期化**: 新規 worktree で最初にセッションを開くと、`SessionStart` フック（`.claude/settings.json` → `.claude/hooks/worktree-bootstrap.sh`）が `mise trust` + `pnpm install` を一度だけ実行する（`node_modules` 有無でガード。初回は数分かかる）。
+- **依存の自動初期化**: 新規 worktree で最初にセッションを開くと、`SessionStart` フック（`.claude/settings.json` → `.claude/hooks/worktree-bootstrap.sh`）が `pnpm install` を一度だけ実行する（`node_modules` 有無でガード。初回は数分かかる）。
 - **gitignore ファイルの自動コピー**: `apps/web/.env` 等は `.worktreeinclude` に列挙され、worktree 作成時に main から自動コピーされる（CLI `--worktree`・subagent・macOS アプリ共通）。
 - **走査除外**: `.claude/worktrees/` は `.gitignore` / `.secretlintignore` / `biome.json` で除外済み。
 

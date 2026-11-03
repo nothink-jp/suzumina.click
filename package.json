@@ -14,6 +14,7 @@
 		"lint:docs": "node scripts/lint-docs.mjs",
 		"lint:tokens": "node scripts/lint-css-tokens.mjs",
 		"lint:ga4": "node scripts/lint-ga4-params.mjs",
+		"lint:node-version": "node scripts/lint-node-version.mjs",
 		"test:scripts": "node --test \"scripts/__tests__/*.test.mjs\"",
 		"check:index-drift": "node scripts/check-firestore-index-drift.mjs",
 		"check:ga4-drift": "node scripts/check-ga4-drift.mjs",
@@ -28,7 +29,7 @@
 		"test": "pnpm -r test",
 		"test:e2e:emulator": "bash scripts/e2e-emulator.sh",
 		"test:integration": "bash scripts/test-functions-integration.sh",
-		"verify": "pnpm lint:docs && pnpm lint:tokens && pnpm lint:ga4 && pnpm test:scripts && pnpm lint && pnpm typecheck && pnpm test",
+		"verify": "pnpm lint:docs && pnpm lint:tokens && pnpm lint:ga4 && pnpm lint:node-version && pnpm test:scripts && pnpm lint && pnpm typecheck && pnpm test",
 		"test:coverage": "pnpm -r test:coverage",
 		"knip": "knip",
 		"clean": "pnpm -r clean && rimraf node_modules/.cache coverage",
@@ -48,20 +49,19 @@
 		"vitest": "^5.0.5"
 	},
 	"engines": {
-		"node": "24.22.1",
-		"pnpm": "12.15.0"
+		"pnpm": "12.16.1"
 	},
 	"devEngines": {
 		"runtime": {
 			"name": "node",
-			"version": "24.22.1",
-			"onFail": "warn"
+			"version": "24.22.2",
+			"onFail": "download"
 		},
 		"packageManager": {
 			"name": "pnpm",
-			"version": "12.15.0",
+			"version": "12.16.1",
 			"onFail": "ignore"
 		}
 	},
-	"packageManager": "pnpm@12.15.0+sha512.b3951d6d6ff4a9f13dc7cf56cd28d2b8eb37dbcc9c68e52e1e1191873ea9f82a017287ab50baadc5ccc494f036c67c0e47eb13608c2fa36f47711b61ea128e61"
+	"packageManager": "pnpm@12.16.1+sha512.091d1dee7927575661b25dab3c2ae31cafc1c54d6b71ed6a6600cf0c1cb10434a447eae14015f1b23e2e6bedeed79df94a932e2164d2832280dce3fb32f656d1"
 }
