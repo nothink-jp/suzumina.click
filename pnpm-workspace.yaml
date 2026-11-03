@@ -113,7 +113,9 @@ overrides:
   # 依存元は rimraf@5（google-gax 経由＝本番ランタイム）・rimraf@6（root devDependency）・
   # @joshwooding/vite-plugin-react-docgen-typescript（Storybook）で、どれも `glob` / `globSync` しか使わない。
   # 10〜13 の破壊的変更は Node 対応版と CLI、14 は内部クラスの API と ignore の端のケースだけ。
-  glob: ">=14.0.2"
+  # 上限 <15 は、この互換の判断を 14 までの changelog でしか確かめていないため。15 が出たら
+  # 依存元の使い方と changelog を見直してから上げる（上限なしだと lockfile の再生成で黙って入る）。
+  glob: ">=14.0.2 <15"
 
 allowBuilds:
   esbuild: true
