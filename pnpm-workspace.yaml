@@ -133,12 +133,7 @@ minimumReleaseAgeExclude:
   - '@typescript/native-preview-win32-x64@7.0.0-dev.20260609.1'
   - '@typescript/native-preview@7.0.0-dev.20260609.1'
 
-# audit ゲート（security-scan.yml）から外す advisory。修正版が存在せず override で逃がせないものだけを置く。
+# audit ゲート（security-scan.yml）から外す advisory の正本は、ここに置く `auditConfig.ignoreGhsas`。
+# 修正版が存在せず override で逃がせないものだけを、理由と外す条件のコメント付きで 1 件ずつ足す。
 # `--ignore-unfixable` で一括に外さないのは、将来の「修正版のない本番経路の脆弱性」まで黙らせないため。
-auditConfig:
-  ignoreGhsas:
-    # braces <=3.0.3: 深くネストしたパターンによるスタック枯渇 DoS。patched なし（最新が 3.0.3）。
-    # 唯一の経路は devDependency の @secretlint/secretlint-rule-pattern > micromatch（^3.0.3 を要求）で本番に入らない。
-    # micromatch に渡るのは .secretlintrc の filePathGlobs（未設定）だけで外部入力が届かない。
-    # braces に修正版が出たら override で引き上げ、ここから外す。
-    - GHSA-vfj7-8cjw-p6xm
+# 現在の除外はなし（braces の GHSA-vfj7-8cjw-p6xm は 2026-10-23 に advisory 自体が取り下げられたので外した＝SPR-328）。
