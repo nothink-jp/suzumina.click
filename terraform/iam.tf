@@ -410,6 +410,8 @@ resource "google_project_iam_member" "terraform_apply_sa_roles" {
 # Default 環境は全セッションで共有されキーがどのセッションからも見えるので、ロールは viewer 系に限る。
 # Firestore のドキュメント（datastore.entities.*）・Secret Manager の値の読み取りは付けない（roles/viewer を避けているのもこのため）。
 # Firestore はメタデータだけのカスタムロール（claude_readonly_firestore_metadata）で付ける。
+# アクセス解析の閲覧も同じ方針: BigQuery は GA4 エクスポート dataset だけ（下の条件付き dataViewer）、
+# GA4 Data API は閲覧者の ga4_ci_reader の impersonate（analytics_ga4.tf）。キーが漏れても GA4 は読み取りまで。
 
 # 手動作成された既存 SA を管理下へ取り込む（ga4_reader と同じ扱い）。
 import {
@@ -433,7 +435,28 @@ locals {
     "roles/eventarc.viewer",       # Eventarc trigger の設定（宛先・retryPolicy 等）。messageBuses.use 等の非閲覧権限を含むが、create 系が無いので使えない（Eventarc Advanced を導入したら見直す）
     "roles/cloudscheduler.viewer", # cron（checkDataIntegrity・fetch 系）の次回/前回実行と結果。jobs.fullView で payload も見えるが、全 job が Pub/Sub 宛ての小さな JSON のみ
     "roles/cloudfunctions.viewer", # 関数の設定（メモリ・timeout・実行 SA・トリガー）とデプロイ時の Cloud Build。関数は terraform 管理外（deploy-functions.yml）で live が唯一の正
+    "roles/bigquery.jobUser",      # クエリジョブの実行のみ（データの閲覧権限は含まない）。読める範囲は下の GA4 エクスポートの条件付き dataViewer が決める
   ]
+}
+
+# GA4 の BigQuery エクスポート（日次・SPR-283）だけを読む。dataset は GA4 のリンクが作るため terraform 管理外で、
+# dataset 単位の IAM は apply SA に setIamPolicy が無いので、既存の GCS と同じく project IAM + 条件で範囲を絞る。
+# 完全一致 + "/" 区切りにしているのは、前方一致だけだと analytics_4964641970 のような別 dataset まで通るため。
+# エクスポートは user_pseudo_id・geo・device を含むが個人を特定する値は入れていない（ga4-custom-dimensions.json が送信の正本）
+locals {
+  ga4_export_dataset_resource = "projects/${var.gcp_project_id}/datasets/analytics_${var.ga4_property_id}"
+}
+
+resource "google_project_iam_member" "claude_readonly_ga4_export_viewer" {
+  project = var.gcp_project_id
+  role    = "roles/bigquery.dataViewer"
+  member  = "serviceAccount:${google_service_account.claude_readonly.email}"
+
+  condition {
+    title       = "ga4-export-dataset-only"
+    description = "GA4 の BigQuery エクスポート dataset とその table だけ"
+    expression  = "resource.name == \"${local.ga4_export_dataset_resource}\" || resource.name.startsWith(\"${local.ga4_export_dataset_resource}/\")"
+  }
 }
 
 # Firestore はメタデータだけを読むカスタムロールにする。既製ロールは datastore.viewer が entities.get/list

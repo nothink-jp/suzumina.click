@@ -83,6 +83,12 @@ variable "google_analytics_measurement_id" {
   sensitive   = false # Measurement IDは公開情報
 }
 
+variable "ga4_property_id" {
+  description = "GA4 プロパティ ID（数値）。BigQuery エクスポートの dataset 名 analytics_<ID> の導出に使う。check-ga4-drift.mjs の既定値と一致させる"
+  type        = string
+  default     = "496464197"
+}
+
 variable "google_tag_manager_id" {
   description = "Google Tag Manager Container ID"
   type        = string
