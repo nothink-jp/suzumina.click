@@ -38,6 +38,9 @@ async function renderLayoutHtml(): Promise<string> {
  * 本番の静的シェルはビルド時（解析系 env 未定義）に prerender され、RSC は実行時（env あり）に描かれる。
  * ルートレイアウトの HTML が env で変わると、その差がそのままハイドレーション不一致（React #418）になる。
  * 実例: GTM の <noscript><iframe> がシェルに無く RSC にだけあり、トップページがルートごと client 再描画されていた。
+ *
+ * 守る範囲: env で素の要素を出し分ける再発を捕まえる。renderToStaticMarkup は App Router の文脈を持たないので、
+ * next/script の strategy 差（beforeInteractive 等、App Router でだけ HTML を出す経路）までは見ない。
  */
 describe("RootLayout の HTML は解析系の実行時 env に依存しない", () => {
 	const saved = Object.fromEntries(ANALYTICS_ENV.map((k) => [k, process.env[k]]));

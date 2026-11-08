@@ -110,7 +110,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 				{/* ルートレイアウトの HTML は実行時 env で変えない。静的シェルはビルド時（NEXT_PUBLIC_* 未定義）に
 				 * prerender され、RSC は実行時（Cloud Run の env あり）に描かれるため、env で HTML を出し分けると
 				 * 必ずハイドレーション不一致（React #418）でルートごと client 再描画になる。
-				 * 下の 2 つは lazyOnload の next/script＝HTML を出さないので可。GTM の <noscript> iframe はこれで撤去した。
+				 * 下の 3 つは HTML を出さないので可（ConsentModeScript は null を返す client component、
+				 * GA / GTM は lazyOnload の next/script）。GTM の <noscript> iframe はこの理由で撤去した。
 				 * 回帰テストは app/__tests__/layout.test.tsx */}
 				<ConsentModeScript />
 				<GoogleAnalyticsScript />
