@@ -201,6 +201,29 @@ pnpm build                              # ビルド
 Emulator はメモリ常駐で再起動ごとに再シードが要る点、初回は component 導入（約65MB）がある点もコスト要因。
 迷ったら「この変更は Firestore データを描画/更新してブラウザで観測できるか？」を基準にし、No なら立ち上げない。
 
+### クラウドセッションの GCP 権限（`claude-readonly@` SA）
+Claude Code のクラウドセッションでは、`*.googleapis.com` 宛ての通信にプロキシが **`claude-readonly@suzumina-click.iam.gserviceaccount.com`**
+の認証を注入する（キー認証。`gcloud auth list` は空でも `curl` / `bq` / `gcloud` の API 呼び出しは通る）。
+**付与ロールの正本は [iam.tf](terraform/iam.tf) の `claude_readonly` 節**（GA4 の impersonate だけ [analytics_ga4.tf](terraform/analytics_ga4.tf)）。
+ここに書くのは用途の地図だけで、ロール一覧は転記しない。
+
+- **使える場面**（すべて読み取り）
+  - **アラート・障害調査**: Cloud Monitoring の時系列・アラートポリシー、Cloud Logging、Cloud Run / Cloud Functions / Pub/Sub /
+    Eventarc / Cloud Scheduler の設定と状態、デプロイ zip のバケット
+  - **Firestore のメタデータ**: index・TTL・DB 設定・バックアップ（`pnpm check:index-drift` の live 側もこれで読める）
+  - **アクセス解析（GA4）**: BigQuery の日次エクスポート `suzumina-click.analytics_496464197.events_*`
+    （`bq query --use_legacy_sql=false` で集計。リンク作成日より前のデータは無い）。
+    GA4 Data API（リアルタイム・GA4 画面と同じ集計）は、注入トークンに analytics スコープが無く**直接叩くと 403**。
+    IAM Credentials API の `generateAccessToken` で閲覧者の `ga4-ci-reader@` を impersonate し、`analytics.readonly` のトークンで呼ぶ
+    （auto mode では止められるので、ユーザーの明示許可を取ってから）
+- **できないこと**（意図的に付けていない）: Firestore のドキュメントの読み取り（`datastore.entities.*`）、Secret Manager の値、
+  あらゆる書き込み・デプロイ、GA4 の設定変更、GA4 エクスポート以外の BigQuery dataset。
+  本番データの中身が要る調査は、ユーザーの手元の ADC 直結（§2 ローカル方針）に回す
+- **権限の確認**: 持っている権限は `cloudresourcemanager` の `projects/suzumina-click:testIamPermissions` で確かめられる
+  （userinfo は email スコープが無いので使えない）。足りなければ iam.tf に **viewer 系だけ**を足す PR を出す
+  （キーは全セッションで共有されるため。IAM 変更は One-Way Door＝§1 セルフマージ・ポリシー）。
+  `gcloud` / `bq` の権限エラーを回り道で突破しない
+
 ---
 
 ## 3. 参照ドキュメント（過去判断の記録・毎回は読まない）
