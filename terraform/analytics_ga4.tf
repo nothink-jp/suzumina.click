@@ -48,3 +48,12 @@ resource "google_service_account_iam_member" "ga4_ci_reader_token_creator" {
     google_service_account.terraform_plan_sa,
   ]
 }
+
+# Claude のクラウドセッション（claude-readonly・キー認証）から GA4 Data API のレポートを読むための入口。
+# セッションに注入されるトークンには analytics スコープが無く、GA4 プロパティ側の権限を足しても 403 のままのため、
+# 閲覧者の ga4_ci_reader を impersonate して analytics.readonly のトークンを取る。編集者の ga4_reader 宛てには付けない
+resource "google_service_account_iam_member" "ga4_ci_reader_token_creator_claude_readonly" {
+  service_account_id = google_service_account.ga4_ci_reader.name
+  role               = "roles/iam.serviceAccountTokenCreator"
+  member             = "serviceAccount:${google_service_account.claude_readonly.email}"
+}
