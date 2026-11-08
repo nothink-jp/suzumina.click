@@ -10,6 +10,8 @@ import {
 	trackLoginSuccess,
 	trackMarkDraft,
 	trackPlayButton,
+	trackSectionClick,
+	trackSectionView,
 	trackSuggestionApply,
 	trackSuggestionGenerate,
 	trackVideoTabSelect,
@@ -170,5 +172,25 @@ describe("GA4 カスタムイベント語彙 (SPR-149)", () => {
 		trackVideoTabSelect("pickable");
 
 		expect(gtag).toHaveBeenCalledWith("event", "video_tab_select", { video_tab: "pickable" });
+	});
+
+	it("section_view / section_click: セクション名と丸めた行き先を送る", () => {
+		trackSectionView("videos");
+		trackSectionClick("works", "/works/:id");
+
+		expect(gtag).toHaveBeenCalledWith("event", "section_view", { section: "videos" });
+		expect(gtag).toHaveBeenCalledWith("event", "section_click", {
+			section: "works",
+			destination: "/works/:id",
+		});
+	});
+
+	it("section_click: destination を GA4 のパラメータ上限（100文字）に切り詰める", () => {
+		trackSectionClick("community", `/${"a".repeat(200)}`);
+
+		expect(gtag).toHaveBeenCalledWith("event", "section_click", {
+			section: "community",
+			destination: `/${"a".repeat(99)}`,
+		});
 	});
 });

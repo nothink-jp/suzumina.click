@@ -12,6 +12,7 @@
 
 import { sendGoogleAnalyticsEvent } from "@/lib/consent/google-consent-mode";
 import type { CreateEntry } from "./create-entry";
+import type { HomeSection } from "./home-section";
 
 /** GA4 のイベントパラメータ値上限（100文字）に収める */
 const MAX_PARAM_LENGTH = 100;
@@ -104,6 +105,27 @@ export function trackSuggestionGenerate(input: {
  */
 export function trackVideoTabSelect(tab: string): void {
 	sendGoogleAnalyticsEvent("video_tab_select", { video_tab: tab });
+}
+
+/**
+ * トップページのセクションが画面の上半分に入った（1 ページ表示につき各セクション 1 回）。
+ * hero は表示直後に必ず届くので、他セクションの到達率の分母になる。
+ * GA4 拡張計測の scroll は 90% 到達の 1 点しか取れず、どこで離脱したかが見えなかったため足した
+ */
+export function trackSectionView(section: HomeSection): void {
+	sendGoogleAnalyticsEvent("section_view", { section });
+}
+
+/**
+ * トップページのセクション内のリンククリック。destination は toLinkDestination で丸めた行き先
+ * （サイト内は `/works/:id` のようなパス、外部はホスト名）。GA4 拡張計測の click は外部リンクだけで
+ * セクションも分からないため、サイト内の導線はこれで測る
+ */
+export function trackSectionClick(section: HomeSection, destination: string): void {
+	sendGoogleAnalyticsEvent("section_click", {
+		section,
+		destination: destination.slice(0, MAX_PARAM_LENGTH),
+	});
 }
 
 /** AI候補の採用（タイトルクリック or タグクリック）。target で内訳を分ける */

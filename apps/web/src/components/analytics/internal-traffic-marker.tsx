@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import {
+	applyInternalTrafficQueryParam,
 	applyStoredInternalTrafficFlag,
 	syncInternalTrafficFromSession,
 } from "@/lib/analytics/internal-traffic";
@@ -15,8 +16,10 @@ import { useSessionState } from "@/lib/auth/client";
 export function InternalTrafficMarker() {
 	const { user, isPending } = useSessionState();
 
-	// 再訪時: セッション解決を待たず localStorage の印で即タグ適用（初回 page_view の取りこぼし低減）
+	// 再訪時: セッション解決を待たず localStorage の印で即タグ適用（初回 page_view の取りこぼし低減）。
+	// URL の ?internal_traffic=1/0 による手動の付け外しを先に反映する（ログインしない端末用）
 	useEffect(() => {
+		applyInternalTrafficQueryParam(window.location.search);
 		applyStoredInternalTrafficFlag();
 	}, []);
 
