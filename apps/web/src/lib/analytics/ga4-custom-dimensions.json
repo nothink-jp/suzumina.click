@@ -94,5 +94,17 @@
 		"displayName": "トラフィック種別",
 		"scope": "EVENT",
 		"description": "internal はオーナー自身のアクセス（SPR-149）。常連の継続利用を見るとき除外する"
+	},
+	{
+		"parameterName": "section",
+		"displayName": "トップのセクション",
+		"scope": "EVENT",
+		"description": "section_view / section_click。トップページのセクション（hero / audio_buttons / videos / works / community）。どこまで読まれ、どこから先へ進むかを見る"
+	},
+	{
+		"parameterName": "destination",
+		"displayName": "セクションのリンク先",
+		"scope": "EVENT",
+		"description": "section_click。ID を :id に丸めたサイト内パス（/works/:id）か、外部リンクのホスト名（dlsite.com）"
 	}
 ]

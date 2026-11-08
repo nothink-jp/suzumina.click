@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+	applyInternalTrafficQueryParam,
 	applyStoredInternalTrafficFlag,
 	OWNER_DISCORD_ID,
 	syncInternalTrafficFromSession,
@@ -47,5 +48,27 @@ describe("内部トラフィックのタグ付け (SPR-149)", () => {
 	it("印が無ければ何もしない", () => {
 		applyStoredInternalTrafficFlag();
 		expect(gtag).not.toHaveBeenCalled();
+	});
+
+	it("?internal_traffic=1 で印を付け、続く applyStoredInternalTrafficFlag でタグが付く（ログインしない端末用）", () => {
+		applyInternalTrafficQueryParam("?internal_traffic=1");
+		expect(localStorage.getItem(STORAGE_KEY)).toBe("1");
+		expect(gtag).not.toHaveBeenCalled();
+
+		applyStoredInternalTrafficFlag();
+		expect(gtag).toHaveBeenCalledWith("set", { traffic_type: "internal" });
+	});
+
+	it("?internal_traffic=0 で印を外す", () => {
+		localStorage.setItem(STORAGE_KEY, "1");
+		applyInternalTrafficQueryParam("?foo=bar&internal_traffic=0");
+		expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+	});
+
+	it("パラメータが無い・想定外の値なら印を変えない", () => {
+		localStorage.setItem(STORAGE_KEY, "1");
+		applyInternalTrafficQueryParam("");
+		applyInternalTrafficQueryParam("?internal_traffic=yes");
+		expect(localStorage.getItem(STORAGE_KEY)).toBe("1");
 	});
 });

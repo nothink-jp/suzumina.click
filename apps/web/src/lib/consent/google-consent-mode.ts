@@ -234,6 +234,26 @@ export function sendGoogleAnalyticsPageView(url?: string, measurementId?: string
 }
 
 /**
+ * `gtag('config', ...)` の完了後に callback を 1 回だけ走らせる（完了済みなら即時）。
+ *
+ * 表示直後に送るイベント（section_view の hero など）は hydration 時点で発火するため、
+ * そのまま送ると config 前の dataLayer に積まれて捨てられる（SPR-317 と同じ欠測）。
+ * GA がロードされない環境（測定ID未設定・ブロック）では callback は走らない。
+ *
+ * @returns 待機を取り消す関数（effect の cleanup に渡す）
+ */
+export function runWhenGaConfigured(callback: () => void): () => void {
+	if (typeof window === "undefined") return () => {};
+	if (window.gaConfigured) {
+		callback();
+		return () => {};
+	}
+	const handler = () => callback();
+	window.addEventListener("gaConfigured", handler, { once: true });
+	return () => window.removeEventListener("gaConfigured", handler);
+}
+
+/**
  * Utility to send custom events to Google Analytics
  *
  * SPR-299: 同意ゲートを外した。理由は3つ。

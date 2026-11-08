@@ -11,9 +11,14 @@
  * セッション解決は非同期のため、初回 page_view に間に合わない取りこぼしがある。
  * localStorage に印を永続し、再訪時はセッション解決を待たずマウント直後に適用して塞ぐ
  * （オーナーの最初の1訪問の page_view のみタグ漏れが残るが許容）。
+ *
+ * ログインしない端末（スマホなど）はセッションでオーナーと判定できないため、
+ * `?internal_traffic=1` を付けて 1 回開くと印を付けられる（`=0` で外す）。印はその端末の
+ * localStorage にしか残らず、第三者が付けても自分のブラウザのアクセスが除外されるだけで害はない。
  */
 
 const STORAGE_KEY = "suzumina-internal-traffic";
+const QUERY_PARAM = "internal_traffic";
 
 /**
  * オーナーの Discord ID（audioButtons.creatorId として公開済みの値のため秘匿情報ではない）。
@@ -25,6 +30,26 @@ export const OWNER_DISCORD_ID = "570920263135264778";
 function setGtagInternalTraffic(): void {
 	if (typeof window === "undefined" || !window.gtag) return;
 	window.gtag("set", { traffic_type: "internal" });
+}
+
+/**
+ * URL の `?internal_traffic=1` / `=0` で印を手動で付け外しする（ログインしない端末用）。
+ * gtag には触れない。直後に applyStoredInternalTrafficFlag を呼んで反映する前提
+ * （外した場合、適用済みページの gtag 状態はリロードまで残る点は syncInternalTrafficFromSession と同じ）。
+ *
+ * @param search `window.location.search`
+ */
+export function applyInternalTrafficQueryParam(search: string): void {
+	const value = new URLSearchParams(search).get(QUERY_PARAM);
+	try {
+		if (value === "1") {
+			localStorage.setItem(STORAGE_KEY, "1");
+		} else if (value === "0") {
+			localStorage.removeItem(STORAGE_KEY);
+		}
+	} catch {
+		// localStorage 不可の環境では諦める
+	}
 }
 
 /** localStorage の印に基づき、セッション解決を待たずにタグを適用する（マウント直後に呼ぶ） */
