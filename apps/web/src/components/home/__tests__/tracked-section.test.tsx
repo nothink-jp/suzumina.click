@@ -95,6 +95,29 @@ describe("TrackedSection", () => {
 		});
 	});
 
+	it("中クリック（新しいタブで開く）も数え、右クリックは数えない", () => {
+		render(
+			<TrackedSection section="works">
+				<a href="/works/RJ01679795">作品カード</a>
+			</TrackedSection>,
+		);
+
+		fireEvent(
+			screen.getByText("作品カード"),
+			new MouseEvent("auxclick", { bubbles: true, button: 2 }),
+		);
+		expect(gtag.mock.calls.filter((call) => call[1] === "section_click")).toHaveLength(0);
+
+		fireEvent(
+			screen.getByText("作品カード"),
+			new MouseEvent("auxclick", { bubbles: true, button: 1 }),
+		);
+		expect(gtag).toHaveBeenCalledWith("event", "section_click", {
+			section: "works",
+			destination: "/works/:id",
+		});
+	});
+
 	it("リンクでない要素（再生ボタンなど）のクリックは送らない", () => {
 		render(
 			<TrackedSection section="audio_buttons">

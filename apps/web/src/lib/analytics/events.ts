@@ -109,7 +109,9 @@ export function trackVideoTabSelect(tab: string): void {
 
 /**
  * トップページのセクションが画面の上半分に入った（1 ページ表示につき各セクション 1 回）。
- * hero は表示直後に必ず届くので、他セクションの到達率の分母になる。
+ * 到達率の分母は section_view{hero} ではなく、トップの page_view にする。hero は通常は表示直後に届くが、
+ * リロードや「戻る」でスクロール位置が復元された訪問・アンカー付きの流入では hero が画面の上半分に入らず、
+ * 下のセクションだけが届く（hero を分母にすると到達率が 100% を超える）。
  * GA4 拡張計測の scroll は 90% 到達の 1 点しか取れず、どこで離脱したかが見えなかったため足した
  */
 export function trackSectionView(section: HomeSection): void {

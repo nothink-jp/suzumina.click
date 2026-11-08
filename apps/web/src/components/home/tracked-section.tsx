@@ -12,12 +12,16 @@ import { runWhenGaConfigured } from "@/lib/consent/google-consent-mode";
  */
 const VIEW_ROOT_MARGIN = "0px 0px -50% 0px";
 
+/** MouseEvent.button の中ボタン */
+const MIDDLE_BUTTON = 1;
+
 /**
  * トップページの 1 セクションを包み、section_view / section_click を送る。
  *
  * 子（Server Component・Suspense 境界）はそのまま描画し、包むのはスタイルの無い div 1 枚だけ
  * （セクションの見た目と CLS 対策の skeleton には触れない）。
- * クリックは子孫の `<a href>` を委譲で拾う。ボタン（音声の再生など）は対象外で、再生は play_button が数える。
+ * クリックは子孫の `<a href>` を委譲で拾う。中クリック（新しいタブで開く）は click ではなく auxclick になるため
+ * 両方を受ける。右クリック（メニューを開くだけ）は数えない。ボタン（音声の再生など）は対象外で、再生は play_button が数える。
  */
 export function TrackedSection({
 	section,
@@ -49,6 +53,7 @@ export function TrackedSection({
 	}, [section]);
 
 	const handleClickCapture = (event: MouseEvent<HTMLDivElement>) => {
+		if (event.type === "auxclick" && event.button !== MIDDLE_BUTTON) return;
 		const anchor = (event.target as Element).closest?.("a[href]");
 		if (!anchor || !event.currentTarget.contains(anchor)) return;
 		const destination = toLinkDestination(
@@ -59,7 +64,12 @@ export function TrackedSection({
 	};
 
 	return (
-		<div ref={ref} data-home-section={section} onClickCapture={handleClickCapture}>
+		<div
+			ref={ref}
+			data-home-section={section}
+			onClickCapture={handleClickCapture}
+			onAuxClickCapture={handleClickCapture}
+		>
 			{children}
 		</div>
 	);
