@@ -4,10 +4,7 @@ import "@suzumina.click/ui/globals.css";
 import { Toaster } from "@suzumina.click/ui/components/ui/sonner";
 import { Suspense } from "react";
 import { GoogleAnalyticsScript } from "@/components/analytics/google-analytics-script";
-import {
-	GoogleTagManager,
-	GoogleTagManagerNoscript,
-} from "@/components/analytics/google-tag-manager";
+import { GoogleTagManager } from "@/components/analytics/google-tag-manager";
 import { AgeVerificationOverlayDeferred } from "@/components/consent/age-verification-overlay-deferred";
 import { ConsentModeScript } from "@/components/consent/consent-mode-script";
 import SiteFooter from "@/components/layout/site-footer";
@@ -110,6 +107,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 				<link rel="dns-prefetch" href="//i.ytimg.com" />
 				<link rel="dns-prefetch" href="//img.dlsite.jp" />
 
+				{/* ルートレイアウトの HTML は実行時 env で変えない。静的シェルはビルド時（NEXT_PUBLIC_* 未定義）に
+				 * prerender され、RSC は実行時（Cloud Run の env あり）に描かれるため、env で HTML を出し分けると
+				 * 必ずハイドレーション不一致（React #418）でルートごと client 再描画になる。
+				 * 下の 2 つは lazyOnload の next/script＝HTML を出さないので可。GTM の <noscript> iframe はこれで撤去した。
+				 * 回帰テストは app/__tests__/layout.test.tsx */}
 				<ConsentModeScript />
 				<GoogleAnalyticsScript />
 				<GoogleTagManager />
@@ -117,7 +119,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 			<body
 				className={`${mPlusRounded.className} min-h-screen flex flex-col antialiased gradient-bg`}
 			>
-				<GoogleTagManagerNoscript />
 				<AgeVerificationProvider>
 					<SessionProvider>
 						{/* SiteHeader 自体は静的シェル。auth() 解決は内部の Suspense 境界で局所化されている */}
