@@ -35,27 +35,3 @@ export function GoogleTagManager() {
 		</>
 	);
 }
-
-/**
- * Google Tag Manager (noscript) コンポーネント
- * JavaScript無効時のフォールバック
- */
-export function GoogleTagManagerNoscript() {
-	const gtmId = process.env.NEXT_PUBLIC_GTM_ID;
-
-	if (!gtmId) {
-		return null;
-	}
-
-	return (
-		<noscript>
-			<iframe
-				src={`https://www.googletagmanager.com/ns.html?id=${gtmId}`}
-				height="0"
-				width="0"
-				style={{ display: "none", visibility: "hidden" }}
-				title="Google Tag Manager"
-			/>
-		</noscript>
-	);
-}
