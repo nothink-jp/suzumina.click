@@ -137,7 +137,7 @@ jobs:
       - name: Run Chromatic
         if: steps.debounce.outputs.stale != 'true'
         id: chromatic
-        uses: chromaui/action@80379940a37537422d4419aa4c9578673b8bcd34 # v18.13.9
+        uses: chromaui/action@1efa9d9b64308fe98fcf1eb4629f12639ffac902 # v18.14.1
         with:
           projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
           workingDir: packages/ui
