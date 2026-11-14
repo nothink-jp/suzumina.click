@@ -380,10 +380,16 @@ async function main(): Promise<void> {
 	});
 
 	const startTime = Date.now();
-	const { results, failedWorkIds } = await batchFetchIndividualInfo(workIds, {
+	const { results, failedWorkIds, rateLimit } = await batchFetchIndividualInfo(workIds, {
 		maxConcurrent: opts.concurrency,
 		batchDelay: opts.delayMs,
 	});
+	if (rateLimit) {
+		logger.warn("レート制限（429）で打ち切りました。以降は取得できた分だけの結果です", {
+			未取得: rateLimit.skippedWorkIds.length,
+			retryAfterSeconds: rateLimit.retryAfterSeconds,
+		});
+	}
 	const elapsed = Date.now() - startTime;
 
 	// 保存先ディレクトリは事前に1回だけ作成する

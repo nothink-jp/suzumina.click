@@ -4,7 +4,12 @@
 
 import type { Mock } from "vitest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { batchFetchIndividualInfo, fetchIndividualWorkInfo } from "../individual-info-api-client";
+import * as logger from "../../../shared/logger";
+import {
+	batchFetchIndividualInfo,
+	DLsiteRateLimitError,
+	fetchIndividualWorkInfo,
+} from "../individual-info-api-client";
 
 // モックの設定
 vi.mock("../../../infrastructure/management/user-agent-manager", () => ({
@@ -110,22 +115,46 @@ describe("Individual Info API Client", () => {
 			expect(mockFetch).toHaveBeenCalledTimes(3);
 		});
 
-		it("429エラーの場合リトライ後に例外を投げる", async () => {
-			const mockResponse = {
+		it("429エラーの場合リトライせずに DLsiteRateLimitError を投げる（SPR-408）", async () => {
+			mockFetch.mockResolvedValue({
 				ok: false,
 				status: 429,
 				statusText: "Too Many Requests",
 				text: vi.fn().mockResolvedValue("Rate Limited"),
-				headers: new Headers(),
-			};
-			mockFetch.mockResolvedValue(mockResponse);
+				headers: new Headers({ "retry-after": "300", "cf-ray": "abc", "set-cookie": "secret=1" }),
+			});
 
-			await expect(fetchIndividualWorkInfo("RJ123456")).rejects.toThrow(
-				"Rate limited for RJ123456 - retry needed",
-			);
+			const error = await fetchIndividualWorkInfo("RJ123456").catch((e) => e);
 
-			// リトライが実行されたことを確認
-			expect(mockFetch).toHaveBeenCalledTimes(3);
+			expect(error).toBeInstanceOf(DLsiteRateLimitError);
+			expect(error.retryAfterSeconds).toBe(300);
+			// 制限は約5分続くため、再試行は負荷を増やすだけ
+			expect(mockFetch).toHaveBeenCalledTimes(1);
+			// 制限の窓を実測するためのヘッダだけを残す（set-cookie 等は残さない）
+			expect(logger.warn).toHaveBeenCalledWith("Individual Info API レート制限: RJ123456", {
+				rateLimitHeaders: { "retry-after": "300", "cf-ray": "abc" },
+			});
+		});
+
+		it("429 の Retry-After が HTTP 日付でも秒数に直し、無ければ undefined にする", async () => {
+			const respond = (headers: Headers) =>
+				mockFetch.mockResolvedValueOnce({
+					ok: false,
+					status: 429,
+					statusText: "Too Many Requests",
+					text: vi.fn().mockResolvedValue(""),
+					headers,
+				});
+
+			respond(new Headers({ "retry-after": new Date(Date.now() + 60_000).toUTCString() }));
+			const dated = await fetchIndividualWorkInfo("RJ123456").catch((e) => e);
+			expect(dated.retryAfterSeconds).toBeGreaterThan(55);
+			expect(dated.retryAfterSeconds).toBeLessThanOrEqual(60);
+
+			respond(new Headers());
+			const none = await fetchIndividualWorkInfo("RJ123456").catch((e) => e);
+			expect(none).toBeInstanceOf(DLsiteRateLimitError);
+			expect(none.retryAfterSeconds).toBeUndefined();
 		});
 
 		it("JSONパースエラーの場合nullを返す", async () => {
@@ -341,6 +370,79 @@ describe("Individual Info API Client", () => {
 			expect(result.results.size).toBe(3);
 			// バッチ間の待機時間を考慮して最低限の時間が経過していることを確認
 			expect(duration).toBeGreaterThan(90);
+		});
+
+		it("429 を受けたサブバッチで打ち切り、残りは呼ばずに rateLimit で返す（SPR-408）", async () => {
+			const ok = {
+				ok: true,
+				status: 200,
+				text: vi.fn().mockResolvedValue(JSON.stringify([mockWorkData1])),
+				headers: new Headers(),
+			};
+			const limited = {
+				ok: false,
+				status: 429,
+				statusText: "Too Many Requests",
+				text: vi.fn().mockResolvedValue(""),
+				headers: new Headers({ "retry-after": "120" }),
+			};
+			// サブバッチ1: 2件成功 / サブバッチ2: 1件成功 + 1件 429 / サブバッチ3: 呼ばれない
+			mockFetch
+				.mockResolvedValueOnce(ok)
+				.mockResolvedValueOnce(ok)
+				.mockResolvedValueOnce(ok)
+				.mockResolvedValueOnce(limited);
+
+			const result = await batchFetchIndividualInfo(["RJ1", "RJ2", "RJ3", "RJ4", "RJ5", "RJ6"], {
+				maxConcurrent: 2,
+				batchDelay: 0,
+			});
+
+			expect(mockFetch).toHaveBeenCalledTimes(4);
+			expect([...result.results.keys()]).toEqual(["RJ1", "RJ2", "RJ3"]);
+			// 429 を受けた分と未着手分は「失敗」ではない（次の run でやり直す）
+			expect(result.failedWorkIds).toEqual([]);
+			expect(result.rateLimit).toEqual({
+				retryAfterSeconds: 120,
+				skippedWorkIds: ["RJ4", "RJ5", "RJ6"],
+			});
+			// 打ち切り分は失敗率に数えない＝部分劣化アラートの契約ログを出さない
+			expect(logger.warn).not.toHaveBeenCalledWith(expect.stringContaining("API取得失敗が多数"));
+		});
+
+		it("打ち切り時の失敗率は、実際に呼んで結果が出た件数を分母にする", async () => {
+			const limited = {
+				ok: false,
+				status: 429,
+				statusText: "Too Many Requests",
+				text: vi.fn().mockResolvedValue(""),
+				headers: new Headers(),
+			};
+			// サブバッチ1: 2件とも 429 以外の失敗 / サブバッチ2: 429 で打ち切り
+			mockFetch
+				.mockRejectedValueOnce(new Error("Network error"))
+				.mockRejectedValueOnce(new Error("Network error"))
+				.mockResolvedValue(limited);
+
+			const workIds = Array.from({ length: 40 }, (_, i) => `RJ${i}`);
+			const result = await batchFetchIndividualInfo(workIds, { maxConcurrent: 2, batchDelay: 0 });
+
+			expect(result.failedWorkIds).toEqual(["RJ0", "RJ1"]);
+			// 40件を分母にすると 5% で閾値（10%）未満になり、部分劣化を見逃す
+			expect(logger.warn).toHaveBeenCalledWith("API取得失敗が多数: 2件 (失敗率100.0%)");
+		});
+
+		it("429 が無ければ rateLimit は undefined", async () => {
+			mockFetch.mockResolvedValue({
+				ok: true,
+				status: 200,
+				text: vi.fn().mockResolvedValue(JSON.stringify([mockWorkData1])),
+				headers: new Headers(),
+			});
+
+			const result = await batchFetchIndividualInfo(["RJ123456"]);
+
+			expect(result.rateLimit).toBeUndefined();
 		});
 
 		it("空の配列を渡した場合空の結果を返す", async () => {

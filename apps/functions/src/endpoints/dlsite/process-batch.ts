@@ -16,8 +16,13 @@ import * as logger from "../../shared/logger";
 
 // バッチ処理設定
 // 並列度の正本はこの定数（env では上書きしない＝SPR-340）
-const MAX_CONCURRENT_API_REQUESTS = 5; // 6 → 3 → 5（バッチ処理を効率化: 50件を10回の並列処理で実行）
-const API_REQUEST_DELAY = 400;
+// 2並列・1秒間隔＝約1.5リクエスト/秒。旧 5並列・400ms（約10リクエスト/秒）は 2026-11-13 から
+// DLsite のレート制限（429）に当たるようになった。約100件を13秒で投げた時点で制限に入り、
+// 一度入ると約5分続く（SPR-408）。**閾値は未確定**で、この値は「232件が約160秒で終わる範囲で
+// 十分に遅く」置いた暫定値。429 の応答ヘッダのログ（individual-info-api-client.ts）で窓が
+// 読めたら見直す。
+const MAX_CONCURRENT_API_REQUESTS = 2;
+const API_REQUEST_DELAY = 1000;
 export const BATCH_SIZE = 50; // 100 → 50に削減（エラー率低下とタイムアウト回避）
 // 実行時間制限（SPR-318）。関数の timeout は 540 秒（deploy-functions.yml が正本）で、
 // この 480 秒は **run 起動時点** からの経過で測る（準備処理＝作品ID収集の約35秒を含む）。
@@ -25,7 +30,7 @@ export const BATCH_SIZE = 50; // 100 → 50に削減（エラー率低下とタ�
 // break できず、当時の timeout 300 秒を構造的に超えていた。超過後もコンテナの JS は
 // 走り続けるがリクエスト外＝CPU が絞られ、平常 0.1〜0.4 秒で返る Individual Info API が
 // 15 秒のタイムアウトに掛かる（失敗率アラートの実発火要因）。
-// 残り 60 秒は「判定を通過した1バッチが走り切る」ぶんの余白（平常 約7秒/バッチ）。
+// 残り 60 秒は「判定を通過した1バッチが走り切る」ぶんの余白（平常 約35秒/バッチ）。
 export const MAX_EXECUTION_TIME = 480000;
 
 /**
@@ -37,6 +42,11 @@ export interface UnifiedFetchResult {
 	basicDataUpdated: number;
 	error?: string;
 	unificationComplete?: boolean;
+	/**
+	 * 429 でバッチを打ち切った場合のみ設定（SPR-408）。このバッチは未完了＝オーケストレータは
+	 * cursor を進めずに run を中断し、次の run が同じバッチからやり直す。
+	 */
+	rateLimit?: { retryAfterSeconds?: number };
 }
 
 /**
@@ -231,10 +241,22 @@ export async function processBatch(batchInfo: BatchProcessingInfo): Promise<Unif
 
 	try {
 		// 1. Individual Info API 呼び出し（バッチ）
-		const { results: apiDataMap, failedWorkIds } = await batchFetchIndividualInfo(workIds, {
+		const {
+			results: apiDataMap,
+			failedWorkIds,
+			rateLimit: rateLimitStop,
+		} = await batchFetchIndividualInfo(workIds, {
 			maxConcurrent: MAX_CONCURRENT_API_REQUESTS,
 			batchDelay: API_REQUEST_DELAY,
 		});
+		const rateLimit = rateLimitStop && { retryAfterSeconds: rateLimitStop.retryAfterSeconds };
+		const attemptedCount = workIds.length - (rateLimitStop?.skippedWorkIds.length ?? 0);
+
+		// 429 で1件も取れずに打ち切った場合は「APIレスポンスなし」（全面停止アラートの契約）を
+		// 出さない。原因が別（レート制限）で、専用の WARN をオーケストレータが出す。
+		if (apiDataMap.size === 0 && rateLimit) {
+			return { workCount: 0, apiCallCount: attemptedCount, basicDataUpdated: 0, rateLimit };
+		}
 
 		if (apiDataMap.size === 0) {
 			logger.warn(`バッチ ${batchNumber}: APIレスポンスなし`);
@@ -274,7 +296,7 @@ export async function processBatch(batchInfo: BatchProcessingInfo): Promise<Unif
 		logBatchComplete(batchNumber, workIds.length, apiDataMap.size, aggregatedResults);
 		logFullSweepMissedChanges(batchNumber, processingResults, wouldSkipStableIds);
 
-		return createBatchResult(aggregatedResults, workIds.length);
+		return { ...createBatchResult(aggregatedResults, attemptedCount), rateLimit };
 	} catch (error) {
 		logger.error(`バッチ ${batchNumber} 処理エラー:`, { error });
 		return {
