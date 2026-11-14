@@ -24,6 +24,7 @@ import {
 	classifyAndFilterStableTier,
 	classifyWorkTiers,
 	getStableCandidateIds,
+	splitStableDueByLimit,
 	type TieredWorkIds,
 	toDueWorkIds,
 } from "../../services/dlsite/work-tiering";
@@ -52,6 +53,25 @@ import {
 const DLSITE_RATE_LIMITED_ALERT = "dlsite_rate_limited";
 
 /**
+ * 1サイクルの due-set の上限件数（SPR-411）。1サイクルを1 run で完了させるための値。
+ *
+ * 1 run で取得できるのは10バッチ・500件まで（準備 約45秒 + 45秒/バッチで、10バッチ目の開始が
+ * 約450秒＝MAX_EXECUTION_TIME の 480秒以内。実測は 2026-11-14 16:03 JST の run）。準備が
+ * 30秒遅れると10バッチ目が次の run に回りサイクルが2 run に延びるので、1バッチぶん空けて
+ * 9バッチ・450件にしている。取得ペース（process-batch.ts）を変えたらここも見直す。
+ *
+ * サイクルが1 run で終わらないと、作品ID の再収集（新作の検知）と volatile の更新が
+ * サイクル完了まで止まる。ペースを落とす前（SPR-410 以前）は全件でも1 run に収まっていた。
+ */
+const MAX_DUE_WORKS_PER_CYCLE = 450;
+
+/**
+ * new + volatile だけで上限を超えるとき（大型セール中は volatile が 2,000件近くになる）でも
+ * stable に回す最低件数。0 にすると stable の当日分 priceHistory が1日じゅう取れなくなる。
+ */
+const MIN_STABLE_DUE_PER_CYCLE = 50;
+
+/**
  * SPR-229 Stage②: ティア差分によるdue-setフィルタの有効/無効フラグ。
  * 緊急時はこの環境変数をfalseにして再デプロイするだけで旧挙動（全件取得）に戻せる
  * （Firestoreスキーマ変更を伴わないためロールバックの障害はない）。
@@ -68,6 +88,11 @@ function isTierFilteringEnabled(): boolean {
  * stable ティア（変化の少ない旧作）は当日分 priceHistory が存在する場合のみスキップする。
  * `DLSITE_TIER_FILTERING_ENABLED=false` または `forceFullSweep=true`（週次フルスイープ）の
  * 場合はティア差分を無視して全件を対象にする。
+ *
+ * SPR-411: stable-due は1サイクルの上限（`MAX_DUE_WORKS_PER_CYCLE`）に収まる分だけを due-set に
+ * 入れ、残りは次のサイクルへ繰り延べる。毎日0時（JST）は stable が全件 due になるため、
+ * 上限が無いとそのサイクルが約5 run（10時間）に延びる。返す `tiered.stableDueIds` は
+ * 「今回取得する分」（繰り延べ分は含まない）。全件対象の2経路（上記）には上限を掛けない。
  *
  * read総数について: stable候補に対する`priceHistory/{today}`存在確認は、従来
  * `savePriceHistory`内で毎run・全作品に個別`get()`として発生していたread（重複防止チェック）を
@@ -97,17 +122,33 @@ export async function computeDueWorkIds(
 	const today = new Date();
 	const tiers = classifyWorkTiers(currentWorkIds, existingWorksMap, today);
 	const stableCandidateIds = getStableCandidateIds(currentWorkIds, tiers);
+	const jstDate = getJSTDate();
 	const priceHistoryTodayExists = await bulkCheckPriceHistoryExistsToday(
 		stableCandidateIds,
-		getJSTDate(),
+		jstDate,
 	);
-	const tiered = classifyAndFilterStableTier(currentWorkIds, tiers, priceHistoryTodayExists);
+	const classified = classifyAndFilterStableTier(currentWorkIds, tiers, priceHistoryTodayExists);
+
+	// 週次フルスイープは全件が対象なので、繰り延べない（stable_due は分類結果のまま）。
+	const stableLimit = forceFullSweep
+		? classified.stableDueIds.length
+		: Math.max(
+				MIN_STABLE_DUE_PER_CYCLE,
+				MAX_DUE_WORKS_PER_CYCLE - classified.newIds.length - classified.volatileIds.length,
+			);
+	const { selectedIds, deferredIds } = splitStableDueByLimit(
+		classified.stableDueIds,
+		stableLimit,
+		jstDate,
+	);
+	const tiered: TieredWorkIds = { ...classified, stableDueIds: selectedIds };
 
 	logger.info("ティア差分due-set計算完了(SPR-229 Stage②)", {
 		対象総数: currentWorkIds.length,
 		new: tiered.newIds.length,
 		volatile: tiered.volatileIds.length,
 		stable_due: tiered.stableDueIds.length,
+		stable_deferred: deferredIds.length,
 		stable_skip: tiered.stableSkippedIds.length,
 	});
 

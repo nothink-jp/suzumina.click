@@ -9,6 +9,7 @@ import {
 	classifyWorkTier,
 	classifyWorkTiers,
 	getStableCandidateIds,
+	splitStableDueByLimit,
 	toDueWorkIds,
 	VOLATILE_RELEASE_WINDOW_DAYS,
 } from "../work-tiering";
@@ -133,6 +134,53 @@ describe("classifyAndFilterStableTier", () => {
 
 		expect(result.newIds).toEqual(["RJ_UNKNOWN"]);
 		expect(result.stableDueIds).toEqual([]);
+	});
+});
+
+describe("splitStableDueByLimit（SPR-411）", () => {
+	const ids = Array.from({ length: 10 }, (_, i) => `RJ${String(i).padStart(3, "0")}`);
+
+	it("上限以下ならそのまま全件を取得対象にする（順番も変えない）", () => {
+		expect(splitStableDueByLimit(ids, 10, "2026-11-14")).toEqual({
+			selectedIds: ids,
+			deferredIds: [],
+		});
+	});
+
+	it("上限を超えたら上限件数だけ選び、残りを繰り延べる（合わせて元の集合）", () => {
+		const { selectedIds, deferredIds } = splitStableDueByLimit(ids, 4, "2026-11-14");
+
+		expect(selectedIds).toHaveLength(4);
+		expect(deferredIds).toHaveLength(6);
+		expect([...selectedIds, ...deferredIds].sort()).toEqual(ids);
+	});
+
+	it("同じ日は順番が変わらない＝取得済みが抜けた分だけ先へ進み、1日で一巡する", () => {
+		const first = splitStableDueByLimit(ids, 4, "2026-11-14");
+		// 次のサイクル: 取得済み（priceHistory あり）は stable-due から抜けている。入力順は scrape 順
+		const remaining = ids.filter((id) => !first.selectedIds.includes(id));
+		const second = splitStableDueByLimit(remaining, 4, "2026-11-14");
+		const third = splitStableDueByLimit(second.deferredIds, 4, "2026-11-14");
+
+		expect(second.selectedIds).toEqual(first.deferredIds.slice(0, 4));
+		expect(third.deferredIds).toEqual([]);
+		expect([...first.selectedIds, ...second.selectedIds, ...third.selectedIds].sort()).toEqual(ids);
+	});
+
+	it("日付が変わると選ぶ作品が変わる（取りこぼしが毎日同じ作品に偏らない）", () => {
+		const day1 = splitStableDueByLimit(ids, 4, "2026-11-14").selectedIds;
+		const day2 = splitStableDueByLimit(ids, 4, "2026-11-15").selectedIds;
+
+		expect(day1).not.toEqual(day2);
+		// scrape 順の先頭から取っているわけでもない
+		expect(day1).not.toEqual(ids.slice(0, 4));
+	});
+
+	it("上限が 0 以下なら全件を繰り延べる", () => {
+		const { selectedIds, deferredIds } = splitStableDueByLimit(ids, -5, "2026-11-14");
+
+		expect(selectedIds).toEqual([]);
+		expect(deferredIds).toHaveLength(10);
 	});
 });
 
