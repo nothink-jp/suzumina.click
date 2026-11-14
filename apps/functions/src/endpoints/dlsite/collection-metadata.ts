@@ -126,7 +126,7 @@ export async function initializeNewBatchProcessing(
 		`新規バッチ処理開始: 総作品数=${allWorkIds.length}, バッチ数=${batches.length}, バッチサイズ=${BATCH_SIZE}`,
 	);
 	logger.info(
-		`処理時間制限: ${MAX_EXECUTION_TIME / 1000}秒, 予想処理時間: ${batches.length * 30}秒（30秒/バッチ）`,
+		`処理時間制限: ${MAX_EXECUTION_TIME / 1000}秒, 予想処理時間: ${batches.length * 45}秒（45秒/バッチ）`,
 	);
 
 	await updateUnifiedMetadata({

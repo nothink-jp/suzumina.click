@@ -427,7 +427,7 @@ export async function runUnifiedDataCollection(
 	resetCreatorRecomputeQueue();
 
 	// 実行時間の計測は run 起動時点から始める（SPR-318）。準備処理（メタデータ読み・
-	// 作品ID収集）に約35秒かかるため、準備完了後に測ると MAX_EXECUTION_TIME が
+	// 作品ID収集・既存作品の読み取り）に約45秒かかるため、準備完了後に測ると MAX_EXECUTION_TIME が
 	// そのまま関数 timeout との差になってくれない。
 	const startTime = Date.now();
 
