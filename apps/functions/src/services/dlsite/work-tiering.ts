@@ -143,6 +143,49 @@ export function classifyAndFilterStableTier(
 }
 
 /**
+ * 文字列の 32bit ハッシュ（FNV-1a）。並び順を決めるためだけに使う（暗号用途ではない）
+ */
+function hashString(value: string): number {
+	let hash = 0x811c9dc5;
+	for (let i = 0; i < value.length; i++) {
+		hash ^= value.charCodeAt(i);
+		hash = Math.imul(hash, 0x01000193);
+	}
+	return hash >>> 0;
+}
+
+/**
+ * stable の due を「今回のサイクルで取得する分」と「次のサイクルへ繰り延べる分」に分ける（SPR-411）
+ *
+ * 繰り延べた作品は当日分 priceHistory が無いままなので、次のサイクルでも stable-due として
+ * 現れる（状態は持たない＝正本は priceHistory の有無）。1日のうちにサイクルを重ねて一巡させる。
+ *
+ * 取得する順番は `dateKey` ごとに決まる疑似ランダム順にする。scrape 順の先頭から取ると、
+ * 1日で一巡しきれなかった日に取りこぼすのが毎回同じ（末尾の）作品になるため。
+ * 同じ日のうちは順番が変わらないので、取得済みの作品が抜けた分だけ先へ進む。
+ *
+ * @param stableDueIds stable のうち当日分 priceHistory が無い作品ID
+ * @param limit 今回のサイクルで取得する上限件数
+ * @param dateKey 順番の種にする日付（JST の YYYY-MM-DD）
+ */
+export function splitStableDueByLimit(
+	stableDueIds: string[],
+	limit: number,
+	dateKey: string,
+): { selectedIds: string[]; deferredIds: string[] } {
+	if (stableDueIds.length <= limit) {
+		return { selectedIds: stableDueIds, deferredIds: [] };
+	}
+
+	const ordered = stableDueIds
+		.map((id) => ({ id, order: hashString(`${dateKey}:${id}`) }))
+		.sort((a, b) => a.order - b.order || a.id.localeCompare(b.id))
+		.map(({ id }) => id);
+	const cut = Math.max(0, limit);
+	return { selectedIds: ordered.slice(0, cut), deferredIds: ordered.slice(cut) };
+}
+
+/**
  * ティア分類の結果から、今回のrunで実際に取得すべき作品ID（due-set）を組み立てる
  *
  * 並び順は new → volatile → stable の順を保つ（新作fast-lane・work-ordering.tsの意図を踏襲）。

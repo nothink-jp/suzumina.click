@@ -35,6 +35,7 @@ export interface CollectionMetadata {
 	tierBreakdown?: {
 		newCount: number;
 		volatileCount: number;
+		/** このサイクルで取得する stable の件数（次のサイクルへ繰り延べた分は含まない＝SPR-411） */
 		stableDueCount: number;
 		stableSkippedCount: number;
 	};

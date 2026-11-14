@@ -178,6 +178,65 @@ describe("computeDueWorkIds", () => {
 		expect(result.tiered?.stableSkippedIds).toEqual(["RJ_STABLE_SKIP"]);
 	});
 
+	describe("stable-due の上限（SPR-411）", () => {
+		const stableIds = Array.from({ length: 600 }, (_, i) => `RJ_S${i}`);
+		const volatileIds = Array.from({ length: 250 }, (_, i) => `RJ_V${i}`);
+		const worksMap = (volatile: string[]) =>
+			new Map<string, WorkDocument>([
+				...stableIds.map((id) => [id, makeWork({ productId: id })] as const),
+				...volatile.map(
+					(id) =>
+						[
+							id,
+							makeWork({ productId: id, salesStatus: { isSale: true, isSoldOut: false } }),
+						] as const,
+				),
+			]);
+
+		it("due-set を1 run に収まる 450 件に抑え、超えた stable は繰り延べる", async () => {
+			vi.mocked(bulkCheckPriceHistoryExistsToday).mockResolvedValue(new Set());
+
+			const result = await computeDueWorkIds(
+				[...volatileIds, ...stableIds],
+				worksMap(volatileIds),
+				false,
+			);
+
+			expect(result.dueWorkIds).toHaveLength(450);
+			// volatile は全件残り、削られるのは stable だけ
+			expect(result.dueWorkIds.slice(0, 250)).toEqual(volatileIds);
+			expect(result.tiered?.stableDueIds).toHaveLength(200);
+			expect(logger.info).toHaveBeenCalledWith(
+				"ティア差分due-set計算完了(SPR-229 Stage②)",
+				expect.objectContaining({ stable_due: 200, stable_deferred: 400 }),
+			);
+		});
+
+		it("new + volatile だけで上限を超えても、stable を最低 50 件は取得する", async () => {
+			vi.mocked(bulkCheckPriceHistoryExistsToday).mockResolvedValue(new Set());
+			const manyVolatile = Array.from({ length: 500 }, (_, i) => `RJ_V${i}`);
+
+			const result = await computeDueWorkIds(
+				[...manyVolatile, ...stableIds],
+				worksMap(manyVolatile),
+				false,
+			);
+
+			expect(result.tiered?.volatileIds).toHaveLength(500);
+			expect(result.tiered?.stableDueIds).toHaveLength(50);
+		});
+
+		it("週次フルスイープには上限を掛けない", async () => {
+			vi.mocked(bulkCheckPriceHistoryExistsToday).mockResolvedValue(new Set());
+			const all = [...volatileIds, ...stableIds];
+
+			const result = await computeDueWorkIds(all, worksMap(volatileIds), true);
+
+			expect(result.dueWorkIds).toEqual(all);
+			expect(result.tiered?.stableDueIds).toHaveLength(600);
+		});
+	});
+
 	it("forceFullSweep=trueの場合、stable(skip)も含め全件をdue-setにするがtieredは計算する", async () => {
 		const existingWorksMap = new Map<string, WorkDocument>([
 			["RJ_STABLE_SKIP", makeWork({ productId: "RJ_STABLE_SKIP" })],
