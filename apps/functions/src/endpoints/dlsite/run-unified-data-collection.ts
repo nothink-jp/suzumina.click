@@ -58,12 +58,13 @@ const DLSITE_RATE_LIMITED_ALERT = "dlsite_rate_limited";
  * 1 run で取得できるのは10バッチ・500件まで（準備 約45秒 + 45秒/バッチで、10バッチ目の開始が
  * 約450秒＝MAX_EXECUTION_TIME の 480秒以内。実測は 2026-11-14 16:03 JST の run）。準備が
  * 30秒遅れると10バッチ目が次の run に回りサイクルが2 run に延びるので、1バッチぶん空けて
- * 9バッチ・450件にしている。取得ペース（process-batch.ts）を変えたらここも見直す。
+ * 9バッチにしている。バッチ数の 9 は 45秒/バッチのペースから来ているので、取得ペース
+ * （process-batch.ts）を変えたらここも見直す。
  *
  * サイクルが1 run で終わらないと、作品ID の再収集（新作の検知）と volatile の更新が
  * サイクル完了まで止まる。ペースを落とす前（SPR-410 以前）は全件でも1 run に収まっていた。
  */
-const MAX_DUE_WORKS_PER_CYCLE = 450;
+const MAX_DUE_WORKS_PER_CYCLE = 9 * BATCH_SIZE;
 
 /**
  * new + volatile だけで上限を超えるとき（大型セール中は volatile が 2,000件近くになる）でも
@@ -93,6 +94,10 @@ function isTierFilteringEnabled(): boolean {
  * 入れ、残りは次のサイクルへ繰り延べる。毎日0時（JST）は stable が全件 due になるため、
  * 上限が無いとそのサイクルが約5 run（10時間）に延びる。返す `tiered.stableDueIds` は
  * 「今回取得する分」（繰り延べ分は含まない）。全件対象の2経路（上記）には上限を掛けない。
+ *
+ * 受け入れている代償: stable の作品がセールに入ったことに気づくのは、その作品の順番が回って
+ * きたとき（ティア判定は前回取得した `salesStatus.isSale` を見るため、取得するまで stable の
+ * まま）。0時開始のセールの検知は「0時台の1 run」から「その日のどこか」に遅れる。
  *
  * read総数について: stable候補に対する`priceHistory/{today}`存在確認は、従来
  * `savePriceHistory`内で毎run・全作品に個別`get()`として発生していたread（重複防止チェック）を
