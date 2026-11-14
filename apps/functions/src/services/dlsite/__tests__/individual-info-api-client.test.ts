@@ -410,6 +410,28 @@ describe("Individual Info API Client", () => {
 			expect(logger.warn).not.toHaveBeenCalledWith(expect.stringContaining("API取得失敗が多数"));
 		});
 
+		it("打ち切り時の失敗率は、実際に呼んで結果が出た件数を分母にする", async () => {
+			const limited = {
+				ok: false,
+				status: 429,
+				statusText: "Too Many Requests",
+				text: vi.fn().mockResolvedValue(""),
+				headers: new Headers(),
+			};
+			// サブバッチ1: 2件とも 429 以外の失敗 / サブバッチ2: 429 で打ち切り
+			mockFetch
+				.mockRejectedValueOnce(new Error("Network error"))
+				.mockRejectedValueOnce(new Error("Network error"))
+				.mockResolvedValue(limited);
+
+			const workIds = Array.from({ length: 40 }, (_, i) => `RJ${i}`);
+			const result = await batchFetchIndividualInfo(workIds, { maxConcurrent: 2, batchDelay: 0 });
+
+			expect(result.failedWorkIds).toEqual(["RJ0", "RJ1"]);
+			// 40件を分母にすると 5% で閾値（10%）未満になり、部分劣化を見逃す
+			expect(logger.warn).toHaveBeenCalledWith("API取得失敗が多数: 2件 (失敗率100.0%)");
+		});
+
 		it("429 が無ければ rateLimit は undefined", async () => {
 			mockFetch.mockResolvedValue({
 				ok: true,

@@ -589,10 +589,13 @@ resource "google_monitoring_alert_policy" "dlsite_rate_limited" {
        ```
     2. 429 の応答ヘッダ（制限の窓の手掛かり。jsonPayload.rateLimitHeaders）:
        ```bash
-       gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="fetchdlsiteunifieddata" AND jsonPayload.message:"レート制限"' --limit=20 --format=json
+       gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="fetchdlsiteunifieddata" AND jsonPayload.rateLimitHeaders:*' --limit=20 --format=json
        ```
     3. 毎 run 同じ位置で止まる場合はリクエストペースが閾値を超えている。
        MAX_CONCURRENT_API_REQUESTS / API_REQUEST_DELAY（endpoints/dlsite/process-batch.ts）を下げる。
+       **同じ batchNumber で連続して発火している場合はサイクルが止まっている**。cursor はバッチ単位
+       （50件）でしか進まないため、1回の制限の窓で通る件数が 50 件未満だと同じバッチを毎 run
+       取り直して先へ進めない。その間は作品ID の再収集（新作の検知）も走らない。
     4. 1件目から 429 になる場合は制限が掛かったままか、アクセス自体がブロックされている。
        DLsite の稼働状況と、他の経路（AJAX の作品ID収集）が通っているかを確認する。
 

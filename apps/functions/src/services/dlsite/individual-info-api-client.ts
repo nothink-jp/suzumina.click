@@ -300,6 +300,20 @@ export async function fetchIndividualWorkInfo(
 }
 
 /**
+ * 失敗率が 10% を超えたら集約 WARN を出す（部分劣化アラートの契約ログ）
+ *
+ * @param attemptedCount 実際に呼んで結果が出た件数。429 で打ち切った分は含めない
+ *   （含めると失敗率が薄まり、打ち切り前に起きた部分劣化を見逃す）
+ */
+function warnIfFailureRateHigh(failedCount: number, attemptedCount: number): void {
+	if (failedCount > attemptedCount * 0.1) {
+		logger.warn(
+			`API取得失敗が多数: ${failedCount}件 (失敗率${((failedCount / attemptedCount) * 100).toFixed(1)}%)`,
+		);
+	}
+}
+
+/**
  * `batchFetchIndividualInfo` が 429 で打ち切ったときの情報
  */
 export interface RateLimitStop {
@@ -399,12 +413,10 @@ export async function batchFetchIndividualInfo(
 		}
 	}
 
-	// 失敗が多い場合のみログ出力
-	if (failedWorkIds.length > workIds.length * 0.1) {
-		logger.warn(
-			`API取得失敗が多数: ${failedWorkIds.length}件 (失敗率${((failedWorkIds.length / workIds.length) * 100).toFixed(1)}%)`,
-		);
-	}
+	warnIfFailureRateHigh(
+		failedWorkIds.length,
+		workIds.length - (rateLimit?.skippedWorkIds.length ?? 0),
+	);
 
 	// スキーマドリフト観測（SPR-140）: 既知集合に無い新フィールドが出たら WARN（重複抑制・例外は無視）
 	recordSchemaDriftForBatch(
