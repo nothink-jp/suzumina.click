@@ -46,6 +46,12 @@ import {
 } from "./process-batch";
 
 /**
+ * レート制限で run を中断したときの WARN に付ける `alert` キー（SPR-408）。
+ * terraform/monitoring_dlsite.tf の log-based メトリクスのフィルタと一致させる。
+ */
+const DLSITE_RATE_LIMITED_ALERT = "dlsite_rate_limited";
+
+/**
  * SPR-229 Stage②: ティア差分によるdue-setフィルタの有効/無効フラグ。
  * 緊急時はこの環境変数をfalseにして再デプロイするだけで旧挙動（全件取得）に戻せる
  * （Firestoreスキーマ変更を伴わないためロールバックの障害はない）。
@@ -180,6 +186,28 @@ async function executeBatchLoop(
 		const result = await processBatch(batchInfo);
 		totalUpdated += result.basicDataUpdated;
 		totalApiCalls += result.apiCallCount;
+
+		// レート制限（429）: このバッチは未完了。cursor を進めずに中断し、次の run が同じバッチから
+		// やり直す（取れた分は保存済みで、再取得しても差分なしでスキップされる）。制限は約5分続くので
+		// run 内では待たない（SPR-408）。
+		if (result.rateLimit) {
+			logger.warn("DLsite レート制限により run を中断", {
+				alert: DLSITE_RATE_LIMITED_ALERT,
+				batchNumber: i + 1,
+				totalBatches: batches.length,
+				retryAfterSeconds: result.rateLimit.retryAfterSeconds,
+			});
+			allBatchesCompleted = false;
+
+			await updateUnifiedMetadata({
+				currentBatch: i,
+				processedWorks: i * BATCH_SIZE,
+				basicDataUpdated: (metadata.basicDataUpdated || 0) + totalUpdated,
+				lastError: "レート制限により中断",
+			});
+			break;
+		}
+
 		completedBatches.push(i);
 
 		// メタデータ更新

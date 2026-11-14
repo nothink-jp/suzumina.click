@@ -523,6 +523,92 @@ resource "google_monitoring_alert_policy" "dlsite_api_failure_rate_high" {
   ]
 }
 
+# ログベースメトリクス - レート制限による run 中断（SPR-408）
+# Individual Info API が 429 を返すと、クライアントはリトライせずにその run の残りを打ち切り、
+# オーケストレータが jsonPayload.alert="dlsite_rate_limited" 付きの WARN を出す
+# （endpoints/dlsite/run-unified-data-collection.ts）。打ち切った分は次の run が同じバッチから
+# やり直すので取りこぼしにはならないが、サイクルが複数 run に延びる＝鮮度が落ちる。
+# 打ち切り時は「API取得失敗が多数」「APIレスポンスなし」を出さないため、429 の検知はこの
+# メトリクスが正本（dlsite_api_failure_rate_high / dlsite_api_batch_all_failed では拾えない）。
+resource "google_logging_metric" "dlsite_rate_limited" {
+  name    = "dlsite_rate_limited"
+  project = var.gcp_project_id
+
+  filter = <<-EOT
+    resource.type="cloud_run_revision"
+    resource.labels.service_name="fetchdlsiteunifieddata"
+    jsonPayload.alert="dlsite_rate_limited"
+  EOT
+
+  metric_descriptor {
+    metric_kind  = "DELTA"
+    value_type   = "INT64"
+    display_name = "DLsite Rate Limited"
+  }
+}
+
+# DLsite レート制限アラート（429 で run を中断）
+resource "google_monitoring_alert_policy" "dlsite_rate_limited" {
+  display_name = "DLsite Rate Limited Alert"
+  project      = var.gcp_project_id
+  combiner     = "OR"
+
+  conditions {
+    display_name = "レート制限（429）による run 中断を検出"
+
+    condition_threshold {
+      filter = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.dlsite_rate_limited.id}\" resource.type=\"cloud_run_revision\""
+
+      aggregations {
+        alignment_period   = "300s"
+        per_series_aligner = "ALIGN_RATE"
+      }
+
+      comparison      = "COMPARISON_GT"
+      threshold_value = 0
+      duration        = "0s"
+    }
+  }
+
+  notification_channels = [
+    google_monitoring_notification_channel.email.name
+  ]
+
+  documentation {
+    content   = <<-EOT
+    # DLsite Individual Info API レート制限（429）
+
+    Individual Info API が 429 を返したため、run の残りを打ち切りました。打ち切った分は
+    次の run が同じバッチからやり直します（取りこぼしにはならない）。手動介入は原則不要ですが、
+    毎 run 発火する場合はサイクルが完走できていないので要対応です。
+
+    ## 確認事項
+    1. どのバッチで止まったか・Retry-After の値:
+       ```bash
+       gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="fetchdlsiteunifieddata" AND jsonPayload.alert="dlsite_rate_limited"' --limit=20 --format=json
+       ```
+    2. 429 の応答ヘッダ（制限の窓の手掛かり。jsonPayload.rateLimitHeaders）:
+       ```bash
+       gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="fetchdlsiteunifieddata" AND jsonPayload.message:"レート制限"' --limit=20 --format=json
+       ```
+    3. 毎 run 同じ位置で止まる場合はリクエストペースが閾値を超えている。
+       MAX_CONCURRENT_API_REQUESTS / API_REQUEST_DELAY（endpoints/dlsite/process-batch.ts）を下げる。
+    4. 1件目から 429 になる場合は制限が掛かったままか、アクセス自体がブロックされている。
+       DLsite の稼働状況と、他の経路（AJAX の作品ID収集）が通っているかを確認する。
+
+    ## 背景（SPR-408）
+    2026-11-13 に、約10リクエスト/秒のペースで約100件を取得した時点から 429 になり始めた。
+    一度制限に入ると約5分続く。閾値は未確定。
+    EOT
+    mime_type = "text/markdown"
+  }
+
+  depends_on = [
+    google_monitoring_notification_channel.email,
+    google_logging_metric.dlsite_rate_limited
+  ]
+}
+
 # ログベースメトリクス - スキーマドリフト（SPR-140 / SPR-144）
 # 本番フェッチ経路で、既知フィールド集合に無い新フィールドが出現すると
 # logger.warn が jsonPayload.alert="dlsite_schema_drift" 付きで出力される。

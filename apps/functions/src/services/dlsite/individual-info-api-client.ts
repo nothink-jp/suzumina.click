@@ -14,16 +14,66 @@ import { recordSchemaDriftForBatch } from "./schema-drift";
 const INDIVIDUAL_INFO_API_BASE_URL = "https://www.dlsite.com/maniax/api/=/product.json";
 // タイムアウトを 30 秒から詰めているのは、リトライ1回分を足しても1作品あたりの
 // 最悪待ち時間（15s + backoff 1s + 15s = 31s）が従来の 30s から増えないようにするため。
-// バッチは Cloud Functions の 300 秒上限の中で 10 サブバッチ（BATCH_SIZE=50 /
-// maxConcurrent=5）を直列に回すので、1作品の最悪値がそのまま run の生死に効く。
+// サブバッチを直列に回すので、1作品の最悪値がそのまま run の実行時間に効く
+// （並列数・間隔・実行時間制限の正本は endpoints/dlsite/process-batch.ts）。
 // 実測レイテンシは 0.08〜0.37 秒（2026-08-22・タイムアウトした作品で計測）＝15 秒でも 40 倍以上の余裕がある。
 const REQUEST_TIMEOUT_MS = 15000;
 
 // リトライ上限はエラーの「1回あたりのコスト」で分ける。
-// 429/5xx は即座にレスポンスが返るため2回まで許容できるが、タイムアウトは1回で
+// 5xx は即座にレスポンスが返るため2回まで許容できるが、タイムアウトは1回で
 // REQUEST_TIMEOUT_MS を丸ごと消費するため1回に抑える。
+// 429 はリトライしない（DLsiteRateLimitError 参照）。
 const MAX_RETRIES_HTTP = 2;
 const MAX_RETRIES_TIMEOUT = 1;
+
+/**
+ * 429（レート制限）を呼び出し元へ伝えるエラー
+ *
+ * リトライ対象にしない。DLsite の制限は一度掛かると約5分続き、その間 1〜2 秒後の再試行は
+ * すべて 429 で返る（2026-11-13 実測・SPR-408）。再試行は制限中の負荷を増やすだけなので、
+ * `batchFetchIndividualInfo` が残りを打ち切って次の run に回す。
+ */
+export class DLsiteRateLimitError extends Error {
+	override readonly name = "DLsiteRateLimitError";
+
+	constructor(
+		workId: string,
+		/** Retry-After ヘッダの秒数（ヘッダが無い・解釈できない場合は undefined） */
+		readonly retryAfterSeconds?: number,
+	) {
+		super(`Rate limited for ${workId}`);
+	}
+}
+
+/**
+ * Retry-After ヘッダを秒数に直す（秒数表記と HTTP 日付表記の両方を受ける）
+ */
+function parseRetryAfterSeconds(value: string | null): number | undefined {
+	if (!value) {
+		return undefined;
+	}
+	const seconds = Number(value);
+	if (Number.isFinite(seconds)) {
+		return Math.max(0, seconds);
+	}
+	const date = Date.parse(value);
+	return Number.isNaN(date) ? undefined : Math.max(0, Math.ceil((date - Date.now()) / 1000));
+}
+
+/**
+ * 制限の窓を実測するために残す応答ヘッダ（SPR-408）
+ *
+ * 全ヘッダは残さない（set-cookie 等を巻き込まない）。制限の種類と解除時刻が読めるものだけ。
+ */
+function pickRateLimitHeaders(headers: Headers): Record<string, string> {
+	const picked: Record<string, string> = {};
+	headers.forEach((value, key) => {
+		if (key === "retry-after" || key === "server" || /^(x-)?ratelimit|^cf-/.test(key)) {
+			picked[key] = value;
+		}
+	});
+	return picked;
+}
 
 /**
  * Individual Info API リクエストオプション
@@ -56,10 +106,15 @@ function handleHttpError(
 		throw new Error(`API access denied for ${workId}`);
 	}
 
-	// 429: レート制限（リトライ可能）
+	// 429: レート制限（リトライしない＝DLsiteRateLimitError 参照）
 	if (response.status === 429) {
-		logger.warn(`Individual Info API レート制限: ${workId}`);
-		throw new Error(`Rate limited for ${workId} - retry needed`);
+		logger.warn(`Individual Info API レート制限: ${workId}`, {
+			rateLimitHeaders: pickRateLimitHeaders(response.headers),
+		});
+		throw new DLsiteRateLimitError(
+			workId,
+			parseRetryAfterSeconds(response.headers.get("retry-after")),
+		);
 	}
 
 	// 5xx: サーバーエラー（リトライ可能）
@@ -150,7 +205,7 @@ function getMaxRetries(error: unknown): number {
 		return 0;
 	}
 
-	// 429 / 5xx は handleHttpError が "retry needed" を付けて投げる
+	// 5xx は handleHttpError が "retry needed" を付けて投げる
 	if (error.message.includes("retry needed")) {
 		return MAX_RETRIES_HTTP;
 	}
@@ -245,11 +300,56 @@ export async function fetchIndividualWorkInfo(
 }
 
 /**
+ * `batchFetchIndividualInfo` が 429 で打ち切ったときの情報
+ */
+export interface RateLimitStop {
+	/** Retry-After ヘッダの秒数（無ければ undefined） */
+	retryAfterSeconds?: number;
+	/** 取得していない作品ID（429 を受けた分 + 未着手分）。results にも failedWorkIds にも入らない */
+	skippedWorkIds: string[];
+}
+
+interface FetchOutcome {
+	workId: string;
+	data: DLsiteApiResponse | null;
+	rateLimitError?: DLsiteRateLimitError;
+}
+
+/**
+ * 1作品を取得し、例外を投げずに結果へ畳む（個別失敗ログは省略＝バッチ単位で記録）
+ */
+async function fetchOutcome(
+	workId: string,
+	apiOptions: IndividualInfoAPIOptions,
+): Promise<FetchOutcome> {
+	try {
+		return { workId, data: await fetchIndividualWorkInfo(workId, apiOptions) };
+	} catch (error) {
+		return {
+			workId,
+			data: null,
+			rateLimitError: error instanceof DLsiteRateLimitError ? error : undefined,
+		};
+	}
+}
+
+function toRateLimitStop(rateLimited: FetchOutcome[], unattemptedWorkIds: string[]): RateLimitStop {
+	return {
+		retryAfterSeconds: rateLimited
+			.map((r) => r.rateLimitError?.retryAfterSeconds)
+			.find((seconds) => seconds !== undefined),
+		skippedWorkIds: [...rateLimited.map((r) => r.workId), ...unattemptedWorkIds],
+	};
+}
+
+/**
  * バッチでIndividual Info APIを呼び出し
+ *
+ * 429 を1件でも受けたら、そのサブバッチで打ち切って `rateLimit` を返す（残りは呼ばない）。
  *
  * @param workIds - 作品IDの配列
  * @param options - API呼び出しオプション
- * @returns 取得結果と失敗作品IDのMap
+ * @returns 取得結果・失敗作品ID・429 で打ち切った場合はその情報
  */
 export async function batchFetchIndividualInfo(
 	workIds: string[],
@@ -262,10 +362,12 @@ export async function batchFetchIndividualInfo(
 ): Promise<{
 	results: Map<string, DLsiteApiResponse>;
 	failedWorkIds: string[];
+	rateLimit?: RateLimitStop;
 }> {
 	const { maxConcurrent = 3, batchDelay = 800, ...apiOptions } = options;
 	const results = new Map<string, DLsiteApiResponse>();
 	const failedWorkIds: string[] = [];
+	let rateLimit: RateLimitStop | undefined;
 
 	// バッチに分割
 	const batches: string[][] = [];
@@ -274,39 +376,26 @@ export async function batchFetchIndividualInfo(
 	}
 
 	for (const [batchIndex, batch] of batches.entries()) {
-		try {
-			// 並列でAPIを呼び出し
-			const promises = batch.map(async (workId) => {
-				try {
-					const data = await fetchIndividualWorkInfo(workId, apiOptions);
-					return { workId, data };
-				} catch (_error) {
-					// 個別失敗ログは省略（バッチ単位で記録）
-					return { workId, data: null };
-				}
-			});
+		const outcomes = await Promise.all(batch.map((workId) => fetchOutcome(workId, apiOptions)));
 
-			const batchResults = await Promise.all(promises);
-
-			// 成功・失敗を分類
-			for (const { workId, data } of batchResults) {
-				if (data) {
-					results.set(workId, data);
-				} else {
-					failedWorkIds.push(workId);
-				}
+		// 成功・失敗・レート制限を分類
+		for (const { workId, data, rateLimitError } of outcomes) {
+			if (data) {
+				results.set(workId, data);
+			} else if (!rateLimitError) {
+				failedWorkIds.push(workId);
 			}
+		}
 
-			// レート制限対応
-			if (batchIndex < batches.length - 1) {
-				await new Promise((resolve) => setTimeout(resolve, batchDelay));
-			}
-		} catch (error) {
-			logger.error(`バッチ ${batchIndex + 1} でエラー:`, {
-				error,
-			});
-			// バッチ全体が失敗した場合、そのバッチの全作品IDを失敗として記録
-			failedWorkIds.push(...batch);
+		const rateLimited = outcomes.filter((r) => r.rateLimitError);
+		if (rateLimited.length > 0) {
+			rateLimit = toRateLimitStop(rateLimited, batches.slice(batchIndex + 1).flat());
+			break;
+		}
+
+		// レート制限対応
+		if (batchIndex < batches.length - 1) {
+			await new Promise((resolve) => setTimeout(resolve, batchDelay));
 		}
 	}
 
@@ -323,5 +412,5 @@ export async function batchFetchIndividualInfo(
 		{ batchSize: workIds.length },
 	);
 
-	return { results, failedWorkIds };
+	return { results, failedWorkIds, rateLimit };
 }

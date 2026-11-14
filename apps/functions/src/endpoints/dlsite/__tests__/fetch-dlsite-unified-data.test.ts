@@ -407,6 +407,58 @@ describe("fetchDLsiteUnifiedData（エントリポイント統合）", () => {
 		expect(batchFetchIndividualInfo).not.toHaveBeenCalled();
 	});
 
+	describe("レート制限（SPR-408）", () => {
+		it("429 で打ち切られたら cursor を進めずに中断し、alert 付きの WARN を出す", async () => {
+			vi.mocked(collectWorkIdsForProduction).mockResolvedValue(["RJ001", "RJ002"]);
+			vi.mocked(batchFetchIndividualInfo).mockResolvedValue({
+				results: new Map([["RJ001", makeApiResponse("RJ001")]]),
+				failedWorkIds: [],
+				rateLimit: { retryAfterSeconds: 300, skippedWorkIds: ["RJ002"] },
+			});
+
+			await fetchDLsiteUnifiedData(pubsubEvent());
+
+			// 取れた分は保存する
+			expect(processBatchUnifiedDLsiteData).toHaveBeenCalledWith(
+				[makeApiResponse("RJ001")],
+				expect.any(Object),
+			);
+			expect(logger.warn).toHaveBeenCalledWith(
+				"DLsite レート制限により run を中断",
+				expect.objectContaining({
+					alert: "dlsite_rate_limited",
+					batchNumber: 1,
+					retryAfterSeconds: 300,
+				}),
+			);
+			// 次の run が同じバッチからやり直す
+			expect(updateMock).toHaveBeenCalledWith(
+				expect.objectContaining({ currentBatch: 0, lastError: "レート制限により中断" }),
+			);
+			// サイクルは完了扱いにしない
+			expect(logger.info).not.toHaveBeenCalledWith("全バッチ処理完了", expect.anything());
+		});
+
+		it("1件も取れずに打ち切られても「APIレスポンスなし」（全面停止アラートの契約）は出さない", async () => {
+			vi.mocked(collectWorkIdsForProduction).mockResolvedValue(["RJ001"]);
+			vi.mocked(batchFetchIndividualInfo).mockResolvedValue({
+				results: new Map(),
+				failedWorkIds: [],
+				rateLimit: { skippedWorkIds: ["RJ001"] },
+			});
+
+			await fetchDLsiteUnifiedData(pubsubEvent());
+
+			expect(processBatchUnifiedDLsiteData).not.toHaveBeenCalled();
+			expect(logger.warn).not.toHaveBeenCalledWith(expect.stringContaining("APIレスポンスなし"));
+			expect(logger.warn).toHaveBeenCalledWith(
+				"DLsite レート制限により run を中断",
+				expect.objectContaining({ alert: "dlsite_rate_limited" }),
+			);
+			expect(updateMock).toHaveBeenCalledWith(expect.objectContaining({ currentBatch: 0 }));
+		});
+	});
+
 	describe("重複配信（SPR-368）", () => {
 		it("初めて見る event.id なら記録してから run を走らせ、開始ログに eventId を出す", async () => {
 			vi.mocked(collectWorkIdsForProduction).mockResolvedValue(["RJ001"]);
