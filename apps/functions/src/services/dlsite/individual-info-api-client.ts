@@ -27,16 +27,28 @@ const MAX_RETRIES_HTTP = 2;
 const MAX_RETRIES_TIMEOUT = 1;
 
 /**
+ * リトライ前の待ち時間（`retryCount` は 0 始まり＝1回目のリトライ前は 1秒、2回目は 2秒）
+ *
+ * `fetchIndividualWorkInfo` の待ちと `WORST_CASE_FETCH_MS` の両方がこれを使う。
+ */
+function retryBackoffMs(retryCount: number): number {
+	return (retryCount + 1) * 1000;
+}
+
+/**
  * 1作品の取得が最悪どれだけ掛かるか（リトライと待ちを含む）
  *
- * 毎回タイムアウト間際に 5xx が返る経路が最長: 試行は `MAX_RETRIES_HTTP + 1` 回で、
- * リトライ前の待ちは 1秒・2秒…（`fetchIndividualWorkInfo` の backoff と揃える）。
- * サブバッチは並列なので、サブバッチ1回の最悪もこの値になる。`batchFetchIndividualInfo` の
- * `deadlineAt` の判定に使う（SPR-319）。リトライの定数を変えたら自動で追従する。
+ * 毎回タイムアウト間際に 5xx が返る経路が最長: 試行は `MAX_RETRIES_HTTP + 1` 回で、その間に
+ * `MAX_RETRIES_HTTP` 回の待ちが入る。サブバッチは並列なので、サブバッチ1回の最悪もこの値になる。
+ * `batchFetchIndividualInfo` の `deadlineAt` の判定に使う（SPR-319）。
+ * タイムアウト・リトライ回数・待ち時間（`retryBackoffMs`）を変えると、この値も追従する。
  */
 export const WORST_CASE_FETCH_MS =
 	REQUEST_TIMEOUT_MS * (MAX_RETRIES_HTTP + 1) +
-	(1000 * (MAX_RETRIES_HTTP * (MAX_RETRIES_HTTP + 1))) / 2;
+	Array.from({ length: MAX_RETRIES_HTTP }, (_, retryCount) => retryBackoffMs(retryCount)).reduce(
+		(total, ms) => total + ms,
+		0,
+	);
 
 /**
  * 429（レート制限）を呼び出し元へ伝えるエラー
@@ -295,7 +307,7 @@ export async function fetchIndividualWorkInfo(
 		if (maxRetries > 0 && retryCount < maxRetries) {
 			logger.warn(`リトライ実行 (${retryCount + 1}/${maxRetries}): ${workId}`);
 			// エクスポネンシャルバックオフ
-			await new Promise((resolve) => setTimeout(resolve, (retryCount + 1) * 1000));
+			await new Promise((resolve) => setTimeout(resolve, retryBackoffMs(retryCount)));
 			return fetchIndividualWorkInfo(workId, {
 				...options,
 				retryCount: retryCount + 1,
