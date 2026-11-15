@@ -46,7 +46,7 @@ const unifiedMetadataStore = createRunMetadataStore<CollectionMetadata>({
  *
  * 保持 5 件: 重複は元の push から最大 16 分ほど遅れて届く（実測）。週次フルスイープは通常 run の
  * 12 分後に別メッセージで届くため、1 件だけだと「通常 run の重複がフルスイープ開始後に届く」
- * ケースを取りこぼす。2 時間毎の run なら 5 件で約 8 時間分を覆う。
+ * ケースを取りこぼす。1 時間毎の run なら 5 件で約 4 時間分を覆う（重複の遅れ 16 分に対して十分）。
  * `isInProgress` では代わりにならない: 順番待ちの重複は元の run が終わってから処理されるため、
  * その時点で `isInProgress` はもう false になっている。
  */

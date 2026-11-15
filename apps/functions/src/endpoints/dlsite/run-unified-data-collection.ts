@@ -299,7 +299,7 @@ async function prepareNewBatchProcessing(
 	tiered: TieredWorkIds | null;
 } | null> {
 	// scrape 失敗時は stale な一覧でサイクルを回すより run を中断する方が安全。
-	// 次の定期実行(2h)が自然なリトライになる（SPR-232: region 等価性の確認を経て asset fallback を撤去）。
+	// 次の定期実行が自然なリトライになる（SPR-232: region 等価性の確認を経て asset fallback を撤去）。
 	let currentWorkIds: string[];
 	try {
 		logger.info("作品ID収集を開始します...");

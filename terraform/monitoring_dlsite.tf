@@ -90,7 +90,7 @@ resource "google_monitoring_alert_policy" "dlsite_function_error" {
 # 旧 filter の「取得した作品数: 0件」は現行コードに存在しないログ文言だった（SPR-234）。
 # SPR-232 で scrape 失敗時の asset fallback を撤去し run 中断となったため、
 # 「run 中断」と「scrape 成功だが0件」の2つが現行の系統的失敗シグナル。
-# 恒常化すると works 更新が止まる（次 run=2h後が自動リトライ）。
+# 恒常化すると works 更新が止まる（次の定期 run が自動リトライ）。
 #
 # SPR-271: 旧 filter は "作品ID収集エラー" の部分一致で、意味の異なる2つのログを区別できて
 # いなかった。per-page の一過性エラー（`作品ID収集エラー (ページ N)`・work-id-collector.ts）は
@@ -168,7 +168,7 @@ resource "google_monitoring_alert_policy" "dlsite_no_data_fetched" {
 
     DLsite関数の作品ID収集が1ページ目から失敗して **run が中断された**、または
     scrape は成功したが0件でした。この run では works が一切更新されず、次の定期実行
-    （2時間後）が自動リトライします（SPR-232 で asset fallback を撤去済み）。
+    （1時間後）が自動リトライします（SPR-232 で asset fallback を撤去済み）。
     恒常化すると works の更新が完全に止まります。
 
     ## このアラートが鳴らないケース（SPR-271）
@@ -334,7 +334,8 @@ resource "google_monitoring_alert_policy" "dlsite_api_batch_all_failed" {
 # ログベースメトリクス - 定期 run の開始（無音障害検知用ハートビート）
 # Scheduler 停止 / Pub/Sub subscription・Eventarc trigger の破壊 / 関数消失では
 # 「ログが出ない」ため、ログ内容ベースのアラートは全て沈黙する（SPR-234 分類 B1）。
-# run 開始ログ（2h 毎・12回/日）を metric 化し、absence 条件で run 途絶そのものを検知する。
+# run 開始ログ（1h 毎・3時台を除く23回/日＝スケジュールの正本は
+# function_dlsite_individual_info_api.tf）を metric 化し、absence 条件で run 途絶そのものを検知する。
 #
 # 注意（2026-07-04/07-05 実測の偽陽性・原因確定）: デプロイ後に本アラートが誤発火する
 # 事象が2回発生したが、実行ログ自体は1件も欠けていなかった（gcloud logging read で確認済み）。
@@ -364,22 +365,24 @@ resource "google_monitoring_alert_policy" "dlsite_run_absent" {
   combiner     = "OR"
 
   conditions {
-    display_name = "定期runが4時間以上観測されない"
+    display_name = "定期runが3時間以上観測されない"
 
-    # 2h 周期 + 2h マージン（旧: 1hマージン=3h）。1 run 欠けただけでは発火せず、
-    # 2 run 連続欠けで異常とみなす。
+    # 1h 周期 + 2h マージン（SPR-412 で 2h 周期 → 1h 周期。旧 duration は 4h）。
+    # 1 run 欠けただけでは発火せず（間隔 2h）、2 run 連続欠け（間隔 3h）から異常とみなす。
+    # 3時台は run が無く 2:03 → 4:03 が平常で 2h 空くため、duration を 2h 以下にはできない。
+    # その前後（2:03 か 4:03）だけは 1 run 欠けで間隔が 3h になり発火しうる。
     #
     # 注意（2026-07-05 実測の偽陽性・再発）: revision 単位の絶対不在監視は構造的に
     # 誤発火する。Cloud Run revision は監視対象リソースラベルに revision_name を含むため
     # cross_series_reducer 無しでは metric の時系列が revision ごとに分かれる。
     # デプロイで新 revision に切り替わると旧 revision の時系列は最終ログ時刻のまま
     # 更新が止まり、実行ログ自体は正常に出続けていても旧 revision の系列だけが
-    # duration 後に不在条件を満たして誤発火する（3h→4hへの拡大は緩和にしかならず、
-    # デプロイの度に約4時間後の誤発火を予約してしまう構造は直らない）。
+    # duration 後に不在条件を満たして誤発火する（duration の拡大は緩和にしかならず、
+    # デプロイの度に duration 後の誤発火を予約してしまう構造は直らない）。
     # cross_series_reducer + group_by_fields で service 全体を1系列に集約し解消。
     condition_absent {
       filter   = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.dlsite_run_started.id}\" resource.type=\"cloud_run_revision\""
-      duration = "14400s"
+      duration = "10800s"
 
       aggregations {
         alignment_period     = "300s"
@@ -400,10 +403,10 @@ resource "google_monitoring_alert_policy" "dlsite_run_absent" {
 
   documentation {
     content   = <<-EOT
-    # DLsite 定期 run の途絶（4時間以上）
+    # DLsite 定期 run の途絶（3時間以上）
 
-    fetchDLsiteUnifiedData の run 開始ログが4時間以上観測されていません（正常時は
-    2時間毎・12回/日）。ログ自体が出ない障害のため、他の DLsite アラートは沈黙します。
+    fetchDLsiteUnifiedData の run 開始ログが3時間以上観測されていません（正常時は
+    1時間毎・3時台を除く23回/日）。ログ自体が出ない障害のため、他の DLsite アラートは沈黙します。
 
     ## まず確認すること（2026-07-04 に偽陽性実績あり）
     実際に run が欠けているかを最優先で確認する。過去に revision churn 集中時の
@@ -411,7 +414,7 @@ resource "google_monitoring_alert_policy" "dlsite_run_absent" {
     ```bash
     gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="fetchdlsiteunifieddata" AND (jsonPayload.message:"統合データ収集開始" OR textPayload:"統合データ収集開始")' --freshness=1d --format="value(timestamp)" --order=asc
     ```
-    直近の2時間おきの時刻が全て埋まっていれば偽陽性（対応不要）。
+    直近の毎時3分（3:03 は元から無い）が全て埋まっていれば偽陽性（対応不要）。
 
     ## 実際に欠けていた場合の原因と確認手順
     1. Cloud Scheduler 停止/削除: gcloud scheduler jobs describe fetch-dlsite-individual-api-hourly --location=asia-northeast1
@@ -511,7 +514,7 @@ resource "google_monitoring_alert_policy" "dlsite_api_failure_rate_high" {
     2. DLsite の稼働状況を手動確認
     3. 失敗した作品は **そのサイクル内では再試行されない**（取得失敗の有無に関わらずバッチは
        完了扱いになるため、次 run はサイクルの続き＝次バッチから始まる）。次サイクルの開始時に
-       due として拾われる＝通常は2時間後、サイクルが2 runにまたがった場合は4時間後（2026-08 実測）。
+       due として拾われる＝通常は次の run（1時間後）、サイクルが2 runにまたがった場合はその次の run。
        手動介入は原則不要。
     EOT
     mime_type = "text/markdown"

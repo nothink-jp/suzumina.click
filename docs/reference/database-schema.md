@@ -71,7 +71,7 @@ cron の正本は Terraform の Cloud Scheduler（[`scheduler.tf`](../../terrafo
 [`function_data_integrity_check.tf`](../../terraform/function_data_integrity_check.tf)）。
 
 - `30 * * * *` → [`fetchYouTubeVideos`](../../apps/functions/src/endpoints/youtube/fetch-youtube-videos.ts) → `videos` / `youtubeMetadata`
-- `3 */2 * * *`（2 時間ごと）→ [`fetchDLsiteUnifiedData`](../../apps/functions/src/endpoints/dlsite/fetch-dlsite-unified-data.ts) → `works` / `circles` / `creators`（+ `creators/{id}/works`） / `works/{workId}/priceHistory` / `dlsiteMetadata`
+- `3 0-2,4-23 * * *`（1 時間ごと・3 時台を除く）→ [`fetchDLsiteUnifiedData`](../../apps/functions/src/endpoints/dlsite/fetch-dlsite-unified-data.ts) → `works` / `circles` / `creators`（+ `creators/{id}/works`） / `works/{workId}/priceHistory` / `dlsiteMetadata`
 - `0 3 * * 0`（日曜 3:00 JST）→ [`checkDataIntegrity`](../../apps/functions/src/endpoints/data-integrity/check-data-integrity.ts) → `dlsiteMetadata/dataIntegrityCheck`（+ `history`）
   - Circle workIds / 孤立 Creator マッピング / Work-Circle 整合を**事後修復**。
     非正規化を増やすとこの cron の負債が増える（CLAUDE.md 軸1）。
