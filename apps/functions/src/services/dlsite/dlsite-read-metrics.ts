@@ -7,7 +7,7 @@
  * **dlsite 関数の自前 QUERY を網羅計測**する必要が出た（集計 Monitoring は DB 単位で web と
  * 分離できないため、in-process 計測が唯一の確定手段）。本モジュールはその run-scoped 集計。
  *
- * 正本: dlsite 関数はスケジュール起動（2h毎・単発・`max-instances=1`）で並行実行が実質ゼロのため、
+ * 正本: dlsite 関数はスケジュール起動（1h毎・単発・`max-instances=1`。run は長くて約8分）で並行実行が実質ゼロのため、
  * run 単位の集計は module レベルのカウンタで足りる。run 開始で {@link resetDlsiteReadMetrics}、
  * run 末尾で {@link getDlsiteReadMetrics} の snapshot を 1 行構造化ログに出す前提。
  *

@@ -40,15 +40,26 @@ resource "google_pubsub_topic" "dlsite_individual_api_trigger" {
   depends_on = [google_project_service.pubsub]
 }
 
-# Individual Info API専用のCloud Scheduler（2時間ごと実行）
-# 注: リソース名は互換性のため "hourly" のままだが、実際は2時間ごとに実行
+# Individual Info API専用のCloud Scheduler（1時間ごと実行・3時台を除く＝1日23回）
+#
+# 2時間ごと → 1時間ごと（SPR-412）: DLsite のレート制限（推定 約100リクエスト/分）に合わせて
+# 取得ペースを落とした結果、1 run で取得できるのは 450件までになった（SPR-410 / SPR-411）。
+# 2時間ごと（12回/日）では 1日 5,400件で、必要量（volatile × 回数 + stable 約2,100件）に
+# 余裕が無く、stable が1日で一巡しなかった。制限は分単位で、約1時間間隔で3回続けて走らせても
+# 429 は出なかった（2026-11-15 実測）。時間単位・日単位の枠が無いことまでは未確認なので、
+# 「DLsite Rate Limited Alert」が毎 run 鳴るようなら `3 */2 * * *` に戻す（戻すのはこの1行。
+# run 途絶アラートの duration＝monitoring_dlsite.tf は 3h のままでも 2h 周期で誤発火しない）。
+#
+# 3時台を飛ばすのは、日曜 3:00 の checkDataIntegrity（約7分・works / circles / creators を
+# 読んで事後修復する）と同時に走らせないため。2時間ごとのときは 2:03 と 4:03 で重ならなかった。
+# その関係を保つ（曜日で分けると式が2本になるので、毎日飛ばしている）。
 resource "google_cloud_scheduler_job" "fetch_dlsite_individual_api_hourly" {
   project = var.gcp_project_id
   region  = var.region
   name    = "fetch-dlsite-individual-api-hourly" # 名前は互換性のため変更しない
 
-  description = "Individual Info API専用データ更新（2時間間隔・取得漏れ防止のため3分後実行）"
-  schedule    = "3 */2 * * *" # 2時間ごとの3分に実行（0:03, 2:03, 4:03...）
+  description = "Individual Info API専用データ更新（1時間間隔・3時台を除く・取得漏れ防止のため3分後実行）"
+  schedule    = "3 0-2,4-23 * * *" # 毎時3分に実行（0:03, 1:03, 2:03, 4:03 ... 23:03。3:03 は無い）
   time_zone   = "Asia/Tokyo"
   paused      = false
 
@@ -68,7 +79,7 @@ resource "google_cloud_scheduler_job" "fetch_dlsite_individual_api_hourly" {
 }
 
 # SPR-229 Stage②: ティア差分の取りこぼし検知を兼ねた週次フルスイープ
-# 通常runの2時間おき（0:03, 2:03, ...）・checkDataIntegrityの日曜3:00 JSTと重ならない
+# 通常runの毎時3分（run は長くて約8分＝4:03 の run は 4:11 ごろ終わる）・checkDataIntegrityの日曜3:00 JSTと重ならない
 # 土曜4:15 JSTに設定。既存関数・既存トピックを再利用し、mode違いのペイロードで
 # フルスイープ(ティア差分を無視した全件取得)を発火させる（新規関数は増やさない）。
 resource "google_cloud_scheduler_job" "fetch_dlsite_individual_api_weekly_full_sweep" {

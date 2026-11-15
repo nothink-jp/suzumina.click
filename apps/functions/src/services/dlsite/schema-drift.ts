@@ -1,7 +1,7 @@
 /**
  * DLsite API スキーマドリフト観測（SPR-140）
  *
- * 本番 fetchDLsiteUnifiedData は2時間毎に DLsite Individual Info API を叩く。
+ * 本番 fetchDLsiteUnifiedData は定期的に（スケジュールの正本は terraform）DLsite Individual Info API を叩く。
  * DLsite は不定期にフィールドを増減するため、既知フィールド集合（ベースライン）に
  * 無いトップレベルキーが出現したら「新フィールド（drift）」として WARN する。
  *

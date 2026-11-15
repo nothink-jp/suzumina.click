@@ -12,7 +12,7 @@
  * **creator ごと 1 回だけ** recompute する。これで全スキャンは「実際に変わった少数 creator ×1」
  * に限定され、reads の主因を解消する。
  *
- * 正本: dlsite 関数はスケジュール起動（2h毎・単発）で並行実行が実質ゼロのため、run 単位の
+ * 正本: dlsite 関数はスケジュール起動（1h毎・単発。run は長くて約8分）で並行実行が実質ゼロのため、run 単位の
  * 集約は module レベルの Set で足りる。run 開始で {@link resetCreatorRecomputeQueue}、
  * run 末尾（完走・中断・例外いずれの経路でも）に drain する前提。
  *

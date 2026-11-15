@@ -272,7 +272,7 @@ async function fetchPopularGenres(limit?: number): Promise<PopularGenre[]> {
 	).then((result) => (result.success ? result.data : []));
 }
 
-// 全 works(約2069件)を読むためコスト大。ジャンルは works 追加（2h DLsite 同期）時のみ変化する低頻度データ。
+// 全 works(約2069件)を読むためコスト大。ジャンルは works 追加（DLsite の定期同期）時のみ変化する低頻度データ。
 // SPR-218: reads 実測で、この全件スキャンが Firestore QUERY reads（全体の96%がQUERY）の主因の一つと判明。
 // ジャンルは低頻度変化で 6h 鮮度で十分なため TTL を 10分→6h に延長し全件 read 頻度を ~36分の1 に抑える
 // （SPR-161 の 10 分は短すぎた）。即時反映が要る場合は works 更新時に revalidateTag("works-list") で対応。
