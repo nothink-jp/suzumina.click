@@ -7,7 +7,10 @@
 
 import type { DLsiteApiResponse, WorkDocument } from "@suzumina.click/shared-types";
 import type { Timestamp } from "../../infrastructure/database/firestore";
-import { batchFetchIndividualInfo } from "../../services/dlsite/individual-info-api-client";
+import {
+	type BatchInterruption,
+	batchFetchIndividualInfo,
+} from "../../services/dlsite/individual-info-api-client";
 import {
 	type ProcessingResult,
 	processBatchUnifiedDLsiteData,
@@ -36,6 +39,16 @@ export const BATCH_SIZE = 50; // 100 → 50に削減（エラー率低下とタ�
 // 残り 60 秒は「判定を通過した1バッチが走り切る」ぶんの余白（平常 約45秒/バッチ＝
 // 25サブバッチ × 応答 約0.15秒 + 間隔 24回 × 1.65秒 + 保存 約1秒）。
 export const MAX_EXECUTION_TIME = 480000;
+// API 取得の締め切り（SPR-319）。run 起動時点から、この時刻を過ぎて終わりうる取得は始めない。
+// MAX_EXECUTION_TIME は「バッチを始める前」にしか見ないため、始めたバッチの中でタイムアウトと
+// リトライが続くと 540 秒を超えて走り続ける（1 run 225サブバッチのうち3〜4回で余白を使い切る）。
+// 締め切りはサブバッチごとに見る（判定は batchFetchIndividualInfo の deadlineAt）。
+// 540 秒との差の 20 秒は、取得後の処理（取れた分の保存・メタデータ更新・creator 集計）のぶん。
+// 新しいサブバッチを始めるのは、起動から約 472 秒まで（520 秒 − 1サブバッチの最悪 48 秒）。
+// 平常時の run（9バッチ）は約 445 秒で終わるので、この締め切りには掛からない。
+// 複数 run にまたがるサイクル（週次フルスイープなど）は 10 バッチ目が約 453〜498 秒に掛かるため、
+// 毎 run その途中で打ち切られ、次の run が同じバッチをやり直す（約20件の重複取得。取りこぼしは無い）。
+export const API_FETCH_DEADLINE = 520000;
 
 /**
  * 統合処理結果の型定義
@@ -47,10 +60,11 @@ export interface UnifiedFetchResult {
 	error?: string;
 	unificationComplete?: boolean;
 	/**
-	 * 429 でバッチを打ち切った場合のみ設定（SPR-408）。このバッチは未完了＝オーケストレータは
-	 * cursor を進めずに run を中断し、次の run が同じバッチからやり直す。
+	 * バッチを途中で打ち切った場合のみ設定（429＝SPR-408 / 締め切り＝SPR-319）。
+	 * このバッチは未完了＝オーケストレータは cursor を進めずに run を中断し、次の run が
+	 * 同じバッチからやり直す。
 	 */
-	rateLimit?: { retryAfterSeconds?: number };
+	interruption?: { reason: "rate_limit"; retryAfterSeconds?: number } | { reason: "deadline" };
 }
 
 /**
@@ -62,6 +76,8 @@ export interface BatchProcessingInfo {
 	workIds: string[];
 	startTime: Timestamp;
 	existingWorksMap?: Map<string, WorkDocument>;
+	/** API 取得の締め切り（epoch ms）。run 起動時刻 + `API_FETCH_DEADLINE`。省略時は時間で打ち切らない */
+	fetchDeadlineAt?: number;
 	/** SPR-229: 週次フルスイープ時、通常runならstableとしてスキップされていたはずの作品ID（取りこぼし検知用） */
 	wouldSkipStableIds?: Set<string>;
 }
@@ -236,10 +252,31 @@ function logFullSweepMissedChanges(
 }
 
 /**
+ * 取得側の打ち切り情報から、オーケストレータへ返す分（理由と Retry-After）だけを取り出す
+ */
+function toResultInterruption(
+	interruption: BatchInterruption | undefined,
+): UnifiedFetchResult["interruption"] {
+	if (!interruption) {
+		return undefined;
+	}
+	return interruption.reason === "rate_limit"
+		? { reason: "rate_limit", retryAfterSeconds: interruption.retryAfterSeconds }
+		: { reason: "deadline" };
+}
+
+/**
  * バッチ処理実行
  */
 export async function processBatch(batchInfo: BatchProcessingInfo): Promise<UnifiedFetchResult> {
-	const { batchNumber, totalBatches, workIds, existingWorksMap, wouldSkipStableIds } = batchInfo;
+	const {
+		batchNumber,
+		totalBatches,
+		workIds,
+		existingWorksMap,
+		wouldSkipStableIds,
+		fetchDeadlineAt,
+	} = batchInfo;
 
 	logger.info(`バッチ ${batchNumber}/${totalBatches} 処理開始: ${workIds.length}件`);
 
@@ -248,18 +285,19 @@ export async function processBatch(batchInfo: BatchProcessingInfo): Promise<Unif
 		const {
 			results: apiDataMap,
 			failedWorkIds,
-			rateLimit: rateLimitStop,
+			interruption: fetchInterruption,
 		} = await batchFetchIndividualInfo(workIds, {
 			maxConcurrent: MAX_CONCURRENT_API_REQUESTS,
 			batchDelay: API_REQUEST_DELAY,
+			deadlineAt: fetchDeadlineAt,
 		});
-		const rateLimit = rateLimitStop && { retryAfterSeconds: rateLimitStop.retryAfterSeconds };
-		const attemptedCount = workIds.length - (rateLimitStop?.skippedWorkIds.length ?? 0);
+		const interruption = toResultInterruption(fetchInterruption);
+		const attemptedCount = workIds.length - (fetchInterruption?.skippedWorkIds.length ?? 0);
 
-		// 429 で1件も取れずに打ち切った場合は「APIレスポンスなし」（全面停止アラートの契約）を
-		// 出さない。原因が別（レート制限）で、専用の WARN をオーケストレータが出す。
-		if (apiDataMap.size === 0 && rateLimit) {
-			return { workCount: 0, apiCallCount: attemptedCount, basicDataUpdated: 0, rateLimit };
+		// 1件も取れずに打ち切った場合は「APIレスポンスなし」（全面停止アラートの契約）を
+		// 出さない。原因が別（レート制限・締め切り）で、専用の WARN をオーケストレータが出す。
+		if (apiDataMap.size === 0 && interruption) {
+			return { workCount: 0, apiCallCount: attemptedCount, basicDataUpdated: 0, interruption };
 		}
 
 		if (apiDataMap.size === 0) {
@@ -300,7 +338,7 @@ export async function processBatch(batchInfo: BatchProcessingInfo): Promise<Unif
 		logBatchComplete(batchNumber, workIds.length, apiDataMap.size, aggregatedResults);
 		logFullSweepMissedChanges(batchNumber, processingResults, wouldSkipStableIds);
 
-		return { ...createBatchResult(aggregatedResults, attemptedCount), rateLimit };
+		return { ...createBatchResult(aggregatedResults, attemptedCount), interruption };
 	} catch (error) {
 		logger.error(`バッチ ${batchNumber} 処理エラー:`, { error });
 		return {

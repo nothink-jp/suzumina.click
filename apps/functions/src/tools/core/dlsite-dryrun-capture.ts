@@ -380,14 +380,14 @@ async function main(): Promise<void> {
 	});
 
 	const startTime = Date.now();
-	const { results, failedWorkIds, rateLimit } = await batchFetchIndividualInfo(workIds, {
+	const { results, failedWorkIds, interruption } = await batchFetchIndividualInfo(workIds, {
 		maxConcurrent: opts.concurrency,
 		batchDelay: opts.delayMs,
 	});
-	if (rateLimit) {
+	if (interruption?.reason === "rate_limit") {
 		logger.warn("レート制限（429）で打ち切りました。以降は取得できた分だけの結果です", {
-			未取得: rateLimit.skippedWorkIds.length,
-			retryAfterSeconds: rateLimit.retryAfterSeconds,
+			未取得: interruption.skippedWorkIds.length,
+			retryAfterSeconds: interruption.retryAfterSeconds,
 		});
 	}
 	const elapsed = Date.now() - startTime;

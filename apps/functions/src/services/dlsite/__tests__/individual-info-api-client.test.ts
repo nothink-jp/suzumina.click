@@ -9,6 +9,7 @@ import {
 	batchFetchIndividualInfo,
 	DLsiteRateLimitError,
 	fetchIndividualWorkInfo,
+	WORST_CASE_FETCH_MS,
 } from "../individual-info-api-client";
 
 // モックの設定
@@ -372,7 +373,7 @@ describe("Individual Info API Client", () => {
 			expect(duration).toBeGreaterThan(90);
 		});
 
-		it("429 を受けたサブバッチで打ち切り、残りは呼ばずに rateLimit で返す（SPR-408）", async () => {
+		it("429 を受けたサブバッチで打ち切り、残りは呼ばずに interruption で返す（SPR-408）", async () => {
 			const ok = {
 				ok: true,
 				status: 200,
@@ -402,7 +403,8 @@ describe("Individual Info API Client", () => {
 			expect([...result.results.keys()]).toEqual(["RJ1", "RJ2", "RJ3"]);
 			// 429 を受けた分と未着手分は「失敗」ではない（次の run でやり直す）
 			expect(result.failedWorkIds).toEqual([]);
-			expect(result.rateLimit).toEqual({
+			expect(result.interruption).toEqual({
+				reason: "rate_limit",
 				retryAfterSeconds: 120,
 				skippedWorkIds: ["RJ4", "RJ5", "RJ6"],
 			});
@@ -432,7 +434,71 @@ describe("Individual Info API Client", () => {
 			expect(logger.warn).toHaveBeenCalledWith("API取得失敗が多数: 2件 (失敗率100.0%)");
 		});
 
-		it("429 が無ければ rateLimit は undefined", async () => {
+		describe("deadlineAt（SPR-319）", () => {
+			const okResponse = () => ({
+				ok: true,
+				status: 200,
+				text: vi.fn().mockResolvedValue(JSON.stringify([mockWorkData1])),
+				headers: new Headers(),
+			});
+
+			it("最悪ケースは「タイムアウト間際の 5xx が続く」経路＝3回の試行 + 待ち 1秒・2秒", () => {
+				expect(WORST_CASE_FETCH_MS).toBe(15000 * 3 + 1000 + 2000);
+			});
+
+			it("次のサブバッチが締め切りまでに終わる保証が無ければ、始める前に打ち切る", async () => {
+				let now = 1_000_000;
+				vi.spyOn(Date, "now").mockImplementation(() => now);
+				// 1サブバッチに 20 秒かかる（タイムアウトとリトライで延びた状況）
+				mockFetch.mockImplementation(async () => {
+					now += 20_000;
+					return okResponse();
+				});
+
+				const result = await batchFetchIndividualInfo(["RJ1", "RJ2", "RJ3"], {
+					maxConcurrent: 1,
+					batchDelay: 0,
+					// 1回目（0秒）と2回目（20秒）は最悪ケースでも収まる。3回目（40秒）は収まらない
+					deadlineAt: now + WORST_CASE_FETCH_MS + 30_000,
+				});
+
+				expect(mockFetch).toHaveBeenCalledTimes(2);
+				expect([...result.results.keys()]).toEqual(["RJ1", "RJ2"]);
+				// 未着手分は「失敗」ではない（次の run でやり直す）
+				expect(result.failedWorkIds).toEqual([]);
+				expect(result.interruption).toEqual({ reason: "deadline", skippedWorkIds: ["RJ3"] });
+			});
+
+			it("最初から締め切りに収まらなければ、1件も呼ばずに全件を未着手で返す", async () => {
+				const result = await batchFetchIndividualInfo(["RJ1", "RJ2"], {
+					maxConcurrent: 2,
+					batchDelay: 0,
+					deadlineAt: Date.now() + WORST_CASE_FETCH_MS - 1,
+				});
+
+				expect(mockFetch).not.toHaveBeenCalled();
+				expect(result.interruption).toEqual({
+					reason: "deadline",
+					skippedWorkIds: ["RJ1", "RJ2"],
+				});
+				expect(logger.warn).not.toHaveBeenCalledWith(expect.stringContaining("API取得失敗が多数"));
+			});
+
+			it("deadlineAt を渡さなければ、時間では打ち切らない", async () => {
+				mockFetch.mockImplementation(async () => okResponse());
+
+				const result = await batchFetchIndividualInfo(["RJ1", "RJ2"], {
+					maxConcurrent: 1,
+					batchDelay: 0,
+				});
+
+				expect(result.results.size).toBe(2);
+				expect(mockFetch).toHaveBeenCalledTimes(2);
+				expect(result.interruption).toBeUndefined();
+			});
+		});
+
+		it("打ち切りが無ければ interruption は undefined", async () => {
 			mockFetch.mockResolvedValue({
 				ok: true,
 				status: 200,
@@ -442,7 +508,7 @@ describe("Individual Info API Client", () => {
 
 			const result = await batchFetchIndividualInfo(["RJ123456"]);
 
-			expect(result.rateLimit).toBeUndefined();
+			expect(result.interruption).toBeUndefined();
 		});
 
 		it("空の配列を渡した場合空の結果を返す", async () => {

@@ -472,7 +472,7 @@ describe("fetchDLsiteUnifiedData（エントリポイント統合）", () => {
 			vi.mocked(batchFetchIndividualInfo).mockResolvedValue({
 				results: new Map([["RJ001", makeApiResponse("RJ001")]]),
 				failedWorkIds: [],
-				rateLimit: { retryAfterSeconds: 300, skippedWorkIds: ["RJ002"] },
+				interruption: { reason: "rate_limit", retryAfterSeconds: 300, skippedWorkIds: ["RJ002"] },
 			});
 
 			await fetchDLsiteUnifiedData(pubsubEvent());
@@ -503,7 +503,7 @@ describe("fetchDLsiteUnifiedData（エントリポイント統合）", () => {
 			vi.mocked(batchFetchIndividualInfo).mockResolvedValue({
 				results: new Map(),
 				failedWorkIds: [],
-				rateLimit: { skippedWorkIds: ["RJ001"] },
+				interruption: { reason: "rate_limit", skippedWorkIds: ["RJ001"] },
 			});
 
 			await fetchDLsiteUnifiedData(pubsubEvent());
@@ -515,6 +515,54 @@ describe("fetchDLsiteUnifiedData（エントリポイント統合）", () => {
 				expect.objectContaining({ alert: "dlsite_rate_limited" }),
 			);
 			expect(updateMock).toHaveBeenCalledWith(expect.objectContaining({ currentBatch: 0 }));
+		});
+	});
+
+	describe("API 取得の締め切り（SPR-319）", () => {
+		it("取得に run 起動時刻 + 520秒 の締め切りを渡す", async () => {
+			vi.mocked(collectWorkIdsForProduction).mockResolvedValue(["RJ001"]);
+			vi.mocked(batchFetchIndividualInfo).mockResolvedValue({
+				results: new Map([["RJ001", makeApiResponse("RJ001")]]),
+				failedWorkIds: [],
+			});
+			const before = Date.now();
+
+			await fetchDLsiteUnifiedData(pubsubEvent());
+
+			const [, options] = vi.mocked(batchFetchIndividualInfo).mock.calls[0] ?? [];
+			expect(options?.deadlineAt).toBeGreaterThanOrEqual(before + 520_000);
+			expect(options?.deadlineAt).toBeLessThanOrEqual(Date.now() + 520_000);
+		});
+
+		it("締め切りで打ち切られたら cursor を進めずに中断し、レート制限のアラートは出さない", async () => {
+			vi.mocked(collectWorkIdsForProduction).mockResolvedValue(["RJ001", "RJ002"]);
+			vi.mocked(batchFetchIndividualInfo).mockResolvedValue({
+				results: new Map([["RJ001", makeApiResponse("RJ001")]]),
+				failedWorkIds: [],
+				interruption: { reason: "deadline", skippedWorkIds: ["RJ002"] },
+			});
+
+			await fetchDLsiteUnifiedData(pubsubEvent());
+
+			// 取れた分は保存する
+			expect(processBatchUnifiedDLsiteData).toHaveBeenCalledWith(
+				[makeApiResponse("RJ001")],
+				expect.any(Object),
+			);
+			expect(logger.warn).toHaveBeenCalledWith(
+				"API取得の締め切りにより run を中断",
+				expect.objectContaining({ batchNumber: 1, totalBatches: 1 }),
+			);
+			// レート制限ではないので、log-based メトリクスの契約キーは付けない
+			expect(logger.warn).not.toHaveBeenCalledWith(
+				expect.anything(),
+				expect.objectContaining({ alert: "dlsite_rate_limited" }),
+			);
+			// 次の run が同じバッチからやり直す
+			expect(updateMock).toHaveBeenCalledWith(
+				expect.objectContaining({ currentBatch: 0, lastError: "API取得の締め切りにより中断" }),
+			);
+			expect(logger.info).not.toHaveBeenCalledWith("全バッチ処理完了", expect.anything());
 		});
 	});
 

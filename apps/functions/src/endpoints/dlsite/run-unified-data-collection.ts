@@ -39,6 +39,7 @@ import {
 	updateUnifiedMetadata,
 } from "./collection-metadata";
 import {
+	API_FETCH_DEADLINE,
 	BATCH_SIZE,
 	type BatchProcessingInfo,
 	MAX_EXECUTION_TIME,
@@ -172,6 +173,35 @@ export async function computeDueWorkIds(
 }
 
 /**
+ * バッチを途中で打ち切ったことを WARN で残す
+ *
+ * レート制限は `alert` キー付き（log-based メトリクスの契約＝terraform/monitoring_dlsite.tf）。
+ * 締め切りによる打ち切りは、平常時の run（約445秒）では起きない。出ていれば API のタイムアウトが
+ * 続いている（失敗率のアラートと合わせて見る）か、複数 run にまたがるサイクルの最後のバッチ。
+ */
+function logBatchInterruption(
+	interruption: NonNullable<UnifiedFetchResult["interruption"]>,
+	batchNumber: number,
+	totalBatches: number,
+	startTime: number,
+): void {
+	if (interruption.reason === "rate_limit") {
+		logger.warn("DLsite レート制限により run を中断", {
+			alert: DLSITE_RATE_LIMITED_ALERT,
+			batchNumber,
+			totalBatches,
+			retryAfterSeconds: interruption.retryAfterSeconds,
+		});
+		return;
+	}
+	logger.warn("API取得の締め切りにより run を中断", {
+		batchNumber,
+		totalBatches,
+		elapsedSeconds: Math.round((Date.now() - startTime) / 1000),
+	});
+}
+
+/**
  * バッチループ処理を実行
  */
 async function executeBatchLoop(
@@ -227,29 +257,28 @@ async function executeBatchLoop(
 			startTime: Timestamp.now(),
 			existingWorksMap,
 			wouldSkipStableIds,
+			fetchDeadlineAt: startTime + API_FETCH_DEADLINE,
 		};
 
 		const result = await processBatch(batchInfo);
 		totalUpdated += result.basicDataUpdated;
 		totalApiCalls += result.apiCallCount;
 
-		// レート制限（429）: このバッチは未完了。cursor を進めずに中断し、次の run が同じバッチから
-		// やり直す（取れた分は保存済みで、再取得しても差分なしでスキップされる）。制限は約5分続くので
-		// run 内では待たない（SPR-408）。
-		if (result.rateLimit) {
-			logger.warn("DLsite レート制限により run を中断", {
-				alert: DLSITE_RATE_LIMITED_ALERT,
-				batchNumber: i + 1,
-				totalBatches: batches.length,
-				retryAfterSeconds: result.rateLimit.retryAfterSeconds,
-			});
+		// 打ち切り（429＝SPR-408 / 締め切り＝SPR-319）: このバッチは未完了。cursor を進めずに中断し、
+		// 次の run が同じバッチからやり直す（取れた分は保存済みで、再取得しても差分なしでスキップされる）。
+		// レート制限は約5分続くので run 内では待たない。
+		if (result.interruption) {
+			logBatchInterruption(result.interruption, i + 1, batches.length, startTime);
 			allBatchesCompleted = false;
 
 			await updateUnifiedMetadata({
 				currentBatch: i,
 				processedWorks: i * BATCH_SIZE,
 				basicDataUpdated: (metadata.basicDataUpdated || 0) + totalUpdated,
-				lastError: "レート制限により中断",
+				lastError:
+					result.interruption.reason === "rate_limit"
+						? "レート制限により中断"
+						: "API取得の締め切りにより中断",
 			});
 			break;
 		}
