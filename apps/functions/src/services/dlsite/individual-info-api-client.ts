@@ -306,7 +306,6 @@ export async function fetchIndividualWorkInfo(
 		const maxRetries = getMaxRetries(error);
 		if (maxRetries > 0 && retryCount < maxRetries) {
 			logger.warn(`リトライ実行 (${retryCount + 1}/${maxRetries}): ${workId}`);
-			// エクスポネンシャルバックオフ
 			await new Promise((resolve) => setTimeout(resolve, retryBackoffMs(retryCount)));
 			return fetchIndividualWorkInfo(workId, {
 				...options,
