@@ -246,7 +246,9 @@ const nextConfig = {
 				headers: [
 					{
 						key: "Cache-Control",
-						// 2時間 fresh + 2時間 swr（最悪4時間）。DLsite 取り込みの間隔（2h）に合わせる。
+						// 2時間 fresh + 2時間 swr（最悪4時間）。決めた当時の DLsite 取り込みの間隔（2h）に合わせた値。
+						// 取り込みは 1h ごとになった（SPR-412・スケジュールの正本は terraform）が、この値は据え置いている:
+						// 縮めるとオリジン到達が増える。新着の反映が時間オーダーに収まるという目的は 2時間でも満たす。
 						value: "public, s-maxage=7200, stale-while-revalidate=7200",
 					},
 				],

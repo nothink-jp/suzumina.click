@@ -415,6 +415,8 @@ resource "google_monitoring_alert_policy" "dlsite_run_absent" {
     gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="fetchdlsiteunifieddata" AND (jsonPayload.message:"統合データ収集開始" OR textPayload:"統合データ収集開始")' --freshness=1d --format="value(timestamp)" --order=asc
     ```
     直近の毎時3分（3:03 は元から無い）が全て埋まっていれば偽陽性（対応不要）。
+    3時台を飛ばす都合で、2:03 か 4:03 の run が1回欠けただけでも間隔が3時間になり、このアラートは
+    鳴りうる（他の時刻は2回連続で欠けてから鳴る）。その場合は次の run が来ていれば対応不要。
 
     ## 実際に欠けていた場合の原因と確認手順
     1. Cloud Scheduler 停止/削除: gcloud scheduler jobs describe fetch-dlsite-individual-api-hourly --location=asia-northeast1

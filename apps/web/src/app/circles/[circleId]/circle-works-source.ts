@@ -52,7 +52,7 @@ export async function loadCircleWorks(circleId: string): Promise<WorkPlainObject
 	}
 
 	// サークル所属作品の正本は circles/{id}.workIds。
-	// 書き手は DLsite 取り込み（2h毎に arrayUnion・circle-firestore.ts）で、
+	// 書き手は DLsite 取り込み（定期 run ごとに arrayUnion・circle-firestore.ts）で、
 	// checkDataIntegrity（週次）が重複除去と欠落補填を事後修復する。
 	// 読み取り側はこの配列を引き当てるだけにし、所属条件を read 時に再計算しない。
 	const workIds = circleData.workIds ?? [];
