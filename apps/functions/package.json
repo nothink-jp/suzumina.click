@@ -33,9 +33,9 @@
 	},
 	"main": "lib/index.js",
 	"dependencies": {
-		"@google-cloud/firestore": "^9.4.0",
+		"@google-cloud/firestore": "^9.4.1",
 		"@google-cloud/functions-framework": "^5.0.5",
-		"@googleapis/youtube": "^40.0.2"
+		"@googleapis/youtube": "^40.1.0"
 	},
 	"devDependencies": {
 		"@suzumina.click/shared-types": "workspace:*",
