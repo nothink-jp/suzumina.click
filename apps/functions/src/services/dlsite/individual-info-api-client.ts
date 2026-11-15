@@ -27,6 +27,30 @@ const MAX_RETRIES_HTTP = 2;
 const MAX_RETRIES_TIMEOUT = 1;
 
 /**
+ * リトライ前の待ち時間（`retryCount` は 0 始まり＝1回目のリトライ前は 1秒、2回目は 2秒）
+ *
+ * `fetchIndividualWorkInfo` の待ちと `WORST_CASE_FETCH_MS` の両方がこれを使う。
+ */
+function retryBackoffMs(retryCount: number): number {
+	return (retryCount + 1) * 1000;
+}
+
+/**
+ * 1作品の取得が最悪どれだけ掛かるか（リトライと待ちを含む）
+ *
+ * 毎回タイムアウト間際に 5xx が返る経路が最長: 試行は `MAX_RETRIES_HTTP + 1` 回で、その間に
+ * `MAX_RETRIES_HTTP` 回の待ちが入る。サブバッチは並列なので、サブバッチ1回の最悪もこの値になる。
+ * `batchFetchIndividualInfo` の `deadlineAt` の判定に使う（SPR-319）。
+ * タイムアウト・リトライ回数・待ち時間（`retryBackoffMs`）を変えると、この値も追従する。
+ */
+export const WORST_CASE_FETCH_MS =
+	REQUEST_TIMEOUT_MS * (MAX_RETRIES_HTTP + 1) +
+	Array.from({ length: MAX_RETRIES_HTTP }, (_, retryCount) => retryBackoffMs(retryCount)).reduce(
+		(total, ms) => total + ms,
+		0,
+	);
+
+/**
  * 429（レート制限）を呼び出し元へ伝えるエラー
  *
  * リトライ対象にしない。DLsite の制限は一度掛かると約5分続き、その間 1〜2 秒後の再試行は
@@ -282,8 +306,7 @@ export async function fetchIndividualWorkInfo(
 		const maxRetries = getMaxRetries(error);
 		if (maxRetries > 0 && retryCount < maxRetries) {
 			logger.warn(`リトライ実行 (${retryCount + 1}/${maxRetries}): ${workId}`);
-			// エクスポネンシャルバックオフ
-			await new Promise((resolve) => setTimeout(resolve, (retryCount + 1) * 1000));
+			await new Promise((resolve) => setTimeout(resolve, retryBackoffMs(retryCount)));
 			return fetchIndividualWorkInfo(workId, {
 				...options,
 				retryCount: retryCount + 1,
@@ -314,14 +337,23 @@ function warnIfFailureRateHigh(failedCount: number, attemptedCount: number): voi
 }
 
 /**
- * `batchFetchIndividualInfo` が 429 で打ち切ったときの情報
+ * `batchFetchIndividualInfo` が途中で打ち切ったときの情報
+ *
+ * どちらの理由でも意味は同じ: **このバッチは未完了**。`skippedWorkIds` は results にも
+ * failedWorkIds にも入らない（失敗ではない）ので、呼び出し側が次の run でやり直す。
+ *
+ * - `rate_limit`: 429 を受けた（SPR-408）。`skippedWorkIds` は 429 を受けた分 + 未着手分
+ * - `deadline`: 次のサブバッチが `deadlineAt` までに終わる保証が無い（SPR-319）。
+ *   `skippedWorkIds` は未着手分
  */
-export interface RateLimitStop {
-	/** Retry-After ヘッダの秒数（無ければ undefined） */
-	retryAfterSeconds?: number;
-	/** 取得していない作品ID（429 を受けた分 + 未着手分）。results にも failedWorkIds にも入らない */
-	skippedWorkIds: string[];
-}
+export type BatchInterruption =
+	| {
+			reason: "rate_limit";
+			/** Retry-After ヘッダの秒数（無ければ undefined） */
+			retryAfterSeconds?: number;
+			skippedWorkIds: string[];
+	  }
+	| { reason: "deadline"; skippedWorkIds: string[] };
 
 interface FetchOutcome {
 	workId: string;
@@ -347,8 +379,32 @@ async function fetchOutcome(
 	}
 }
 
-function toRateLimitStop(rateLimited: FetchOutcome[], unattemptedWorkIds: string[]): RateLimitStop {
+/**
+ * サブバッチの結果を成功（results）と失敗（failedWorkIds）に振り分け、429 を受けた分を返す
+ *
+ * 429 を受けた分は失敗に数えない（次の run でやり直すため）。
+ */
+function classifyOutcomes(
+	outcomes: FetchOutcome[],
+	results: Map<string, DLsiteApiResponse>,
+	failedWorkIds: string[],
+): FetchOutcome[] {
+	for (const { workId, data, rateLimitError } of outcomes) {
+		if (data) {
+			results.set(workId, data);
+		} else if (!rateLimitError) {
+			failedWorkIds.push(workId);
+		}
+	}
+	return outcomes.filter((outcome) => outcome.rateLimitError);
+}
+
+function toRateLimitInterruption(
+	rateLimited: FetchOutcome[],
+	unattemptedWorkIds: string[],
+): BatchInterruption {
 	return {
+		reason: "rate_limit",
 		retryAfterSeconds: rateLimited
 			.map((r) => r.rateLimitError?.retryAfterSeconds)
 			.find((seconds) => seconds !== undefined),
@@ -359,11 +415,14 @@ function toRateLimitStop(rateLimited: FetchOutcome[], unattemptedWorkIds: string
 /**
  * バッチでIndividual Info APIを呼び出し
  *
- * 429 を1件でも受けたら、そのサブバッチで打ち切って `rateLimit` を返す（残りは呼ばない）。
+ * 次のどちらかで打ち切り、`interruption` を返す（残りは呼ばない）:
+ * - 429 を1件でも受けた（そのサブバッチで打ち切る）
+ * - `deadlineAt` が指定されていて、次のサブバッチが最悪ケース（`WORST_CASE_FETCH_MS`）でも
+ *   それまでに終わる保証が無い（始める前に打ち切る）
  *
  * @param workIds - 作品IDの配列
  * @param options - API呼び出しオプション
- * @returns 取得結果・失敗作品ID・429 で打ち切った場合はその情報
+ * @returns 取得結果・失敗作品ID・打ち切った場合はその情報
  */
 export async function batchFetchIndividualInfo(
 	workIds: string[],
@@ -372,16 +431,21 @@ export async function batchFetchIndividualInfo(
 		maxConcurrent?: number;
 		/** バッチ間隔（ms）（デフォルト: 800） */
 		batchDelay?: number;
+		/**
+		 * この時刻（epoch ms）を過ぎて終わりうるサブバッチは始めない。省略時は時間で打ち切らない。
+		 * 関数の timeout を超えて走り続けるのを防ぐためのもの（SPR-319）。
+		 */
+		deadlineAt?: number;
 	} = {},
 ): Promise<{
 	results: Map<string, DLsiteApiResponse>;
 	failedWorkIds: string[];
-	rateLimit?: RateLimitStop;
+	interruption?: BatchInterruption;
 }> {
-	const { maxConcurrent = 3, batchDelay = 800, ...apiOptions } = options;
+	const { maxConcurrent = 3, batchDelay = 800, deadlineAt, ...apiOptions } = options;
 	const results = new Map<string, DLsiteApiResponse>();
 	const failedWorkIds: string[] = [];
-	let rateLimit: RateLimitStop | undefined;
+	let interruption: BatchInterruption | undefined;
 
 	// バッチに分割
 	const batches: string[][] = [];
@@ -390,20 +454,15 @@ export async function batchFetchIndividualInfo(
 	}
 
 	for (const [batchIndex, batch] of batches.entries()) {
-		const outcomes = await Promise.all(batch.map((workId) => fetchOutcome(workId, apiOptions)));
-
-		// 成功・失敗・レート制限を分類
-		for (const { workId, data, rateLimitError } of outcomes) {
-			if (data) {
-				results.set(workId, data);
-			} else if (!rateLimitError) {
-				failedWorkIds.push(workId);
-			}
+		if (deadlineAt !== undefined && Date.now() + WORST_CASE_FETCH_MS > deadlineAt) {
+			interruption = { reason: "deadline", skippedWorkIds: batches.slice(batchIndex).flat() };
+			break;
 		}
 
-		const rateLimited = outcomes.filter((r) => r.rateLimitError);
+		const outcomes = await Promise.all(batch.map((workId) => fetchOutcome(workId, apiOptions)));
+		const rateLimited = classifyOutcomes(outcomes, results, failedWorkIds);
 		if (rateLimited.length > 0) {
-			rateLimit = toRateLimitStop(rateLimited, batches.slice(batchIndex + 1).flat());
+			interruption = toRateLimitInterruption(rateLimited, batches.slice(batchIndex + 1).flat());
 			break;
 		}
 
@@ -415,7 +474,7 @@ export async function batchFetchIndividualInfo(
 
 	warnIfFailureRateHigh(
 		failedWorkIds.length,
-		workIds.length - (rateLimit?.skippedWorkIds.length ?? 0),
+		workIds.length - (interruption?.skippedWorkIds.length ?? 0),
 	);
 
 	// スキーマドリフト観測（SPR-140）: 既知集合に無い新フィールドが出たら WARN（重複抑制・例外は無視）
@@ -424,5 +483,5 @@ export async function batchFetchIndividualInfo(
 		{ batchSize: workIds.length },
 	);
 
-	return { results, failedWorkIds, rateLimit };
+	return { results, failedWorkIds, interruption };
 }
