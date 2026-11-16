@@ -435,6 +435,7 @@ locals {
     "roles/eventarc.viewer",       # Eventarc trigger の設定（宛先・retryPolicy 等）。messageBuses.use 等の非閲覧権限を含むが、create 系が無いので使えない（Eventarc Advanced を導入したら見直す）
     "roles/cloudscheduler.viewer", # cron（checkDataIntegrity・fetch 系）の次回/前回実行と結果。jobs.fullView で payload も見えるが、全 job が Pub/Sub 宛ての小さな JSON のみ
     "roles/cloudfunctions.viewer", # 関数の設定（メモリ・timeout・実行 SA・トリガー）とデプロイ時の Cloud Build。関数は terraform 管理外（deploy-functions.yml）で live が唯一の正
+    "roles/compute.networkViewer", # VPC・サブネット・Cloud NAT・静的 IP の設定（外向きの固定 IP＝network.tf の調査用。読み取りのみ）
     "roles/bigquery.jobUser",      # クエリジョブの実行のみ（データの閲覧権限は含まない）。読める範囲は下の GA4 エクスポートの条件付き dataViewer が決める
   ]
 }

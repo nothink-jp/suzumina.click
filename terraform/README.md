@@ -129,6 +129,7 @@ CI での plan / apply は `.github/workflows/terraform.yml`、Deploy と IaC �
 | Firestore | `firestore_database.tf` / `firestore_indexes*.tf`（複合 index の正本。セキュリティルールは Admin SDK のみのため管理しない） |
 | ストレージ | `gcs.tf`（tfstate）/ `storage.tf`（Functions デプロイ用） |
 | CDN・DNS | `cloudflare.tf` / `cloudflare_dns.tf` |
+| ネットワーク | `network.tf`（外向きの固定 IP＝VPC + Cloud NAT。関数をつなぐ設定は deploy-functions.yml が正本） |
 | 監視・ログ | `monitoring*.tf`（アラートと閾値の正本）/ `logging.tf` |
 | 分析 | `analytics_ga4.tf`（GA4 用 SA。プロパティ権限は GA4 管理画面）/ `analytics_search_console.tf` |
 
