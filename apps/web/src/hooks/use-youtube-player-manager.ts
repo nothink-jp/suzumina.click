@@ -9,7 +9,7 @@ interface UseYouTubePlayerManagerProps {
 }
 
 /** クリップ再生（区間試聴）の状態。isLoop はループ試聴中のみ true */
-export interface ClipPlayback {
+interface ClipPlayback {
 	isActive: boolean;
 	isLoop: boolean;
 }

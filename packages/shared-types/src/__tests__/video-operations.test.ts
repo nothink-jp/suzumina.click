@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-	canCreateButton,
+	canCreateAudioButton,
 	formatDuration,
 	getAgeInDays,
 	getAllTags,
@@ -82,22 +82,26 @@ describe("状態判定", () => {
 	});
 });
 
-describe("canCreateButton / エラーメッセージ", () => {
+describe("canCreateAudioButton / エラーメッセージ", () => {
 	it("_computed.canCreateButton を優先する", () => {
-		expect(canCreateButton(video({ _computed: { canCreateButton: true } } as never))).toBe(true);
-		expect(canCreateButton(video({ _computed: { canCreateButton: false } } as never))).toBe(false);
+		expect(canCreateAudioButton(video({ _computed: { canCreateButton: true } } as never))).toBe(
+			true,
+		);
+		expect(canCreateAudioButton(video({ _computed: { canCreateButton: false } } as never))).toBe(
+			false,
+		);
 	});
 
 	it("_computed が無ければ archived（正本の判定関数で算出）のみ作成可", () => {
 		expect(
-			canCreateButton(
+			canCreateAudioButton(
 				video({
 					duration: "PT1H",
 					liveStreamingDetails: { actualEndTime: "2024-01-01T02:00:00.000Z" },
 				} as never),
 			),
 		).toBe(true);
-		expect(canCreateButton(video())).toBe(false);
+		expect(canCreateAudioButton(video())).toBe(false);
 	});
 
 	it("ライブ中・配信中（推定）・配信予定・長さ不明はエラーメッセージを返す", () => {

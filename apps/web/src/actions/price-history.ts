@@ -11,7 +11,7 @@ import { error as logError } from "@/lib/logger";
  * @param endDate 終了日付 (YYYY-MM-DD)
  * @returns 価格履歴データの配列
  */
-export async function getPriceHistory(
+async function getPriceHistory(
 	workId: string,
 	startDate?: string,
 	endDate?: string,

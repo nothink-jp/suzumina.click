@@ -112,7 +112,7 @@ function pickDiagnosticHeaders(headers: Headers): Record<string, string> {
  * 出していない。その結果、この2経路で大半が失敗したときに理由が一切残らなかった（2026-11-16）。
  * 作品ごとには出さず、`batchFetchIndividualInfo` がバッチ単位で集計して WARN に出す。
  */
-export interface SilentFetchFailure {
+interface SilentFetchFailure {
 	workId: string;
 	reason: "http_404" | "missing_workno";
 	status: number;

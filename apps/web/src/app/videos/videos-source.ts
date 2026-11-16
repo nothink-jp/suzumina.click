@@ -9,7 +9,7 @@ export const VISIBLE_VIDEOS_TAG = "visible-videos";
 /**
  * 一覧に表示できる動画か（公開、または status 未取得）。一覧の表示と総数の正本
  */
-export function isVisibleVideo(video: VideoPlainObject): boolean {
+function isVisibleVideo(video: VideoPlainObject): boolean {
 	return video.status?.privacyStatus === "public" || !video.status;
 }
 

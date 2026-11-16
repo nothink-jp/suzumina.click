@@ -416,4 +416,3 @@ export function TagInput({
 TagInput.displayName = "TagInput";
 
 // デフォルトエクスポート
-export default TagInput;

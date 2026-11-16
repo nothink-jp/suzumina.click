@@ -15,7 +15,7 @@ import {
 import { createBasicToParams } from "@/utils/list-adapters";
 
 /** circle / creator の作品取得 action が返す形（owner 共通） */
-export interface OwnerWorksResult {
+interface OwnerWorksResult {
 	works: WorkPlainObject[];
 	totalCount?: number;
 	filteredCount?: number;

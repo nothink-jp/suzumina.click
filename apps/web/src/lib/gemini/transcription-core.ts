@@ -21,8 +21,8 @@ export const CHUNK_SECONDS = 600;
  */
 export const CHUNK_OVERLAP_SECONDS = 15;
 /** 発話スナップの前後パディング（デザイン 2a 確定値。境界精度 ±0.5秒の実測と整合） */
-export const SNAP_PADDING_BEFORE_SECONDS = 0.15;
-export const SNAP_PADDING_AFTER_SECONDS = 0.35;
+const SNAP_PADDING_BEFORE_SECONDS = 0.15;
+const SNAP_PADDING_AFTER_SECONDS = 0.35;
 
 const roundTenth = (value: number) => Math.round(value * 10) / 10;
 

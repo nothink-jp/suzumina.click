@@ -350,9 +350,9 @@ export async function savePlaylistMappingCache(
 // ==============================================================================
 
 /** recent-tierクエリの安全弁（暴走防止の上限件数） */
-export const MAX_RECENT_TIER_VIDEO_IDS = 200;
+const MAX_RECENT_TIER_VIDEO_IDS = 200;
 /** old-tierの1日あたり再取得上限（ローテーションで解消していく前提の件数） */
-export const MAX_OLD_TIER_DUE_VIDEO_IDS = 50;
+const MAX_OLD_TIER_DUE_VIDEO_IDS = 50;
 
 /**
  * DateをJST（Asia/Tokyo）の"YYYY-MM-DD"に変換する

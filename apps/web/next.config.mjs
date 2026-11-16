@@ -35,16 +35,6 @@ const nextConfig = {
 		// optimizeCss: true, // critters依存関係の問題で一時的に無効化
 	},
 
-	// Turbopack設定（安定版）
-	turbopack: {
-		rules: {
-			"*.svg": {
-				loaders: ["@svgr/webpack"],
-				as: "*.js",
-			},
-		},
-	},
-
 	// 画像最適化
 	images: {
 		// 画像形式の最適化（AVIF優先でWebPフォールバック）

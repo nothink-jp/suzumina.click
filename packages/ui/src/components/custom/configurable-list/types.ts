@@ -85,7 +85,7 @@ export interface FilterConfig {
 /**
  * ソート設定
  */
-export interface SortOption {
+interface SortOption {
 	value: string;
 	label: string;
 }

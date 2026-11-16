@@ -91,7 +91,7 @@ function createPanelHotkeyHandler(
 	};
 }
 
-export interface AuditionControls {
+interface AuditionControls {
 	/** ループ試聴中か（表示とトグルの状態） */
 	isLooping: boolean;
 	prerollEnabled: boolean;

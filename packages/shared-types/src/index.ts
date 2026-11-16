@@ -49,7 +49,6 @@ export * from "./entities/work";
 export * from "./entities/work-evaluation";
 export {
 	canCreateAudioButton,
-	canCreateButton,
 	formatDuration,
 	getAgeInDays,
 	getAllTags as getVideoAllTags,
@@ -83,7 +82,6 @@ export * from "./plain-objects/work-plain";
 export { audioButtonTransformers } from "./transformers/audio-button";
 export { audioButtonDraftTransformers } from "./transformers/audio-button-draft";
 export {
-	convertToFrontendVideo,
 	fromFirestore as videoFromFirestore,
 	toFirestore as videoToFirestore,
 	videoTransformers,

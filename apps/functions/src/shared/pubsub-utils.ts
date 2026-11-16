@@ -12,7 +12,7 @@ import * as logger from "./logger";
 /**
  * Pub/Subメッセージ本体（base64エンコードされたdataとattributes）
  */
-export interface PubsubMessage {
+interface PubsubMessage {
 	data?: string;
 	attributes?: Record<string, string>;
 }

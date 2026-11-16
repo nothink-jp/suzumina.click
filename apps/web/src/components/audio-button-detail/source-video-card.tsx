@@ -19,7 +19,7 @@ interface SourceVideoCardProps {
 }
 
 /** ISO8601 duration（PT1H2M3S）→ 秒。パース不能は null */
-export function parseIsoDurationToSeconds(duration: string | undefined): number | null {
+function parseIsoDurationToSeconds(duration: string | undefined): number | null {
 	if (!duration) return null;
 	const match = duration.match(/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?$/);
 	if (!match || (!match[1] && !match[2] && !match[3])) return null;
