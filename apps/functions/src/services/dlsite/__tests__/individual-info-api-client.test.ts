@@ -351,6 +351,80 @@ describe("Individual Info API Client", () => {
 			expect(result.failedWorkIds).toEqual(["RJ999999"]);
 		});
 
+		it("404 と workno 無しの応答を、バッチ単位の WARN に理由つきで残す（SPR-423）", async () => {
+			mockFetch
+				.mockResolvedValueOnce({
+					ok: false,
+					status: 404,
+					text: vi.fn().mockResolvedValue("<html>blocked</html>"),
+					headers: new Headers({
+						server: "cloudflare",
+						"cf-ray": "abc-NRT",
+						"content-type": "text/html",
+						"set-cookie": "secret=1",
+					}),
+				})
+				.mockResolvedValueOnce({
+					ok: true,
+					status: 200,
+					text: vi.fn().mockResolvedValue(JSON.stringify([{ work_name: "IDなし" }])),
+					headers: new Headers({ "content-type": "application/json" }),
+				});
+
+			const result = await batchFetchIndividualInfo(["RJ000001", "RJ000002"], { batchDelay: 0 });
+
+			expect(result.failedWorkIds).toEqual(["RJ000001", "RJ000002"]);
+			expect(logger.warn).toHaveBeenCalledWith("ログ省略の取得失敗の内訳: 2件", {
+				attemptedCount: 2,
+				http404Count: 1,
+				missingWorknoCount: 1,
+				samples: [
+					{
+						workId: "RJ000001",
+						reason: "http_404",
+						status: 404,
+						headers: { server: "cloudflare", "cf-ray": "abc-NRT", "content-type": "text/html" },
+						bodyHead: "<html>blocked</html>",
+					},
+					{
+						workId: "RJ000002",
+						reason: "missing_workno",
+						status: 200,
+						headers: { "content-type": "application/json" },
+						bodyHead: '[{"work_name":"IDなし"}]',
+					},
+				],
+			});
+		});
+
+		it("ログ省略の失敗が無ければ内訳の WARN を出さず、サンプルは3件までに抑える", async () => {
+			mockFetch.mockResolvedValue({
+				ok: true,
+				status: 200,
+				text: vi.fn().mockResolvedValue(JSON.stringify([mockWorkData1])),
+				headers: new Headers(),
+			});
+			await batchFetchIndividualInfo(["RJ123456"], { batchDelay: 0 });
+			expect(logger.warn).not.toHaveBeenCalledWith(
+				expect.stringContaining("ログ省略の取得失敗の内訳"),
+				expect.anything(),
+			);
+
+			mockFetch.mockResolvedValue({
+				ok: false,
+				status: 404,
+				text: vi.fn().mockResolvedValue("x".repeat(1000)),
+				headers: new Headers(),
+			});
+			await batchFetchIndividualInfo(["RJ1", "RJ2", "RJ3", "RJ4"], { batchDelay: 0 });
+			const [, payload] = (logger.warn as Mock).mock.calls.find(([message]) =>
+				String(message).startsWith("ログ省略の取得失敗の内訳"),
+			) as [string, { http404Count: number; samples: Array<{ bodyHead: string }> }];
+			expect(payload.http404Count).toBe(4);
+			expect(payload.samples).toHaveLength(3);
+			expect(payload.samples[0]?.bodyHead).toHaveLength(300);
+		});
+
 		it("バッチサイズとディレイオプションが正しく動作する", async () => {
 			const workIds = ["RJ123456", "RJ123457", "RJ123458"];
 
