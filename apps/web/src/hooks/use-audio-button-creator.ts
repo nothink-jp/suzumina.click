@@ -12,7 +12,7 @@ const EDGE_AUDITION_SECONDS = 2;
 /** 境界調整→プレイヤー追従シークの trailing throttle */
 const FOLLOW_SEEK_DELAY_MS = 200;
 
-export interface AudioButtonCreatorState {
+interface AudioButtonCreatorState {
 	buttonText: string;
 	tags: string[];
 	isProcessing: boolean;
@@ -28,7 +28,7 @@ export interface AudioButtonCreatorConfig {
 }
 
 /** 試聴（ループ再生・境界試聴・プリロール）の状態とアクション */
-export interface AuditionState {
+interface AuditionState {
 	isLooping: boolean;
 	prerollEnabled: boolean;
 	onToggleLoop: () => void;

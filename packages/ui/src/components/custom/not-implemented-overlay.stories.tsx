@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import NotImplementedOverlay from "./not-implemented-overlay";
+import { NotImplementedOverlay } from "./not-implemented-overlay";
 
 const meta = {
 	title: "Custom/Utility/NotImplementedOverlay",

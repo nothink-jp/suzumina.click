@@ -16,7 +16,7 @@ import { type CustomAdapter, createAdapterFactory } from "better-auth/adapters";
 import { getFirestore } from "@/lib/firestore";
 
 /** better-auth core の WhereOperator と一致 */
-export type WhereOperator =
+type WhereOperator =
 	| "eq"
 	| "ne"
 	| "lt"

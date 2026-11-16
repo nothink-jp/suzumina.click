@@ -21,7 +21,7 @@ const JST_TIME_ZONE = "Asia/Tokyo";
  */
 export const DEFAULT_SESSION_GAP_MINUTES = 30;
 
-export type ActivityKind = "create" | "favorite" | "like" | "dislike" | "draft" | "evaluation";
+type ActivityKind = "create" | "favorite" | "like" | "dislike" | "draft" | "evaluation";
 
 /** audioButtons/{id} の集計に必要な部分だけを取り出した形 */
 export interface ButtonRecord {

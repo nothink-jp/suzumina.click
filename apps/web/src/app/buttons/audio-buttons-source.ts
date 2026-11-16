@@ -5,7 +5,7 @@ import { applyFilters } from "./lib/audio-button-filters";
 import { fetchAndConvertButtons } from "./utils/audio-button-converters";
 
 /** 一覧表示に要るフィールドだけを読む（AudioButtonDocument のうち一覧で使うもの） */
-export const AUDIO_BUTTON_LIST_FIELDS = [
+const AUDIO_BUTTON_LIST_FIELDS = [
 	"buttonText",
 	"tags",
 	"videoId",

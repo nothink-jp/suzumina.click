@@ -1,6 +1,7 @@
 {
 	"$schema": "https://unpkg.com/knip@6/schema.json",
-	"ignore": ["terraform/**", ".design-sync/**"],
+	"ignore": [".design-sync/**"],
+	"ignoreBinaries": ["gcloud"],
 	"ignoreDependencies": [
 		"@secretlint/secretlint-rule-pattern",
 		"@secretlint/secretlint-rule-preset-recommend"
@@ -16,9 +17,6 @@
 		"packages/ui": {
 			"ignore": [".storybook/mocks/**", "ds-entry.tsx"],
 			"ignoreDependencies": ["postcss-load-config"]
-		},
-		"packages/typescript-config": {
-			"ignoreDependencies": ["next"]
 		}
 	}
 }

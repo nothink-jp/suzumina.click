@@ -30,5 +30,3 @@ export function NotImplementedOverlay({
 		</div>
 	);
 }
-
-export default NotImplementedOverlay;

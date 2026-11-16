@@ -39,7 +39,7 @@ export interface AudioButtonDocument {
  * 通ると変換時点の値が残り続け、名前と中身がずれるため。相対時刻は表示側で
  * `formatRelativeTime(button.createdAt)` を呼ぶ（SPR-354 フォローアップ）
  */
-export interface AudioButtonComputedProperties {
+interface AudioButtonComputedProperties {
 	isPopular: boolean;
 	engagementRate: number;
 	engagementRatePercentage: number;

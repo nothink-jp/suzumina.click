@@ -15,7 +15,7 @@ export interface AudioButtonSuggestion {
 /** 生成対象区間の上限（コスト上限。通常のボタンは数秒） */
 export const MAX_SEGMENT_SECONDS = 60;
 /** 発話の切れ目を拾うためのクリップ前後余白 */
-export const CLIP_PADDING_SECONDS = 2;
+const CLIP_PADDING_SECONDS = 2;
 
 const MAX_TITLE_LENGTH = 100;
 const MAX_TAG_LENGTH = 30;

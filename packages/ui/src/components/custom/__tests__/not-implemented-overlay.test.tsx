@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import NotImplementedOverlay from "../not-implemented-overlay";
+import { NotImplementedOverlay } from "../not-implemented-overlay";
 
 describe("NotImplementedOverlay", () => {
 	it("デフォルトのタイトルとメッセージが表示される", () => {

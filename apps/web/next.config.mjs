@@ -35,15 +35,8 @@ const nextConfig = {
 		// optimizeCss: true, // critters依存関係の問題で一時的に無効化
 	},
 
-	// Turbopack設定（安定版）
-	turbopack: {
-		rules: {
-			"*.svg": {
-				loaders: ["@svgr/webpack"],
-				as: "*.js",
-			},
-		},
-	},
+	// Next 16 は `webpack` 設定があり `turbopack` 設定が無いとビルドを止めるため、空でも残す（ルールは不要）
+	turbopack: {},
 
 	// 画像最適化
 	images: {

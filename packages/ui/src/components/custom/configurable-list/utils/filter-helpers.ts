@@ -103,11 +103,7 @@ export function getDefaultFilterValues(
  * アクティブなフィルターがあるかチェック
  */
 // Helper function to check if a single filter is active
-export function isFilterActive(
-	value: unknown,
-	config: FilterConfig,
-	defaultValue: unknown,
-): boolean {
+function isFilterActive(value: unknown, config: FilterConfig, defaultValue: unknown): boolean {
 	// "all"値は非アクティブとみなす
 	if (config.showAll && value === "all") return false;
 

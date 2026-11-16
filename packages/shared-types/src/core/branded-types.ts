@@ -18,11 +18,6 @@ declare const __brand: unique symbol;
 export type Brand<K, T> = K & { [__brand]: T };
 
 /**
- * Type guard signature for branded types
- */
-export type TypeGuard<T> = (value: unknown) => value is T;
-
-/**
  * Factory function signature for branded types
  */
 export type BrandFactory<T> = {

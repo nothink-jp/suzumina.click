@@ -310,5 +310,3 @@ export function useYouTubePlayer() {
 		},
 	};
 }
-
-export default YouTubePlayer;

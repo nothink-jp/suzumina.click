@@ -115,7 +115,7 @@ export const videoFetchRunEventClaim: RunEventClaimOptions = {
  *
  * @returns Promise<FetchMetadata> - 取得または初期化されたメタデータ
  */
-export async function getOrCreateMetadata(): Promise<FetchMetadata> {
+async function getOrCreateMetadata(): Promise<FetchMetadata> {
 	return fetchMetadataStore.getOrCreate();
 }
 

@@ -55,7 +55,7 @@ export function isUpcoming(video: VideoPlainObject): boolean {
 /**
  * Checks if audio buttons can be created for this video
  */
-export function canCreateButton(video: VideoPlainObject): boolean {
+export function canCreateAudioButton(video: VideoPlainObject): boolean {
 	// Use _computed properties if available
 	if (video._computed?.canCreateButton !== undefined) {
 		return video._computed.canCreateButton;
@@ -64,11 +64,6 @@ export function canCreateButton(video: VideoPlainObject): boolean {
 	// Only archived videos can have buttons
 	return isArchived(video);
 }
-
-/**
- * Alias for backward compatibility with old naming
- */
-export const canCreateAudioButton = canCreateButton;
 
 /** 配信状態（videoType）ごとの作成不可理由。ここに無い videoType は配信状態では弾かない */
 const STREAM_STATE_ERROR_MESSAGES: Partial<Record<VideoType, string>> = {
@@ -225,7 +220,6 @@ export const videoOperations = {
 	isPremiere,
 	isLive,
 	isUpcoming,
-	canCreateButton,
 	canCreateAudioButton,
 	getAudioButtonCreationErrorMessage,
 	getDisplayTitle,
