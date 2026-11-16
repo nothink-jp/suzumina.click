@@ -85,14 +85,20 @@ function parseRetryAfterSeconds(value: string | null): number | undefined {
 }
 
 /**
- * 制限の窓を実測するために残す応答ヘッダ（SPR-408）
+ * 制限・ブロックの種類を実測するために残す応答ヘッダ（SPR-408 / SPR-423）
  *
- * 全ヘッダは残さない（set-cookie 等を巻き込まない）。制限の種類と解除時刻が読めるものだけ。
+ * 全ヘッダは残さない（set-cookie 等を巻き込まない）。制限の種類と解除時刻、応答の出どころ
+ * （Cloudflare か DLsite か）が読めるものだけ。
  */
-function pickRateLimitHeaders(headers: Headers): Record<string, string> {
+function pickDiagnosticHeaders(headers: Headers): Record<string, string> {
 	const picked: Record<string, string> = {};
 	headers.forEach((value, key) => {
-		if (key === "retry-after" || key === "server" || /^(x-)?ratelimit|^cf-/.test(key)) {
+		if (
+			key === "retry-after" ||
+			key === "server" ||
+			key === "content-type" ||
+			/^(x-)?ratelimit|^cf-/.test(key)
+		) {
 			picked[key] = value;
 		}
 	});
@@ -100,11 +106,73 @@ function pickRateLimitHeaders(headers: Headers): Record<string, string> {
 }
 
 /**
+ * 作品ごとのログを出さずに `null` で返した失敗の記録（SPR-423）
+ *
+ * 404 と「workno / product_id の無い応答」は、販売終了作品で平常時にも起きるため作品ごとのログを
+ * 出していない。その結果、この2経路で大半が失敗したときに理由が一切残らなかった（2026-11-16）。
+ * 作品ごとには出さず、`batchFetchIndividualInfo` がバッチ単位で集計して WARN に出す。
+ */
+export interface SilentFetchFailure {
+	workId: string;
+	reason: "http_404" | "missing_workno";
+	status: number;
+	/** 制限・ブロックの種類を読むための応答ヘッダ（`pickDiagnosticHeaders`） */
+	headers: Record<string, string>;
+	/** 応答本文の先頭（Cloudflare のブロックページか DLsite の応答かを見分ける） */
+	bodyHead: string;
+}
+
+/** バッチ WARN に載せるサンプルの上限と、本文の先頭として残す長さ */
+const SILENT_FAILURE_SAMPLE_LIMIT = 3;
+const SILENT_FAILURE_BODY_HEAD_LENGTH = 300;
+
+/**
  * Individual Info API リクエストオプション
  */
 export interface IndividualInfoAPIOptions {
 	/** 詳細ログ出力（開発環境用）（デフォルト: false） */
 	enableDetailedLogging?: boolean;
+	/**
+	 * ログを出さずに `null` で返した失敗を積む先。渡したときだけ記録する
+	 * （`batchFetchIndividualInfo` が渡してバッチ単位で WARN に出す）。
+	 */
+	silentFailureSink?: SilentFetchFailure[];
+}
+
+function recordSilentFailure(
+	sink: SilentFetchFailure[] | undefined,
+	workId: string,
+	reason: SilentFetchFailure["reason"],
+	response: Response,
+	responseText: string,
+): void {
+	sink?.push({
+		workId,
+		reason,
+		status: response.status,
+		headers: pickDiagnosticHeaders(response.headers),
+		bodyHead: responseText.substring(0, SILENT_FAILURE_BODY_HEAD_LENGTH),
+	});
+}
+
+/**
+ * ログを出さずに失敗した分をバッチ単位で WARN に出す（SPR-423）
+ *
+ * 監視の契約ログではない（アラートのフィルタ対象は `warnIfFailureRateHigh` の文言）。
+ * 原因調査のための診断ログ。
+ */
+function warnSilentFailures(silentFailures: SilentFetchFailure[], attemptedCount: number): void {
+	if (silentFailures.length === 0) {
+		return;
+	}
+	const count = (reason: SilentFetchFailure["reason"]) =>
+		silentFailures.filter((failure) => failure.reason === reason).length;
+	logger.warn(`ログ省略の取得失敗の内訳: ${silentFailures.length}件`, {
+		attemptedCount,
+		http404Count: count("http_404"),
+		missingWorknoCount: count("missing_workno"),
+		samples: silentFailures.slice(0, SILENT_FAILURE_SAMPLE_LIMIT),
+	});
 }
 
 /**
@@ -133,7 +201,7 @@ function handleHttpError(
 	// 429: レート制限（リトライしない＝DLsiteRateLimitError 参照）
 	if (response.status === 429) {
 		logger.warn(`Individual Info API レート制限: ${workId}`, {
-			rateLimitHeaders: pickRateLimitHeaders(response.headers),
+			rateLimitHeaders: pickDiagnosticHeaders(response.headers),
 		});
 		throw new DLsiteRateLimitError(
 			workId,
@@ -253,7 +321,7 @@ export async function fetchIndividualWorkInfo(
 	workId: string,
 	options: IndividualInfoAPIOptions & { retryCount?: number } = {},
 ): Promise<DLsiteApiResponse | null> {
-	const { enableDetailedLogging = false, retryCount = 0 } = options;
+	const { enableDetailedLogging = false, retryCount = 0, silentFailureSink } = options;
 
 	try {
 		const url = `${INDIVIDUAL_INFO_API_BASE_URL}?workno=${workId}`;
@@ -278,6 +346,8 @@ export async function fetchIndividualWorkInfo(
 					responseText: responseText.substring(0, 200),
 					url,
 				});
+			} else {
+				recordSilentFailure(silentFailureSink, workId, "http_404", response, responseText);
 			}
 
 			return handleHttpError(response, workId, url, responseText, enableDetailedLogging);
@@ -298,7 +368,10 @@ export async function fetchIndividualWorkInfo(
 			enableDetailedLogging,
 		);
 
-		// API取得成功ログは省略
+		// 配列で中身はあるのに workno / product_id が無い応答（validateResponseFormat がログ無しで null）
+		if (validatedData === null && Array.isArray(responseData) && responseData.length > 0) {
+			recordSilentFailure(silentFailureSink, workId, "missing_workno", response, responseText);
+		}
 
 		return validatedData;
 	} catch (error) {
@@ -442,7 +515,9 @@ export async function batchFetchIndividualInfo(
 	failedWorkIds: string[];
 	interruption?: BatchInterruption;
 }> {
-	const { maxConcurrent = 3, batchDelay = 800, deadlineAt, ...apiOptions } = options;
+	const { maxConcurrent = 3, batchDelay = 800, deadlineAt, ...callerApiOptions } = options;
+	const silentFailures: SilentFetchFailure[] = [];
+	const apiOptions = { ...callerApiOptions, silentFailureSink: silentFailures };
 	const results = new Map<string, DLsiteApiResponse>();
 	const failedWorkIds: string[] = [];
 	let interruption: BatchInterruption | undefined;
@@ -472,10 +547,9 @@ export async function batchFetchIndividualInfo(
 		}
 	}
 
-	warnIfFailureRateHigh(
-		failedWorkIds.length,
-		workIds.length - (interruption?.skippedWorkIds.length ?? 0),
-	);
+	const attemptedCount = workIds.length - (interruption?.skippedWorkIds.length ?? 0);
+	warnIfFailureRateHigh(failedWorkIds.length, attemptedCount);
+	warnSilentFailures(silentFailures, attemptedCount);
 
 	// スキーマドリフト観測（SPR-140）: 既知集合に無い新フィールドが出たら WARN（重複抑制・例外は無視）
 	recordSchemaDriftForBatch(
