@@ -32,7 +32,7 @@ resource "google_compute_network" "egress" {
 
 # Direct VPC egress の要件は /26 以上。インスタンス数の 2 倍の IP を使う（max-instances 1 なら 2 個）。
 # Jobs 化（SPR-417）で同じサブネットを使う余地も見て /26（62 個）にしている。
-resource "google_compute_subnetwork" "egress_tokyo" {
+resource "google_compute_subnetwork" "egress" {
   project       = var.gcp_project_id
   name          = "egress-${var.region}"
   region        = var.region
@@ -73,7 +73,7 @@ resource "google_compute_router_nat" "egress" {
 
   source_subnetwork_ip_ranges_to_nat = "LIST_OF_SUBNETWORKS"
   subnetwork {
-    name                    = google_compute_subnetwork.egress_tokyo.id
+    name                    = google_compute_subnetwork.egress.id
     source_ip_ranges_to_nat = ["ALL_IP_RANGES"]
   }
 
