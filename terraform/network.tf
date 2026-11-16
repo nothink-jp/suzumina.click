@@ -9,12 +9,12 @@
 #
 # 仕組み: 関数を Direct VPC egress（all-traffic）でこのサブネットにつなぎ、サブネットの
 # 外向きを Cloud NAT + 静的 IP に通す。**このファイルはネットワーク側だけ**を作る。
-# 関数をつなぐ設定（--network / --subnet / --direct-vpc-egress）の正本は
+# 関数をつなぐ設定（--network / --subnet / --direct-vpc-egress=all）の正本は
 # .github/workflows/deploy-functions.yml（Functions の spec は workflow が正本＝ADR-009）。
 # つなぐまで、ここのリソースを通る通信は無い。
 #
 # 効かない場合: ブロックの単位が IP より広い（Google Cloud の IP 範囲・事業者）なら、固定しても
-# 通らない。そのときは workflow のフラグを外してから、このファイルを消す。
+# 通らない。そのときは workflow のフラグを --clear-network に置き換えてデプロイしてから、このファイルを消す。
 #
 # 費用（月額の概算）: 静的 IP 約 $3.6 + NAT ゲートウェイ 最大 約 $1 + データ処理 約 $1 未満。
 
