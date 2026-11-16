@@ -133,7 +133,42 @@ describe("Individual Info API Client", () => {
 			expect(mockFetch).toHaveBeenCalledTimes(1);
 			// 制限の窓を実測するためのヘッダだけを残す（set-cookie 等は残さない）
 			expect(logger.warn).toHaveBeenCalledWith("Individual Info API レート制限: RJ123456", {
+				status: 429,
 				rateLimitHeaders: { "retry-after": "300", "cf-ray": "abc" },
+			});
+		});
+
+		it("Retry-After つきの 404 はブロックとして DLsiteRateLimitError を投げる（SPR-423）", async () => {
+			// 2026-11-16 実測: 404 + retry-after + 本文 []（作品が無いときの 404 には retry-after が付かない）
+			mockFetch.mockResolvedValue({
+				ok: false,
+				status: 404,
+				statusText: "Not Found",
+				text: vi.fn().mockResolvedValue("[]"),
+				headers: new Headers({
+					"retry-after": "3600",
+					server: "cloudflare",
+					"content-type": "application/json",
+				}),
+			});
+			const silentFailureSink: never[] = [];
+
+			const error = await fetchIndividualWorkInfo("RJ123456", { silentFailureSink }).catch(
+				(e) => e,
+			);
+
+			expect(error).toBeInstanceOf(DLsiteRateLimitError);
+			expect(error.retryAfterSeconds).toBe(3600);
+			expect(mockFetch).toHaveBeenCalledTimes(1);
+			// 「作品が無い」の集計には入れない
+			expect(silentFailureSink).toEqual([]);
+			expect(logger.warn).toHaveBeenCalledWith("Individual Info API レート制限: RJ123456", {
+				status: 404,
+				rateLimitHeaders: {
+					"retry-after": "3600",
+					server: "cloudflare",
+					"content-type": "application/json",
+				},
 			});
 		});
 
@@ -462,6 +497,7 @@ describe("Individual Info API Client", () => {
 				headers: new Headers({ "retry-after": "120" }),
 			};
 			// サブバッチ1: 2件成功 / サブバッチ2: 1件成功 + 1件 429 / サブバッチ3: 呼ばれない
+			// （Retry-After つきの 404 も同じ DLsiteRateLimitError になるので、打ち切りの経路は共通）
 			mockFetch
 				.mockResolvedValueOnce(ok)
 				.mockResolvedValueOnce(ok)

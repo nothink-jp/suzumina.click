@@ -51,10 +51,14 @@ export const WORST_CASE_FETCH_MS =
 	);
 
 /**
- * 429（レート制限）を呼び出し元へ伝えるエラー
+ * レート制限（ブロック）を呼び出し元へ伝えるエラー
  *
- * リトライ対象にしない。DLsite の制限は一度掛かると約5分続き、その間 1〜2 秒後の再試行は
- * すべて 429 で返る（2026-11-13 実測・SPR-408）。再試行は制限中の負荷を増やすだけなので、
+ * DLsite（Cloudflare）のブロックは2つの形で返る。どちらもこのエラーにする:
+ * - 429 + `Retry-After: 300`（2026-11-13 実測・SPR-408）
+ * - 404 + `Retry-After` + 本文 `[]`（2026-11-16 実測・SPR-423。ブロックは約1時間続いた）。
+ *   作品が無いときの 404 には `Retry-After` が付かないので、ヘッダの有無で見分ける
+ *
+ * リトライ対象にしない。ブロック中の再試行はすべて同じ応答で返り、負荷を増やすだけなので、
  * `batchFetchIndividualInfo` が残りを打ち切って次の run に回す。
  */
 export class DLsiteRateLimitError extends Error {
@@ -181,14 +185,23 @@ function warnSilentFailures(silentFailures: SilentFetchFailure[], attemptedCount
 function handleHttpError(
 	response: Response,
 	workId: string,
-	_url: string,
-	_responseText: string,
-	_enableDetailedLogging: boolean,
+	responseText: string,
+	silentFailureSink: SilentFetchFailure[] | undefined,
 ): DLsiteApiResponse | null {
-	// 詳細ログは環境に関係なく省略
+	const retryAfter = response.headers.get("retry-after");
 
-	// 404: 作品が見つからない（ログ省略）
+	// Retry-After つきの 404: Cloudflare のブロック（429 と同じ扱い＝DLsiteRateLimitError 参照）
+	if (response.status === 404 && retryAfter !== null) {
+		logger.warn(`Individual Info API レート制限: ${workId}`, {
+			status: response.status,
+			rateLimitHeaders: pickDiagnosticHeaders(response.headers),
+		});
+		throw new DLsiteRateLimitError(workId, parseRetryAfterSeconds(retryAfter));
+	}
+
+	// 404: 作品が見つからない（作品ごとのログは省略＝バッチ単位で集計）
 	if (response.status === 404) {
+		recordSilentFailure(silentFailureSink, workId, "http_404", response, responseText);
 		return null;
 	}
 
@@ -201,12 +214,10 @@ function handleHttpError(
 	// 429: レート制限（リトライしない＝DLsiteRateLimitError 参照）
 	if (response.status === 429) {
 		logger.warn(`Individual Info API レート制限: ${workId}`, {
+			status: response.status,
 			rateLimitHeaders: pickDiagnosticHeaders(response.headers),
 		});
-		throw new DLsiteRateLimitError(
-			workId,
-			parseRetryAfterSeconds(response.headers.get("retry-after")),
-		);
+		throw new DLsiteRateLimitError(workId, parseRetryAfterSeconds(retryAfter));
 	}
 
 	// 5xx: サーバーエラー（リトライ可能）
@@ -253,7 +264,8 @@ function validateResponseFormat(
 	workId: string,
 	url: string,
 	responseText: string,
-	_enableDetailedLogging: boolean,
+	/** workno / product_id の無い応答を記録する（作品ごとのログは出さない＝バッチ単位で集計） */
+	recordMissingWorkno: () => void,
 ): DLsiteApiResponse | null {
 	// Individual Info APIは配列形式でレスポンスを返す
 	if (!Array.isArray(responseData) || responseData.length === 0) {
@@ -277,8 +289,9 @@ function validateResponseFormat(
 
 	const data = responseData[0] as DLsiteApiResponse;
 
-	// 基本的なデータ検証（ログ省略）
+	// 基本的なデータ検証
 	if (!data.workno && !data.product_id) {
+		recordMissingWorkno();
 		return null;
 	}
 
@@ -346,11 +359,9 @@ export async function fetchIndividualWorkInfo(
 					responseText: responseText.substring(0, 200),
 					url,
 				});
-			} else {
-				recordSilentFailure(silentFailureSink, workId, "http_404", response, responseText);
 			}
 
-			return handleHttpError(response, workId, url, responseText, enableDetailedLogging);
+			return handleHttpError(response, workId, responseText, silentFailureSink);
 		}
 
 		const responseText = await response.text();
@@ -360,20 +371,9 @@ export async function fetchIndividualWorkInfo(
 			return null;
 		}
 
-		const validatedData = validateResponseFormat(
-			responseData,
-			workId,
-			url,
-			responseText,
-			enableDetailedLogging,
+		return validateResponseFormat(responseData, workId, url, responseText, () =>
+			recordSilentFailure(silentFailureSink, workId, "missing_workno", response, responseText),
 		);
-
-		// 配列で中身はあるのに workno / product_id が無い応答（validateResponseFormat がログ無しで null）
-		if (validatedData === null && Array.isArray(responseData) && responseData.length > 0) {
-			recordSilentFailure(silentFailureSink, workId, "missing_workno", response, responseText);
-		}
-
-		return validatedData;
 	} catch (error) {
 		// リトライ可能なエラーかチェック
 		const maxRetries = getMaxRetries(error);
@@ -489,7 +489,7 @@ function toRateLimitInterruption(
  * バッチでIndividual Info APIを呼び出し
  *
  * 次のどちらかで打ち切り、`interruption` を返す（残りは呼ばない）:
- * - 429 を1件でも受けた（そのサブバッチで打ち切る）
+ * - レート制限（429、または Retry-After つきの 404）を1件でも受けた（そのサブバッチで打ち切る）
  * - `deadlineAt` が指定されていて、次のサブバッチが最悪ケース（`WORST_CASE_FETCH_MS`）でも
  *   それまでに終わる保証が無い（始める前に打ち切る）
  *
@@ -499,7 +499,7 @@ function toRateLimitInterruption(
  */
 export async function batchFetchIndividualInfo(
 	workIds: string[],
-	options: IndividualInfoAPIOptions & {
+	options: Omit<IndividualInfoAPIOptions, "silentFailureSink"> & {
 		/** 最大並列数（デフォルト: 3） */
 		maxConcurrent?: number;
 		/** バッチ間隔（ms）（デフォルト: 800） */
