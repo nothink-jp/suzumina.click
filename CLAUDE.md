@@ -211,6 +211,7 @@ Claude Code のクラウドセッションでは、`*.googleapis.com` 宛ての�
   - **アラート・障害調査**: Cloud Monitoring の時系列・アラートポリシー、Cloud Logging、Cloud Run / Cloud Functions / Pub/Sub /
     Eventarc / Cloud Scheduler の設定と状態、デプロイ zip のバケット
   - **Firestore のメタデータ**: index・TTL・DB 設定・バックアップ（`pnpm check:index-drift` の live 側もこれで読める）
+  - **ネットワーク**: VPC・サブネット・Cloud NAT・静的 IP の設定（外向きの固定 IP＝[network.tf](terraform/network.tf)）
   - **アクセス解析（GA4）**: BigQuery の日次エクスポート `suzumina-click.analytics_496464197.events_*`
     （`bq query --use_legacy_sql=false` で集計。リンク作成日より前のデータは無い）。
     GA4 Data API（リアルタイム・GA4 画面と同じ集計）は、注入トークンに analytics スコープが無く**直接叩くと 403**。
