@@ -13,13 +13,6 @@ import {
 } from "../individual-info-api-client";
 
 // モックの設定
-vi.mock("../../../infrastructure/management/user-agent-manager", () => ({
-	generateDLsiteHeaders: vi.fn(() => ({
-		"User-Agent": "Mozilla/5.0 (Test)",
-		"Accept-Language": "ja-JP,ja;q=0.9",
-	})),
-}));
-
 vi.mock("../../../shared/logger", () => ({
 	info: vi.fn(),
 	warn: vi.fn(),
@@ -65,7 +58,11 @@ describe("Individual Info API Client", () => {
 				"https://www.dlsite.com/maniax/api/=/product.json?workno=RJ123456",
 				expect.objectContaining({
 					method: "GET",
-					headers: expect.any(Object),
+					// ブラウザを装わず、取得元を名乗って JSON を求める。Accept を外すとブロックされる（SPR-423）
+					headers: {
+						"User-Agent": "suzumina.click-fetcher/1.0 (+https://suzumina.click)",
+						Accept: "application/json",
+					},
 				}),
 			);
 		});

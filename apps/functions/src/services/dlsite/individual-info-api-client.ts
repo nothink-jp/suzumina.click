@@ -6,12 +6,27 @@
  */
 
 import type { DLsiteApiResponse } from "@suzumina.click/shared-types";
-import { generateDLsiteHeaders } from "../../infrastructure/management/user-agent-manager";
 import * as logger from "../../shared/logger";
 import { recordSchemaDriftForBatch } from "./schema-drift";
 
 // API設定
 const INDIVIDUAL_INFO_API_BASE_URL = "https://www.dlsite.com/maniax/api/=/product.json";
+
+/**
+ * Individual Info API に送るヘッダ（この2つだけ。足すときは下の実測を先に読む）
+ *
+ * 取得元を正直に名乗り、JSON を求める形で呼ぶ。ブラウザを装うヘッダ一式（`generateDLsiteHeaders`）は使わない。
+ * 2026-11-16 から、DLsite（Cloudflare）は「ブラウザのページ遷移を装った形」と「Accept が既定のままで
+ * UA が node か独自のもの」を、東京拠点で 1 つのバケツにまとめてブロックし続けている（404 + Retry-After。
+ * ほかの送信元のアクセスでバケツが埋まるので、こちらの送信量に関係なく続く）。IP・地域は関係が無かった。
+ * この 2 つの組み合わせは、ブロックの最中も 13 回続けて通った（2026-11-17・東京の Cloud Run ジョブで実測）。
+ * `Accept` を外すとブロックされる（同じ実測）。判定の規則そのものは分かっていない＝SPR-423。
+ */
+const INDIVIDUAL_INFO_API_HEADERS: Readonly<Record<string, string>> = {
+	"User-Agent": "suzumina.click-fetcher/1.0 (+https://suzumina.click)",
+	Accept: "application/json",
+};
+
 // タイムアウトを 30 秒から詰めているのは、リトライ1回分を足しても1作品あたりの
 // 最悪待ち時間（15s + backoff 1s + 15s = 31s）が従来の 30s から増えないようにするため。
 // サブバッチを直列に回すので、1作品の最悪値がそのまま run の実行時間に効く
@@ -338,13 +353,12 @@ export async function fetchIndividualWorkInfo(
 
 	try {
 		const url = `${INDIVIDUAL_INFO_API_BASE_URL}?workno=${workId}`;
-		const headers = generateDLsiteHeaders();
 
 		// API取得開始ログは省略
 
 		const response = await fetch(url, {
 			method: "GET",
-			headers,
+			headers: INDIVIDUAL_INFO_API_HEADERS,
 			signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
 		});
 
