@@ -407,7 +407,11 @@ export function getUserAgentManager(): UserAgentManager {
 }
 
 /**
- * 完全なHTTPヘッダーセットを生成するヘルパー関数
+ * ブラウザを装う HTTP ヘッダ一式を生成する
+ *
+ * **Individual Info API では使わない。** この形は DLsite（Cloudflare）にブロックされやすい（SPR-423）。
+ * そちらは `individual-info-api-client.ts` の `INDIVIDUAL_INFO_API_HEADERS` を使う。
+ * 残っている呼び出し元（作品 ID の収集・http-utils）をどうするかは SPR-360 で決める。
  */
 export function generateDLsiteHeaders(referer?: string): Record<string, string> {
 	return getUserAgentManager().generateHeaders(referer);
