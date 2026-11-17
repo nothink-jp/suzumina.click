@@ -177,10 +177,10 @@ jobs:
           # 15 秒タイムアウトを連発していた（失敗率アラートの実発火要因）。
           # アプリ側の打ち切りは MAX_EXECUTION_TIME=480s（process-batch.ts・run 起動時点基準）。
           # 並列度（MAX_CONCURRENT_API_REQUESTS）も process-batch.ts の定数が正本で、env では変えない。
-          # 外向きの固定 IP（SPR-423）: --network / --subnet / --direct-vpc-egress=all で、外向きの通信を
-          # すべて terraform/network.tf のサブネットに通す（Cloud NAT + 静的 IP から出る）。
-          # 既定の共有 IP プールからの送信元が DLsite にブロックされ続けたため。DLsite の関数だけに付ける。
-          # 外すときは 3 つのフラグを --clear-network に置き換える（消すだけでは設定が残る）。
+          # --clear-network（SPR-423）: 外向きの固定 IP（Direct VPC egress）を切り離す。固定 IP は DLsite の
+          # ブロックに効かず（判定は IP と無関係だった）、起動直後に接続が失敗する害もあった。
+          # フラグを消すだけでは設定が残るので、切り離しが live に反映されるまで明示する。
+          # terraform/network.tf を消す PR で、この行も消す。
           gcloud functions deploy fetchDLsiteUnifiedData \
             --gen2 \
             --source ${{ env.DEPLOYMENT_SOURCE }} \
@@ -194,9 +194,7 @@ jobs:
             --timeout 540s \
             --max-instances 1 \
             --service-account fetch-dlsite-individual-api-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
-            --network egress \
-            --subnet egress-asia-northeast1 \
-            --direct-vpc-egress all \
+            --clear-network \
             --build-service-account "$BUILD_SERVICE_ACCOUNT" \
             --quiet &
           deploy_pids["fetchDLsiteUnifiedData"]=$!
