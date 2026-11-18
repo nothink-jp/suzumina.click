@@ -76,7 +76,8 @@ vi.mock("../../../shared/logger", () => ({
 	error: vi.fn(),
 }));
 
-const { fetchDLsiteUnifiedData } = await import("../fetch-dlsite-unified-data");
+const { fetchDLsiteUnifiedData, runUnifiedDataCollectionWithReport, WEEKLY_FULL_SWEEP_MODE } =
+	await import("../fetch-dlsite-unified-data");
 const logger = vi.mocked(await import("../../../shared/logger"));
 const { computeDueWorkIds, resolveCycleInfo } = await import("../run-unified-data-collection");
 const { bulkCheckPriceHistoryExistsToday } = await import("../../../services/price-history");
@@ -563,6 +564,57 @@ describe("fetchDLsiteUnifiedData（エントリポイント統合）", () => {
 				expect.objectContaining({ currentBatch: 0, lastError: "API取得の締め切りにより中断" }),
 			);
 			expect(logger.info).not.toHaveBeenCalledWith("全バッチ処理完了", expect.anything());
+		});
+	});
+
+	describe("runUnifiedDataCollectionWithReport（Functions と Jobs が共有する本体。SPR-415）", () => {
+		it("成功したら true を返し、開始ログに起動元の情報を載せる（重複配信の判定は通らない）", async () => {
+			vi.mocked(collectWorkIdsForProduction).mockResolvedValue(["RJ001"]);
+			vi.mocked(batchFetchIndividualInfo).mockResolvedValue({
+				results: new Map([["RJ001", makeApiResponse("RJ001")]]),
+				failedWorkIds: [],
+			});
+
+			const ok = await runUnifiedDataCollectionWithReport({
+				mode: "individual_info_api_unified",
+				trigger: { jobMode: "dlsite", execution: "dlsite-abc" },
+			});
+
+			expect(ok).toBe(true);
+			// 「統合データ収集開始」は dlsite_run_started メトリクスの契約。文言とキーを変えない
+			expect(logger.info).toHaveBeenCalledWith(
+				"統合データ収集開始",
+				expect.objectContaining({
+					jobMode: "dlsite",
+					execution: "dlsite-abc",
+					mode: "individual_info_api_unified",
+					週次フルスイープ: false,
+				}),
+			);
+			expect(transactionMock.set).not.toHaveBeenCalled();
+		});
+
+		it("mode が weekly_full_sweep なら週次フルスイープとして走らせる", async () => {
+			vi.mocked(collectWorkIdsForProduction).mockResolvedValue(["RJ001"]);
+			vi.mocked(batchFetchIndividualInfo).mockResolvedValue({
+				results: new Map([["RJ001", makeApiResponse("RJ001")]]),
+				failedWorkIds: [],
+			});
+
+			await runUnifiedDataCollectionWithReport({ mode: WEEKLY_FULL_SWEEP_MODE, trigger: {} });
+
+			expect(logger.info).toHaveBeenCalledWith(
+				"統合データ収集開始",
+				expect.objectContaining({ 週次フルスイープ: true }),
+			);
+		});
+
+		it("run が失敗したら false を返す（例外は投げない。Jobs は終了コードに使う）", async () => {
+			vi.mocked(collectWorkIdsForProduction).mockRejectedValue(new Error("scrape failed"));
+
+			await expect(
+				runUnifiedDataCollectionWithReport({ mode: undefined, trigger: {} }),
+			).resolves.toBe(false);
 		});
 	});
 

@@ -1,0 +1,84 @@
+/**
+ * Cloud Run Jobs 用の入口（イベント無しで起動する。SPR-415 / 設計は SPR-358）
+ *
+ * Functions の CloudEvent ハンドラ（endpoints/）と同じ本体を、引数のモードで呼び分ける。
+ * 開始・完了のログは、ハンドラと共有する `*WithReport` が出す（監視の契約を 1 か所に保つ）。
+ *
+ * - 重複配信の判定（`event.id`）は通らない。Pub/Sub を経由しないため。実行の重なりの防止は SPR-417 で入れる。
+ * - YouTube のモードは無い。YouTube は Functions に残す（SPR-358）。
+ */
+
+import { runIntegrityCheckWithReport } from "../endpoints/data-integrity/check-data-integrity";
+import {
+	runUnifiedDataCollectionWithReport,
+	WEEKLY_FULL_SWEEP_MODE,
+} from "../endpoints/dlsite/fetch-dlsite-unified-data";
+import * as logger from "../shared/logger";
+import { logRuntimeMemoryLimits } from "../shared/memory-diagnostics";
+
+/** ジョブの引数に渡すモード。ジョブの定義（Terraform）がこの値を渡す */
+const JOB_MODES = ["dlsite", "dlsite-full-sweep", "integrity"] as const;
+export type JobMode = (typeof JOB_MODES)[number];
+
+/** 通常の取り込みの mode 値（Scheduler が Functions へ渡しているペイロードと同じ文字列） */
+const DLSITE_NORMAL_MODE = "individual_info_api_unified";
+
+function isJobMode(value: string | undefined): value is JobMode {
+	return JOB_MODES.includes(value as JobMode);
+}
+
+/**
+ * Jobs が入れる環境変数から、起動元の情報を作る（開始ログに載る）
+ *
+ * ローカルで起動したときは `execution` / `job` が undefined になる。
+ */
+function jobTrigger(mode: JobMode): Record<string, unknown> {
+	return {
+		jobMode: mode,
+		job: process.env.CLOUD_RUN_JOB,
+		execution: process.env.CLOUD_RUN_EXECUTION,
+	};
+}
+
+/**
+ * モードに対応する処理を 1 回走らせる
+ *
+ * @returns 成功したら true。Jobs の終了コードに使う
+ */
+export async function runJob(mode: JobMode): Promise<boolean> {
+	const trigger = jobTrigger(mode);
+
+	switch (mode) {
+		case "dlsite":
+			return runUnifiedDataCollectionWithReport({ mode: DLSITE_NORMAL_MODE, trigger });
+		case "dlsite-full-sweep":
+			return runUnifiedDataCollectionWithReport({ mode: WEEKLY_FULL_SWEEP_MODE, trigger });
+		case "integrity":
+			await runIntegrityCheckWithReport(trigger);
+			return true;
+	}
+}
+
+/**
+ * 引数（`process.argv.slice(2)`）からモードを読み、走らせて、終了コードを返す
+ *
+ * - 0: 成功
+ * - 1: 処理が失敗した（Jobs は終了コードで実行の成否を決める）
+ * - 2: モードの指定が不正（設定の誤り。走らせない）
+ */
+export async function main(args: readonly string[]): Promise<number> {
+	const [mode] = args;
+	if (!isJobMode(mode)) {
+		logger.error("ジョブのモードが不正です", { mode, validModes: JOB_MODES });
+		return 2;
+	}
+
+	logRuntimeMemoryLimits();
+
+	try {
+		return (await runJob(mode)) ? 0 : 1;
+	} catch (error) {
+		logger.error("ジョブが失敗しました", { jobMode: mode, error });
+		return 1;
+	}
+}

@@ -39,8 +39,22 @@ describe("memory-diagnostics", () => {
 			expect(typeof payload.available_memory_mb).toBe("number");
 		});
 
+		it("Cloud Run Jobs ではジョブ名を出す（FUNCTION_TARGET が無いため。SPR-415）", () => {
+			delete process.env.FUNCTION_TARGET;
+			process.env.CLOUD_RUN_JOB = "dlsite-fetch";
+
+			logRuntimeMemoryLimits();
+
+			expect(logger.info).toHaveBeenCalledWith(
+				"Node.js runtime memory limits",
+				expect.objectContaining({ function_target: "dlsite-fetch" }),
+			);
+			delete process.env.CLOUD_RUN_JOB;
+		});
+
 		it("FUNCTION_TARGET未設定でも落ちずにunknownを出す", () => {
 			delete process.env.FUNCTION_TARGET;
+			delete process.env.CLOUD_RUN_JOB;
 
 			logRuntimeMemoryLimits();
 

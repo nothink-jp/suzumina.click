@@ -11,9 +11,15 @@ const watch = process.argv.includes("--watch");
 
 await rm(outdir, { recursive: true, force: true });
 
+// 入口は 2 つ。同じソースから、起動の仕方が違うバンドルを作る:
+// - lib/index.js: Functions（functions-framework が CloudEvent ハンドラを読み込む）
+// - lib/job.js: Cloud Run Jobs（`node lib/job.js <mode>`。SPR-415）
 const buildOptions = {
-	entryPoints: [resolve(projectRoot, "src/endpoints/index.ts")],
-	outfile: resolve(outdir, "index.js"),
+	entryPoints: {
+		index: resolve(projectRoot, "src/endpoints/index.ts"),
+		job: resolve(projectRoot, "src/jobs/main.ts"),
+	},
+	outdir,
 	bundle: true,
 	platform: "node",
 	target: "node24",

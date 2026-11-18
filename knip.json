@@ -8,7 +8,7 @@
 	],
 	"workspaces": {
 		"apps/functions": {
-			"entry": ["src/endpoints/index.ts"]
+			"entry": ["src/endpoints/index.ts", "src/jobs/main.ts"]
 		},
 		"apps/web": {
 			"ignore": ["vitest-mocks/**"],
