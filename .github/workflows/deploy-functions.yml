@@ -233,8 +233,8 @@ jobs:
 
       # Cloud Run Jobs 用のイメージ（SPR-415 / 設計は SPR-358）。Functions のデプロイとは別物で、
       # Functions はこのイメージを使わない。置き場所と掃除（cleanup_policies）の正本は
-      # terraform/artifact_registry.tf の functions_jobs。ジョブの定義（どのイメージを使うか）は Terraform が正本で、
-      # ここは build して push するだけ（ADR-009）。
+      # terraform/artifact_registry.tf の functions_jobs。ジョブの設定（timeout・引数・環境変数など）は
+      # Terraform が正本（terraform/job_dlsite.tf・ADR-009）で、ここは build / push とイメージの差し替えだけを担う。
       - name: Configure Docker for Artifact Registry
         run: gcloud auth configure-docker asia-northeast1-docker.pkg.dev --quiet
 
@@ -257,6 +257,23 @@ jobs:
           # cache は書き戻さない。GHA の 10GB 共有プールを web のビルドと CI の pnpm cache が使っていて、
           # このイメージのビルドは短い（esbuild のバンドルと本番依存の install だけ）ため。
           platforms: linux/amd64
+
+      # push したイメージへ、ジョブを差し替える（SPR-417）。渡すのは --image だけ（ほかの設定は Terraform が正本）。
+      # :latest ではなく :<sha> を明示する: ジョブがタグをいつダイジェストへ解決するか（更新のとき / 実行のたび）は
+      # 公式ドキュメントに書かれていないので、どちらでも「このコミットのイメージで動く」ようにする。
+      # ジョブの一覧は terraform/job_dlsite.tf の local.dlsite_jobs と揃える（ジョブを足したらここにも足す）。
+      # 実行中の実行には影響しない（次の実行から新しいイメージになる）。
+      - name: Update jobs to the pushed image
+        env:
+          JOBS_IMAGE: asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/functions-jobs/jobs:${{ github.sha }}
+        run: |
+          for job in fetch-dlsite-unified-data fetch-dlsite-unified-data-full-sweep; do
+            gcloud run jobs update "$job" \
+              --image "$JOBS_IMAGE" \
+              --region asia-northeast1 \
+              --project ${{ secrets.GCP_PROJECT_ID }} \
+              --quiet
+          done
 
       - name: Cleanup
         if: always()

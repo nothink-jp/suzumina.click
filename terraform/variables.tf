@@ -63,9 +63,9 @@ variable "cloud_run_bootstrap" {
 }
 
 variable "dlsite_jobs_bootstrap" {
-  description = "DLsite のジョブ（job_dlsite.tf）の初回 apply（未作成）や DR 時に true。稼働中のジョブの image を参照する data source を無効化し、:latest で作る。deploy-functions.yml がイメージを :<sha> に差し替えるようになったら false にする（cloud_run_bootstrap と同じ考え方。SPR-417）。"
+  description = "DLsite のジョブ（job_dlsite.tf）の初回 apply（未作成）や DR 時に true。稼働中のジョブの image を参照する data source を無効化し、:latest で作る。通常運用では false（cloud_run_bootstrap と同じ。SPR-417）。"
   type        = bool
-  default     = true
+  default     = false
 }
 
 # ==========================================================
