@@ -28,6 +28,11 @@ const BYTES_PER_MB = 1024 * 1024;
 /** このインスタンスが処理した run の回数（プロセス生存中のみ単調増加する有界なカウンタ） */
 let runCount = 0;
 
+/** どの関数・ジョブのログかを表す値。Functions は FUNCTION_TARGET、Cloud Run Jobs は CLOUD_RUN_JOB が入る（SPR-415） */
+function runtimeTarget(): string {
+	return process.env.FUNCTION_TARGET ?? process.env.CLOUD_RUN_JOB ?? "unknown";
+}
+
 function toMb(bytes: number): number {
 	return Math.round((bytes / BYTES_PER_MB) * 10) / 10;
 }
@@ -47,7 +52,7 @@ export function logRuntimeMemoryLimits(): void {
 		heap_size_limit_mb: toMb(getHeapStatistics().heap_size_limit),
 		constrained_memory_mb: toMb(constrainedMemory),
 		available_memory_mb: toMb(process.availableMemory?.() ?? 0),
-		function_target: process.env.FUNCTION_TARGET ?? "unknown",
+		function_target: runtimeTarget(),
 	});
 }
 
@@ -74,7 +79,7 @@ export function logRunMemoryUsage(mode: string): void {
 		heap_total_mb: toMb(usage.heapTotal),
 		external_mb: toMb(usage.external),
 		array_buffers_mb: toMb(usage.arrayBuffers),
-		function_target: process.env.FUNCTION_TARGET ?? "unknown",
+		function_target: runtimeTarget(),
 	});
 }
 

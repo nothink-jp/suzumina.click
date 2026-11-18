@@ -109,7 +109,24 @@ describe("logger", () => {
 			});
 		});
 
+		it("Cloud Run Jobs では job / execution をラベルにする（SPR-415）", () => {
+			delete process.env.K_SERVICE;
+			process.env.CLOUD_RUN_JOB = "dlsite-fetch";
+			process.env.CLOUD_RUN_EXECUTION = "dlsite-fetch-abc12";
+
+			logger.info("test message");
+
+			const parsed = JSON.parse(mockConsoleLog.mock.calls[0]![0]);
+			expect(parsed["logging.googleapis.com/labels"]).toEqual({
+				job: "dlsite-fetch",
+				execution: "dlsite-fetch-abc12",
+			});
+		});
+
 		it("should not include labels when K_SERVICE is not set", () => {
+			delete process.env.K_SERVICE;
+			delete process.env.CLOUD_RUN_JOB;
+
 			logger.info("test message");
 
 			const logOutput = mockConsoleLog.mock.calls[0]![0];

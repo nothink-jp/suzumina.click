@@ -92,20 +92,33 @@ function logToConsole(
 }
 
 /**
- * Cloud Functions v2の実行情報を取得
+ * 実行環境の情報をログのラベルにする
+ *
+ * - Functions / Cloud Run サービス: `K_SERVICE` / `K_REVISION` / `K_CONFIGURATION`
+ * - Cloud Run Jobs: `CLOUD_RUN_JOB` / `CLOUD_RUN_EXECUTION`（SPR-415）
+ * - どちらも無い（ローカル・テスト）: ラベルを付けない
  */
-function getCloudFunctionsLabels(): Record<string, unknown> | undefined {
-	if (!process.env.K_SERVICE) {
-		return undefined;
+function getRuntimeLabels(): Record<string, unknown> | undefined {
+	if (process.env.K_SERVICE) {
+		return {
+			"logging.googleapis.com/labels": {
+				service: process.env.K_SERVICE,
+				...(process.env.K_REVISION && { revision: process.env.K_REVISION }),
+				...(process.env.K_CONFIGURATION && { configuration: process.env.K_CONFIGURATION }),
+			},
+		};
 	}
 
-	return {
-		"logging.googleapis.com/labels": {
-			service: process.env.K_SERVICE,
-			...(process.env.K_REVISION && { revision: process.env.K_REVISION }),
-			...(process.env.K_CONFIGURATION && { configuration: process.env.K_CONFIGURATION }),
-		},
-	};
+	if (process.env.CLOUD_RUN_JOB) {
+		return {
+			"logging.googleapis.com/labels": {
+				job: process.env.CLOUD_RUN_JOB,
+				...(process.env.CLOUD_RUN_EXECUTION && { execution: process.env.CLOUD_RUN_EXECUTION }),
+			},
+		};
+	}
+
+	return undefined;
 }
 
 /**
@@ -141,14 +154,14 @@ function logStructured(
 		severity: level,
 		message,
 	};
-	const cloudFunctionsLabels = getCloudFunctionsLabels();
+	const runtimeLabels = getRuntimeLabels();
 
 	addOptionsToLogEntry(logEntry, optionsOrError);
 
 	logEntry.severity = level;
 	logEntry.message = message;
-	if (cloudFunctionsLabels) {
-		Object.assign(logEntry, cloudFunctionsLabels);
+	if (runtimeLabels) {
+		Object.assign(logEntry, runtimeLabels);
 	}
 
 	// biome-ignore lint/suspicious/noConsole: Cloud Loggingへの転送にconsole.logが必要

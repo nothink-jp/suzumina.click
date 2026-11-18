@@ -3,6 +3,10 @@
  *
  * CloudEvent の受領 → 重複配信の判定 → オーケストレータ呼び出し → 結果ログのみを担う。
  * 本処理は run-integrity-check.ts の `runIntegrityCheck`。
+ *
+ * 起動の経路は 2 つある。どちらも `runIntegrityCheckWithReport` を通るので、開始・完了のログは同じ形で出る:
+ * - Functions: `checkDataIntegrity`（CloudEvent。このファイル）
+ * - Cloud Run Jobs: `jobs/run-job.ts`（イベント無し。SPR-415）
  */
 
 import type { CloudEvent } from "@google-cloud/functions-framework";
@@ -24,7 +28,18 @@ export async function checkDataIntegrity(event: CloudEvent<unknown>): Promise<vo
 		return;
 	}
 
-	logger.info("データ整合性チェックを開始", { eventId: event.id, eventType: event.type });
+	await runIntegrityCheckWithReport({ eventId: event.id, eventType: event.type });
+}
+
+/**
+ * 整合性チェックを 1 回走らせ（dryRun=false＝修正を書き込む）、開始・完了・失敗をログに残す
+ *
+ * 失敗したら例外を投げ直す（Functions は 5xx、Jobs は 0 以外の終了コードになる）。
+ *
+ * @param trigger 起動元を識別するための情報（開始ログにそのまま載る）
+ */
+export async function runIntegrityCheckWithReport(trigger: Record<string, unknown>): Promise<void> {
+	logger.info("データ整合性チェックを開始", trigger);
 
 	try {
 		const result = await runIntegrityCheck();
