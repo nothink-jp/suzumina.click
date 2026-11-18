@@ -76,10 +76,10 @@ jobs:
               - '.github/workflows/pr-check.yml'
             functions-docker:
               - 'apps/functions/Dockerfile'
-              - '.dockerignore'
+              - 'apps/functions/Dockerfile.dockerignore'
               - 'apps/functions/package.json'
               - 'apps/functions/scripts/build.mjs'
-              - 'apps/functions/src/jobs/**'
+              - 'apps/functions/src/**'
               - 'packages/shared-types/package.json'
               - 'packages/typescript-config/package.json'
               - 'pnpm-lock.yaml'
