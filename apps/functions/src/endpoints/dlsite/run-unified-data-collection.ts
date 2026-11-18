@@ -273,11 +273,12 @@ async function processBatchWithRateLimitWaits(
 	waits: RateLimitWaitStats,
 ): Promise<UnifiedFetchResult> {
 	let workIds = batchInfo.workIds;
+	let isPartialRetry = false;
 	let basicDataUpdated = 0;
 	let apiCallCount = 0;
 
 	for (;;) {
-		const result = await processBatch({ ...batchInfo, workIds });
+		const result = await processBatch({ ...batchInfo, workIds, isPartialRetry });
 		basicDataUpdated += result.basicDataUpdated;
 		apiCallCount += result.apiCallCount;
 		const merged = { ...result, workCount: basicDataUpdated, basicDataUpdated, apiCallCount };
@@ -303,6 +304,7 @@ async function processBatchWithRateLimitWaits(
 		});
 		await new Promise((resolve) => setTimeout(resolve, waitMs));
 		workIds = interruption.skippedWorkIds;
+		isPartialRetry = true;
 	}
 }
 

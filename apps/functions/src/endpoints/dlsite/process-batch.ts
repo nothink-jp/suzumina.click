@@ -121,6 +121,12 @@ export interface BatchProcessingInfo {
 	fetchDeadlineAt?: number;
 	/** SPR-229: 週次フルスイープ時、通常runならstableとしてスキップされていたはずの作品ID（取りこぼし検知用） */
 	wouldSkipStableIds?: Set<string>;
+	/**
+	 * `workIds` がバッチの一部（レート制限の待ちのあとに取り直す、取れていない作品だけ）なら true（SPR-417）。
+	 * このときは 1 件も取れなくても「APIレスポンスなし」を出さない。数件の取り直しが全部 削除済みの作品（素の 404）
+	 * でも、バッチが全滅したわけではないため。全面停止の判定は、バッチ全体を試した回だけが担う。
+	 */
+	isPartialRetry?: boolean;
 }
 
 /**
@@ -321,6 +327,7 @@ export async function processBatch(batchInfo: BatchProcessingInfo): Promise<Unif
 		existingWorksMap,
 		wouldSkipStableIds,
 		fetchDeadlineAt,
+		isPartialRetry = false,
 	} = batchInfo;
 
 	logger.info(`バッチ ${batchNumber}/${totalBatches} 処理開始: ${workIds.length}件`);
@@ -339,9 +346,11 @@ export async function processBatch(batchInfo: BatchProcessingInfo): Promise<Unif
 		const interruption = toResultInterruption(fetchInterruption);
 		const attemptedCount = workIds.length - (fetchInterruption?.skippedWorkIds.length ?? 0);
 
-		// 1件も取れずに打ち切った場合は「APIレスポンスなし」（全面停止アラートの契約）を
-		// 出さない。原因が別（レート制限・締め切り）で、専用の WARN をオーケストレータが出す。
-		if (apiDataMap.size === 0 && interruption) {
+		// 1件も取れなくても、次の 2 つでは「APIレスポンスなし」（全面停止アラートの契約）を出さない。
+		// - 打ち切った: 原因が別（レート制限・締め切り）で、専用のログをオーケストレータが出す
+		// - バッチの一部の取り直し: バッチ全体を試していない（`isPartialRetry` を参照）
+		if (apiDataMap.size === 0 && (interruption || isPartialRetry)) {
+			logApiFailures(batchNumber, failedWorkIds);
 			return { workCount: 0, apiCallCount: attemptedCount, basicDataUpdated: 0, interruption };
 		}
 

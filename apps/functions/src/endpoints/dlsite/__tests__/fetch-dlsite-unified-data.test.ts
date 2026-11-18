@@ -740,6 +740,34 @@ describe("fetchDLsiteUnifiedData（エントリポイント統合）", () => {
 			);
 		});
 
+		it("取り直した数件が全部 取得失敗でも「APIレスポンスなし」（全面停止アラートの契約）は出さない", async () => {
+			vi.mocked(collectWorkIdsForProduction).mockResolvedValue(["RJ001", "RJ002"]);
+			vi.mocked(batchFetchIndividualInfo)
+				.mockResolvedValueOnce({
+					results: new Map([["RJ001", makeApiResponse("RJ001")]]),
+					failedWorkIds: [],
+					interruption: { reason: "rate_limit", retryAfterSeconds: 60, skippedWorkIds: ["RJ002"] },
+				})
+				// 取り直した 1 件は削除済みの作品（素の 404）。バッチが全滅したわけではない
+				.mockResolvedValueOnce({ results: new Map(), failedWorkIds: ["RJ002"] });
+
+			const run = runUnifiedDataCollectionWithReport(jobRun);
+			await vi.advanceTimersByTimeAsync(65_000);
+			await expect(run).resolves.toBe(true);
+
+			expect(logger.warn).not.toHaveBeenCalledWith(expect.stringContaining("APIレスポンスなし"));
+			expect(updateMock).not.toHaveBeenCalledWith(
+				expect.objectContaining({ lastError: "APIレスポンスなし" }),
+			);
+			// バッチは完了扱い（cursor を進める）。失敗した件数は WARN に残す
+			expect(logger.warn).toHaveBeenCalledWith("バッチ 1: 1件の取得失敗");
+			expect(logger.info).toHaveBeenCalledWith("全バッチ処理完了", expect.anything());
+			expect(logger.info).toHaveBeenCalledWith(
+				"DLsite run の集計",
+				expect.objectContaining({ apiCalls: 2, worksUpdated: 1, stopReason: "completed" }),
+			);
+		});
+
 		it("待つ時間が残っていなければ、cursor を進めずに正常終了する（続きは次の実行）", async () => {
 			vi.mocked(collectWorkIdsForProduction).mockResolvedValue(["RJ001", "RJ002"]);
 			vi.mocked(batchFetchIndividualInfo)
