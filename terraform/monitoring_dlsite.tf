@@ -722,10 +722,18 @@ resource "google_monitoring_alert_policy" "dlsite_fetch_stalled" {
     - `apiCalls` は大きいのに `worksFetched=0` → API は応答しているが全件が失敗している。
       DLsite API Batch All Failed Alert / DLsite API High Failure Rate Alert を見る
 
-    ## 費用の注意
+    ## 費用の注意と、止め方
     ブロックが続くと、ジョブは待ち時間のぶんだけ長く走る（最長 55 分 × 23 回/日。終日続くと 月 約 $38）。
-    長引くなら、スケジューラを一時停止するか、待たない設定に戻すことを検討する:
-    gcloud scheduler jobs pause fetch-dlsite-individual-api-hourly --location=asia-northeast1
+    「待つかどうか」を実行時に切り替える設定は無い。長引くときに取れる手段は、次の 3 つ:
+
+    1. スケジューラを一時停止する（取り込みを止める。いちばん速い）:
+       gcloud scheduler jobs pause fetch-dlsite-individual-api-hourly --location=asia-northeast1
+       再開は resume。**止めているあいだは、DLsite Run Absent Alert とこのアラートの両方が鳴り続ける**
+       （意図して止めたなら対応不要）。
+    2. 待たずに打ち切る動きに変える（取り込みは続ける）: apps/functions/src/endpoints/dlsite/process-batch.ts の
+       JOB_RUN_BUDGET.waitOnRateLimit を false にしてデプロイする。コードの変更なので、PR が要る。
+    3. 旧 Functions へ戻す: スケジューラの付け替えの PR（#1158）を revert して apply する
+       （terraform/function_dlsite_individual_info_api.tf の冒頭を参照）。
     EOT
     mime_type = "text/markdown"
   }
