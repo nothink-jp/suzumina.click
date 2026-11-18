@@ -398,7 +398,7 @@ locals {
     "roles/secretmanager.admin",             # secret 本体 + secret IAM
     "roles/cloudkms.admin",                  # KMS keyring/key/IAM（editor 対象外）
     "roles/run.admin",                       # Cloud Run service IAM binding（public_access）
-    "roles/artifactregistry.admin",          # AR repository IAM（functions_build_gcf_artifacts_writer）。editor には setIamPolicy が無い（SPR-373）
+    "roles/artifactregistry.admin",          # AR repository IAM（functions_build_gcf_artifacts_writer＝SPR-373 / cloud_functions_deployer_functions_jobs_writer＝SPR-415）。editor には setIamPolicy が無い
     "roles/serviceusage.serviceUsageAdmin",  # google_project_service の有効/無効化
   ]
 }
