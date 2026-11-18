@@ -106,3 +106,41 @@ resource "google_artifact_registry_repository" "gcf_artifacts" {
     goog-managed-by = "cloudfunctions"
   }
 }
+
+# Cloud Run Jobs 用のイメージのリポジトリ（SPR-415 / 設計は SPR-358）
+#
+# apps/functions を Cloud Run Jobs として動かすためのイメージ（`jobs`）を置く。deploy-functions.yml が
+# build して push する。Functions のイメージ（gcf-artifacts）は Cloud Functions が自分で管理するもので、
+# 中身も作られ方も違うので同居させない。web（docker_repo）とも分ける: web 用は cleanup_policies が
+# 効かない例外を抱えていて（上のコメント）、掃除を workflow が自前でやっている。新しいリポジトリで、
+# policy が素直に効く状態から始める。
+#
+# 保持方針は gcf-artifacts と同じ（直近5版を下限に、7日より古い版を削除）。ジョブが参照するのは
+# 最新のイメージなので、直近5版の KEEP で、動いているジョブのイメージが消えることは無い。
+resource "google_artifact_registry_repository" "functions_jobs" {
+  provider = google
+
+  location      = var.region
+  repository_id = "functions-jobs"
+  description   = "apps/functions を Cloud Run Jobs として動かすためのイメージ（SPR-415）"
+  format        = "DOCKER"
+
+  cleanup_policy_dry_run = false
+
+  cleanup_policies {
+    id     = "delete-old"
+    action = "DELETE"
+    condition {
+      older_than = "604800s" # 7日
+      tag_state  = "ANY"
+    }
+  }
+
+  cleanup_policies {
+    id     = "keep-recent-versions"
+    action = "KEEP"
+    most_recent_versions {
+      keep_count = 5
+    }
+  }
+}
