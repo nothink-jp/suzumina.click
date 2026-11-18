@@ -102,6 +102,14 @@ resource "google_cloud_run_v2_job" "dlsite" {
     }
   }
 
+  # client / client_version は、gcloud run jobs update（deploy-functions.yml）が付けるメタデータ。
+  # 無視しないと、デプロイのたびに「"gcloud" -> null」の差分が出続ける（cloud_run.tf の nextjs_app と同じ扱い）。
+  # 差分が出続けると、無関係の apply のたびにジョブを PATCH することになり、plan から apply までのあいだに
+  # デプロイが挟まると、plan のときに読んだ古いイメージへ巻き戻る。
+  lifecycle {
+    ignore_changes = [client, client_version]
+  }
+
   depends_on = [
     google_project_service.run,
     google_project_iam_member.fetch_dlsite_individual_api_firestore_user,
