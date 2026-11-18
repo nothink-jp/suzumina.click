@@ -40,21 +40,14 @@ resource "google_pubsub_topic" "dlsite_individual_api_trigger" {
   depends_on = [google_project_service.pubsub]
 }
 
-# Individual Info API専用のCloud Scheduler（毎時 3・13・23・33・43 分・3時台を除く＝1日115回）
+# Individual Info API専用のCloud Scheduler（毎時 3 分・3時台を除く＝1日23回）
 #
-# **つなぎの設定（SPR-423）**: 2026-11-16 から、DLsite（Cloudflare）が 30 分のブロック（404 + Retry-After）を
-# 返し続けている。開いているのは 33 分のうち約 3 分で、こちらの送信量とは関係なく閉じる（ほかの送信元と
-# 同じバケツで数えられている）。毎時 1 回の起動では、開いている時間に当たるのは 1 日 1 回ほどだった。
-# 起動を 10 分おきに増やして、当たる回数を増やす。外れた回は最初の 2 件で打ち切る
-# （individual-info-api-client.ts の DLsiteRateLimitError）ので、送る件数の増加は 1 日 300 件弱。
-# 関数は 540 秒で終わるため、Retry-After（最大 30 分）を待って続けることができない。待って続ける形は
-# Cloud Run Jobs 化（SPR-358）で入れる。**Jobs へ移したら、この 10 分おきの設定は毎時に戻す。**
-#
-# 53 分を入れないのは 2 つの理由から:
-# - run は長くて約 8 分。2:53 に始めると 3:01 まで走りうるので、日曜 3:00 の checkDataIntegrity と重なる
-# - 次の正時 3 分の run と重ならないようにする（--max-instances 1 なので、重なると後の run が待たされる）
-#
-# 以下は、1時間ごとにしたときの経緯（SPR-412）。
+# 2026-11-18 の朝から夕方までは、10 分おき（毎時 3・13・23・33・43 分）にしていた（SPR-423 のつなぎ）。
+# DLsite（Cloudflare）が 30 分のブロックを返し続けていて、開いている約 3 分に当たる回数を増やすためだった。
+# ブロックは同日 11:13 JST に解けた。解けたあとの 10 分おきは、毎回 volatile の約 279 件を取りにいき、
+# 1 時間に約 1,400 件（毎時 1 回のときの 5 倍）を送っていたので、毎時に戻した。
+# ブロックが再発したら、Cloud Run Jobs（job_dlsite.tf）が Retry-After を待って続ける（SPR-417）。
+# 起動を増やして当てにいく方法には戻さない。
 #
 # 2時間ごと → 1時間ごと（SPR-412）: DLsite のレート制限（推定 約100リクエスト/分）に合わせて
 # 取得ペースを落とした結果、1 run で取得できるのは 450件までになった（SPR-410 / SPR-411）。
@@ -72,8 +65,8 @@ resource "google_cloud_scheduler_job" "fetch_dlsite_individual_api_hourly" {
   region  = var.region
   name    = "fetch-dlsite-individual-api-hourly" # 名前は互換性のため変更しない
 
-  description = "Individual Info API専用データ更新（10分間隔・毎時53分と3時台を除く。SPR-423 のつなぎ）"
-  schedule    = "3,13,23,33,43 0-2,4-23 * * *" # 0:03, 0:13 ... 2:43, 4:03 ... 23:43（3時台と毎時53分は無い）
+  description = "Individual Info API専用データ更新（1時間間隔・3時台を除く）"
+  schedule    = "3 0-2,4-23 * * *" # 0:03, 1:03, 2:03, 4:03 ... 23:03（3:03 は無い）
   time_zone   = "Asia/Tokyo"
   paused      = false
 
@@ -93,8 +86,9 @@ resource "google_cloud_scheduler_job" "fetch_dlsite_individual_api_hourly" {
 }
 
 # SPR-229 Stage②: ティア差分の取りこぼし検知を兼ねた週次フルスイープ
-# checkDataIntegrityの日曜3:00 JSTとは重ならない。通常runとは重なりうる（4:13 の run が開いている時間に当たると
-# 4:21 ごろまで走る）。その場合は pendingFullSweep が立ち、次のサイクルでフルスイープになる（resolveCycleInfo）。
+# checkDataIntegrityの日曜3:00 JSTとは重ならない。通常runとは重なりうる（4:03 の run が長引いたとき）。
+# その場合は pendingFullSweep が立ち、次のサイクルでフルスイープになる（「実行中」の印で飛ばされたときと、
+# 継続中のサイクルと重なったとき＝resolveCycleInfo）。
 # 土曜4:15 JSTに設定。既存関数・既存トピックを再利用し、mode違いのペイロードで
 # フルスイープ(ティア差分を無視した全件取得)を発火させる（新規関数は増やさない）。
 resource "google_cloud_scheduler_job" "fetch_dlsite_individual_api_weekly_full_sweep" {
