@@ -98,7 +98,7 @@ export interface UnifiedFetchResult {
 	/**
 	 * API から取得できた件数（`apiCallCount` のうちの成功分）。「取得が進んでいるか」の正本（SPR-417）。
 	 * `basicDataUpdated` は差分があった作品だけを数えるので、平常でも 0 になりうる。
-	 * 省略時は 0（取得の前に失敗した経路）。
+	 * 省略時は 0（取得の前に失敗した経路と、取得できても保存で例外になった経路。保存できていない run を進捗に数えない）。
 	 */
 	apiSuccessCount?: number;
 	basicDataUpdated: number;
