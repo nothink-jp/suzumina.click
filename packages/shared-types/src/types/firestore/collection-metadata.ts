@@ -59,6 +59,16 @@ export interface CollectionMetadata {
 	 * サイクルの完了でクリアしない（サイクルをまたいで届く重複も弾くため）。
 	 */
 	recentEventIds?: string[];
+	/**
+	 * SPR-417: 「実行中」の印。run の開始時に取り、終了時に消す。実行の重なり（手動実行・二重起動・
+	 * Functions と Cloud Run Jobs の同時実行）を防ぐ。落ちた run の印は `expiresAt` を過ぎたら無効。
+	 * 読み書きの正本は apps/functions の shared/run-metadata（`acquireRunLock` / `releaseRunLock`）。
+	 */
+	runLock?: {
+		/** 印を取った実行の識別子（Functions は event.id、Jobs は実行名） */
+		holder: string;
+		expiresAt: unknown; // Firestore.Timestamp
+	};
 }
 
 /**

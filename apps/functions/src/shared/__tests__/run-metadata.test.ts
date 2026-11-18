@@ -18,6 +18,8 @@ vi.mock("../../infrastructure/database/firestore", () => {
 
 	return {
 		default: { collection, runTransaction },
+		Timestamp: { fromMillis: (ms: number) => ({ toMillis: () => ms }) },
+		FieldValue: { delete: () => "__delete__" },
 		__transaction: transaction,
 		__updateMock: updateMock,
 		__getMock: getMock,
@@ -29,9 +31,14 @@ vi.mock("../../infrastructure/database/firestore", () => {
 
 vi.mock("../logger", () => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }));
 
-const { claimRunEvent, claimRunEventFailOpen, createRunMetadataStore } = await import(
-	"../run-metadata"
-);
+const {
+	acquireRunLock,
+	acquireRunLockFailOpen,
+	claimRunEvent,
+	claimRunEventFailOpen,
+	createRunMetadataStore,
+	releaseRunLock,
+} = await import("../run-metadata");
 const logger = vi.mocked(await import("../logger"));
 const firestoreMock = (await import("../../infrastructure/database/firestore")) as unknown as {
 	__updateMock: ReturnType<typeof vi.fn>;
@@ -264,5 +271,157 @@ describe("claimRunEventFailOpen（SPR-368 / SPR-369）", () => {
 				error: expect.objectContaining({ message: "ABORTED: too much contention" }),
 			},
 		);
+	});
+});
+
+describe("実行中の印（SPR-417）", () => {
+	const lockOptions = {
+		collection: "testMetadata",
+		docId: "test_doc",
+		createInitial: () => ({ isInProgress: false }),
+	};
+	const NOW = Date.parse("2026-11-18T04:00:00Z");
+	const TTL_MS = 58 * 60_000;
+
+	function lockSnapshot(runLock?: { holder: string; expiresAtMs: number }) {
+		return {
+			exists: true,
+			data: () => ({
+				isInProgress: false,
+				runLock: runLock && {
+					holder: runLock.holder,
+					expiresAt: { toMillis: () => runLock.expiresAtMs },
+				},
+			}),
+		};
+	}
+
+	beforeEach(() => {
+		vi.clearAllMocks();
+		vi.useFakeTimers();
+		vi.setSystemTime(NOW);
+		return () => vi.useRealTimers();
+	});
+
+	describe("acquireRunLock", () => {
+		it("印が無ければ取れて、期限つきで書き込む（runLock だけを書く）", async () => {
+			transactionMock.get.mockResolvedValue(lockSnapshot());
+
+			await expect(acquireRunLock("run-a", TTL_MS, lockOptions)).resolves.toBe(true);
+
+			const [, written] = transactionMock.update.mock.calls[0] ?? [];
+			expect(Object.keys(written)).toEqual(["runLock"]);
+			expect(written.runLock.holder).toBe("run-a");
+			expect(written.runLock.expiresAt.toMillis()).toBe(NOW + TTL_MS);
+		});
+
+		it("doc が無ければ初期値と一緒に作る", async () => {
+			transactionMock.get.mockResolvedValue({ exists: false });
+
+			await expect(acquireRunLock("run-a", TTL_MS, lockOptions)).resolves.toBe(true);
+
+			expect(transactionMock.set).toHaveBeenCalledWith(
+				expect.anything(),
+				expect.objectContaining({
+					isInProgress: false,
+					runLock: expect.objectContaining({ holder: "run-a" }),
+				}),
+			);
+		});
+
+		it("ほかの実行の印が期限内なら取れず、何も書かない", async () => {
+			transactionMock.get.mockResolvedValue(
+				lockSnapshot({ holder: "run-b", expiresAtMs: NOW + 1 }),
+			);
+
+			await expect(acquireRunLock("run-a", TTL_MS, lockOptions)).resolves.toBe(false);
+
+			expect(transactionMock.update).not.toHaveBeenCalled();
+			expect(transactionMock.set).not.toHaveBeenCalled();
+		});
+
+		it("期限切れの印（落ちた実行の残り）は上書きする", async () => {
+			transactionMock.get.mockResolvedValue(lockSnapshot({ holder: "run-b", expiresAtMs: NOW }));
+
+			await expect(acquireRunLock("run-a", TTL_MS, lockOptions)).resolves.toBe(true);
+
+			expect(transactionMock.update).toHaveBeenCalledWith(
+				expect.anything(),
+				expect.objectContaining({ runLock: expect.objectContaining({ holder: "run-a" }) }),
+			);
+		});
+
+		it("自分の印が残っていれば取り直せる", async () => {
+			transactionMock.get.mockResolvedValue(
+				lockSnapshot({ holder: "run-a", expiresAtMs: NOW + TTL_MS }),
+			);
+
+			await expect(acquireRunLock("run-a", TTL_MS, lockOptions)).resolves.toBe(true);
+		});
+
+		it("expiresAt の形が Timestamp でなければ、期限切れとして扱う", async () => {
+			transactionMock.get.mockResolvedValue({
+				exists: true,
+				data: () => ({ runLock: { holder: "run-b", expiresAt: "2099-01-01" } }),
+			});
+
+			await expect(acquireRunLock("run-a", TTL_MS, lockOptions)).resolves.toBe(true);
+		});
+	});
+
+	describe("acquireRunLockFailOpen", () => {
+		it("判定が失敗したら、WARN を出して true（run を止めない）", async () => {
+			firestoreMock.default.runTransaction.mockRejectedValueOnce(new Error("UNAVAILABLE"));
+
+			await expect(acquireRunLockFailOpen("run-a", TTL_MS, lockOptions)).resolves.toBe(true);
+
+			expect(logger.warn).toHaveBeenCalledWith(
+				"実行中の印の判定に失敗したため、判定せずに run を実行",
+				expect.objectContaining({ holder: "run-a" }),
+			);
+		});
+
+		it("ほかの実行が進行中なら false をそのまま返す", async () => {
+			transactionMock.get.mockResolvedValue(
+				lockSnapshot({ holder: "run-b", expiresAtMs: NOW + 1 }),
+			);
+
+			await expect(acquireRunLockFailOpen("run-a", TTL_MS, lockOptions)).resolves.toBe(false);
+		});
+	});
+
+	describe("releaseRunLock", () => {
+		it("自分の印なら消す", async () => {
+			transactionMock.get.mockResolvedValue(
+				lockSnapshot({ holder: "run-a", expiresAtMs: NOW + TTL_MS }),
+			);
+
+			await releaseRunLock("run-a", lockOptions);
+
+			expect(transactionMock.update).toHaveBeenCalledWith(expect.anything(), {
+				runLock: "__delete__",
+			});
+		});
+
+		it("ほかの実行が取り直した印は消さない", async () => {
+			transactionMock.get.mockResolvedValue(
+				lockSnapshot({ holder: "run-b", expiresAtMs: NOW + TTL_MS }),
+			);
+
+			await releaseRunLock("run-a", lockOptions);
+
+			expect(transactionMock.update).not.toHaveBeenCalled();
+		});
+
+		it("消せなくても例外を投げない（期限で無効になる）", async () => {
+			firestoreMock.default.runTransaction.mockRejectedValueOnce(new Error("UNAVAILABLE"));
+
+			await expect(releaseRunLock("run-a", lockOptions)).resolves.toBeUndefined();
+
+			expect(logger.warn).toHaveBeenCalledWith(
+				"実行中の印を消せませんでした（期限が来れば無効になります）",
+				expect.objectContaining({ holder: "run-a" }),
+			);
+		});
 	});
 });

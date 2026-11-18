@@ -13,9 +13,13 @@
  *
  * あわせて、Pub/Sub の重複配信・再送で run を走らせ直さないための判定（`claimRunEventFailOpen`・
  * SPR-368 / SPR-369）も持つ。dlsite / youtube / 整合性 cron の 3 関数が共有する。
+ *
+ * 「実行中」の印（`acquireRunLock` / `releaseRunLock`・SPR-417）もここに置く。使うのは dlsite だけ。
+ * 重複配信の判定とは守るものが違う: あちらは「同じメッセージの再配信」、こちらは「別々に起動された
+ * 実行の重なり」（手動実行・Functions と Cloud Run Jobs の同時実行）。
  */
 
-import firestore from "../infrastructure/database/firestore";
+import firestore, { FieldValue, Timestamp } from "../infrastructure/database/firestore";
 import * as logger from "./logger";
 
 /** gRPC ステータスコード: ドキュメントが既に存在する（並行 create の敗者側が受け取る） */
@@ -169,5 +173,97 @@ export async function claimRunEventFailOpen(
 			error,
 		});
 		return true;
+	}
+}
+
+/** SPR-417: 「実行中」の印（`runLock`）を持たせるメタデータ doc */
+export type RunLockOptions = Pick<RunEventClaimOptions, "collection" | "docId" | "createInitial">;
+
+/** `runLock.expiresAt`（Firestore Timestamp）を epoch ms に直す。形が違えば 0（＝期限切れ扱い） */
+function lockExpiresAtMillis(expiresAt: unknown): number {
+	const toMillis = (expiresAt as { toMillis?: unknown } | null | undefined)?.toMillis;
+	return typeof toMillis === "function" ? Number(toMillis.call(expiresAt)) : 0;
+}
+
+/**
+ * 「実行中」の印を取る（SPR-417）
+ *
+ * ほかの実行の印が期限内に残っていれば取れない。期限切れの印（落ちた実行の残り）と、自分の印は上書きする。
+ * 判定と書き込みは 1 トランザクション。書き込むのは `runLock` だけ。
+ * 副作用: doc が無ければ `createInitial` の値で作成する。
+ *
+ * @param holder この実行の識別子。`releaseRunLock` に同じ値を渡す
+ * @param ttlMs 印の期限（今からの ms）。実行環境の timeout に合わせる（それより長く走ることは無い）
+ * @returns 取れたら true。ほかの実行が進行中なら false
+ * @throws Firestore のエラーはそのまま投げる（呼び出し側は `acquireRunLockFailOpen` を使う）
+ */
+export async function acquireRunLock(
+	holder: string,
+	ttlMs: number,
+	options: RunLockOptions,
+): Promise<boolean> {
+	const metadataRef = firestore.collection(options.collection).doc(options.docId);
+	return firestore.runTransaction(async (transaction) => {
+		const snapshot = await transaction.get(metadataRef);
+		const current = snapshot.exists ? snapshot.data()?.runLock : undefined;
+		const now = Date.now();
+		if (current && current.holder !== holder && lockExpiresAtMillis(current.expiresAt) > now) {
+			return false;
+		}
+
+		const runLock = { holder, expiresAt: Timestamp.fromMillis(now + ttlMs) };
+		if (snapshot.exists) {
+			transaction.update(metadataRef, { runLock });
+		} else {
+			transaction.set(metadataRef, { ...options.createInitial?.(), runLock });
+		}
+		return true;
+	});
+}
+
+/**
+ * `acquireRunLock` の fail-open 版。判定そのものが失敗したら、印を取らずに true
+ *
+ * 印は「まれな重なり」への備えで、取れないからといって毎時の取り込みを止める理由にならない
+ * （`claimRunEventFailOpen` と同じ考え方）。
+ */
+export async function acquireRunLockFailOpen(
+	holder: string,
+	ttlMs: number,
+	options: RunLockOptions,
+): Promise<boolean> {
+	try {
+		return await acquireRunLock(holder, ttlMs, options);
+	} catch (error) {
+		logger.warn("実行中の印の判定に失敗したため、判定せずに run を実行", {
+			holder,
+			docId: options.docId,
+			error,
+		});
+		return true;
+	}
+}
+
+/**
+ * 自分の印を消す（SPR-417）。例外は投げない
+ *
+ * 印の持ち主が自分でなければ何もしない（期限切れのあとに別の実行が取り直した印を消さないため）。
+ * 消せなかった印は、期限が来れば無効になる。
+ */
+export async function releaseRunLock(holder: string, options: RunLockOptions): Promise<void> {
+	const metadataRef = firestore.collection(options.collection).doc(options.docId);
+	try {
+		await firestore.runTransaction(async (transaction) => {
+			const snapshot = await transaction.get(metadataRef);
+			if (snapshot.exists && snapshot.data()?.runLock?.holder === holder) {
+				transaction.update(metadataRef, { runLock: FieldValue.delete() });
+			}
+		});
+	} catch (error) {
+		logger.warn("実行中の印を消せませんでした（期限が来れば無効になります）", {
+			holder,
+			docId: options.docId,
+			error,
+		});
 	}
 }
