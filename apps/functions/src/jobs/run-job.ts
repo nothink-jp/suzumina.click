@@ -6,7 +6,9 @@
  * ログベースメトリクスとアラートのフィルタは `resource.type="cloud_run_revision"` と `service_name` に絞ってあり、
  * Jobs のログ（`cloud_run_job` / `job_name`）は拾わない。ジョブへ切り替えるときに、フィルタを直す（SPR-417）。
  *
- * - 重複配信の判定（`event.id`）は通らない。Pub/Sub を経由しないため。実行の重なりの防止は SPR-417 で入れる。
+ * - 重複配信の判定（`event.id`）は通らない。Pub/Sub を経由しないため。実行の重なりは「実行中」の印で防ぐ
+ *   （`runUnifiedDataCollectionWithReport`・SPR-417）。
+ * - DLsite のモードは `JOB_RUN_BUDGET`（55 分・レート制限を待って続ける）で走る。
  * - YouTube のモードは無い。YouTube は Functions に残す（SPR-358）。
  */
 
@@ -15,6 +17,7 @@ import {
 	runUnifiedDataCollectionWithReport,
 	WEEKLY_FULL_SWEEP_MODE,
 } from "../endpoints/dlsite/fetch-dlsite-unified-data";
+import { JOB_RUN_BUDGET } from "../endpoints/dlsite/process-batch";
 import * as logger from "../shared/logger";
 import { logRuntimeMemoryLimits } from "../shared/memory-diagnostics";
 
@@ -49,12 +52,18 @@ function jobTrigger(mode: JobMode): Record<string, unknown> {
  */
 export async function runJob(mode: JobMode): Promise<boolean> {
 	const trigger = jobTrigger(mode);
+	// ローカルで起動したときは実行名が無いので、起動ごとに違う値を作る
+	const dlsiteRun = {
+		trigger,
+		runId: process.env.CLOUD_RUN_EXECUTION ?? `local-${process.pid}-${Date.now()}`,
+		budget: JOB_RUN_BUDGET,
+	};
 
 	switch (mode) {
 		case "dlsite":
-			return runUnifiedDataCollectionWithReport({ mode: DLSITE_NORMAL_MODE, trigger });
+			return runUnifiedDataCollectionWithReport({ mode: DLSITE_NORMAL_MODE, ...dlsiteRun });
 		case "dlsite-full-sweep":
-			return runUnifiedDataCollectionWithReport({ mode: WEEKLY_FULL_SWEEP_MODE, trigger });
+			return runUnifiedDataCollectionWithReport({ mode: WEEKLY_FULL_SWEEP_MODE, ...dlsiteRun });
 		case "integrity":
 			await runIntegrityCheckWithReport(trigger);
 			return true;

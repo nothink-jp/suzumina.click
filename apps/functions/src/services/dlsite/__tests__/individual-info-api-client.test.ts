@@ -133,6 +133,11 @@ describe("Individual Info API Client", () => {
 				status: 429,
 				rateLimitHeaders: { "retry-after": "300", "cf-ray": "abc" },
 			});
+			// 平常の応答なので、WARN に ERROR（取得エラー）を重ねない（SPR-417）
+			expect(logger.error).not.toHaveBeenCalledWith(
+				expect.stringContaining("Individual Info API取得エラー"),
+				expect.anything(),
+			);
 		});
 
 		it("Retry-After つきの 404 はブロックとして DLsiteRateLimitError を投げる（SPR-423）", async () => {

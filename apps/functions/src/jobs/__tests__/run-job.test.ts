@@ -44,9 +44,15 @@ describe("run-job", () => {
 			await expect(runJob("dlsite")).resolves.toBe(true);
 
 			// mode は Scheduler が Functions へ渡しているペイロードと同じ文字列（開始ログの形を変えない）
+			// 印の持ち主は実行名。予算は Jobs 用（55 分・レート制限を待って続ける＝SPR-417）
 			expect(mockRunUnified).toHaveBeenCalledWith({
 				mode: "individual_info_api_unified",
 				trigger: { jobMode: "dlsite", job: "test-job", execution: "test-job-xyz" },
+				runId: "test-job-xyz",
+				budget: expect.objectContaining({
+					waitOnRateLimit: true,
+					fetchDeadlineMs: 55 * 60_000,
+				}),
 			});
 			expect(mockRunIntegrity).not.toHaveBeenCalled();
 		});
@@ -55,7 +61,17 @@ describe("run-job", () => {
 			await runJob("dlsite-full-sweep");
 
 			expect(mockRunUnified).toHaveBeenCalledWith(
-				expect.objectContaining({ mode: "weekly_full_sweep" }),
+				expect.objectContaining({ mode: "weekly_full_sweep", runId: "test-job-xyz" }),
+			);
+		});
+
+		it("実行名が無い（ローカル起動）ときは、起動ごとの値を印の持ち主にする", async () => {
+			delete process.env.CLOUD_RUN_EXECUTION;
+
+			await runJob("dlsite");
+
+			expect(mockRunUnified).toHaveBeenCalledWith(
+				expect.objectContaining({ runId: expect.stringMatching(/^local-\d+-\d+$/) }),
 			);
 		});
 

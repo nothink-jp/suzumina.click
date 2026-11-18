@@ -26,7 +26,11 @@ vi.mock("../../../infrastructure/database/firestore", () => {
 
 	return {
 		default: { collection, getAll: vi.fn(), runTransaction },
-		Timestamp: { now: vi.fn(() => ({ seconds: 0, nanoseconds: 0 })) },
+		Timestamp: {
+			now: vi.fn(() => ({ seconds: 0, nanoseconds: 0 })),
+			fromMillis: (ms: number) => ({ toMillis: () => ms }),
+		},
+		FieldValue: { delete: () => "__delete__" },
 		__updateMock: updateMock,
 		__getMock: getMock,
 		__transaction: transaction,
@@ -80,6 +84,7 @@ const { fetchDLsiteUnifiedData, runUnifiedDataCollectionWithReport, WEEKLY_FULL_
 	await import("../fetch-dlsite-unified-data");
 const logger = vi.mocked(await import("../../../shared/logger"));
 const { computeDueWorkIds, resolveCycleInfo } = await import("../run-unified-data-collection");
+const { FUNCTION_RUN_BUDGET, JOB_RUN_BUDGET } = await import("../process-batch");
 const { bulkCheckPriceHistoryExistsToday } = await import("../../../services/price-history");
 const { collectWorkIdsForProduction } = await import("../../../services/dlsite/work-id-collector");
 const { getExistingWorksMap } = await import("../../../services/dlsite/dlsite-firestore");
@@ -578,6 +583,8 @@ describe("fetchDLsiteUnifiedData（エントリポイント統合）", () => {
 			const ok = await runUnifiedDataCollectionWithReport({
 				mode: "individual_info_api_unified",
 				trigger: { jobMode: "dlsite", execution: "dlsite-abc" },
+				runId: "dlsite-abc",
+				budget: JOB_RUN_BUDGET,
 			});
 
 			expect(ok).toBe(true);
@@ -591,7 +598,11 @@ describe("fetchDLsiteUnifiedData（エントリポイント統合）", () => {
 					週次フルスイープ: false,
 				}),
 			);
-			expect(transactionMock.set).not.toHaveBeenCalled();
+			// 重複配信の判定（recentEventIds）は通らない。書くのは「実行中」の印だけ
+			expect(transactionMock.set).not.toHaveBeenCalledWith(
+				expect.anything(),
+				expect.objectContaining({ recentEventIds: expect.anything() }),
+			);
 		});
 
 		it("mode が weekly_full_sweep なら週次フルスイープとして走らせる", async () => {
@@ -601,7 +612,12 @@ describe("fetchDLsiteUnifiedData（エントリポイント統合）", () => {
 				failedWorkIds: [],
 			});
 
-			await runUnifiedDataCollectionWithReport({ mode: WEEKLY_FULL_SWEEP_MODE, trigger: {} });
+			await runUnifiedDataCollectionWithReport({
+				mode: WEEKLY_FULL_SWEEP_MODE,
+				trigger: {},
+				runId: "run-1",
+				budget: FUNCTION_RUN_BUDGET,
+			});
 
 			expect(logger.info).toHaveBeenCalledWith(
 				"統合データ収集開始",
@@ -613,8 +629,274 @@ describe("fetchDLsiteUnifiedData（エントリポイント統合）", () => {
 			vi.mocked(collectWorkIdsForProduction).mockRejectedValue(new Error("scrape failed"));
 
 			await expect(
-				runUnifiedDataCollectionWithReport({ mode: undefined, trigger: {} }),
+				runUnifiedDataCollectionWithReport({
+					mode: undefined,
+					trigger: {},
+					runId: "run-1",
+					budget: FUNCTION_RUN_BUDGET,
+				}),
 			).resolves.toBe(false);
+		});
+	});
+
+	describe("レート制限を待って続ける（Cloud Run Jobs の予算。SPR-417）", () => {
+		const jobRun = {
+			mode: "individual_info_api_unified",
+			trigger: { jobMode: "dlsite" },
+			runId: "dlsite-abc",
+			budget: JOB_RUN_BUDGET,
+		};
+
+		beforeEach(() => {
+			vi.useFakeTimers();
+			return () => vi.useRealTimers();
+		});
+
+		it("Retry-After のぶん待ち、取れていない作品だけを取り直して、サイクルを完了する", async () => {
+			vi.mocked(collectWorkIdsForProduction).mockResolvedValue(["RJ001", "RJ002", "RJ003"]);
+			vi.mocked(batchFetchIndividualInfo)
+				.mockResolvedValueOnce({
+					results: new Map([["RJ001", makeApiResponse("RJ001")]]),
+					failedWorkIds: [],
+					interruption: {
+						reason: "rate_limit",
+						retryAfterSeconds: 1800,
+						skippedWorkIds: ["RJ002", "RJ003"],
+					},
+				})
+				.mockResolvedValueOnce({
+					results: new Map([
+						["RJ002", makeApiResponse("RJ002")],
+						["RJ003", makeApiResponse("RJ003")],
+					]),
+					failedWorkIds: [],
+				});
+
+			const run = runUnifiedDataCollectionWithReport(jobRun);
+			// 待つのは Retry-After + 余裕 5 秒。その手前では取り直さない
+			await vi.advanceTimersByTimeAsync(1_804_000);
+			expect(batchFetchIndividualInfo).toHaveBeenCalledTimes(1);
+			await vi.advanceTimersByTimeAsync(2_000);
+			await expect(run).resolves.toBe(true);
+
+			expect(vi.mocked(batchFetchIndividualInfo).mock.calls[1]?.[0]).toEqual(["RJ002", "RJ003"]);
+			expect(logger.info).toHaveBeenCalledWith(
+				"DLsite レート制限のため待機",
+				expect.objectContaining({
+					batchNumber: 1,
+					retryAfterSeconds: 1800,
+					waitSeconds: 1805,
+					waitCount: 1,
+					remainingInBatch: 2,
+				}),
+			);
+			// ブロックは平常。アラートの契約キーは出さない
+			expect(logger.warn).not.toHaveBeenCalledWith(
+				expect.anything(),
+				expect.objectContaining({ alert: "dlsite_rate_limited" }),
+			);
+			expect(logger.info).toHaveBeenCalledWith("全バッチ処理完了", expect.anything());
+			expect(logger.info).toHaveBeenCalledWith(
+				"DLsite run の集計",
+				expect.objectContaining({
+					apiCalls: 3,
+					worksUpdated: 3,
+					stopReason: "completed",
+					rateLimitWaits: 1,
+					rateLimitWaitSeconds: 1805,
+				}),
+			);
+		});
+
+		it("Retry-After が無ければ既定の 300 秒、短すぎれば下限の 30 秒を待つ", async () => {
+			vi.mocked(collectWorkIdsForProduction).mockResolvedValue(["RJ001"]);
+			vi.mocked(batchFetchIndividualInfo)
+				.mockResolvedValueOnce({
+					results: new Map(),
+					failedWorkIds: [],
+					interruption: { reason: "rate_limit", skippedWorkIds: ["RJ001"] },
+				})
+				.mockResolvedValueOnce({
+					results: new Map(),
+					failedWorkIds: [],
+					interruption: { reason: "rate_limit", retryAfterSeconds: 2, skippedWorkIds: ["RJ001"] },
+				})
+				.mockResolvedValueOnce({
+					results: new Map([["RJ001", makeApiResponse("RJ001")]]),
+					failedWorkIds: [],
+				});
+
+			const run = runUnifiedDataCollectionWithReport(jobRun);
+			await vi.advanceTimersByTimeAsync(305_000 + 35_000);
+			await expect(run).resolves.toBe(true);
+
+			expect(logger.info).toHaveBeenCalledWith(
+				"DLsite レート制限のため待機",
+				expect.objectContaining({ waitSeconds: 305, waitCount: 1 }),
+			);
+			expect(logger.info).toHaveBeenCalledWith(
+				"DLsite レート制限のため待機",
+				expect.objectContaining({ waitSeconds: 35, waitCount: 2 }),
+			);
+		});
+
+		it("待つ時間が残っていなければ、cursor を進めずに正常終了する（続きは次の実行）", async () => {
+			vi.mocked(collectWorkIdsForProduction).mockResolvedValue(["RJ001", "RJ002"]);
+			vi.mocked(batchFetchIndividualInfo)
+				.mockResolvedValueOnce({
+					results: new Map(),
+					failedWorkIds: [],
+					interruption: {
+						reason: "rate_limit",
+						retryAfterSeconds: 1800,
+						skippedWorkIds: ["RJ001", "RJ002"],
+					},
+				})
+				// 30 分待ったあとの残りは 24 分弱。次の 30 分は待てない
+				.mockResolvedValueOnce({
+					results: new Map([["RJ001", makeApiResponse("RJ001")]]),
+					failedWorkIds: [],
+					interruption: {
+						reason: "rate_limit",
+						retryAfterSeconds: 1800,
+						skippedWorkIds: ["RJ002"],
+					},
+				});
+
+			const run = runUnifiedDataCollectionWithReport(jobRun);
+			await vi.advanceTimersByTimeAsync(1_805_000);
+			await expect(run).resolves.toBe(true);
+
+			expect(batchFetchIndividualInfo).toHaveBeenCalledTimes(2);
+			expect(logger.info).toHaveBeenCalledWith(
+				"DLsite レート制限: 待つ時間が残っていないため run を終了",
+				expect.objectContaining({ batchNumber: 1, retryAfterSeconds: 1800 }),
+			);
+			expect(logger.warn).not.toHaveBeenCalledWith(
+				expect.anything(),
+				expect.objectContaining({ alert: "dlsite_rate_limited" }),
+			);
+			expect(updateMock).toHaveBeenCalledWith(
+				expect.objectContaining({ currentBatch: 0, lastError: "レート制限により中断" }),
+			);
+			expect(logger.info).not.toHaveBeenCalledWith("全バッチ処理完了", expect.anything());
+			expect(logger.info).toHaveBeenCalledWith(
+				"DLsite run の集計",
+				expect.objectContaining({ apiCalls: 1, stopReason: "rate_limit", rateLimitWaits: 1 }),
+			);
+		});
+
+		it("Functions の予算では待たない（1 回で打ち切り、alert 付きの WARN を出す）", async () => {
+			vi.mocked(collectWorkIdsForProduction).mockResolvedValue(["RJ001"]);
+			vi.mocked(batchFetchIndividualInfo).mockResolvedValue({
+				results: new Map(),
+				failedWorkIds: [],
+				interruption: { reason: "rate_limit", retryAfterSeconds: 60, skippedWorkIds: ["RJ001"] },
+			});
+
+			await expect(
+				runUnifiedDataCollectionWithReport({ ...jobRun, budget: FUNCTION_RUN_BUDGET }),
+			).resolves.toBe(true);
+
+			expect(batchFetchIndividualInfo).toHaveBeenCalledTimes(1);
+			expect(logger.info).not.toHaveBeenCalledWith(
+				"DLsite レート制限のため待機",
+				expect.anything(),
+			);
+			expect(logger.warn).toHaveBeenCalledWith(
+				"DLsite レート制限により run を中断",
+				expect.objectContaining({ alert: "dlsite_rate_limited" }),
+			);
+		});
+	});
+
+	describe("実行の重なり（「実行中」の印。SPR-417）", () => {
+		const otherRunLock = {
+			exists: true,
+			data: () => ({
+				isInProgress: true,
+				lastFetchedAt: null,
+				runLock: { holder: "other-run", expiresAt: { toMillis: () => Date.now() + 60_000 } },
+			}),
+		};
+		const functionRun = {
+			mode: "individual_info_api_unified",
+			trigger: { eventId: "message-1" },
+			runId: "message-1",
+			budget: FUNCTION_RUN_BUDGET,
+		};
+
+		it("印を取ってから走り、終わったら自分の印を消す", async () => {
+			vi.mocked(collectWorkIdsForProduction).mockResolvedValue(["RJ001"]);
+			vi.mocked(batchFetchIndividualInfo).mockResolvedValue({
+				results: new Map([["RJ001", makeApiResponse("RJ001")]]),
+				failedWorkIds: [],
+			});
+			// 1 回目（取る）は印なし、2 回目（消す）は自分の印が残っている
+			transactionMock.get.mockResolvedValueOnce({ exists: false }).mockResolvedValueOnce({
+				exists: true,
+				data: () => ({ runLock: { holder: "message-1", expiresAt: { toMillis: () => 0 } } }),
+			});
+
+			await expect(runUnifiedDataCollectionWithReport(functionRun)).resolves.toBe(true);
+
+			expect(transactionMock.set).toHaveBeenCalledWith(
+				expect.anything(),
+				expect.objectContaining({ runLock: expect.objectContaining({ holder: "message-1" }) }),
+			);
+			expect(transactionMock.update).toHaveBeenCalledWith(expect.anything(), {
+				runLock: "__delete__",
+			});
+		});
+
+		it("ほかの実行が進行中なら、何も走らせず・開始ログも出さずに正常終了する", async () => {
+			transactionMock.get.mockResolvedValue(otherRunLock);
+
+			await expect(runUnifiedDataCollectionWithReport(functionRun)).resolves.toBe(true);
+
+			expect(collectWorkIdsForProduction).not.toHaveBeenCalled();
+			expect(logger.info).not.toHaveBeenCalledWith("統合データ収集開始", expect.anything());
+			expect(logger.warn).toHaveBeenCalledWith(
+				"別の実行が進行中のため統合データ収集をスキップ",
+				expect.objectContaining({ eventId: "message-1" }),
+			);
+			// 通常の run は pendingFullSweep を立てない。ほかの実行の印も消さない
+			expect(updateMock).not.toHaveBeenCalled();
+			expect(transactionMock.update).not.toHaveBeenCalled();
+		});
+
+		it("飛ばしたのが週次フルスイープなら pendingFullSweep を立てる（その週の分を消さない）", async () => {
+			transactionMock.get.mockResolvedValue(otherRunLock);
+
+			await expect(
+				runUnifiedDataCollectionWithReport({ ...functionRun, mode: WEEKLY_FULL_SWEEP_MODE }),
+			).resolves.toBe(true);
+
+			expect(collectWorkIdsForProduction).not.toHaveBeenCalled();
+			expect(updateMock).toHaveBeenCalledWith({ pendingFullSweep: true });
+		});
+
+		it("pendingFullSweep を立てられなかったら false（失敗として残す）", async () => {
+			transactionMock.get.mockResolvedValue(otherRunLock);
+			updateMock.mockRejectedValueOnce(new Error("UNAVAILABLE"));
+
+			await expect(
+				runUnifiedDataCollectionWithReport({ ...functionRun, mode: WEEKLY_FULL_SWEEP_MODE }),
+			).resolves.toBe(false);
+		});
+
+		it("run が失敗しても印は消す", async () => {
+			vi.mocked(collectWorkIdsForProduction).mockRejectedValue(new Error("scrape failed"));
+			transactionMock.get.mockResolvedValueOnce({ exists: false }).mockResolvedValueOnce({
+				exists: true,
+				data: () => ({ runLock: { holder: "message-1", expiresAt: { toMillis: () => 0 } } }),
+			});
+
+			await expect(runUnifiedDataCollectionWithReport(functionRun)).resolves.toBe(false);
+
+			expect(transactionMock.update).toHaveBeenCalledWith(expect.anything(), {
+				runLock: "__delete__",
+			});
 		});
 	});
 

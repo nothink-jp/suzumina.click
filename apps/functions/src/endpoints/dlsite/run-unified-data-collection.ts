@@ -39,11 +39,11 @@ import {
 	updateUnifiedMetadata,
 } from "./collection-metadata";
 import {
-	API_FETCH_DEADLINE,
 	BATCH_SIZE,
 	type BatchProcessingInfo,
-	MAX_EXECUTION_TIME,
+	FUNCTION_RUN_BUDGET,
 	processBatch,
+	type RunBudget,
 	type UnifiedFetchResult,
 } from "./process-batch";
 
@@ -52,6 +52,23 @@ import {
  * terraform/monitoring_dlsite.tf の log-based メトリクスのフィルタと一致させる。
  */
 const DLSITE_RATE_LIMITED_ALERT = "dlsite_rate_limited";
+
+/**
+ * レート制限の待ち時間（SPR-417）。待つのは `RunBudget.waitOnRateLimit` の run（Cloud Run Jobs）だけ
+ *
+ * - 既定: `Retry-After` が無いときの待ち時間。2026-11-13 の 429 は 300 秒のブロックだった（SPR-408）
+ * - 下限: `Retry-After` は残り秒数なので、解除の直前だと数秒が返る。ブロックの状態は Cloudflare の中で
+ *   揃っておらず、待ったあとの最初のリクエストがまたブロックされることがある（SPR-423）。短い待ちを
+ *   繰り返して叩き続けないための下限
+ * - 余裕: 解除の時刻ちょうどに送らないための上乗せ
+ * - 回数の上限: 1 回の実行で待つ回数。30 秒の待ちが続いても、送るのは 2 リクエスト × 20 回で止まる
+ */
+const DEFAULT_RATE_LIMIT_WAIT_SECONDS = 300;
+const MIN_RATE_LIMIT_WAIT_SECONDS = 30;
+const RATE_LIMIT_WAIT_MARGIN_SECONDS = 5;
+const MAX_RATE_LIMIT_WAITS_PER_RUN = 20;
+/** 待ったあとに取得へ使える時間がこれより短いなら、待たずに run を終える */
+const MIN_USABLE_MS_AFTER_WAIT = 60_000;
 
 /**
  * 1サイクルの due-set の上限件数（SPR-411）。1サイクルを1 run で完了させるための値。
@@ -173,18 +190,31 @@ export async function computeDueWorkIds(
 }
 
 /**
- * バッチを途中で打ち切ったことを WARN で残す
+ * バッチを途中で打ち切ったことをログに残す
  *
- * レート制限は `alert` キー付き（log-based メトリクスの契約＝terraform/monitoring_dlsite.tf）。
- * 締め切りによる打ち切りは、平常時の run（約445秒）では起きない。出ていれば API のタイムアウトが
- * 続いている（失敗率のアラートと合わせて見る）か、複数 run にまたがるサイクルの最後のバッチ。
+ * - レート制限・待たない run（Functions）: `alert` キー付きの WARN（log-based メトリクスの契約＝
+ *   terraform/monitoring_dlsite.tf）。文言とキーを変えない
+ * - レート制限・待つ run（Cloud Run Jobs）: 残り時間が足りずに終えるのは平常なので INFO。`alert` は付けない
+ * - 締め切り: 平常時の Functions の run（約445秒）では起きない。出ていれば API のタイムアウトが
+ *   続いている（失敗率のアラートと合わせて見る）か、複数 run にまたがるサイクルの最後のバッチ
  */
 function logBatchInterruption(
 	interruption: NonNullable<UnifiedFetchResult["interruption"]>,
 	batchNumber: number,
 	totalBatches: number,
 	startTime: number,
+	budget: RunBudget,
 ): void {
+	const elapsedSeconds = Math.round((Date.now() - startTime) / 1000);
+	if (interruption.reason === "rate_limit" && budget.waitOnRateLimit) {
+		logger.info("DLsite レート制限: 待つ時間が残っていないため run を終了", {
+			batchNumber,
+			totalBatches,
+			retryAfterSeconds: interruption.retryAfterSeconds,
+			elapsedSeconds,
+		});
+		return;
+	}
 	if (interruption.reason === "rate_limit") {
 		logger.warn("DLsite レート制限により run を中断", {
 			alert: DLSITE_RATE_LIMITED_ALERT,
@@ -194,12 +224,90 @@ function logBatchInterruption(
 		});
 		return;
 	}
-	logger.warn("API取得の締め切りにより run を中断", {
-		batchNumber,
-		totalBatches,
-		elapsedSeconds: Math.round((Date.now() - startTime) / 1000),
-	});
+	logger.warn("API取得の締め切りにより run を中断", { batchNumber, totalBatches, elapsedSeconds });
 }
+
+/** 1 回の run でレート制限を待った回数と時間（run の集計ログに出す） */
+interface RateLimitWaitStats {
+	count: number;
+	totalMs: number;
+}
+
+/**
+ * レート制限の解除まで待つ時間（ms）を決める。待てないときは undefined
+ *
+ * 待てないのは、回数の上限に達したか、待ったあとに取得へ使える時間が残らないとき。
+ */
+function resolveRateLimitWaitMs(
+	retryAfterSeconds: number | undefined,
+	waits: RateLimitWaitStats,
+	startTime: number,
+	budget: RunBudget,
+): number | undefined {
+	if (waits.count >= MAX_RATE_LIMIT_WAITS_PER_RUN) {
+		return undefined;
+	}
+	const waitSeconds =
+		Math.max(retryAfterSeconds ?? DEFAULT_RATE_LIMIT_WAIT_SECONDS, MIN_RATE_LIMIT_WAIT_SECONDS) +
+		RATE_LIMIT_WAIT_MARGIN_SECONDS;
+	const waitMs = waitSeconds * 1000;
+	const resumeAt = Date.now() + waitMs;
+	return resumeAt + MIN_USABLE_MS_AFTER_WAIT <= startTime + budget.maxExecutionMs
+		? waitMs
+		: undefined;
+}
+
+/**
+ * 1 バッチを処理する。レート制限を受けたら、予算が許す限り解除を待って、取れていない作品だけを取り直す
+ *
+ * 待つのは `budget.waitOnRateLimit` の run だけ。待たない run・待てない run は、`interruption` を付けて返す
+ * （呼び出し側が cursor を進めずに run を終える）。待ちの回数と時間は `waits` に足し込む（副作用）。
+ *
+ * 取り直すのを `skippedWorkIds` に絞るのは、ブロックが開いている時間（約 3 分＝SPR-423）を、取得済みの
+ * 作品の再取得で使わないため。
+ */
+async function processBatchWithRateLimitWaits(
+	batchInfo: BatchProcessingInfo,
+	startTime: number,
+	budget: RunBudget,
+	waits: RateLimitWaitStats,
+): Promise<UnifiedFetchResult> {
+	let workIds = batchInfo.workIds;
+	let basicDataUpdated = 0;
+	let apiCallCount = 0;
+
+	for (;;) {
+		const result = await processBatch({ ...batchInfo, workIds });
+		basicDataUpdated += result.basicDataUpdated;
+		apiCallCount += result.apiCallCount;
+		const merged = { ...result, workCount: basicDataUpdated, basicDataUpdated, apiCallCount };
+
+		const interruption = result.interruption;
+		if (interruption?.reason !== "rate_limit" || !budget.waitOnRateLimit) {
+			return merged;
+		}
+		const waitMs = resolveRateLimitWaitMs(interruption.retryAfterSeconds, waits, startTime, budget);
+		if (waitMs === undefined) {
+			return merged;
+		}
+
+		waits.count += 1;
+		waits.totalMs += waitMs;
+		logger.info("DLsite レート制限のため待機", {
+			batchNumber: batchInfo.batchNumber,
+			totalBatches: batchInfo.totalBatches,
+			retryAfterSeconds: interruption.retryAfterSeconds,
+			waitSeconds: waitMs / 1000,
+			waitCount: waits.count,
+			remainingInBatch: interruption.skippedWorkIds.length,
+		});
+		await new Promise((resolve) => setTimeout(resolve, waitMs));
+		workIds = interruption.skippedWorkIds;
+	}
+}
+
+/** バッチループを抜けた理由（run の集計ログに出す） */
+type BatchLoopStopReason = "completed" | "time_limit" | "rate_limit" | "deadline";
 
 /**
  * バッチループ処理を実行
@@ -209,18 +317,21 @@ async function executeBatchLoop(
 	startBatch: number,
 	startTime: number,
 	metadata: CollectionMetadata,
+	budget: RunBudget,
 	existingWorksMap?: Map<string, WorkDocument>,
 	wouldSkipStableIds?: Set<string>,
 ): Promise<{
 	totalUpdated: number;
 	totalApiCalls: number;
 	completedBatches: number[];
-	allBatchesCompleted: boolean;
+	stopReason: BatchLoopStopReason;
+	rateLimitWaits: RateLimitWaitStats;
 }> {
 	let totalUpdated = 0;
 	let totalApiCalls = 0;
-	let allBatchesCompleted = true;
+	let stopReason: BatchLoopStopReason = "completed";
 	const completedBatches: number[] = [];
+	const rateLimitWaits: RateLimitWaitStats = { count: 0, totalMs: 0 };
 
 	logger.info(
 		`executeBatchLoop開始: startBatch=${startBatch}, batches.length=${batches.length}, completedBatches=${completedBatches.length}`,
@@ -236,9 +347,9 @@ async function executeBatchLoop(
 
 	for (let i = startBatch; i < batches.length; i++) {
 		// 実行時間チェック
-		if (Date.now() - startTime > MAX_EXECUTION_TIME) {
+		if (Date.now() - startTime > budget.maxExecutionMs) {
 			logger.info(`実行時間制限に達しました。バッチ ${i}/${batches.length} で中断`);
-			allBatchesCompleted = false;
+			stopReason = "time_limit";
 
 			await updateUnifiedMetadata({
 				currentBatch: i,
@@ -257,19 +368,24 @@ async function executeBatchLoop(
 			startTime: Timestamp.now(),
 			existingWorksMap,
 			wouldSkipStableIds,
-			fetchDeadlineAt: startTime + API_FETCH_DEADLINE,
+			fetchDeadlineAt: startTime + budget.fetchDeadlineMs,
 		};
 
-		const result = await processBatch(batchInfo);
+		const result = await processBatchWithRateLimitWaits(
+			batchInfo,
+			startTime,
+			budget,
+			rateLimitWaits,
+		);
 		totalUpdated += result.basicDataUpdated;
 		totalApiCalls += result.apiCallCount;
 
-		// 打ち切り（429＝SPR-408 / 締め切り＝SPR-319）: このバッチは未完了。cursor を進めずに中断し、
+		// 打ち切り（レート制限＝SPR-408 / 締め切り＝SPR-319）: このバッチは未完了。cursor を進めずに中断し、
 		// 次の run が同じバッチからやり直す（取れた分は保存済みで、再取得しても差分なしでスキップされる）。
-		// レート制限は約5分続くので run 内では待たない。
+		// 待つ run（Cloud Run Jobs）がここに来るのは、待つ時間が残っていないときだけ。
 		if (result.interruption) {
-			logBatchInterruption(result.interruption, i + 1, batches.length, startTime);
-			allBatchesCompleted = false;
+			logBatchInterruption(result.interruption, i + 1, batches.length, startTime, budget);
+			stopReason = result.interruption.reason;
 
 			await updateUnifiedMetadata({
 				currentBatch: i,
@@ -301,7 +417,7 @@ async function executeBatchLoop(
 		}
 	}
 
-	return { totalUpdated, totalApiCalls, completedBatches, allBatchesCompleted };
+	return { totalUpdated, totalApiCalls, completedBatches, stopReason, rateLimitWaits };
 }
 
 /**
@@ -492,9 +608,11 @@ export async function resolveCycleInfo(
  * 統合データ収集処理の実行
  *
  * @param forceFullSweep SPR-229 Stage②: 週次フルスイープ実行時 true（ティア差分を無視して全件を対象にする）
+ * @param budget この run の予算（SPR-417）。省略時は Functions の値（待たずに打ち切る）
  */
 export async function runUnifiedDataCollection(
 	forceFullSweep = false,
+	budget: RunBudget = FUNCTION_RUN_BUDGET,
 ): Promise<UnifiedFetchResult> {
 	// SPR-225 Stage 0/P0: dlsite 同期 reads の内訳をこの run の分だけ計測する（挙動は変えない）。
 	resetDlsiteReadMetrics();
@@ -543,14 +661,26 @@ export async function runUnifiedDataCollection(
 		}
 
 		// バッチ処理の実行
-		const { totalUpdated, totalApiCalls, allBatchesCompleted } = await executeBatchLoop(
+		const { totalUpdated, totalApiCalls, stopReason, rateLimitWaits } = await executeBatchLoop(
 			batches,
 			startBatch,
 			startTime,
 			metadata,
+			budget,
 			existingWorksMap,
 			wouldSkipStableIds,
 		);
+		const allBatchesCompleted = stopReason === "completed";
+
+		// 1 回の run の取得量と待ち時間（SPR-417）。1 日の取得件数はこのログの apiCalls を足して数える
+		logger.info("DLsite run の集計", {
+			apiCalls: totalApiCalls,
+			worksUpdated: totalUpdated,
+			stopReason,
+			rateLimitWaits: rateLimitWaits.count,
+			rateLimitWaitSeconds: Math.round(rateLimitWaits.totalMs / 1000),
+			elapsedSeconds: Math.round((Date.now() - startTime) / 1000),
+		});
 
 		if (allBatchesCompleted) {
 			await finalizeCompletedProcessing(allWorkIds, totalUpdated);

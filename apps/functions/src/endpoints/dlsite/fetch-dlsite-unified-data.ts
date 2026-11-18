@@ -1,7 +1,7 @@
 /**
  * DLsite 統合データ収集エンドポイント（薄いハンドラ）
  *
- * CloudEvent の unwrap（mode 判定）→ 重複配信の判定 → オーケストレータ呼び出し → 結果ログのみを担う。
+ * CloudEvent の unwrap（mode 判定）→ 重複配信の判定 → 「実行中」の印 → オーケストレータ呼び出し → 結果ログのみを担う。
  * 本処理は run-unified-data-collection.ts の `runUnifiedDataCollection`。
  *
  * 起動の経路は 2 つある。どちらも `runUnifiedDataCollectionWithReport` を通るので、開始・完了のログは
@@ -14,8 +14,13 @@ import type { CloudEvent } from "@google-cloud/functions-framework";
 import { Timestamp } from "../../infrastructure/database/firestore";
 import * as logger from "../../shared/logger";
 import { decodePubsubMode, type MessagePublishedData } from "../../shared/pubsub-utils";
-import { claimRunEventFailOpen } from "../../shared/run-metadata";
-import { unifiedRunEventClaim, updateUnifiedMetadata } from "./collection-metadata";
+import {
+	acquireRunLockFailOpen,
+	claimRunEventFailOpen,
+	releaseRunLock,
+} from "../../shared/run-metadata";
+import { unifiedRunEventClaim, unifiedRunLock, updateUnifiedMetadata } from "./collection-metadata";
+import { FUNCTION_RUN_BUDGET, type RunBudget } from "./process-batch";
 import { runUnifiedDataCollection } from "./run-unified-data-collection";
 
 /**
@@ -43,6 +48,8 @@ export async function fetchDLsiteUnifiedData(
 	await runUnifiedDataCollectionWithReport({
 		mode,
 		trigger: { eventId: event.id, eventType: event.type },
+		runId: event.id,
+		budget: FUNCTION_RUN_BUDGET,
 	});
 }
 
@@ -55,17 +62,30 @@ export const WEEKLY_FULL_SWEEP_MODE = "weekly_full_sweep";
  * 例外は投げない（予期しないエラーはログとメタデータに記録する）。**戻り値が「この run が成功したか」**。
  * Functions のハンドラは戻り値を使わない（失敗しても ack する＝再配信させない）。Jobs は終了コードに使う。
  *
+ * ほかの実行が進行中（「実行中」の印が期限内）なら、何もせずに true を返す（SPR-417）。開始ログも出さない。
+ * 週次フルスイープがこれで飛ばされたときは `pendingFullSweep` を立て、次の新規サイクルが拾い直す
+ * （継続中のサイクルと重なったときと同じ扱い＝`resolveCycleInfo`）。
+ *
  * 「統合データ収集開始」はログベースメトリクス `dlsite_run_started` が数える。文言とキーを変えない。
  *
  * @param params.mode `WEEKLY_FULL_SWEEP_MODE` なら週次フルスイープ。それ以外・undefined は通常 run
  * @param params.trigger 起動元を識別するための情報（開始ログにそのまま載る）
+ * @param params.runId この実行の識別子（印の持ち主）。Functions は event.id、Jobs は実行名
+ * @param params.budget この run の予算。起動の経路で決まる（Functions / Jobs）
  */
 export async function runUnifiedDataCollectionWithReport(params: {
 	mode: string | undefined;
 	trigger: Record<string, unknown>;
+	runId: string;
+	budget: RunBudget;
 }): Promise<boolean> {
-	const { mode, trigger } = params;
+	const { mode, trigger, runId, budget } = params;
 	const isWeeklyFullSweep = mode === WEEKLY_FULL_SWEEP_MODE;
+
+	if (!(await acquireRunLockFailOpen(runId, budget.lockTtlMs, unifiedRunLock))) {
+		logger.warn("別の実行が進行中のため統合データ収集をスキップ", { ...trigger, mode });
+		return deferFullSweepIfNeeded(isWeeklyFullSweep);
+	}
 
 	try {
 		logger.info("統合データ収集開始", {
@@ -76,7 +96,7 @@ export async function runUnifiedDataCollectionWithReport(params: {
 			timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
 		});
 
-		const result = await runUnifiedDataCollection(isWeeklyFullSweep);
+		const result = await runUnifiedDataCollection(isWeeklyFullSweep, budget);
 
 		if (result.error) {
 			logger.error(`統合データ収集エラー: ${result.error}`);
@@ -90,6 +110,28 @@ export async function runUnifiedDataCollectionWithReport(params: {
 		return true;
 	} catch (error) {
 		await recordUnexpectedError(error);
+		return false;
+	} finally {
+		await releaseRunLock(runId, unifiedRunLock);
+	}
+}
+
+/**
+ * 印が取れずに飛ばした run が週次フルスイープなら、`pendingFullSweep` を立てる
+ *
+ * @returns 飛ばした run の成否。立てられなかったら false（その週のフルスイープが消えるので、失敗として残す）
+ */
+async function deferFullSweepIfNeeded(isWeeklyFullSweep: boolean): Promise<boolean> {
+	if (!isWeeklyFullSweep) {
+		return true;
+	}
+	try {
+		await updateUnifiedMetadata({ pendingFullSweep: true });
+		return true;
+	} catch (error) {
+		logger.error("pendingFullSweep を記録できませんでした（今週のフルスイープは実行されません）", {
+			error,
+		});
 		return false;
 	}
 }

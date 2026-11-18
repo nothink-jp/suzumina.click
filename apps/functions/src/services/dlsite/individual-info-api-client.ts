@@ -400,10 +400,10 @@ export async function fetchIndividualWorkInfo(
 			});
 		}
 
-		// API取得エラーは重要なため保持
-		logger.error(`Individual Info API取得エラー: ${workId}`, {
-			error,
-		});
+		// レート制限は handleHttpError が WARN を出している。平常の応答なので ERROR を重ねない（SPR-417）
+		if (!(error instanceof DLsiteRateLimitError)) {
+			logger.error(`Individual Info API取得エラー: ${workId}`, { error });
+		}
 
 		throw error;
 	}

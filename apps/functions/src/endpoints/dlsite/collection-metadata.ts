@@ -11,8 +11,12 @@ import type { CollectionMetadata } from "@suzumina.click/shared-types";
 import { Timestamp } from "../../infrastructure/database/firestore";
 import { withClearedUndefined } from "../../shared/firestore-write";
 import * as logger from "../../shared/logger";
-import { createRunMetadataStore, type RunEventClaimOptions } from "../../shared/run-metadata";
-import { BATCH_SIZE, MAX_EXECUTION_TIME } from "./process-batch";
+import {
+	createRunMetadataStore,
+	type RunEventClaimOptions,
+	type RunLockOptions,
+} from "../../shared/run-metadata";
+import { BATCH_SIZE } from "./process-batch";
 
 // 統合メタデータ保存用の定数
 const UNIFIED_METADATA_DOC_ID = "unified_data_collection_metadata";
@@ -54,6 +58,13 @@ export const unifiedRunEventClaim: RunEventClaimOptions = {
 	collection: METADATA_COLLECTION,
 	docId: UNIFIED_METADATA_DOC_ID,
 	limit: 5,
+	createInitial: createInitialUnifiedMetadata,
+};
+
+/** SPR-417: 「実行中」の印（`runLock`）を持たせる doc。継続 cursor と同じメタデータ doc */
+export const unifiedRunLock: RunLockOptions = {
+	collection: METADATA_COLLECTION,
+	docId: UNIFIED_METADATA_DOC_ID,
 	createInitial: createInitialUnifiedMetadata,
 };
 
@@ -125,9 +136,7 @@ export async function initializeNewBatchProcessing(
 	logger.info(
 		`新規バッチ処理開始: 総作品数=${allWorkIds.length}, バッチ数=${batches.length}, バッチサイズ=${BATCH_SIZE}`,
 	);
-	logger.info(
-		`処理時間制限: ${MAX_EXECUTION_TIME / 1000}秒, 予想処理時間: ${batches.length * 45}秒（45秒/バッチ）`,
-	);
+	logger.info(`予想処理時間: ${batches.length * 45}秒（45秒/バッチ・レート制限の待ちを除く）`);
 
 	await updateUnifiedMetadata({
 		isInProgress: true,

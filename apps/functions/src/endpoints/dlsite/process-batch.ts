@@ -51,6 +51,44 @@ export const MAX_EXECUTION_TIME = 480000;
 export const API_FETCH_DEADLINE = 520000;
 
 /**
+ * 1 回の実行の予算（SPR-417）。起動の経路（Functions / Cloud Run Jobs）で値が違う
+ *
+ * 時間はどれも **run 起動時点** からの経過（ms）。
+ */
+export interface RunBudget {
+	/** これを過ぎたら、新しいバッチを始めない。レート制限の待ちも、これを越えるなら待たない */
+	maxExecutionMs: number;
+	/** API 取得の締め切り。これを過ぎて終わりうるサブバッチは始めない */
+	fetchDeadlineMs: number;
+	/** レート制限（429 / Retry-After つきの 404）を受けたとき、解除を待って同じ run で続けるか */
+	waitOnRateLimit: boolean;
+	/** 「実行中」の印（`CollectionMetadata.runLock`）の期限。実行環境の timeout に合わせる */
+	lockTtlMs: number;
+}
+
+/** Functions（timeout 540 秒）の予算。待たずに打ち切り、続きは次の run が取る */
+export const FUNCTION_RUN_BUDGET: RunBudget = {
+	maxExecutionMs: MAX_EXECUTION_TIME,
+	fetchDeadlineMs: API_FETCH_DEADLINE,
+	waitOnRateLimit: false,
+	lockTtlMs: 540_000,
+};
+
+/**
+ * Cloud Run Jobs の予算。1 回の実行を 55 分以内で終える（毎時の起動どうしを重ねない＝SPR-358）
+ *
+ * - 54 分: 新しいバッチを始める最後の時刻（1 バッチは平常 約 45 秒）
+ * - 55 分: 取得の締め切り
+ * - 58 分: 印の期限。ジョブのタスク timeout（Terraform が正本）と同じ値にする
+ */
+export const JOB_RUN_BUDGET: RunBudget = {
+	maxExecutionMs: 54 * 60_000,
+	fetchDeadlineMs: 55 * 60_000,
+	waitOnRateLimit: true,
+	lockTtlMs: 58 * 60_000,
+};
+
+/**
  * 統合処理結果の型定義
  */
 export interface UnifiedFetchResult {
@@ -62,9 +100,12 @@ export interface UnifiedFetchResult {
 	/**
 	 * バッチを途中で打ち切った場合のみ設定（429＝SPR-408 / 締め切り＝SPR-319）。
 	 * このバッチは未完了＝オーケストレータは cursor を進めずに run を中断し、次の run が
-	 * 同じバッチからやり直す。
+	 * 同じバッチからやり直す。`skippedWorkIds` はこのバッチでまだ取れていない作品（待って続けるときは
+	 * これだけを取り直す＝SPR-417）。
 	 */
-	interruption?: { reason: "rate_limit"; retryAfterSeconds?: number } | { reason: "deadline" };
+	interruption?:
+		| { reason: "rate_limit"; retryAfterSeconds?: number; skippedWorkIds: string[] }
+		| { reason: "deadline" };
 }
 
 /**
@@ -252,7 +293,7 @@ function logFullSweepMissedChanges(
 }
 
 /**
- * 取得側の打ち切り情報から、オーケストレータへ返す分（理由と Retry-After）だけを取り出す
+ * 取得側の打ち切り情報を、オーケストレータへ返す形に直す（締め切りの未着手分は使わないので落とす）
  */
 function toResultInterruption(
 	interruption: BatchInterruption | undefined,
@@ -261,7 +302,11 @@ function toResultInterruption(
 		return undefined;
 	}
 	return interruption.reason === "rate_limit"
-		? { reason: "rate_limit", retryAfterSeconds: interruption.retryAfterSeconds }
+		? {
+				reason: "rate_limit",
+				retryAfterSeconds: interruption.retryAfterSeconds,
+				skippedWorkIds: interruption.skippedWorkIds,
+			}
 		: { reason: "deadline" };
 }
 
