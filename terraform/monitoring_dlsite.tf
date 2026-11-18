@@ -576,8 +576,8 @@ resource "google_monitoring_alert_policy" "dlsite_rate_limited" {
       # **このアラートだけは Functions（cloud_run_revision）を見たままにしている。** ジョブは、レート制限を
       # 受けても待って続けるので、alert="dlsite_rate_limited" を出さない（平常＝SPR-417）。つまり、取り込みが
       # ジョブで動いているあいだ、このアラートは鳴らない。関数へ戻したときだけ意味を持つ。
-      # ジョブ向けの「取得が進んでいない」アラートは、dlsite_fetch_progress（下）を材料に次の PR で足す
-      # （メトリクスとアラートを同じ apply で足すと 404 で失敗する＝SPR-409）。そのとき、このアラートは撤去する。
+      # ジョブ向けには、「取得が進んでいない」アラート（dlsite_fetch_stalled・下）がある。
+      # このアラートとメトリクスは、旧 Functions を撤去するとき（SPR-419）に一緒に撤去する。
       filter = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.dlsite_rate_limited.id}\" resource.type=\"cloud_run_revision\""
 
       aggregations {
@@ -640,7 +640,7 @@ resource "google_monitoring_alert_policy" "dlsite_rate_limited" {
 # あった件数）で絞らないのは、平常でも 0 になりうるため。
 # ジョブはレート制限を待って続けるので、「ブロックされた」こと自体は異常ではない。異常なのは
 # 「何時間も 1 件も取れていない」ことで、それはこのメトリクスの不在で分かる。
-# アラート（取得が N 時間進んでいない）は次の PR で足す（同じ apply で足すと 404 で失敗する＝SPR-409）。
+# アラートは下の dlsite_fetch_stalled（メトリクスの次の apply で足した。同じ apply で足すと 404 で失敗する＝SPR-409）。
 resource "google_logging_metric" "dlsite_fetch_progress" {
   name    = "dlsite_fetch_progress"
   project = var.gcp_project_id
@@ -656,6 +656,84 @@ resource "google_logging_metric" "dlsite_fetch_progress" {
     value_type   = "INT64"
     display_name = "DLsite Fetch Progress"
   }
+}
+
+# DLsite の取得が進んでいないアラート（SPR-417）
+# 「DLsite Rate Limited」（ブロックのたびに鳴る）の置き換え。ジョブはブロックを待って続けるので、鳴らすのは
+# 「6 時間、1 件も取得できた run が無い」とき。
+resource "google_monitoring_alert_policy" "dlsite_fetch_stalled" {
+  display_name = "DLsite Fetch Stalled Alert"
+  project      = var.gcp_project_id
+  combiner     = "OR"
+
+  conditions {
+    display_name = "6時間以上、1件も取得できていない"
+
+    # 6 時間の根拠: 平常は毎時の実行が必ず取得する（volatile の約 280 件は毎サイクル取得対象になる）。
+    # ブロックが続いているときも、開いている時間（2026-11-16〜18 の実測で 33 分のうち約 3 分）に当たれば
+    # 1 回の実行で取得できる。3 時台は実行が無いので、2 時間の空きは平常。そこに 4 時間の余裕を足した。
+    # 実測がたまったら短くする（SPR-418）。
+    #
+    # 毎時と週次フルスイープのどちらのジョブが取得しても「進んでいる」と数える（job_name で絞らず、1 系列に集約）。
+    # 不在の検知は、この時系列が 1 回でも生まれたあとでないと働かない（dlsite_run_absent と同じ注意）。
+    condition_absent {
+      filter   = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.dlsite_fetch_progress.id}\" resource.type=\"cloud_run_job\""
+      duration = "21600s"
+
+      aggregations {
+        alignment_period     = "300s"
+        per_series_aligner   = "ALIGN_COUNT"
+        cross_series_reducer = "REDUCE_SUM"
+      }
+
+      trigger {
+        count = 1
+      }
+    }
+  }
+
+  notification_channels = [
+    google_monitoring_notification_channel.email.name
+  ]
+
+  documentation {
+    content   = <<-EOT
+    # DLsite の取得が 6 時間進んでいない
+
+    DLsite の取り込みのジョブで、1 件以上取得できた実行が 6 時間ありません。作品の価格・セール・新作が
+    更新されていません。
+
+    ## まず確認すること
+    実行は始まっているか、どこで止まっているか（直近の集計ログ）:
+    ```bash
+    gcloud logging read 'resource.type="cloud_run_job" AND resource.labels.job_name=~"^fetch-dlsite-unified-data" AND jsonPayload.message="DLsite run の集計"' --freshness=8h --format="table(timestamp,jsonPayload.worksFetched,jsonPayload.apiCalls,jsonPayload.stopReason,jsonPayload.rateLimitWaits,jsonPayload.rateLimitWaitSeconds)"
+    ```
+
+    ## 読み方
+    - 集計ログが無い → 実行が始まっていないか、集計の前に落ちている。DLsite Run Absent Alert /
+      DLsite Job Execution Failed を見る
+    - `stopReason=rate_limit`・`rateLimitWaits` が大きい・`worksFetched=0` → DLsite（Cloudflare）にブロックされ続けている。
+      応答ヘッダを確認する:
+      ```bash
+      gcloud logging read 'resource.type="cloud_run_job" AND resource.labels.job_name=~"^fetch-dlsite-unified-data" AND jsonPayload.rateLimitHeaders:*' --freshness=8h --limit=10 --format=json
+      ```
+      Retry-After が 30 分を大きく超えている、または開いている時間が無くなっている場合は、待っても取れない。
+      経緯と、試して効かなかった対処（固定 IP・ヘッダ）は SPR-423。ブラウザを装って判定を避ける方向は採らない
+    - `apiCalls` は大きいのに `worksFetched=0` → API は応答しているが全件が失敗している。
+      DLsite API Batch All Failed Alert / DLsite API High Failure Rate Alert を見る
+
+    ## 費用の注意
+    ブロックが続くと、ジョブは待ち時間のぶんだけ長く走る（最長 55 分 × 23 回/日。終日続くと 月 約 $38）。
+    長引くなら、スケジューラを一時停止するか、待たない設定に戻すことを検討する:
+    gcloud scheduler jobs pause fetch-dlsite-individual-api-hourly --location=asia-northeast1
+    EOT
+    mime_type = "text/markdown"
+  }
+
+  depends_on = [
+    google_monitoring_notification_channel.email,
+    google_logging_metric.dlsite_fetch_progress
+  ]
 }
 
 # ログベースメトリクス - スキーマドリフト（SPR-140 / SPR-144）
