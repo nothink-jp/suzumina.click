@@ -1,9 +1,20 @@
-# DLsite関数専用のモニタリング設定
+# DLsite の取り込み専用のモニタリング設定
 #
-# 注意（SPR-234）: fetchDLsiteUnifiedData は Gen2（Cloud Run 上で実行）のため、実行ログは
-# resource.type="cloud_run_revision" + resource.labels.service_name="fetchdlsiteunifieddata"
-# （サービス名は小文字）で出力される。Gen1 形式（resource.type="cloud_function" +
-# function_name）でフィルタすると一切マッチせず、アラートは発火不能になる。
+# **取り込みは Cloud Run Jobs で動く**（SPR-417。ジョブの定義は job_dlsite.tf）。実行ログは
+# resource.type="cloud_run_job" + resource.labels.job_name="fetch-dlsite-unified-data"（毎時）/
+# "fetch-dlsite-unified-data-full-sweep"（週次フルスイープ）で出る。
+#
+# ログベースメトリクスのフィルタは、旧 Functions（resource.type="cloud_run_revision" +
+# service_name="fetchdlsiteunifieddata"）のログも拾う（local.dlsite_log_source_filter）。
+# 関数は SPR-419 まで残してあり、スケジューラを Pub/Sub に戻せば関数へ戻せるため。
+# 一方、**アラートが見るのはジョブだけ**（monitoring の alert filter は resource.type を 1 つしか書けない）。
+# 関数へ戻すときは、この PR ごと revert する（アラートを関数向けに戻すため）。
+#
+# メトリクスのフィルタは「書き換え」で、作り直していない（メトリクスとアラートを同時に作り直すと
+# apply が 404 で失敗する＝SPR-409）。
+locals {
+  dlsite_log_source_filter = "((resource.type=\"cloud_run_job\" AND resource.labels.job_name=~\"^fetch-dlsite-unified-data\") OR (resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"fetchdlsiteunifieddata\"))"
+}
 
 # ログベースメトリクスを作成してアラートに使用
 # per-work の一時エラー（Individual Info API取得エラー / API HTTP Error）は毎日数件出る常態の
@@ -17,8 +28,7 @@ resource "google_logging_metric" "dlsite_error_count" {
   # 除外も textPayload/jsonPayload 両張り: 呼び出しから第2引数が外れると message が
   # textPayload へ昇格し、jsonPayload 側だけの NOT では除外が静かに効かなくなるため。
   filter = <<-EOT
-    resource.type="cloud_run_revision"
-    resource.labels.service_name="fetchdlsiteunifieddata"
+    ${local.dlsite_log_source_filter}
     severity >= "ERROR"
     NOT jsonPayload.message:"Individual Info API取得エラー"
     NOT textPayload:"Individual Info API取得エラー"
@@ -43,7 +53,7 @@ resource "google_monitoring_alert_policy" "dlsite_function_error" {
     display_name = "DLsite関数でエラーログ検出"
 
     condition_threshold {
-      filter = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.dlsite_error_count.id}\" resource.type=\"cloud_run_revision\""
+      filter = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.dlsite_error_count.id}\" resource.type=\"cloud_run_job\""
 
       aggregations {
         alignment_period   = "60s"
@@ -74,7 +84,7 @@ resource "google_monitoring_alert_policy" "dlsite_function_error" {
     
     ## ログ確認コマンド
     ```bash
-    gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="fetchdlsiteunifieddata" AND severity >= "ERROR"' --limit=20 --format=json
+    gcloud logging read 'resource.type="cloud_run_job" AND resource.labels.job_name=~"^fetch-dlsite-unified-data" AND severity >= "ERROR"' --limit=20 --format=json
     ```
     EOT
     mime_type = "text/markdown"
@@ -118,8 +128,7 @@ resource "google_logging_metric" "dlsite_no_data" {
   # 該当しない（0件でなく run も完走する）。これは catch-all の dlsite_error_count 側が
   # per-page エラー（severity=error のまま据え置き）で拾う二段構えにしてある。
   filter = <<-EOT
-    resource.type="cloud_run_revision"
-    resource.labels.service_name="fetchdlsiteunifieddata"
+    ${local.dlsite_log_source_filter}
     (
       jsonPayload.message:"この run を中断します" OR textPayload:"この run を中断します"
       OR jsonPayload.message:"収集対象の作品IDが見つかりません" OR textPayload:"収集対象の作品IDが見つかりません"
@@ -145,7 +154,7 @@ resource "google_monitoring_alert_policy" "dlsite_no_data_fetched" {
     display_name = "作品ID収集の失敗でrunが中断"
 
     condition_threshold {
-      filter = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.dlsite_no_data.id}\" resource.type=\"cloud_run_revision\""
+      filter = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.dlsite_no_data.id}\" resource.type=\"cloud_run_job\""
 
       aggregations {
         alignment_period   = "300s"
@@ -195,38 +204,38 @@ resource "google_monitoring_alert_policy" "dlsite_no_data_fetched" {
   ]
 }
 
-# DLsite関数のプラットフォーム障害アラート（OOM・タイムアウト・クラッシュ）
-# エントリポイント（endpoints/dlsite/fetch-dlsite-unified-data.ts の fetchDLsiteUnifiedData）は catch-all で
-# 例外を ERROR ログ化して正常終了（2xx）するため、アプリレベルの失敗はここでは 5xx にならず
-# dlsite_error_count 側が検知する。この alert はプロセスが応答を返せなかったケース
-# （プラットフォームによる強制終了）専用（役割分担・SPR-234）。
+# DLsite のジョブの実行の失敗アラート（OOM・タイムアウト・クラッシュ・アプリが失敗を返した）
+# ジョブは終了コードで成否が決まる（apps/functions/src/jobs/run-job.ts の main: 0 成功 / 1 失敗 / 2 モード不正）。
+# レート制限で待つ時間が残らずに終えた run は成功（0）で、ここには数えない（平常＝SPR-358）。
+# アプリが catch したエラー（終了コード 1）は dlsite_error_count 側でも検知する。この alert でしか分からないのは、
+# プロセスがログを出せずに落ちたケース（OOM・タスク timeout の 58 分・イメージが起動しない）。
+# Functions のときは Cloud Run の request_count 5xx で見ていた（SPR-234）。Jobs には HTTP 応答が無い。
+# リソース名（dlsite_function_failure）は変えていない（変えると作り直しになる）。
 resource "google_monitoring_alert_policy" "dlsite_function_failure" {
-  display_name = "DLsite Function Platform Failure (5xx)"
+  display_name = "DLsite Job Execution Failed"
   project      = var.gcp_project_id
   combiner     = "OR"
 
   conditions {
-    display_name = "プラットフォーム強制終了(5xx)を検出"
+    display_name = "ジョブの実行の失敗を検出"
 
     condition_threshold {
-      # Gen1 の cloudfunctions.googleapis.com/function/execution_count は Gen2 では
-      # 時系列が生成されない。Gen2 の実行失敗（クラッシュ/タイムアウト）は Cloud Run の
-      # request_count 5xx で観測する（web の monitoring.tf と同型・SPR-234）。
+      # 毎時と週次フルスイープの両方を見る（job_name の前方一致）。
       filter = <<-EOT
-        resource.type="cloud_run_revision"
-        resource.labels.service_name="fetchdlsiteunifieddata"
-        metric.type="run.googleapis.com/request_count"
-        metric.labels.response_code_class="5xx"
+        resource.type="cloud_run_job"
+        resource.labels.job_name=monitoring.regex.full_match("fetch-dlsite-unified-data.*")
+        metric.type="run.googleapis.com/job/completed_execution_count"
+        metric.labels.result="failed"
       EOT
 
       aggregations {
-        alignment_period   = "60s"
-        per_series_aligner = "ALIGN_RATE"
+        alignment_period   = "300s"
+        per_series_aligner = "ALIGN_SUM"
       }
 
       comparison      = "COMPARISON_GT"
       threshold_value = 0
-      duration        = "60s"
+      duration        = "0s"
     }
   }
 
@@ -236,17 +245,21 @@ resource "google_monitoring_alert_policy" "dlsite_function_failure" {
 
   documentation {
     content   = <<-EOT
-    # DLsite関数のプラットフォーム障害（5xx）
+    # DLsite のジョブの実行が失敗
 
-    fetchDLsiteUnifiedData の呼び出しが 5xx で終了しました。エントリポイントは例外を
-    catch して正常終了するため、これはアプリ内エラーではなく OOM・リクエストタイムアウト・
-    プロセスクラッシュ等、プラットフォームが強制終了したケースを意味します
-    （アプリ内で catch されたエラーは DLsite Function Error Alert 側で検知）。
+    fetch-dlsite-unified-data（毎時）か fetch-dlsite-unified-data-full-sweep（週次）の実行が、失敗で終わりました。
+    リトライはしません（max_retries = 0）。続きは、次の毎時の実行が継続カーソルから取ります。
+    1 回だけなら、次の実行が成功していれば対応不要です。
 
     ## 確認事項
-    1. Cloud Run のログ（resource.type="cloud_run_revision", service_name="fetchdlsiteunifieddata"）を確認
-    2. メモリ使用量・リクエストタイムアウト設定の確認
-    3. 直近のデプロイ・依存更新の有無
+    1. どの実行が、なぜ失敗したか:
+       ```bash
+       gcloud run jobs executions list --job fetch-dlsite-unified-data --region asia-northeast1 --limit 5
+       gcloud logging read 'resource.type="cloud_run_job" AND resource.labels.job_name=~"^fetch-dlsite-unified-data" AND severity>=WARNING' --freshness=2h --limit=30 --format=json
+       ```
+    2. ログに ERROR が無いまま失敗している → プロセスが落ちている。メモリ（512Mi）・タスク timeout（58 分）・
+       イメージの起動（直近の Deploy Functions）を確認
+    3. 「統合データ収集エラー」がある → アプリが失敗を返した。DLsite Function Error Alert も鳴っているはず
     EOT
     mime_type = "text/markdown"
   }
@@ -266,8 +279,7 @@ resource "google_logging_metric" "dlsite_api_batch_all_failed" {
   # 「バッチ N: APIレスポンスなし」は付加フィールド無しの warn のため textPayload に出る
   # （jsonPayload.message には残らない）。将来の引数追加にも耐えるよう両フィールドを張る（SPR-234）。
   filter = <<-EOT
-    resource.type="cloud_run_revision"
-    resource.labels.service_name="fetchdlsiteunifieddata"
+    ${local.dlsite_log_source_filter}
     (jsonPayload.message:"APIレスポンスなし" OR textPayload:"APIレスポンスなし")
   EOT
 
@@ -288,7 +300,7 @@ resource "google_monitoring_alert_policy" "dlsite_api_batch_all_failed" {
     display_name = "バッチ内全件のAPI取得失敗を検出"
 
     condition_threshold {
-      filter = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.dlsite_api_batch_all_failed.id}\" resource.type=\"cloud_run_revision\""
+      filter = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.dlsite_api_batch_all_failed.id}\" resource.type=\"cloud_run_job\""
 
       aggregations {
         alignment_period   = "300s"
@@ -332,10 +344,11 @@ resource "google_monitoring_alert_policy" "dlsite_api_batch_all_failed" {
 }
 
 # ログベースメトリクス - 定期 run の開始（無音障害検知用ハートビート）
-# Scheduler 停止 / Pub/Sub subscription・Eventarc trigger の破壊 / 関数消失では
+# Scheduler 停止 / ジョブの消失・起動不能 / スケジューラの権限の破壊では
 # 「ログが出ない」ため、ログ内容ベースのアラートは全て沈黙する（SPR-234 分類 B1）。
 # run 開始ログ（1h 毎・3時台を除く23回/日＝スケジュールの正本は
 # function_dlsite_individual_info_api.tf）を metric 化し、absence 条件で run 途絶そのものを検知する。
+# 「実行中」の印で飛ばされた実行は、開始ログを出さない（＝数えない。fetch-dlsite-unified-data.ts）。
 #
 # 注意（2026-07-04/07-05 実測の偽陽性・原因確定）: デプロイ後に本アラートが誤発火する
 # 事象が2回発生したが、実行ログ自体は1件も欠けていなかった（gcloud logging read で確認済み）。
@@ -346,8 +359,7 @@ resource "google_logging_metric" "dlsite_run_started" {
   project = var.gcp_project_id
 
   filter = <<-EOT
-    resource.type="cloud_run_revision"
-    resource.labels.service_name="fetchdlsiteunifieddata"
+    ${local.dlsite_log_source_filter}
     (jsonPayload.message:"統合データ収集開始" OR textPayload:"統合データ収集開始")
   EOT
 
@@ -372,23 +384,19 @@ resource "google_monitoring_alert_policy" "dlsite_run_absent" {
     # 3時台は run が無く 2:03 → 4:03 が平常で 2h 空くため、duration を 2h 以下にはできない。
     # その前後（2:03 か 4:03）だけは 1 run 欠けで間隔が 3h になり発火しうる。
     #
-    # 注意（2026-07-05 実測の偽陽性・再発）: revision 単位の絶対不在監視は構造的に
-    # 誤発火する。Cloud Run revision は監視対象リソースラベルに revision_name を含むため
-    # cross_series_reducer 無しでは metric の時系列が revision ごとに分かれる。
-    # デプロイで新 revision に切り替わると旧 revision の時系列は最終ログ時刻のまま
-    # 更新が止まり、実行ログ自体は正常に出続けていても旧 revision の系列だけが
-    # duration 後に不在条件を満たして誤発火する（duration の拡大は緩和にしかならず、
-    # デプロイの度に duration 後の誤発火を予約してしまう構造は直らない）。
-    # cross_series_reducer + group_by_fields で service 全体を1系列に集約し解消。
+    # 見るのは毎時のジョブだけ（job_name で絞る）。週次フルスイープのジョブは週 1 回しか走らないので、
+    # 絞らないと、その系列が 3 時間で「不在」になって誤発火する。
+    # ジョブの時系列は job_name ごとに 1 本（Functions のときは revision ごとに分かれ、デプロイのたびに
+    # 誤発火していた＝2026-07-05）。reducer は、系列の分かれ方が変わっても 1 本に保つために残している。
     condition_absent {
-      filter   = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.dlsite_run_started.id}\" resource.type=\"cloud_run_revision\""
+      filter   = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.dlsite_run_started.id}\" resource.type=\"cloud_run_job\" resource.labels.job_name=\"fetch-dlsite-unified-data\""
       duration = "10800s"
 
       aggregations {
         alignment_period     = "300s"
         per_series_aligner   = "ALIGN_COUNT"
         cross_series_reducer = "REDUCE_SUM"
-        group_by_fields      = ["resource.label.service_name"]
+        group_by_fields      = ["resource.label.job_name"]
       }
 
       trigger {
@@ -405,27 +413,30 @@ resource "google_monitoring_alert_policy" "dlsite_run_absent" {
     content   = <<-EOT
     # DLsite 定期 run の途絶（3時間以上）
 
-    fetchDLsiteUnifiedData の run 開始ログが3時間以上観測されていません（正常時は
+    ジョブ fetch-dlsite-unified-data の run 開始ログが3時間以上観測されていません（正常時は
     1時間毎・3時台を除く23回/日）。ログ自体が出ない障害のため、他の DLsite アラートは沈黙します。
 
-    ## まず確認すること（2026-07-04 に偽陽性実績あり）
-    実際に run が欠けているかを最優先で確認する。過去に revision churn 集中時の
-    metric 反映遅延で、実行ログは正常に出ているのにこのアラートだけ誤発火した例がある：
+    ## まず確認すること
+    実際に run が欠けているかを最優先で確認する：
     ```bash
-    gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="fetchdlsiteunifieddata" AND (jsonPayload.message:"統合データ収集開始" OR textPayload:"統合データ収集開始")' --freshness=1d --format="value(timestamp)" --order=asc
+    gcloud logging read 'resource.type="cloud_run_job" AND resource.labels.job_name="fetch-dlsite-unified-data" AND jsonPayload.message:"統合データ収集開始"' --freshness=1d --format="value(timestamp)" --order=asc
     ```
     直近の毎時3分（3:03 は元から無い）が全て埋まっていれば偽陽性（対応不要）。
     3時台を飛ばす都合で、2:03 か 4:03 の run が1回欠けただけでも間隔が3時間になり、このアラートは
     鳴りうる（他の時刻は2回連続で欠けてから鳴る）。その場合は次の run が来ていれば対応不要。
 
+    「別の実行が進行中のため統合データ収集をスキップ」が続いている場合は、「実行中」の印が残っている
+    （落ちた実行の印は 58 分で無効になる。続くなら、同じジョブが重なって起動され続けている）。
+
     ## 実際に欠けていた場合の原因と確認手順
-    1. Cloud Scheduler 停止/削除: gcloud scheduler jobs describe fetch-dlsite-individual-api-hourly --location=asia-northeast1
-    2. Pub/Sub topic/subscription・Eventarc trigger の破壊: gcloud eventarc triggers list --location=asia-northeast1
-    3. サービス消失/起動不能: gcloud run services describe fetchdlsiteunifieddata --region=asia-northeast1
+    1. Cloud Scheduler 停止/削除・起動の失敗: gcloud scheduler jobs describe fetch-dlsite-individual-api-hourly --location=asia-northeast1
+       （status.code が 0 以外なら、スケジューラがジョブを起動できていない。権限＝run.invoker を確認）
+    2. ジョブの消失/起動不能: gcloud run jobs describe fetch-dlsite-unified-data --region=asia-northeast1
+    3. 実行が始まっているのにログが無い: gcloud run jobs executions list --job fetch-dlsite-unified-data --region asia-northeast1 --limit 5
     4. 直近のデプロイ・terraform apply の有無を確認
 
     ## 復旧確認
-    手動トリガで1 run 流す: gcloud scheduler jobs run fetch-dlsite-individual-api-hourly --location=asia-northeast1
+    手動で 1 回流す: gcloud run jobs execute fetch-dlsite-unified-data --region=asia-northeast1
     EOT
     mime_type = "text/markdown"
   }
@@ -452,8 +463,7 @@ resource "google_logging_metric" "dlsite_api_failure_rate_high" {
   project = var.gcp_project_id
 
   filter = <<-EOT
-    resource.type="cloud_run_revision"
-    resource.labels.service_name="fetchdlsiteunifieddata"
+    ${local.dlsite_log_source_filter}
     (jsonPayload.message:"API取得失敗が多数" OR textPayload:"API取得失敗が多数")
   EOT
 
@@ -474,7 +484,7 @@ resource "google_monitoring_alert_policy" "dlsite_api_failure_rate_high" {
     display_name = "バッチ取得の失敗率10%超を検出"
 
     condition_threshold {
-      filter = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.dlsite_api_failure_rate_high.id}\" resource.type=\"cloud_run_revision\""
+      filter = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.dlsite_api_failure_rate_high.id}\" resource.type=\"cloud_run_job\""
 
       aggregations {
         alignment_period   = "300s"
@@ -499,16 +509,14 @@ resource "google_monitoring_alert_policy" "dlsite_api_failure_rate_high" {
     ことが多いですが、短時間に連続する場合は全面停止（DLsite API Batch All Failed）へ
     進行する可能性があるため要調査です。
 
-    ## まず確認すること（SPR-318）
-    2026-08 までの発火4回はすべて DLsite 側ではなく **自前の実行時間超過** が原因だった。
-    run が関数 timeout に達すると、以降はリクエスト外＝CPU スロットリング下で実行され、
-    平常 0.1〜0.4 秒で返る API 呼び出しが 15 秒のタイムアウトに掛かる。まず run が
-    timeout に張り付いていないかを見る（張り付いていれば DLsite は無実）:
+    ## まず確認すること
+    どの run の、どのバッチで出たか:
     ```bash
-    gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="fetchdlsiteunifieddata" AND logName:"run.googleapis.com%2Frequests"' --limit=20 --format="value(timestamp,httpRequest.status,httpRequest.latency)" --order=desc
+    gcloud logging read 'resource.type="cloud_run_job" AND resource.labels.job_name=~"^fetch-dlsite-unified-data" AND jsonPayload.message:"API取得失敗が多数"' --freshness=1d --limit=20 --format="value(timestamp,jsonPayload.message)"
     ```
-    latency が上限（540s）に張り付いている場合は MAX_EXECUTION_TIME（process-batch.ts）と
-    timeout（deploy-functions.yml）の関係を見直す。
+    Functions で動いていたころ（2026-08 まで）の発火は、すべて自前の実行時間超過が原因だった（SPR-318:
+    関数の timeout を超えると CPU が絞られ、API 呼び出しが 15 秒のタイムアウトに掛かる）。
+    ジョブは実行中ずっと CPU が割り当てられるので、この原因は当てはまらない。
 
     ## DLsite 側を疑う場合の確認事項
     1. ログ確認: "API取得失敗が多数" / "Individual Info API サーバーエラー" を Cloud Logging で検索
@@ -540,8 +548,7 @@ resource "google_logging_metric" "dlsite_rate_limited" {
   project = var.gcp_project_id
 
   filter = <<-EOT
-    resource.type="cloud_run_revision"
-    resource.labels.service_name="fetchdlsiteunifieddata"
+    ${local.dlsite_log_source_filter}
     jsonPayload.alert="dlsite_rate_limited"
   EOT
 
@@ -562,6 +569,11 @@ resource "google_monitoring_alert_policy" "dlsite_rate_limited" {
     display_name = "レート制限（429）による run 中断を検出"
 
     condition_threshold {
+      # **このアラートだけは Functions（cloud_run_revision）を見たままにしている。** ジョブは、レート制限を
+      # 受けても待って続けるので、alert="dlsite_rate_limited" を出さない（平常＝SPR-417）。つまり、取り込みが
+      # ジョブで動いているあいだ、このアラートは鳴らない。関数へ戻したときだけ意味を持つ。
+      # ジョブ向けの「取得が進んでいない」アラートは、dlsite_fetch_progress（下）を材料に次の PR で足す
+      # （メトリクスとアラートを同じ apply で足すと 404 で失敗する＝SPR-409）。そのとき、このアラートは撤去する。
       filter = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.dlsite_rate_limited.id}\" resource.type=\"cloud_run_revision\""
 
       aggregations {
@@ -617,6 +629,29 @@ resource "google_monitoring_alert_policy" "dlsite_rate_limited" {
   ]
 }
 
+# ログベースメトリクス - 取得の進捗（SPR-417）
+# 1 回の run の終わりに出る「DLsite run の集計」のうち、1 件以上取得できた run を数える
+# （endpoints/dlsite/run-unified-data-collection.ts。apiCalls は、レート制限で打ち切った分を含まない）。
+# ジョブはレート制限を待って続けるので、「ブロックされた」こと自体は異常ではない。異常なのは
+# 「何時間も 1 件も取れていない」ことで、それはこのメトリクスの不在で分かる。
+# アラート（取得が N 時間進んでいない）は次の PR で足す（同じ apply で足すと 404 で失敗する＝SPR-409）。
+resource "google_logging_metric" "dlsite_fetch_progress" {
+  name    = "dlsite_fetch_progress"
+  project = var.gcp_project_id
+
+  filter = <<-EOT
+    ${local.dlsite_log_source_filter}
+    jsonPayload.message="DLsite run の集計"
+    jsonPayload.apiCalls>0
+  EOT
+
+  metric_descriptor {
+    metric_kind  = "DELTA"
+    value_type   = "INT64"
+    display_name = "DLsite Fetch Progress"
+  }
+}
+
 # ログベースメトリクス - スキーマドリフト（SPR-140 / SPR-144）
 # 本番フェッチ経路で、既知フィールド集合に無い新フィールドが出現すると
 # logger.warn が jsonPayload.alert="dlsite_schema_drift" 付きで出力される。
@@ -625,8 +660,7 @@ resource "google_logging_metric" "dlsite_schema_drift" {
   project = var.gcp_project_id
 
   filter = <<-EOT
-    resource.type="cloud_run_revision"
-    resource.labels.service_name="fetchdlsiteunifieddata"
+    ${local.dlsite_log_source_filter}
     jsonPayload.alert="dlsite_schema_drift"
   EOT
 
@@ -647,7 +681,7 @@ resource "google_monitoring_alert_policy" "dlsite_schema_drift" {
     display_name = "既知集合に無い新フィールドを検出"
 
     condition_threshold {
-      filter = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.dlsite_schema_drift.id}\" resource.type=\"cloud_run_revision\""
+      filter = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.dlsite_schema_drift.id}\" resource.type=\"cloud_run_job\""
 
       aggregations {
         alignment_period   = "300s"
@@ -681,7 +715,7 @@ resource "google_monitoring_alert_policy" "dlsite_schema_drift" {
 
     ## ログ確認コマンド
     ```bash
-    gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="fetchdlsiteunifieddata" AND jsonPayload.alert="dlsite_schema_drift"' --limit=20 --format=json
+    gcloud logging read 'resource.type="cloud_run_job" AND resource.labels.job_name=~"^fetch-dlsite-unified-data" AND jsonPayload.alert="dlsite_schema_drift"' --limit=20 --format=json
     ```
     EOT
     mime_type = "text/markdown"

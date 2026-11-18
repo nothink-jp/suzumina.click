@@ -1,29 +1,28 @@
 # ==============================================================================
-# DLsite Individual Info API専用関数
+# DLsite の取り込み: スケジューラと、旧 Functions（fetchDLsiteUnifiedData）の土台
 # ==============================================================================
-# 概要: 100% API-Only アーキテクチャによる革新的データ更新システム
-# HTMLスクレイピング完全廃止・Individual Info API（254フィールド）による包括的データ取得
-# ==============================================================================
-
-# Individual Info API専用関数の設定
-locals {
-  dlsite_individual_api_function_name = "fetchDLsiteUnifiedData"
-}
-
-# Individual Info API専用作品取得関数 (Gen2) は GitHub Actions でデプロイされるため、
-# Terraform では google_cloudfunctions2_function リソースを管理しない（ADR-009 / SPR-92）。
+# **取り込みは Cloud Run Jobs で動く**（SPR-417 / 設計は SPR-358。ジョブの定義は job_dlsite.tf）。
+# このファイルにあるのは、ジョブを起動する Cloud Scheduler 2 本と、旧 Functions のための Pub/Sub トピック。
 #
-# spec の正本（deploy-functions.yml の gcloud functions deploy）:
+# 旧 Functions（fetchDLsiteUnifiedData）は、まだデプロイされている（deploy-functions.yml）。トピックと
+# publisher の権限も残してある。**どこからも起動されない。** 戻すときの受け皿として SPR-419 まで残す。
+# 戻し方: スケジューラ 2 本の http_target を、pubsub_target（このトピック宛て）に戻す。あわせて
+# monitoring_dlsite.tf のアラートを関数向けに戻す（付け替えた PR ごと revert するのが確実）。
+#
+# 関数の spec の正本（deploy-functions.yml の gcloud functions deploy・ADR-009）:
 #   runtime=nodejs<package.json の devEngines.runtime の major> / memory=512Mi / timeout=540s / max-instances=1
 #   entry-point=fetchDLsiteUnifiedData / trigger-topic=dlsite-individual-api-trigger
-#
-# デプロイ手順:
-#   1. terraform apply で SA / Pub/Sub トピック / Scheduler / IAM を作成
-#   2. GitHub Actions（deploy-functions.yml）が関数本体をデプロイ
-#
-# resource "google_cloudfunctions2_function" "fetch_dlsite_works_individual_api" {
-#   # GitHub Actions によるデプロイとの競合を避けるためコメントアウト（ADR-009 / SPR-92）。
-# }
+# ==============================================================================
+
+locals {
+  dlsite_individual_api_function_name = "fetchDLsiteUnifiedData"
+
+  # スケジューラがジョブを起動するときに呼ぶ、Cloud Run Admin API の実行エンドポイント
+  dlsite_job_run_uris = {
+    for key, job in google_cloud_run_v2_job.dlsite :
+    key => "https://run.googleapis.com/v2/projects/${var.gcp_project_id}/locations/${job.location}/jobs/${job.name}:run"
+  }
+}
 
 # Individual Info API専用のPub/Subトピック
 resource "google_pubsub_topic" "dlsite_individual_api_trigger" {
@@ -40,14 +39,16 @@ resource "google_pubsub_topic" "dlsite_individual_api_trigger" {
   depends_on = [google_project_service.pubsub]
 }
 
-# Individual Info API専用のCloud Scheduler（毎時 3 分・3時台を除く＝1日23回）
+# 通常の取り込みの Cloud Scheduler（毎時 3 分・3時台を除く＝1日23回）→ ジョブ fetch-dlsite-unified-data
 #
-# 2026-11-18 の朝から夕方までは、10 分おき（毎時 3・13・23・33・43 分）にしていた（SPR-423 のつなぎ）。
-# DLsite（Cloudflare）が 30 分のブロックを返し続けていて、開いている約 3 分に当たる回数を増やすためだった。
-# ブロックは同日 11:13 JST に解けた。解けたあとの 10 分おきは、毎回 volatile の約 279 件を取りにいき、
-# 1 時間に約 1,400 件（毎時 1 回のときの 5 倍）を送っていたので、毎時に戻した。
-# ブロックが再発したら、Cloud Run Jobs（job_dlsite.tf）が Retry-After を待って続ける（SPR-417）。
-# 起動を増やして当てにいく方法には戻さない。
+# 1 回の実行は 55 分以内に終わる（アプリの予算＝process-batch.ts の JOB_RUN_BUDGET）ので、毎時の起動どうしは
+# 重ならない。レート制限（429 / Retry-After つきの 404）を受けたら、ジョブが解除を待って同じ実行の中で続ける。
+# 待つ時間が残らなければ正常終了し、次の毎時の実行が継続カーソルから続きを取る。
+#
+# 経緯: 2026-11-18 09:35〜17:55 JST は、10 分おき（毎時 3・13・23・33・43 分）で関数を起動していた（SPR-423 の
+# つなぎ・#1145）。DLsite（Cloudflare）が 30 分のブロックを返し続けていて、開いている約 3 分に当たる回数を
+# 増やすためだった。ブロックは同日 11:13 JST に解け、解けたあとは 1 時間に約 1,400 件（毎時 1 回のときの 5 倍）を
+# 送っていたので、毎時に戻した（#1157）。ブロックが再発しても、起動を増やして当てにいく方法には戻さない。
 #
 # 2時間ごと → 1時間ごと（SPR-412）: DLsite のレート制限（推定 約100リクエスト/分）に合わせて
 # 取得ペースを落とした結果、1 run で取得できるのは 450件までになった（SPR-410 / SPR-411）。
@@ -70,18 +71,23 @@ resource "google_cloud_scheduler_job" "fetch_dlsite_individual_api_hourly" {
   time_zone   = "Asia/Tokyo"
   paused      = false
 
-  pubsub_target {
-    topic_name = google_pubsub_topic.dlsite_individual_api_trigger.id
-    data = base64encode(jsonencode({
-      type        = "unified_update"
-      mode        = "individual_info_api_unified"
-      description = "統合アーキテクチャによる基本データ+時系列データ収集"
-    }))
+  # ジョブの実行 API を直接呼ぶ（Pub/Sub と Eventarc を経由しない＝SPR-358）。モードはジョブの引数が持つので、
+  # 本文は空の JSON（上書きは渡さない）。API は実行を始めたらすぐ返る（実行の完了は待たない）。
+  # スケジューラのリトライは既定（0 回）のまま。起動に失敗した回の続きは、次の毎時の実行が取る。
+  http_target {
+    http_method = "POST"
+    body        = base64encode("{}")
+    headers     = { "Content-Type" = "application/json" }
+    uri         = local.dlsite_job_run_uris["hourly"]
+
+    oauth_token {
+      service_account_email = google_service_account.fetch_dlsite_individual_api_sa.email
+    }
   }
 
   depends_on = [
     google_project_service.cloudscheduler,
-    google_pubsub_topic.dlsite_individual_api_trigger,
+    google_cloud_run_v2_job_iam_member.dlsite_scheduler_invoker,
   ]
 }
 
@@ -89,8 +95,9 @@ resource "google_cloud_scheduler_job" "fetch_dlsite_individual_api_hourly" {
 # checkDataIntegrityの日曜3:00 JSTとは重ならない。通常runとは重なりうる（4:03 の run が長引いたとき）。
 # その場合は pendingFullSweep が立ち、次のサイクルでフルスイープになる（「実行中」の印で飛ばされたときと、
 # 継続中のサイクルと重なったとき＝resolveCycleInfo）。
-# 土曜4:15 JSTに設定。既存関数・既存トピックを再利用し、mode違いのペイロードで
-# フルスイープ(ティア差分を無視した全件取得)を発火させる（新規関数は増やさない）。
+# 土曜4:15 JSTに設定。ジョブ fetch-dlsite-unified-data-full-sweep（引数 dlsite-full-sweep）を起動する。
+# 4:03 の毎時の実行がレート制限の待ちで走り続けていると（最長 4:58 まで）、印で飛ばされて pendingFullSweep が立つ。
+# その場合のフルスイープは、次に新しいサイクルを始める毎時の実行が行う。
 resource "google_cloud_scheduler_job" "fetch_dlsite_individual_api_weekly_full_sweep" {
   project = var.gcp_project_id
   region  = var.region
@@ -101,22 +108,43 @@ resource "google_cloud_scheduler_job" "fetch_dlsite_individual_api_weekly_full_s
   time_zone   = "Asia/Tokyo"
   paused      = false
 
-  pubsub_target {
-    topic_name = google_pubsub_topic.dlsite_individual_api_trigger.id
-    data = base64encode(jsonencode({
-      type        = "unified_update"
-      mode        = "weekly_full_sweep"
-      description = "ティア差分の取りこぼし検知を兼ねた週次全件取得"
-    }))
+  # ジョブの実行 API を直接呼ぶ（Pub/Sub と Eventarc を経由しない＝SPR-358）。モードはジョブの引数が持つので、
+  # 本文は空の JSON（上書きは渡さない）。API は実行を始めたらすぐ返る（実行の完了は待たない）。
+  # スケジューラのリトライは既定（0 回）のまま。起動に失敗した回の続きは、次の毎時の実行が取る。
+  http_target {
+    http_method = "POST"
+    body        = base64encode("{}")
+    headers     = { "Content-Type" = "application/json" }
+    uri         = local.dlsite_job_run_uris["weekly_full_sweep"]
+
+    oauth_token {
+      service_account_email = google_service_account.fetch_dlsite_individual_api_sa.email
+    }
   }
 
   depends_on = [
     google_project_service.cloudscheduler,
-    google_pubsub_topic.dlsite_individual_api_trigger,
+    google_cloud_run_v2_job_iam_member.dlsite_scheduler_invoker,
   ]
 }
 
-# Cloud Scheduler から Individual Info API Function を呼び出すための権限
+# スケジューラがジョブを起動するための権限（run.jobs.run）。ジョブ単位で付ける。
+# スケジューラは、ジョブの実行 SA（fetch-dlsite-individual-api-sa）の OAuth トークンで実行 API を呼ぶ。
+# 専用の SA を足さなかったのは、この SA が Eventarc 用に project 単位の run.invoker を既に持っていて
+# （iam.tf の fetch_dlsite_individual_api_run_invoker）、新しい主体を増やしても権限の範囲が狭まらないため。
+# project 単位のほうは、旧 Functions を撤去するとき（SPR-419）に外す。そのあとも、このジョブ単位の付与で動く。
+# トークンの発行は、Cloud Scheduler のサービスエージェントのロール（iam.serviceAccounts.getAccessToken を含む）が担う。
+resource "google_cloud_run_v2_job_iam_member" "dlsite_scheduler_invoker" {
+  for_each = google_cloud_run_v2_job.dlsite
+
+  project  = var.gcp_project_id
+  location = each.value.location
+  name     = each.value.name
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${google_service_account.fetch_dlsite_individual_api_sa.email}"
+}
+
+# 旧 Functions 用: Cloud Scheduler が Pub/Sub トピックへ publish するための権限（戻すときのために残す＝SPR-419 まで）
 resource "google_pubsub_topic_iam_member" "scheduler_individual_api_pubsub_publisher" {
   project = var.gcp_project_id
   topic   = google_pubsub_topic.dlsite_individual_api_trigger.name

@@ -16,5 +16,6 @@
 # 戻したディレクトリの中の、イメージに入れないもの
 **/node_modules
 **/coverage
+**/__tests__
 **/.env*
 apps/functions/lib

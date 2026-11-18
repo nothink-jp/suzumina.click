@@ -7,7 +7,7 @@
 | --- | --- |
 | [monitoring.tf](../../terraform/monitoring.tf) | 通知チャンネル / web（Cloud Run `suzumina-click-web`）の 5xx 率・インスタンス数の上限張り付き |
 | [monitoring_performance.tf](../../terraform/monitoring_performance.tf) | web の P95 レイテンシ・CPU・メモリ（Firestore レイテンシは metric 未提供でコメントアウト） |
-| [monitoring_dlsite.tf](../../terraform/monitoring_dlsite.tf) | `fetchDLsiteUnifiedData`: 系統エラー / 作品 ID 収集失敗 / プラットフォーム 5xx / バッチ全滅 / run 不在 / API 失敗率 / スキーマドリフト |
+| [monitoring_dlsite.tf](../../terraform/monitoring_dlsite.tf) | DLsite の取り込み（Cloud Run ジョブ `fetch-dlsite-unified-data` / `-full-sweep`）: 系統エラー / 作品 ID 収集失敗 / ジョブの実行の失敗 / バッチ全滅 / run 不在 / API 失敗率 / スキーマドリフト |
 | [monitoring_youtube.tf](../../terraform/monitoring_youtube.tf) | `fetchYouTubeVideos`: 系統エラー / run 不在 / プラットフォーム 5xx / discovery 未保存 / クォータ不足 / メモリ圧迫 |
 | [monitoring_firestore_reads.tf](../../terraform/monitoring_firestore_reads.tf) | Firestore read レート（予算ペースから逆算した警告・緊急） |
 | [monitoring_firestore_index.tf](../../terraform/monitoring_firestore_index.tf) | 複合インデックス欠落（`requires an index` ログ・SPR-213） |
@@ -22,8 +22,10 @@
 ## ログを引くときの落とし穴
 
 Functions は Gen2（Cloud Run 上で実行）なので、ログは `resource.type="cloud_run_revision"` +
-`resource.labels.service_name="fetchdlsiteunifieddata"`（**小文字**）で出る。Gen1 形式の
+`resource.labels.service_name="fetchyoutubevideos"`（**小文字**）で出る。Gen1 形式の
 `resource.type="cloud_function"` でフィルタすると一切マッチせず、メトリクスは発火しない（SPR-234）。
+DLsite の取り込みは Cloud Run Jobs なので、`resource.type="cloud_run_job"` +
+`resource.labels.job_name="fetch-dlsite-unified-data"` で出る（SPR-417）。
 付加フィールド無しの logger 呼び出しは `message` が `textPayload` に昇格するため、フィルタは
 `jsonPayload.message` / `textPayload` の両張りにする。
 

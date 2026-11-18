@@ -4,8 +4,8 @@
 # fetchDLsiteUnifiedData（Functions・540 秒）の移行先（SPR-417 / 設計は SPR-358）。レート制限（429 /
 # Retry-After つきの 404）を受けても、解除を待って同じ実行の中で続けられるように、長く走れる Jobs に移す。
 #
-# **いまは、ジョブはどこからも起動されない**（スケジューラは Functions 宛てのまま＝
-# function_dlsite_individual_info_api.tf）。手動で 1 回実行して確かめてから、スケジューラを付け替える。
+# 起動するのは Cloud Scheduler（function_dlsite_individual_info_api.tf。毎時 3 分と、土曜 4:15 の週次フルスイープ）。
+# 監視は monitoring_dlsite.tf。
 #
 # 設定の正本（ADR-009 の Jobs 側）:
 # - ジョブの設定（メモリ・timeout・引数・環境変数・サービスアカウント）は **この Terraform が正本**。
