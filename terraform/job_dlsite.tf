@@ -4,12 +4,13 @@
 # fetchDLsiteUnifiedData（Functions・540 秒）の移行先（SPR-417 / 設計は SPR-358）。レート制限（429 /
 # Retry-After つきの 404）を受けても、解除を待って同じ実行の中で続けられるように、長く走れる Jobs に移す。
 #
-# **この PR の時点では、ジョブはどこからも起動されない**（スケジューラは Functions 宛てのまま＝
+# **いまは、ジョブはどこからも起動されない**（スケジューラは Functions 宛てのまま＝
 # function_dlsite_individual_info_api.tf）。手動で 1 回実行して確かめてから、スケジューラを付け替える。
 #
 # 設定の正本（ADR-009 の Jobs 側）:
 # - ジョブの設定（メモリ・timeout・引数・環境変数・サービスアカウント）は **この Terraform が正本**。
-# - イメージの中身は deploy-functions.yml が build して push する（apps/functions/Dockerfile）。
+# - イメージは deploy-functions.yml が build / push して、ジョブを :<sha> に差し替える（apps/functions/Dockerfile）。
+#   ジョブを足したら、deploy-functions.yml の「Update jobs to the pushed image」の一覧にも足す。
 #   Functions（gcloud functions deploy が spec の正本）とは逆なので注意。
 # ==============================================================================
 
@@ -46,6 +47,10 @@ resource "google_cloud_run_v2_job" "dlsite" {
   location = var.region
 
   labels = local.common_labels
+
+  # provider の既定も true。意図として明示する。for_each のキーや name を変えると replace（削除 → 作成）になり、
+  # この設定で apply が失敗する。変えるときは、先に false にして apply する。
+  deletion_protection = true
 
   template {
     task_count = 1
@@ -97,6 +102,14 @@ resource "google_cloud_run_v2_job" "dlsite" {
     }
   }
 
+  # client / client_version は、gcloud run jobs update（deploy-functions.yml）が付けるメタデータ。
+  # 無視しないと、デプロイのたびに「"gcloud" -> null」の差分が出続ける（cloud_run.tf の nextjs_app と同じ扱い）。
+  # 差分が出続けると、無関係の apply のたびにジョブを PATCH することになり、plan から apply までのあいだに
+  # デプロイが挟まると、plan のときに読んだ古いイメージへ巻き戻る。
+  lifecycle {
+    ignore_changes = [client, client_version]
+  }
+
   depends_on = [
     google_project_service.run,
     google_project_iam_member.fetch_dlsite_individual_api_firestore_user,
@@ -107,7 +120,9 @@ resource "google_cloud_run_v2_job" "dlsite" {
 # deploy-functions.yml が、push したイメージへジョブを差し替えるための権限（run.jobs.update）。
 # ジョブ単位で付ける（project 単位の run.developer だと、web の Cloud Run サービスも書き換えられる）。
 # 実行 SA への actAs は、Functions のデプロイ用に付いているもの（iam.tf の cloud_functions_deployer_act_as）が
-# そのまま効く。
+# そのまま効く。更新の完了待ち（run.operations.get）は、project 単位の roles/viewer に含まれる。
+# run.developer は run.jobs.run も含むので、この SA はジョブを実行することもできる（使ってはいない）。
+# update だけのロールは事前定義に無く、ジョブ 2 つのためにカスタムロールを足すほどではないと判断した。
 resource "google_cloud_run_v2_job_iam_member" "dlsite_deployer_developer" {
   for_each = google_cloud_run_v2_job.dlsite
 
