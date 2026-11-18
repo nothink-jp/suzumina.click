@@ -726,10 +726,12 @@ resource "google_monitoring_alert_policy" "dlsite_fetch_stalled" {
     ブロックが続くと、ジョブは待ち時間のぶんだけ長く走る（最長 55 分 × 23 回/日。終日続くと 月 約 $38）。
     「待つかどうか」を実行時に切り替える設定は無い。長引くときに取れる手段は、次の 3 つ:
 
-    1. スケジューラを一時停止する（取り込みを止める。いちばん速い）:
+    1. スケジューラを一時停止する（毎時の取り込みを止める。いちばん速い）:
        gcloud scheduler jobs pause fetch-dlsite-individual-api-hourly --location=asia-northeast1
        再開は resume。**止めているあいだは、DLsite Run Absent Alert とこのアラートの両方が鳴り続ける**
        （意図して止めたなら対応不要）。
+       週次フルスイープ（土曜 4:15）は別のスケジューラなので、これだけでは止まらない。土曜をまたいで
+       完全に止めるなら、fetch-dlsite-individual-api-weekly-full-sweep も pause する。
     2. 待たずに打ち切る動きに変える（取り込みは続ける）: apps/functions/src/endpoints/dlsite/process-batch.ts の
        JOB_RUN_BUDGET.waitOnRateLimit を false にしてデプロイする。コードの変更なので、PR が要る。
     3. 旧 Functions へ戻す: スケジューラの付け替えの PR（#1158）を revert して apply する
