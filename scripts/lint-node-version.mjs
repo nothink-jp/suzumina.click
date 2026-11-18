@@ -6,7 +6,7 @@
  * セッション環境にも同じ版を入れる）・CI の pnpm/setup・setup-node の `node-version-file` はここを直接読む。
  *
  * 正本を直接読めない場所が 2 種類ある:
- *   - `apps/web/Dockerfile` の `FROM node:<ver>-alpine`: 写しとして残す（Dependabot docker が新しい版を
+ *   - `apps/web/Dockerfile` と `apps/functions/Dockerfile` の `FROM node:<ver>-alpine`: 写しとして残す（Dependabot docker が新しい版を
  *     知らせる役を持ち、Dockerfile を読んだときに版が見えるようにするため）。正本と完全一致を要求する
  *   - workflows と composite action（`.github/workflows/*.yml` / `.github/actions/<name>/action.yml`）: 版は正本から
  *     導く（deploy-functions.yml の `--runtime` 等。setup-pnpm は CI の Node の入口）。リテラルの版を書き戻すと
@@ -19,7 +19,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const DOCKERFILE = "apps/web/Dockerfile";
+const DOCKERFILES = ["apps/web/Dockerfile", "apps/functions/Dockerfile"];
 const WORKFLOWS_DIR = ".github/workflows";
 const ACTIONS_DIR = ".github/actions";
 
@@ -41,16 +41,17 @@ export function readCanonicalVersion(pkg) {
 }
 
 /**
+ * @param {string} path リポジトリルートからの相対パス（メッセージ用）
  * @param {string} dockerfile Dockerfile の本文
  * @param {string} canonical 正本の版
  * @returns {string[]} 不一致の説明。`FROM node:` が 1 つも無いのも不一致として扱う
  */
-export function checkDockerfile(dockerfile, canonical) {
+export function checkDockerfile(path, dockerfile, canonical) {
 	const froms = [...dockerfile.matchAll(/^FROM\s+node:(\S+)/gim)].map((m) => m[1]);
-	if (froms.length === 0) return [`${DOCKERFILE} に FROM node:<ver> が見つかりません`];
+	if (froms.length === 0) return [`${path} に FROM node:<ver> が見つかりません`];
 	return froms
 		.filter((tag) => tag.split("-")[0] !== canonical)
-		.map((tag) => `${DOCKERFILE}: FROM node:${tag} が正本 ${canonical} と一致しません`);
+		.map((tag) => `${path}: FROM node:${tag} が正本 ${canonical} と一致しません`);
 }
 
 /**
@@ -86,7 +87,9 @@ function main() {
 	const canonical = readCanonicalVersion(
 		JSON.parse(readFileSync(join(repoRoot, "package.json"), "utf8")),
 	);
-	const errors = [...checkDockerfile(readFileSync(join(repoRoot, DOCKERFILE), "utf8"), canonical)];
+	const errors = DOCKERFILES.flatMap((path) =>
+		checkDockerfile(path, readFileSync(join(repoRoot, path), "utf8"), canonical),
+	);
 	for (const path of listWorkflowFiles()) {
 		errors.push(...checkWorkflow(path, readFileSync(join(repoRoot, path), "utf8")));
 	}

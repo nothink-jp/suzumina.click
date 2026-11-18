@@ -2,7 +2,9 @@
  * Cloud Run Jobs 用の入口（イベント無しで起動する。SPR-415 / 設計は SPR-358）
  *
  * Functions の CloudEvent ハンドラ（endpoints/）と同じ本体を、引数のモードで呼び分ける。
- * 開始・完了のログは、ハンドラと共有する `*WithReport` が出す（監視の契約を 1 か所に保つ）。
+ * 開始・完了のログは、ハンドラと共有する `*WithReport` が出す。**揃うのは `message` とキーだけ**。
+ * ログベースメトリクスとアラートのフィルタは `resource.type="cloud_run_revision"` と `service_name` に絞ってあり、
+ * Jobs のログ（`cloud_run_job` / `job_name`）は拾わない。ジョブへ切り替えるときに、フィルタを直す（SPR-417）。
  *
  * - 重複配信の判定（`event.id`）は通らない。Pub/Sub を経由しないため。実行の重なりの防止は SPR-417 で入れる。
  * - YouTube のモードは無い。YouTube は Functions に残す（SPR-358）。

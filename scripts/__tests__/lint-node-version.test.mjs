@@ -20,22 +20,30 @@ describe("readCanonicalVersion", () => {
 describe("checkDockerfile", () => {
 	it("FROM node:<正本>-alpine なら通す", () => {
 		assert.deepEqual(
-			checkDockerfile("FROM node:24.22.1-alpine AS base\nFROM base AS runner\n", "24.22.1"),
+			checkDockerfile(
+				"apps/web/Dockerfile",
+				"FROM node:24.22.1-alpine AS base\nFROM base AS runner\n",
+				"24.22.1",
+			),
 			[],
 		);
 	});
 
 	it("Dependabot が Dockerfile だけ上げた状態を弾く", () => {
-		assert.equal(checkDockerfile("FROM node:24.23.0-alpine AS base\n", "24.22.1").length, 1);
+		assert.equal(
+			checkDockerfile("apps/web/Dockerfile", "FROM node:24.23.0-alpine AS base\n", "24.22.1")
+				.length,
+			1,
+		);
 	});
 
 	it("サフィックスなしのタグも比べる", () => {
-		assert.deepEqual(checkDockerfile("FROM node:24.22.1\n", "24.22.1"), []);
-		assert.equal(checkDockerfile("FROM node:24\n", "24.22.1").length, 1);
+		assert.deepEqual(checkDockerfile("apps/web/Dockerfile", "FROM node:24.22.1\n", "24.22.1"), []);
+		assert.equal(checkDockerfile("apps/web/Dockerfile", "FROM node:24\n", "24.22.1").length, 1);
 	});
 
 	it("FROM node: が無いのは不一致として扱う", () => {
-		assert.equal(checkDockerfile("FROM alpine:3\n", "24.22.1").length, 1);
+		assert.equal(checkDockerfile("apps/web/Dockerfile", "FROM alpine:3\n", "24.22.1").length, 1);
 	});
 });
 

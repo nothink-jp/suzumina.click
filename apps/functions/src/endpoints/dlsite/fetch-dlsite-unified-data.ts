@@ -4,8 +4,8 @@
  * CloudEvent の unwrap（mode 判定）→ 重複配信の判定 → オーケストレータ呼び出し → 結果ログのみを担う。
  * 本処理は run-unified-data-collection.ts の `runUnifiedDataCollection`。
  *
- * 起動の経路は 2 つある。どちらも `runUnifiedDataCollectionWithReport` を通るので、開始・完了のログ
- * （監視の契約）は同じ形で出る:
+ * 起動の経路は 2 つある。どちらも `runUnifiedDataCollectionWithReport` を通るので、開始・完了のログは
+ * 同じ `message` とキーで出る（アラートのフィルタは Functions 向けのまま＝jobs/run-job.ts の冒頭を参照）:
  * - Functions: `fetchDLsiteUnifiedData`（CloudEvent。このファイル）
  * - Cloud Run Jobs: `jobs/run-job.ts`（イベント無し。SPR-415）
  */
