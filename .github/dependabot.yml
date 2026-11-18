@@ -73,12 +73,15 @@ updates:
       github-actions:
         patterns: ["*"]
 
-  # --- Docker ベースイメージ（apps/web/Dockerfile の node:*-alpine）---
+  # --- Docker ベースイメージ（apps/web/Dockerfile と apps/functions/Dockerfile の node:*-alpine）---
+  # 2 つの Dockerfile は同じ版を写す（lint:node-version が両方を見る）。1 本の PR で両方が上がるように directories で束ねる。
   # Node の版の正本はルート package.json の devEngines.runtime.version で、Dockerfile はその写し（SPR-405）。
   # Dependabot が書き換えるのは Dockerfile だけなので、この PR は lint:node-version で必ず落ちる。
   # それが「新しい版が出た」合図で、正本を同じ版に上げて pnpm install（lockfile の node も更新）してからマージする。
   - package-ecosystem: "docker"
-    directory: "/apps/web"
+    directories:
+      - "/apps/web"
+      - "/apps/functions"
     schedule:
       interval: "weekly"
       day: "monday"
