@@ -8,6 +8,13 @@
 > **原則 3（GC は terraform に一本化）に例外が 1 つある**: web イメージ（`docker_repo`）は cleanup_policies が
 > 実効しないため（SPR-220）、`deploy-web.yml` の post-deploy ステップが digest 単位で自前削除している（SPR-247）。
 > 経緯の正本は `terraform/artifact_registry.tf` 冒頭コメント。
+>
+> 2026-11-18 追記（SPR-417 / 設計は SPR-358）: **Cloud Run Jobs は、原則 2 の Cloud Run 側に入る（Terraform が spec の正本）**。
+> DLsite の取り込みを Functions から Jobs へ移す（`terraform/job_dlsite.tf`）。イメージが Artifact Registry に分かれていて、
+> spec（timeout・リトライ・引数・メモリ）を宣言的に持てるため。web の Cloud Run サービスとの違いは 1 点:
+> **環境変数も Terraform が正本**（`ignore_changes` で Actions に委ねない。ジョブの env は少なく、シークレットも無い）。
+> GitHub Actions（`deploy-functions.yml`）は、イメージの build / push と差し替えだけを担う。
+> 同じ `apps/functions` のコードでも、Functions に残るもの（YouTube など）は今までどおり Actions が spec の正本。
 
 ## コンテキスト
 
