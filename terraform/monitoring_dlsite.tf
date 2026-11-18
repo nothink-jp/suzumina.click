@@ -384,6 +384,10 @@ resource "google_monitoring_alert_policy" "dlsite_run_absent" {
     # 3時台は run が無く 2:03 → 4:03 が平常で 2h 空くため、duration を 2h 以下にはできない。
     # その前後（2:03 か 4:03）だけは 1 run 欠けで間隔が 3h になり発火しうる。
     #
+    # 注意: 不在の検知は、この時系列が 1 回でも生まれたあとでないと働かない。スケジューラがジョブを最初から
+    # 起動できていない場合（権限の誤りなど）、このアラートは鳴らずに沈黙する。スケジューラやジョブの定義を
+    # 変えた直後は、次の毎時 3 分の実行をログで直接確かめる（runbook のコマンド）。
+    #
     # 見るのは毎時のジョブだけ（job_name で絞る）。週次フルスイープのジョブは週 1 回しか走らないので、
     # 絞らないと、その系列が 3 時間で「不在」になって誤発火する。
     # ジョブの時系列は job_name ごとに 1 本（Functions のときは revision ごとに分かれ、デプロイのたびに
@@ -631,7 +635,9 @@ resource "google_monitoring_alert_policy" "dlsite_rate_limited" {
 
 # ログベースメトリクス - 取得の進捗（SPR-417）
 # 1 回の run の終わりに出る「DLsite run の集計」のうち、1 件以上取得できた run を数える
-# （endpoints/dlsite/run-unified-data-collection.ts。apiCalls は、レート制限で打ち切った分を含まない）。
+# （endpoints/dlsite/run-unified-data-collection.ts の worksFetched＝API から取得できた件数）。
+# apiCalls（試した件数）で絞らないのは、全件が失敗した run でも 0 より大きくなるため。worksUpdated（差分が
+# あった件数）で絞らないのは、平常でも 0 になりうるため。
 # ジョブはレート制限を待って続けるので、「ブロックされた」こと自体は異常ではない。異常なのは
 # 「何時間も 1 件も取れていない」ことで、それはこのメトリクスの不在で分かる。
 # アラート（取得が N 時間進んでいない）は次の PR で足す（同じ apply で足すと 404 で失敗する＝SPR-409）。
@@ -642,7 +648,7 @@ resource "google_logging_metric" "dlsite_fetch_progress" {
   filter = <<-EOT
     ${local.dlsite_log_source_filter}
     jsonPayload.message="DLsite run の集計"
-    jsonPayload.apiCalls>0
+    jsonPayload.worksFetched>0
   EOT
 
   metric_descriptor {

@@ -271,17 +271,25 @@ async function processBatchWithRateLimitWaits(
 	startTime: number,
 	budget: RunBudget,
 	waits: RateLimitWaitStats,
-): Promise<UnifiedFetchResult> {
+): Promise<UnifiedFetchResult & { apiSuccessCount: number }> {
 	let workIds = batchInfo.workIds;
 	let isPartialRetry = false;
 	let basicDataUpdated = 0;
 	let apiCallCount = 0;
+	let apiSuccessCount = 0;
 
 	for (;;) {
 		const result = await processBatch({ ...batchInfo, workIds, isPartialRetry });
 		basicDataUpdated += result.basicDataUpdated;
 		apiCallCount += result.apiCallCount;
-		const merged = { ...result, workCount: basicDataUpdated, basicDataUpdated, apiCallCount };
+		apiSuccessCount += result.apiSuccessCount ?? 0;
+		const merged = {
+			...result,
+			workCount: basicDataUpdated,
+			basicDataUpdated,
+			apiCallCount,
+			apiSuccessCount,
+		};
 
 		const interruption = result.interruption;
 		if (interruption?.reason !== "rate_limit" || !budget.waitOnRateLimit) {
@@ -325,12 +333,15 @@ async function executeBatchLoop(
 ): Promise<{
 	totalUpdated: number;
 	totalApiCalls: number;
+	/** API から取得できた件数の合計（run の集計ログの `worksFetched`） */
+	totalFetched: number;
 	completedBatches: number[];
 	stopReason: BatchLoopStopReason;
 	rateLimitWaits: RateLimitWaitStats;
 }> {
 	let totalUpdated = 0;
 	let totalApiCalls = 0;
+	let totalFetched = 0;
 	let stopReason: BatchLoopStopReason = "completed";
 	const completedBatches: number[] = [];
 	const rateLimitWaits: RateLimitWaitStats = { count: 0, totalMs: 0 };
@@ -381,6 +392,7 @@ async function executeBatchLoop(
 		);
 		totalUpdated += result.basicDataUpdated;
 		totalApiCalls += result.apiCallCount;
+		totalFetched += result.apiSuccessCount;
 
 		// 打ち切り（レート制限＝SPR-408 / 締め切り＝SPR-319）: このバッチは未完了。cursor を進めずに中断し、
 		// 次の run が同じバッチからやり直す（取れた分は保存済みで、再取得しても差分なしでスキップされる）。
@@ -419,7 +431,14 @@ async function executeBatchLoop(
 		}
 	}
 
-	return { totalUpdated, totalApiCalls, completedBatches, stopReason, rateLimitWaits };
+	return {
+		totalUpdated,
+		totalApiCalls,
+		totalFetched,
+		completedBatches,
+		stopReason,
+		rateLimitWaits,
+	};
 }
 
 /**
@@ -663,20 +682,26 @@ export async function runUnifiedDataCollection(
 		}
 
 		// バッチ処理の実行
-		const { totalUpdated, totalApiCalls, stopReason, rateLimitWaits } = await executeBatchLoop(
-			batches,
-			startBatch,
-			startTime,
-			metadata,
-			budget,
-			existingWorksMap,
-			wouldSkipStableIds,
-		);
+		const { totalUpdated, totalApiCalls, totalFetched, stopReason, rateLimitWaits } =
+			await executeBatchLoop(
+				batches,
+				startBatch,
+				startTime,
+				metadata,
+				budget,
+				existingWorksMap,
+				wouldSkipStableIds,
+			);
 		const allBatchesCompleted = stopReason === "completed";
 
-		// 1 回の run の取得量と待ち時間（SPR-417）。1 日の取得件数はこのログの apiCalls を足して数える
+		// 1 回の run の取得量と待ち時間（SPR-417）。1 日の取得件数は、このログの worksFetched を足して数える。
+		// - apiCalls: API を呼んで結果が出た件数（成功 + 失敗）
+		// - worksFetched: そのうち取得できた件数。ログベースメトリクス dlsite_fetch_progress が `worksFetched>0` の
+		//   run を数える（terraform/monitoring_dlsite.tf）。キー名と意味を変えない
+		// - worksUpdated: 取得できたうち、差分があって works を更新した件数（平常でも 0 になりうる）
 		logger.info("DLsite run の集計", {
 			apiCalls: totalApiCalls,
+			worksFetched: totalFetched,
 			worksUpdated: totalUpdated,
 			stopReason,
 			rateLimitWaits: rateLimitWaits.count,

@@ -700,6 +700,7 @@ describe("fetchDLsiteUnifiedData（エントリポイント統合）", () => {
 				"DLsite run の集計",
 				expect.objectContaining({
 					apiCalls: 3,
+					worksFetched: 3,
 					worksUpdated: 3,
 					stopReason: "completed",
 					rateLimitWaits: 1,
@@ -764,7 +765,13 @@ describe("fetchDLsiteUnifiedData（エントリポイント統合）", () => {
 			expect(logger.info).toHaveBeenCalledWith("全バッチ処理完了", expect.anything());
 			expect(logger.info).toHaveBeenCalledWith(
 				"DLsite run の集計",
-				expect.objectContaining({ apiCalls: 2, worksUpdated: 1, stopReason: "completed" }),
+				// 取り直した 1 件は失敗。試した 2 件のうち、取得できたのは 1 件
+				expect.objectContaining({
+					apiCalls: 2,
+					worksFetched: 1,
+					worksUpdated: 1,
+					stopReason: "completed",
+				}),
 			);
 		});
 
@@ -810,7 +817,28 @@ describe("fetchDLsiteUnifiedData（エントリポイント統合）", () => {
 			expect(logger.info).not.toHaveBeenCalledWith("全バッチ処理完了", expect.anything());
 			expect(logger.info).toHaveBeenCalledWith(
 				"DLsite run の集計",
-				expect.objectContaining({ apiCalls: 1, stopReason: "rate_limit", rateLimitWaits: 1 }),
+				expect.objectContaining({
+					apiCalls: 1,
+					worksFetched: 1,
+					stopReason: "rate_limit",
+					rateLimitWaits: 1,
+				}),
+			);
+		});
+
+		it("全件が取得失敗の run は、試した件数（apiCalls）があっても worksFetched は 0（進捗に数えない）", async () => {
+			vi.mocked(collectWorkIdsForProduction).mockResolvedValue(["RJ001", "RJ002"]);
+			vi.mocked(batchFetchIndividualInfo).mockResolvedValue({
+				results: new Map(),
+				failedWorkIds: ["RJ001", "RJ002"],
+			});
+
+			await runUnifiedDataCollectionWithReport(jobRun);
+
+			// dlsite_fetch_progress（terraform）は worksFetched>0 の run を数える
+			expect(logger.info).toHaveBeenCalledWith(
+				"DLsite run の集計",
+				expect.objectContaining({ apiCalls: 2, worksFetched: 0 }),
 			);
 		});
 
