@@ -367,6 +367,9 @@ resource "google_monitoring_alert_policy" "dlsite_run_absent" {
   conditions {
     display_name = "定期runが3時間以上観測されない"
 
+    # 今の起動は 10 分おき（SPR-423 のつなぎ・function_dlsite_individual_info_api.tf）。平常の最大の間隔は
+    # 2:43 → 4:03 の 80 分なので、3h のままで誤発火しない。Jobs 化で毎時に戻す前提で、duration は変えていない。
+    # 以下は 1h 周期のときの説明。
     # 1h 周期 + 2h マージン（SPR-412 で 2h 周期 → 1h 周期。旧 duration は 4h）。
     # 1 run 欠けただけでは発火せず（間隔 2h）、2 run 連続欠け（間隔 3h）から異常とみなす。
     # 3時台は run が無く 2:03 → 4:03 が平常で 2h 空くため、duration を 2h 以下にはできない。
@@ -414,7 +417,7 @@ resource "google_monitoring_alert_policy" "dlsite_run_absent" {
     ```bash
     gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="fetchdlsiteunifieddata" AND (jsonPayload.message:"統合データ収集開始" OR textPayload:"統合データ収集開始")' --freshness=1d --format="value(timestamp)" --order=asc
     ```
-    直近の毎時3分（3:03 は元から無い）が全て埋まっていれば偽陽性（対応不要）。
+    直近の起動時刻（毎時 3・13・23・33・43 分。3時台は元から無い）が埋まっていれば偽陽性（対応不要）。
     3時台を飛ばす都合で、2:03 か 4:03 の run が1回欠けただけでも間隔が3時間になり、このアラートは
     鳴りうる（他の時刻は2回連続で欠けてから鳴る）。その場合は次の run が来ていれば対応不要。
 
