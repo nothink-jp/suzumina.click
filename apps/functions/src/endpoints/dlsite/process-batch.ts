@@ -93,7 +93,14 @@ export const JOB_RUN_BUDGET: RunBudget = {
  */
 export interface UnifiedFetchResult {
 	workCount: number;
+	/** API を呼んで結果が出た件数（成功 + 失敗）。レート制限・締め切りで打ち切った分は含まない */
 	apiCallCount: number;
+	/**
+	 * API から取得できた件数（`apiCallCount` のうちの成功分）。「取得が進んでいるか」の正本（SPR-417）。
+	 * `basicDataUpdated` は差分があった作品だけを数えるので、平常でも 0 になりうる。
+	 * 省略時は 0（取得の前に失敗した経路）。
+	 */
+	apiSuccessCount?: number;
 	basicDataUpdated: number;
 	error?: string;
 	unificationComplete?: boolean;
@@ -351,7 +358,13 @@ export async function processBatch(batchInfo: BatchProcessingInfo): Promise<Unif
 		// - バッチの一部の取り直し: バッチ全体を試していない（`isPartialRetry` を参照）
 		if (apiDataMap.size === 0 && (interruption || isPartialRetry)) {
 			logApiFailures(batchNumber, failedWorkIds);
-			return { workCount: 0, apiCallCount: attemptedCount, basicDataUpdated: 0, interruption };
+			return {
+				workCount: 0,
+				apiCallCount: attemptedCount,
+				apiSuccessCount: 0,
+				basicDataUpdated: 0,
+				interruption,
+			};
 		}
 
 		if (apiDataMap.size === 0) {
@@ -392,7 +405,11 @@ export async function processBatch(batchInfo: BatchProcessingInfo): Promise<Unif
 		logBatchComplete(batchNumber, workIds.length, apiDataMap.size, aggregatedResults);
 		logFullSweepMissedChanges(batchNumber, processingResults, wouldSkipStableIds);
 
-		return { ...createBatchResult(aggregatedResults, attemptedCount), interruption };
+		return {
+			...createBatchResult(aggregatedResults, attemptedCount),
+			apiSuccessCount: apiDataMap.size,
+			interruption,
+		};
 	} catch (error) {
 		logger.error(`バッチ ${batchNumber} 処理エラー:`, { error });
 		return {

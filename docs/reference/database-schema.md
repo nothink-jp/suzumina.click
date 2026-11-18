@@ -64,14 +64,14 @@
 - `favorites`: ドキュメント ID = 音声ボタン ID により重複登録を構造的に防止
 - `top10`: 1 ユーザー 1 リスト・最大 10・順位重複不可
 
-## データ収集スケジュール（cron → Function → 書き込み先）
+## データ収集スケジュール（cron → Function / ジョブ → 書き込み先）
 
 cron の正本は Terraform の Cloud Scheduler（[`scheduler.tf`](../../terraform/scheduler.tf) /
 [`function_dlsite_individual_info_api.tf`](../../terraform/function_dlsite_individual_info_api.tf) /
 [`function_data_integrity_check.tf`](../../terraform/function_data_integrity_check.tf)）。
 
 - `30 * * * *` → [`fetchYouTubeVideos`](../../apps/functions/src/endpoints/youtube/fetch-youtube-videos.ts) → `videos` / `youtubeMetadata`
-- `3 0-2,4-23 * * *`（1 時間ごと・3 時台を除く）→ [`fetchDLsiteUnifiedData`](../../apps/functions/src/endpoints/dlsite/fetch-dlsite-unified-data.ts) → `works` / `circles` / `creators`（+ `creators/{id}/works`） / `works/{workId}/priceHistory` / `dlsiteMetadata`
+- `3 0-2,4-23 * * *`（1 時間ごと・3 時台を除く）→ Cloud Run ジョブ `fetch-dlsite-unified-data`（[`jobs/run-job.ts`](../../apps/functions/src/jobs/run-job.ts) → [`runUnifiedDataCollection`](../../apps/functions/src/endpoints/dlsite/run-unified-data-collection.ts)）→ `works` / `circles` / `creators`（+ `creators/{id}/works`） / `works/{workId}/priceHistory` / `dlsiteMetadata`
 - `0 3 * * 0`（日曜 3:00 JST）→ [`checkDataIntegrity`](../../apps/functions/src/endpoints/data-integrity/check-data-integrity.ts) → `dlsiteMetadata/dataIntegrityCheck`（+ `history`）
   - Circle workIds / 孤立 Creator マッピング / Work-Circle 整合を**事後修復**。
     非正規化を増やすとこの cron の負債が増える（CLAUDE.md 軸1）。

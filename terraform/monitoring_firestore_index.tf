@@ -14,8 +14,9 @@ resource "google_logging_metric" "firestore_missing_index" {
 
   # "requires an index" は index 欠落に固有のフレーズ（汎用の FAILED_PRECONDITION より誤検知が少ない）。
   # web(Cloud Run) と functions(Cloud Functions) の両方を対象にする。
+  # Cloud Run Jobs（DLsite の取り込み＝SPR-417）のログも対象にする。
   filter = <<-EOT
-    (resource.type="cloud_run_revision" OR resource.type="cloud_function")
+    (resource.type="cloud_run_revision" OR resource.type="cloud_function" OR resource.type="cloud_run_job")
     "requires an index"
   EOT
 
@@ -58,6 +59,23 @@ resource "google_monitoring_alert_policy" "firestore_missing_index" {
 
     condition_threshold {
       filter = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.firestore_missing_index.name}\" resource.type=\"cloud_function\""
+
+      aggregations {
+        alignment_period   = "300s"
+        per_series_aligner = "ALIGN_SUM"
+      }
+
+      comparison      = "COMPARISON_GT"
+      threshold_value = 0
+      duration        = "0s"
+    }
+  }
+
+  conditions {
+    display_name = "Firestore index 要求エラー（Cloud Run Jobs）"
+
+    condition_threshold {
+      filter = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.firestore_missing_index.name}\" resource.type=\"cloud_run_job\""
 
       aggregations {
         alignment_period   = "300s"

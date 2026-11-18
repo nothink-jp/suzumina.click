@@ -11,10 +11,13 @@ resource "google_logging_project_sink" "application_logs" {
   # Cloud Runとフロントエンドのログをフィルタリング
   # functions（fetch* = Gen2）のログも cloud_run_revision で出る（Gen1 形式の
   # cloud_function フィルタは一切マッチせず、関数ログが未アーカイブだった・SPR-234）
+  # Cloud Run Jobs（DLsite の取り込み＝job_dlsite.tf）のログは cloud_run_job で出る（SPR-417）
   filter = <<-EOT
     (resource.type="cloud_run_revision" AND resource.labels.service_name="suzumina-click-web")
     OR
     (resource.type="cloud_run_revision" AND resource.labels.service_name=~"fetch.*")
+    OR
+    (resource.type="cloud_run_job" AND resource.labels.job_name=~"^fetch-")
     OR
     (jsonPayload.metric_type="frontend_performance" OR jsonPayload.metric_type="core_web_vitals")
   EOT
