@@ -81,6 +81,19 @@ resource "google_service_account_iam_member" "cloud_functions_deployer_act_as" {
   member             = "serviceAccount:${google_service_account.cloud_functions_deployer_sa.email}"
 }
 
+# Cloud Run Jobs 用のイメージを push する権限（SPR-415）。deploy-functions.yml が build して push する。
+# リポジトリ単位で付ける（project 単位の writer だと、web のイメージも書き換えられてしまう）。
+resource "google_artifact_registry_repository_iam_member" "cloud_functions_deployer_functions_jobs_writer" {
+  project    = var.gcp_project_id
+  location   = google_artifact_registry_repository.functions_jobs.location
+  repository = google_artifact_registry_repository.functions_jobs.name
+  role       = "roles/artifactregistry.writer"
+  member     = "serviceAccount:${google_service_account.cloud_functions_deployer_sa.email}"
+
+  # apply SA がリポジトリの IAM を変える権限を得てから付与する（functions_build_gcf_artifacts_writer と同じ）
+  depends_on = [google_project_iam_member.terraform_apply_sa_roles["roles/artifactregistry.admin"]]
+}
+
 # ------------------------------------------------------------------------------
 # Cloud Functions のビルド専用サービスアカウント（SPR-373）
 # ------------------------------------------------------------------------------
