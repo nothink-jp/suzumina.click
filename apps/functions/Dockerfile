@@ -8,7 +8,7 @@
 
 # Node の版の正本はルート package.json の devEngines.runtime.version。ここは写しで、
 # 一致は pnpm lint:node-version が強制する（apps/web/Dockerfile と同じ扱い＝SPR-405）。
-FROM node:24.22.3-alpine AS base
+FROM node:26.13.1-alpine AS base
 # base image は patch まで pin しているので中身が凍結される。次の bump までに出る Alpine 側の修正を拾う
 RUN apk upgrade --no-cache && apk add --no-cache tini
 
