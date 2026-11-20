@@ -63,8 +63,12 @@ CLAUDE.md §2 の 3 条件に当たるときだけ使う。完了前ゲートは
   「**プロジェクト横断の未使用（export・ファイル・依存・devDeps）**」。両者は競合しない。
 - **実行**: `pnpm knip`（root から）。設定は [`knip.json`](../../knip.json)。
   pnpm workspace を自動認識し、Next.js / Storybook / Vitest の規約は plugin が entry として扱う。
-- **CI**: `.github/workflows/knip.yml` が PR で実行するが **非ブロッキング**（`continue-on-error`）。
-  PR を fail させず、結果はジョブログで確認する。
+- **ゲート（SPR-424）**: 基準線は**検出ゼロ**。`pnpm verify` に含まれ、CI は `pr-check.yml` の
+  Parallel Quality Check の中で実行して**落とす**（`--reporter github-actions` で PR の該当行に注釈が付く）。
+  落ちたら「この PR が増やした」と読む。多くは「ファイル内でしか使わない値に `export` が付いている」
+  型で、`export` を外せば直る。
+- **意図的に残す export**: 外から使う予定の public API（主に `packages/ui`）は、JSDoc の `/** @public */`
+  を付けると報告されない。`knip.json` の ignore で黙らせるのは誤検知（下記）に限る。
 - **削除判断はツール任せにしない**: 検出はあくまで棚卸しの**補助**。特に共有ライブラリ
   （`packages/ui`）には将来用に残す public API があり得る（軸1/軸3）。候補は 1 つずつ
   「本当に未使用か（直接パス import・規約ファイル・動的参照を含め）」を確認してから削除する。

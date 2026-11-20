@@ -64,6 +64,8 @@ jobs:
               - 'biome.json'
               - 'vitest.config.ts'
               - 'packages/typescript-config/**'
+              # knip の設定。変わると Parallel Quality Check 内の knip の結果が変わる（SPR-424）
+              - 'knip.json'
               - '.github/actions/setup-pnpm/**'
               - '.github/workflows/pr-check.yml'
             # functions のエミュレータ統合テストを走らせる対象。functions 本体に加え、
@@ -212,6 +214,15 @@ jobs:
             exit 1
           fi
           echo "🎉 All checks completed successfully"
+
+      # 未使用コード検出（SPR-424）。基準線はゼロなので、落ちたら「この PR が増やした」と読める。
+      # 上の並列チェックが落ちても結果を出す（!cancelled）。install を共有して追加コストは数秒。
+      # github-actions レポーターは PR の該当行に注釈を付ける（`::error` は行頭必須のため
+      # run_check の sed プレフィックスに通さず、独立したステップにしている）。
+      # knip は差分ではなくモノレポ全体を解析するので、どのパッケージの変更でも全体を見る。
+      - name: Knip (unused code)
+        if: ${{ !cancelled() }}
+        run: pnpm knip --no-progress --reporter github-actions
 
   # functions のエミュレータ統合テスト（SPR-141）。
   # 決定論的・外部API非依存・GCP課金なし（Emulator は runner 上で完結）。
