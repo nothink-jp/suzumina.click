@@ -68,6 +68,12 @@ variable "dlsite_jobs_bootstrap" {
   default     = false
 }
 
+variable "data_integrity_job_bootstrap" {
+  description = "整合性チェックのジョブ（job_data_integrity.tf）の初回 apply（未作成）や DR 時に true。稼働中のジョブの image を参照する data source を無効化し、:latest で作る。deploy-functions.yml がこのジョブのイメージも差し替えるようになったら false にする（dlsite_jobs_bootstrap と同じ。SPR-416）。"
+  type        = bool
+  default     = true
+}
+
 # ==========================================================
 # 監視・アラート設定用変数
 # ==========================================================

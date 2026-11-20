@@ -14,13 +14,17 @@
 # ログベースメトリクス - 整合性チェックの失敗
 # エントリポイント（endpoints/data-integrity/check-data-integrity.ts）は失敗時に
 # 「データ整合性チェックエラー」を ERROR で出してから rethrow する。
+#
+# フィルタは、Cloud Run Jobs（job_data_integrity.tf の check-data-integrity）と Functions の両方のログを拾う（SPR-416）。
+# アラート（下）は、まだ Functions を見ている。ジョブ向けに変えるのは、スケジューラを付け替える PR で行う。
+# メトリクスのフィルタと、それを見るアラートの resource.type を同じ apply で変えると、400 で失敗するため
+# （descriptor に新しい resource type が載るまで時間がかかる＝SPR-409）。
 resource "google_logging_metric" "data_integrity_error_count" {
   name    = "data_integrity_function_errors"
   project = var.gcp_project_id
 
   filter = <<-EOT
-    resource.type="cloud_run_revision"
-    resource.labels.service_name="checkdataintegrity"
+    ((resource.type="cloud_run_job" AND resource.labels.job_name="check-data-integrity") OR (resource.type="cloud_run_revision" AND resource.labels.service_name="checkdataintegrity"))
     severity >= "ERROR"
   EOT
 
