@@ -66,8 +66,23 @@ export async function runJob(mode: JobMode): Promise<boolean> {
 		case "dlsite-full-sweep":
 			return runUnifiedDataCollectionWithReport({ mode: WEEKLY_FULL_SWEEP_MODE, ...dlsiteRun });
 		case "integrity":
-			await runIntegrityCheckWithReport(trigger);
-			return true;
+			return runIntegrityCheckForJob(trigger);
+	}
+}
+
+/**
+ * 整合性チェックを走らせ、成否を返す（例外は投げない）
+ *
+ * `runIntegrityCheckWithReport` は、失敗を ERROR（「データ整合性チェックエラー」）で出してから投げ直す
+ * （Functions では 5xx にするため）。ここで受けずに `main` まで届かせると、同じ失敗が「ジョブが失敗しました」で
+ * もう 1 回 ERROR になり、エラーの件数を数えるメトリクス（data_integrity_function_errors）が 2 と数える（SPR-416）。
+ */
+async function runIntegrityCheckForJob(trigger: Record<string, unknown>): Promise<boolean> {
+	try {
+		await runIntegrityCheckWithReport(trigger);
+		return true;
+	} catch {
+		return false;
 	}
 }
 

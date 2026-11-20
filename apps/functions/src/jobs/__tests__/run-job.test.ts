@@ -98,13 +98,22 @@ describe("run-job", () => {
 			await expect(main(["dlsite"])).resolves.toBe(1);
 		});
 
-		it("整合性チェックが例外を投げたら 1 で、ログに残す", async () => {
-			const error = new Error("boom");
-			mockRunIntegrity.mockRejectedValue(error);
+		it("整合性チェックが例外を投げたら 1。ERROR は重ねない（本体が既に出している＝SPR-416）", async () => {
+			mockRunIntegrity.mockRejectedValue(new Error("boom"));
 
 			await expect(main(["integrity"])).resolves.toBe(1);
+			// 「データ整合性チェックエラー」は runIntegrityCheckWithReport（ここではモック）が出す。
+			// main が同じ失敗をもう 1 回 ERROR にすると、エラー件数のメトリクスが 2 と数える
+			expect(logger.error).not.toHaveBeenCalled();
+		});
+
+		it("想定外の例外（取り込みが投げた場合）は 1 で、ログに残す", async () => {
+			const error = new Error("boom");
+			mockRunUnified.mockRejectedValue(error);
+
+			await expect(main(["dlsite"])).resolves.toBe(1);
 			expect(logger.error).toHaveBeenCalledWith("ジョブが失敗しました", {
-				jobMode: "integrity",
+				jobMode: "dlsite",
 				error,
 			});
 		});
