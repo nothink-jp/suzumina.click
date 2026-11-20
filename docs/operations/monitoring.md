@@ -11,7 +11,7 @@
 | [monitoring_youtube.tf](../../terraform/monitoring_youtube.tf) | `fetchYouTubeVideos`: 系統エラー / run 不在 / プラットフォーム 5xx / discovery 未保存 / クォータ不足 / メモリ圧迫 |
 | [monitoring_firestore_reads.tf](../../terraform/monitoring_firestore_reads.tf) | Firestore read レート（予算ペースから逆算した警告・緊急） |
 | [monitoring_firestore_index.tf](../../terraform/monitoring_firestore_index.tf) | 複合インデックス欠落（`requires an index` ログ・SPR-213） |
-| [monitoring_data_integrity.tf](../../terraform/monitoring_data_integrity.tf) | `checkDataIntegrity`（週次の整合性 cron）: エラーログ / 5xx |
+| [monitoring_data_integrity.tf](../../terraform/monitoring_data_integrity.tf) | 整合性チェック（週次・Cloud Run ジョブ `check-data-integrity`）: エラーログ / ジョブの実行の失敗 |
 | [monitoring_origin_bypass.tf](../../terraform/monitoring_origin_bypass.tf) | web への Cloudflare 迂回アクセス（requests ログの `remoteIp` が Cloudflare の IP 帯の外・SPR-366） |
 | [logging.tf](../../terraform/logging.tf) | アプリログの GCS シンク（保持はバケットの lifecycle が正本） |
 

@@ -262,7 +262,7 @@ jobs:
       # :latest ではなく :<sha> を明示する: ジョブがタグをいつダイジェストへ解決するか（更新のとき / 実行のたび）は
       # 公式ドキュメントに書かれていないので、どちらでも「このコミットのイメージで動く」ようにする。
       # ジョブの一覧は、Terraform の定義と揃える（ジョブを足したらここにも足す）:
-      # terraform/job_dlsite.tf の local.dlsite_jobs（2 つ）と、terraform/job_data_integrity.tf（check-data-integrity）。
+      # terraform/job_dlsite.tf の local.dlsite_jobs と、terraform/job_data_integrity.tf（check-data-integrity）。
       # 実行中の実行には影響しない（次の実行から新しいイメージになる）。
       - name: Update jobs to the pushed image
         env:
