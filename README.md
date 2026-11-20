@@ -78,7 +78,7 @@ pnpm --filter @suzumina.click/web dev          # 本番 Firestore に直接接�
 ## 開発コマンド
 
 ```bash
-# 一括検証（lint:* + lint + typecheck + test。手元の完全版ゲートで、CI とは scope が異なる）
+# 一括検証（lint:* + lint + knip + typecheck + test。手元の完全版ゲートで、CI とは scope が異なる）
 pnpm verify
 
 # 個別
