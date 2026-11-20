@@ -10,7 +10,8 @@
 #
 # 設定の正本は、DLsite のジョブ（job_dlsite.tf）と同じ（ADR-009 の Jobs 側）:
 # - ジョブの設定（メモリ・timeout・引数・環境変数・サービスアカウント）は **この Terraform が正本**。
-# - イメージは deploy-functions.yml が build / push して差し替える（DLsite のジョブと同じイメージ・引数違い）。
+# - イメージは deploy-functions.yml が build / push して、ジョブを :<sha> に差し替える（DLsite のジョブと同じ
+#   イメージ・引数違い）。ジョブ名は、deploy-functions.yml の「Update jobs to the pushed image」の一覧にも書いてある。
 # ==============================================================================
 
 locals {

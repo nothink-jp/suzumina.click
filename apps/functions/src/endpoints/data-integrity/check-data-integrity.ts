@@ -35,6 +35,9 @@ export async function checkDataIntegrity(event: CloudEvent<unknown>): Promise<vo
  * 整合性チェックを 1 回走らせ（dryRun=false＝修正を書き込む）、開始・完了・失敗をログに残す
  *
  * 失敗したら例外を投げ直す（Functions は 5xx、Jobs は 0 以外の終了コードになる）。
+ * **投げるのは、ERROR（「データ整合性チェックエラー」）を出したあとだけ。** `jobs/run-job.ts` の
+ * `runIntegrityCheckForJob` は、これを前提に、受けた例外をログに出し直さない（出すと ERROR が 2 件になる＝SPR-416）。
+ * この関数の `try` の外に、投げうる処理を足さない。足すなら、そこでも ERROR を出してから投げる。
  *
  * @param trigger 起動元を識別するための情報（開始ログにそのまま載る）
  */
