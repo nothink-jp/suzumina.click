@@ -37,8 +37,10 @@ resource "google_logging_metric" "data_integrity_error_count" {
   }
 }
 
+# 表示名は「Job」に揃えてある（見ている対象がジョブなので）。リソース名とメトリクス名（data_integrity_function_*）は
+# 変えていない（変えると作り直しになり、メトリクスとアラートを同時に作り直すことになる＝SPR-409）。
 resource "google_monitoring_alert_policy" "data_integrity_function_error" {
-  display_name = "Data Integrity Function Error Alert"
+  display_name = "Data Integrity Job Error Alert"
   project      = var.gcp_project_id
   combiner     = "OR"
 
@@ -77,10 +79,12 @@ resource "google_monitoring_alert_policy" "data_integrity_function_error" {
     ```
 
     ## 手動で再実行する
-    DLsite の取り込み（毎時 3 分から数分。ブロック中は最長 58 分まで）と重ならない時刻に実行する（SPR-414）。
-    走っていないことを確かめてから:
+    DLsite の取り込みと重ならない時刻に実行する（SPR-414）。取り込みのジョブは 2 つある:
+    毎時（3 分から数分。ブロック中は最長 58 分まで）と、週次フルスイープ（土曜 4:15 から。全件なので長く走る）。
+    どちらも走っていないこと（直近の実行に COMPLETION_TIME が入っていること）を確かめてから:
     ```bash
     gcloud run jobs executions list --job fetch-dlsite-unified-data --region asia-northeast1 --limit 1
+    gcloud run jobs executions list --job fetch-dlsite-unified-data-full-sweep --region asia-northeast1 --limit 1
     gcloud run jobs execute check-data-integrity --region asia-northeast1
     ```
     EOT
@@ -135,7 +139,7 @@ resource "google_monitoring_alert_policy" "data_integrity_function_failure" {
     # 整合性チェック（ジョブ check-data-integrity）の実行が失敗
 
     週次の整合性チェックの実行が、失敗で終わりました。
-    - 「Data Integrity Function Error Alert」も同時に鳴っていれば、アプリ内の失敗（ERROR ログのあと終了コード 1）
+    - 「Data Integrity Job Error Alert」も同時に鳴っていれば、アプリ内の失敗（ERROR ログのあと終了コード 1）
     - こちらだけが鳴っていれば、タスクの timeout（30 分）・OOM・プロセスのクラッシュなど、ERROR ログを出さずに落ちたケース
 
     ## 確認事項
@@ -148,7 +152,7 @@ resource "google_monitoring_alert_policy" "data_integrity_function_failure" {
        （Functions のころの実測は 374〜462 秒）。timeout を延ばす前に、全件読みの作りを見直す
     3. 直近のデプロイ・依存更新の有無
 
-    再実行の手順は「Data Integrity Function Error Alert」の runbook を参照。
+    再実行の手順は「Data Integrity Job Error Alert」の runbook を参照。
     EOT
     mime_type = "text/markdown"
   }
