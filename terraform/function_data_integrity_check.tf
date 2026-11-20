@@ -1,32 +1,25 @@
 # ==============================================================================
-# データ整合性検証機能
+# 整合性チェック: スケジューラ・サービスアカウントと、旧 Functions（checkDataIntegrity）の土台
 # ==============================================================================
-# 概要: 週次で実行されるデータ整合性チェック
+# 週次で実行されるデータ整合性チェック（事後修復）:
 # - CircleのworkIds配列の整合性
-# - 孤立したCreatorマッピングのクリーンアップ  
+# - 孤立したCreatorマッピングのクリーンアップ
 # - Work-Circle相互参照の整合性
+#
+# **整合性チェックは Cloud Run Jobs で動く**（SPR-416 / 設計は SPR-358。ジョブの定義は job_data_integrity.tf）。
+# このファイルにあるのは、ジョブを起動する Cloud Scheduler、実行 SA、旧 Functions のための Pub/Sub トピックと権限。
+#
+# 旧 Functions（checkDataIntegrity）は、まだデプロイされている（deploy-functions.yml）。トピックと Eventarc まわりの
+# 権限も残してある。**どこからも起動されない。** 戻すときの受け皿として SPR-419 まで残す。
+# 戻し方: スケジューラの http_target を pubsub_target（このトピック宛て）に戻し、monitoring_data_integrity.tf の
+# アラートを関数向けに戻す（付け替えた PR ごと revert するのが確実）。
+#
+# 関数の spec の正本は deploy-functions.yml（ADR-009 原則2）。
 # ==============================================================================
 
-# データ整合性チェック関数の設定
-# 関数 spec（runtime / entry_point / memory / timeout）の正本は GitHub Actions（deploy-functions.yml）。
-# ADR-009 原則2: Cloud Functions の spec は terraform が持たない。かつてここに置いていた spec local は
-# 未参照のまま実体（runtime=nodejs24）と drift していた（nodejs22）ため撤去。output で使う関数名のみ残す。
 locals {
   data_integrity_check_function_name = "checkDataIntegrity"
 }
-
-# データ整合性チェック関数（Gen2）
-# 注意: 関数自体はGitHub Actionsでデプロイされるため、
-# Terraformではインフラストラクチャのみを管理します。
-# 
-# 関数のデプロイは以下の手順で行われます：
-# 1. terraform apply でサービスアカウント、Pub/Subトピック、Cloud Schedulerを作成
-# 2. GitHub ActionsのCloud Functionsデプロイワークフローで関数をデプロイ
-#
-# resource "google_cloudfunctions2_function" "check_data_integrity" {
-#   # この関数リソースはコメントアウトされています。
-#   # GitHub Actionsによるデプロイとの競合を避けるためです。
-# }
 
 # データ整合性チェック用のPub/Subトピック
 resource "google_pubsub_topic" "data_integrity_check_trigger" {
@@ -42,7 +35,9 @@ resource "google_pubsub_topic" "data_integrity_check_trigger" {
   depends_on = [google_project_service.pubsub]
 }
 
-# データ整合性チェック用のCloud Scheduler（週次実行）
+# データ整合性チェック用のCloud Scheduler（週次実行）→ ジョブ check-data-integrity
+# 日曜 3:00 JST。DLsite の取り込みは 3 時台を飛ばしている。2:03 に始まった実行は、アプリの予算（55 分＝
+# process-batch.ts の JOB_RUN_BUDGET）で 2:58 までに終わるので、同時には走らない（SPR-414）。
 resource "google_cloud_scheduler_job" "data_integrity_check_weekly" {
   project = var.gcp_project_id
   region  = var.region
@@ -53,21 +48,29 @@ resource "google_cloud_scheduler_job" "data_integrity_check_weekly" {
   time_zone   = "Asia/Tokyo"
   paused      = false
 
-  pubsub_target {
-    topic_name = google_pubsub_topic.data_integrity_check_trigger.id
-    data = base64encode(jsonencode({
-      type        = "data_integrity_check"
-      description = "週次データ整合性チェック"
-    }))
+  # ジョブの実行 API を直接呼ぶ（Pub/Sub と Eventarc を経由しない。DLsite のスケジューラと同じ形＝
+  # function_dlsite_individual_info_api.tf）。本文は空の JSON（上書きは渡さない）。API は実行を始めたらすぐ返る。
+  # スケジューラのリトライは既定（0 回）のまま。起動に失敗したら「実行が始まっていない」ので、アラートは鳴らない
+  # （週 1 回の実行には、不在の検知が使えない＝monitoring_data_integrity.tf の冒頭）。月曜にログで確かめる運用は
+  # 変わらない。
+  http_target {
+    http_method = "POST"
+    body        = base64encode("{}")
+    headers     = { "Content-Type" = "application/json" }
+    uri         = "https://run.googleapis.com/v2/projects/${var.gcp_project_id}/locations/${google_cloud_run_v2_job.data_integrity.location}/jobs/${google_cloud_run_v2_job.data_integrity.name}:run"
+
+    oauth_token {
+      service_account_email = google_service_account.data_integrity_check_sa.email
+    }
   }
 
   depends_on = [
     google_project_service.cloudscheduler,
-    google_pubsub_topic.data_integrity_check_trigger,
+    google_cloud_run_v2_job_iam_member.data_integrity_scheduler_invoker,
   ]
 }
 
-# データ整合性チェック関数用のサービスアカウント
+# 整合性チェックの実行用サービスアカウント（ジョブと旧 Functions の両方が使う。スケジューラがジョブを起動するときの主体でもある）
 resource "google_service_account" "data_integrity_check_sa" {
   project      = var.gcp_project_id
   account_id   = "data-integrity-check-sa"
@@ -88,6 +91,8 @@ resource "google_project_iam_member" "data_integrity_check_log_writer" {
   role    = "roles/logging.logWriter"
   member  = "serviceAccount:${google_service_account.data_integrity_check_sa.email}"
 }
+
+# ---- ここから下の Pub/Sub・Eventarc まわりは旧 Functions 用（戻すときのために残す＝SPR-419 まで） ----
 
 # Cloud Scheduler から Pub/Sub への発行権限
 resource "google_pubsub_topic_iam_member" "scheduler_data_integrity_pubsub_publisher" {

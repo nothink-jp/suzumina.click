@@ -27,14 +27,15 @@
 | --- | --- | --- |
 | `fetchYouTubeVideos` | `youtube-video-fetch-trigger` | YouTube 動画の取得 |
 | `fetchDLsiteUnifiedData` | `dlsite-individual-api-trigger` | **どこからも起動されない**（戻すときの受け皿。SPR-419 で撤去）。DLsite の取り込みは下の Cloud Run Jobs |
-| `checkDataIntegrity` | `data-integrity-check-trigger` | 整合性チェック（日曜 3:00 JST・ingress は internal-only） |
+| `checkDataIntegrity` | `data-integrity-check-trigger` | **どこからも起動されない**（戻すときの受け皿。SPR-419 で撤去）。整合性チェックは下の Cloud Run Jobs |
 
 Gen2 のため実体は Cloud Run サービス（名前は小文字: `fetchyoutubevideos` 等）。ログもこのサービス名で引く。
 
-### Cloud Run Jobs（DLsite の取り込み）
+### Cloud Run Jobs（DLsite の取り込み・整合性チェック）
 
-DLsite の取り込みは Cloud Run Jobs で動く（SPR-417）。Functions とは**正本が逆**で、ジョブの設定
-（timeout・引数・メモリ・環境変数・SA）は Terraform（[job_dlsite.tf](../../terraform/job_dlsite.tf)）が正本
+DLsite の取り込み（SPR-417）と整合性チェック（SPR-416）は Cloud Run Jobs で動く。Functions とは**正本が逆**で、ジョブの設定
+（timeout・引数・メモリ・環境変数・SA）は Terraform（[job_dlsite.tf](../../terraform/job_dlsite.tf) /
+[job_data_integrity.tf](../../terraform/job_data_integrity.tf)）が正本
 （[ADR-009](../decisions/infrastructure/ADR-009-deploy-iac-responsibility-split.md)）。
 deploy-functions.yml は、イメージの build / push と、ジョブのイメージの差し替えだけを担う。
 
@@ -42,6 +43,7 @@ deploy-functions.yml は、イメージの build / push と、ジョブのイメ
 | --- | --- | --- |
 | `fetch-dlsite-unified-data` | Cloud Scheduler（毎時 3 分・3 時台を除く） | DLsite Individual Info API から `works` を更新 |
 | `fetch-dlsite-unified-data-full-sweep` | Cloud Scheduler（土曜 4:15 JST） | ティア差分を無視した全件取得（取りこぼし検知） |
+| `check-data-integrity` | Cloud Scheduler（日曜 3:00 JST） | 整合性チェック（非正規化の事後修復） |
 
 手動で 1 回流す: `gcloud run jobs execute fetch-dlsite-unified-data --region asia-northeast1`
 

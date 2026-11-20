@@ -72,7 +72,7 @@ cron の正本は Terraform の Cloud Scheduler（[`scheduler.tf`](../../terrafo
 
 - `30 * * * *` → [`fetchYouTubeVideos`](../../apps/functions/src/endpoints/youtube/fetch-youtube-videos.ts) → `videos` / `youtubeMetadata`
 - `3 0-2,4-23 * * *`（1 時間ごと・3 時台を除く）→ Cloud Run ジョブ `fetch-dlsite-unified-data`（[`jobs/run-job.ts`](../../apps/functions/src/jobs/run-job.ts) → [`runUnifiedDataCollection`](../../apps/functions/src/endpoints/dlsite/run-unified-data-collection.ts)）→ `works` / `circles` / `creators`（+ `creators/{id}/works`） / `works/{workId}/priceHistory` / `dlsiteMetadata`
-- `0 3 * * 0`（日曜 3:00 JST）→ [`checkDataIntegrity`](../../apps/functions/src/endpoints/data-integrity/check-data-integrity.ts) → `dlsiteMetadata/dataIntegrityCheck`（+ `history`）
+- `0 3 * * 0`（日曜 3:00 JST）→ Cloud Run ジョブ `check-data-integrity`（[`jobs/run-job.ts`](../../apps/functions/src/jobs/run-job.ts) → [`runIntegrityCheck`](../../apps/functions/src/endpoints/data-integrity/run-integrity-check.ts)。整合性 cron＝`checkDataIntegrity`）→ `dlsiteMetadata/dataIntegrityCheck`（+ `history`）
   - Circle workIds / 孤立 Creator マッピング / Work-Circle 整合を**事後修復**。
     非正規化を増やすとこの cron の負債が増える（CLAUDE.md 軸1）。
 - 書き込みは Firestore の 500 件バッチ制限に従いチャンク分割する。

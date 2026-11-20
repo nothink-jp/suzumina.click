@@ -5,8 +5,7 @@
 # 過去 5 回の所要時間は 374〜462 秒で、関数の timeout（540 秒）まで 78 秒しか無かった。works / circles /
 # creators を全件読んで事後修復する処理で、データが増えるほど延びる。長く走れる Jobs に移す。
 #
-# **いまは、このジョブはどこからも起動されない**（スケジューラは Functions 宛てのまま＝
-# function_data_integrity_check.tf）。手動で 1 回実行して確かめてから、スケジューラを付け替える。
+# 起動するのは Cloud Scheduler（function_data_integrity_check.tf。日曜 3:00 JST）。監視は monitoring_data_integrity.tf。
 #
 # 設定の正本は、DLsite のジョブ（job_dlsite.tf）と同じ（ADR-009 の Jobs 側）:
 # - ジョブの設定（メモリ・timeout・引数・環境変数・サービスアカウント）は **この Terraform が正本**。
@@ -100,7 +99,6 @@ resource "google_cloud_run_v2_job_iam_member" "data_integrity_deployer_developer
 }
 
 # スケジューラがジョブを起動するための権限（run.jobs.run）。ジョブ単位で付ける。
-# スケジューラの付け替えは次の PR だが、権限は先に付けておく（付け替えの apply を、スケジューラの変更だけにするため）。
 # 呼ぶ主体はジョブの実行 SA。この SA は Eventarc 用に project 単位の run.invoker も持っている
 # （function_data_integrity_check.tf の data_integrity_check_run_invoker）。そちらは旧 Functions の撤去（SPR-419）で外す。
 resource "google_cloud_run_v2_job_iam_member" "data_integrity_scheduler_invoker" {
