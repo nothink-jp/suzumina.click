@@ -52,7 +52,7 @@ LLM に毎回全部読ませて再構築させない。能動的に効かせた�
 ## 1. 能動ルール（必ず守る）
 
 - **パッケージマネージャ**: pnpm のみ。npm は禁止（`pnpm test` / `pnpm dev:local` / `pnpm build`）
-- **完了前チェック**: 必ず **`pnpm verify`**（lint:docs + lint:tokens + lint:ga4 + lint:node-version + test:scripts + lint + typecheck + test を一括・各 `vitest.config.ts` のカバレッジ閾値も強制）。
+- **完了前チェック**: 必ず **`pnpm verify`**（lint:docs + lint:tokens + lint:ga4 + lint:node-version + test:scripts + lint + knip + typecheck + test を一括・各 `vitest.config.ts` のカバレッジ閾値も強制）。
   これが手元の**完全版ゲート**。pre-push hook（lefthook）は変更パッケージの `typecheck:fast`（tsgo）のみで lint/test を含まず、
   CI（`pr-check.yml`）は変更パッケージ単位の差分実行と scope が異なる（＝同一判定ではない）。最終確認は `pnpm verify` を正とする。
   個別確認は `pnpm lint` / `pnpm typecheck` / `pnpm test`。doc・トークン・GA4・Node の版の整合は次の4つ:
@@ -152,7 +152,7 @@ PR は「やり直しが効くか」で自己マージ可否を分ける。AI �
 pnpm dev:local                          # 推奨: Firestore Emulator 起動 + シード投入 + web dev（ADC 不要・本番に触れない）
 pnpm dev:local:auth                     # 上記 + ローカル開発ログイン有効（認証必須ページの確認時のみ）
 pnpm --filter @suzumina.click/web dev   # 本番 Firestore 直結（ADC 必須。データ確認や本番調査時のみ）
-pnpm verify                             # lint:* + lint + typecheck + test（手元の完全版ゲート。CI とは scope が異なる＝§1）
+pnpm verify                             # lint:* + lint + knip + typecheck + test（手元の完全版ゲート。CI とは scope が異なる＝§1）
 pnpm build                              # ビルド
 ```
 
