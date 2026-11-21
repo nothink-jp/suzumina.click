@@ -203,7 +203,8 @@ Emulator はメモリ常駐で再起動ごとに再シードが要る点、初�
 
 **クラウドセッションでの画面確認（PR レビュー中）**
 対象は Claude Code のクラウドセッション（claude.ai/code）だけ。GitHub Actions 上の AI レビュー（`claude-review.yml`）は
-`pnpm` もブラウザも無いので対象外（この手順は実行しない）。
+`pnpm` と依存（`node_modules`）が入っておらず、playwright MCP も起動しないので対象外（この手順は実行しない。
+runner に Chromium はある）。
 クラウドセッションには Chromium と Playwright が入っている。PR のブランチで次の手順を踏めば、マージ前に画面を確かめてスクリーンショットを人に渡せる。
 
 1. `pnpm dev:local:auth` を**バックグラウンドで**起動し、`localhost:3000` が応答するまで待つ
