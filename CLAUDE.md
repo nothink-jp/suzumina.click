@@ -201,6 +201,19 @@ pnpm build                              # ビルド
 Emulator はメモリ常駐で再起動ごとに再シードが要る点、初回は component 導入（約65MB）がある点もコスト要因。
 迷ったら「この変更は Firestore データを描画/更新してブラウザで観測できるか？」を基準にし、No なら立ち上げない。
 
+**クラウドセッションでの画面確認（PR レビュー中）**
+クラウドセッションには Chromium と Playwright が入っている。PR のブランチで次の手順を踏めば、マージ前に画面を確かめてスクリーンショットを人に渡せる。
+
+1. `pnpm dev:local:auth` を起動する（Emulator + シード + 開発ログイン。ADC 不要）
+2. 認証が要るページは `http://localhost:3000/api/dev/signin?callbackUrl=<戻り先>` から開く。
+   戻り先にクエリがあるときは URL エンコードする（例: `callbackUrl=%2Fbuttons%2Fcreate%3Fvideo_id%3D<id>`）
+3. 操作してスクリーンショットを撮る
+
+セッション内で確かめられないもの（リリース後に本番で見る）:
+- **Gemini のタイトル候補生成**: `GEMINI_API_KEY` はセッションに無い（入れない）。見られるのはエラー表示まで
+- **YouTube の再生・試聴**: iframe API には届くが、headless Chromium で再生できるかは保証されていない
+- **本番データ起因の表示**: Emulator は公開系 fixtures のみ（上の「ADC 直結に切り替える 3 条件」を参照）
+
 ### クラウドセッションの GCP 権限（`claude-readonly@` SA）
 Claude Code のクラウドセッションでは、`*.googleapis.com` 宛ての通信にプロキシが **`claude-readonly@suzumina-click.iam.gserviceaccount.com`**
 の認証を注入する（キー認証。`gcloud auth list` は空でも `curl` / `bq` / `gcloud` の API 呼び出しは通る）。
