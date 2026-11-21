@@ -8,7 +8,6 @@ import { Checkbox } from "@suzumina.click/ui/components/ui/checkbox";
 import { Input } from "@suzumina.click/ui/components/ui/input";
 import { Clock, MousePointer, Play, Square } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import type { TranscriptUtterance } from "@/lib/gemini/transcription-core";
 import { matchShortcutKey } from "@/lib/keyboard-shortcut";
 import { ClipExploreLane } from "./clip-explore-lane";
 import { ClipTrimLane } from "./clip-trim-lane";
@@ -136,10 +135,6 @@ interface TimeControlPanelProps {
 	madeMarks?: number[];
 	draftMarks?: number[];
 
-	// 発話行（SPR-292）。省略時は従来レイアウト（編集画面など）
-	utterances?: TranscriptUtterance[];
-	onUtteranceClick?: (utterance: TranscriptUtterance, extend: boolean) => void;
-
 	// UI状態
 	isCreating: boolean;
 }
@@ -233,8 +228,6 @@ export function TimeControlPanel({
 	audition,
 	madeMarks = [],
 	draftMarks = [],
-	utterances,
-	onUtteranceClick,
 	isCreating,
 }: TimeControlPanelProps) {
 	const prerollId = useId();
@@ -406,8 +399,6 @@ export function TimeControlPanel({
 					onChangeEnd={onSetEndTime}
 					onMoveClip={moveClip}
 					onSeek={onSeek}
-					utterances={utterances}
-					onUtteranceClick={onUtteranceClick}
 				/>
 
 				{/* 境界の微調整 */}

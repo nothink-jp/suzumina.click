@@ -39,11 +39,13 @@
 | `users/{userId}/buttonDrafts` | 音声ボタンの下書き（配信中マーク。SPR-146） | 自動生成 ID | [audio-button-draft.ts](../../packages/shared-types/src/types/audio-button-draft.ts) `AudioButtonDraftDocument`（書き込み元 [button-drafts.ts](../../apps/web/src/actions/button-drafts.ts)） |
 | `users/{userId}/top10` | 10 選ランキング | `ranking` | [work-evaluation.ts](../../packages/shared-types/src/entities/work-evaluation.ts) `UserTop10List` |
 | `works/{workId}/priceHistory` | 価格履歴（全履歴・多通貨） | `YYYY-MM-DD` | [price-history.ts](../../packages/shared-types/src/utilities/price-history.ts) `PriceHistoryDocument` |
-| `videos/{videoId}/transcriptChunks` | 動画文字起こしのチャンク単位キャッシュ（Gemini 生成の派生データ＝再生成可能） | チャンク番号 | 書き込み元 [video-transcription.ts](../../apps/web/src/actions/video-transcription.ts) |
 | `dlsiteMetadata/dataIntegrityCheck/history` | 整合性チェック実行履歴（最大 10 件） | 実行日時 ISO | 書き込み元 [Cloud Function](../../apps/functions/src/endpoints/data-integrity/run-integrity-check.ts) |
 
 > **削除済み**: `dlsite_timeseries_raw` / `dlsite_timeseries_daily`（統合アーキテクチャへ移行。価格履歴の後継は
 > `works/{workId}/priceHistory`）。`favorites` は最小スキーマ（`audioButtonId` + `addedAt`）で、表示時に `audioButtons` を都度 join する。
+>
+> **読み書きするコードなし**: `videos/{videoId}/transcriptChunks`（作成画面の発話文字起こしのキャッシュ。SPR-420 でコードを削除。
+> 既存データを消すか残すかは SPR-420 で決める。派生データなので再生成はできるが、Firestore の削除は戻せない）。
 
 ## アクセス制御・運用上の制約
 
@@ -53,7 +55,7 @@
 境界の正本はサーバー側コード: 書き込みの認可は `getCurrentUser()` の null チェック（CLAUDE.md §2）、読み取りの公開範囲は各クエリ）
 - 公開読み取り: `videos` / `works` / 公開 `audioButtons` / `circles`
 - Cloud Functions のみ書き込み（自動収集）: `videos` / `works` / `circles` / `creators`（+ `creators/{id}/works`） / `priceHistory` / `dlsite_failed_works`
-- Server Actions のみ書き込み（認証済み）: `audioButtons` / `evaluations` / `favorites` / `top10` / `likes` / `dislikes` / `buttonDrafts` / `transcriptChunks` / `contacts`
+- Server Actions のみ書き込み（認証済み）: `audioButtons` / `evaluations` / `favorites` / `top10` / `likes` / `dislikes` / `buttonDrafts` / `contacts`
 - Server Actions から匿名で書き込み: `audioButtons.stats.playCount` / `playCountDedup`（認可ではなく IP 単位の抑止のみ＝ `incrementPlayCount`）
 - better-auth（サーバーのみ）: `ba_user` / `ba_session` / `ba_account`
 - 本人のみ読み取り: `users` サブコレクション（`favorites` / `top10`）・`evaluations`
