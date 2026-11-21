@@ -44,7 +44,8 @@
 > **削除済み**: `dlsite_timeseries_raw` / `dlsite_timeseries_daily`（統合アーキテクチャへ移行。価格履歴の後継は
 > `works/{workId}/priceHistory`）。`favorites` は最小スキーマ（`audioButtonId` + `addedAt`）で、表示時に `audioButtons` を都度 join する。
 >
-> **削除済み（SPR-420）**: `videos/{videoId}/transcriptChunks`（作成画面の発話文字起こしのキャッシュ。コードとデータの両方を削除）。
+> **廃止（SPR-420）**: `videos/{videoId}/transcriptChunks`（作成画面の発話文字起こしのキャッシュ）。読み書きするコードは削除済み。
+> 既存データはデプロイ後に `gcloud firestore bulk-delete` で消す（実行したかどうかと件数の記録は SPR-420 が正本）。
 
 ## アクセス制御・運用上の制約
 

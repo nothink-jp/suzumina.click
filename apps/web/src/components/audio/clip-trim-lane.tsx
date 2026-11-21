@@ -218,7 +218,7 @@ export function ClipTrimLane({
 			ref={laneRef}
 			data-testid="clip-trim-lane"
 			onClick={onLaneClick}
-			className="relative overflow-hidden rounded-md border bg-muted/60 select-none h-24"
+			className="relative h-24 overflow-hidden rounded-md border bg-muted/60 select-none"
 			style={{ touchAction: "none" }}
 		>
 			{/* 動画範囲外（0 より前 / 末尾より後）の遮蔽 */}
@@ -259,7 +259,7 @@ export function ClipTrimLane({
 
 			{/* クリップブロック */}
 			<div
-				className="absolute bottom-0 border-y-2 border-suzuka-600 bg-suzuka-500/25 top-5"
+				className="absolute top-5 bottom-0 border-y-2 border-suzuka-600 bg-suzuka-500/25"
 				style={{
 					left: `${clipLeft}%`,
 					width: `${Math.max(clipRight - clipLeft, 0)}%`,
