@@ -202,9 +202,12 @@ Emulator はメモリ常駐で再起動ごとに再シードが要る点、初�
 迷ったら「この変更は Firestore データを描画/更新してブラウザで観測できるか？」を基準にし、No なら立ち上げない。
 
 **クラウドセッションでの画面確認（PR レビュー中）**
+対象は Claude Code のクラウドセッション（claude.ai/code）だけ。GitHub Actions 上の AI レビュー（`claude-review.yml`）は
+`pnpm` もブラウザも無いので対象外（この手順は実行しない）。
 クラウドセッションには Chromium と Playwright が入っている。PR のブランチで次の手順を踏めば、マージ前に画面を確かめてスクリーンショットを人に渡せる。
 
-1. `pnpm dev:local:auth` を起動する（Emulator + シード + 開発ログイン。ADC 不要）
+1. `pnpm dev:local:auth` を**バックグラウンドで**起動し、`localhost:3000` が応答するまで待つ
+   （Emulator + シード + 開発ログイン。ADC 不要。フォアグラウンドで起動すると常駐して次の手順に進めない）
 2. 認証が要るページは `http://localhost:3000/api/dev/signin?callbackUrl=<戻り先>` から開く。
    戻り先にクエリがあるときは URL エンコードする（例: `callbackUrl=%2Fbuttons%2Fcreate%3Fvideo_id%3D<id>`）
 3. 操作してスクリーンショットを撮る
