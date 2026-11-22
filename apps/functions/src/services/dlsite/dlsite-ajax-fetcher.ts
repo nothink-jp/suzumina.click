@@ -6,8 +6,8 @@
  */
 
 import { getDLsiteConfig } from "../../infrastructure/management/config-manager";
-import { generateDLsiteHeaders } from "../../infrastructure/management/user-agent-manager";
 import * as logger from "../../shared/logger";
+import { DLSITE_REQUEST_HEADERS } from "./dlsite-request-headers";
 
 /**
  * DLsite AJAX APIのレスポンス型定義
@@ -165,16 +165,9 @@ export async function fetchDLsiteAjaxResult(page: number): Promise<DLsiteAjaxRes
 	}
 
 	try {
-		// リクエストヘッダーの準備
-		const headers = {
-			accept: "application/json",
-			"Content-Type": "application/json",
-			...generateDLsiteHeaders(),
-		};
-
 		// HTTPリクエストの実行
 		const response = await fetch(url, {
-			headers,
+			headers: DLSITE_REQUEST_HEADERS,
 			method: "GET",
 			signal: AbortSignal.timeout(config.timeoutMs),
 		});
