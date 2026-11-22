@@ -93,6 +93,39 @@ terraform apply
 
 > ⚠️ `terraform apply -refresh=false` は state を古いままにし image 乖離を再発させるため使用しない。
 
+#### 4. log-based メトリクスを変えた apply で、アラートポリシーだけ失敗する (SPR-409)
+
+log-based メトリクス（`google_logging_metric`）の変更が Cloud Monitoring に反映されるまで、時間がかかる
+（エラー本文では最大 10 分）。Terraform は `depends_on` でメトリクスの作成・更新の完了は待つが、反映は待たない。
+同じ apply でそのメトリクスを見るアラートポリシーを作る・変えると、次のどちらかで失敗する。
+
+| 同じ apply でやったこと | エラー |
+|---|---|
+| メトリクスの新規作成 + それを見るアラートの新規作成 | `Error 404: Cannot find metric(s) that match type = "logging.googleapis.com/user/..."` |
+| メトリクスのフィルタの書き換え + それを見るアラートの `resource.type` の変更 | `Error 400: ... not a valid combination of metric and monitored resource descriptors` |
+
+失敗すると、メトリクスだけ変わってアラートが古い（または無い）状態で止まる。その間、その監視は通知されない。
+
+**復旧**（数分待ってから）:
+
+1. GitHub Actions の Terraform ワークフローを、`main` で `workflow_dispatch` して plan を取り直す。
+   **失敗したジョブの再実行では直らない**（保存済みの plan が古くなっているため）。
+2. 取り直した plan を確かめて、もう一度承認する。
+
+**先に避ける**: メトリクスの変更と、それを見るアラートの変更を、別の PR（別の apply）に分ける。
+フィルタを書き換える場合は、新旧両方のリソースに一致するフィルタ（`A OR B`）を先に入れてから、アラートを切り替える。
+
+**反映されたかの確認**（アラート側の PR を出す前に）: Monitoring API のメトリクス記述子の `monitoredResourceTypes` に、
+アラートが使う `resource.type` が入っているかを見る。
+
+```bash
+curl -s -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+  "https://monitoring.googleapis.com/v3/projects/suzumina-click/metricDescriptors/logging.googleapis.com/user/<メトリクス名>"
+```
+
+apply の結果は、スケジューラやメトリクスなど一部のリソースだけを見て判断しない。**ワークフローの run の結論（成功・失敗）を先に見る**
+（一部だけ反映されて止まっていることがある）。
+
 ### 初回 apply / 災害復旧（サービス未作成）
 
 Cloud Run サービスがまだ存在しない状態では上記 data source が読めず `plan` が失敗する。
