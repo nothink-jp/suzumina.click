@@ -19,13 +19,6 @@ vi.mock("../../infrastructure/management/config-manager", () => ({
 	})),
 }));
 
-vi.mock("../../infrastructure/management/user-agent-manager", () => ({
-	generateDLsiteHeaders: vi.fn(() => ({
-		"User-Agent": "Mozilla/5.0 (Test)",
-		"Accept-Language": "ja-JP,ja;q=0.9",
-	})),
-}));
-
 vi.mock("../../shared/logger", () => ({
 	info: vi.fn(),
 	debug: vi.fn(),
@@ -74,10 +67,11 @@ describe("DLsite AJAX Fetcher", () => {
 			expect(mockFetch).toHaveBeenCalledWith(
 				"https://www.dlsite.com/maniax/fsr/ajax/=/keyword_creater/%22%E6%B6%BC%E8%8A%B1%E3%81%BF%E3%81%AA%E3%81%9B%22/order/release/per_page/100/",
 				expect.objectContaining({
-					headers: expect.objectContaining({
-						accept: "application/json",
-						"Content-Type": "application/json",
-					}),
+					// 取得元を名乗る UA と Accept の 2 つだけ（ブラウザを装うヘッダを足さない＝SPR-360）
+					headers: {
+						"User-Agent": "suzumina.click-fetcher/1.0 (+https://suzumina.click)",
+						Accept: "application/json",
+					},
 					method: "GET",
 				}),
 			);
