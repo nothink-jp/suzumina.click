@@ -90,7 +90,11 @@ const nextConfig = {
 			},
 		],
 		// LCPを改善する画像の最適化
-		minimumCacheTTL: 60 * 60 * 24 * 7, // 7日間キャッシュ
+		minimumCacheTTL: 60 * 60 * 24 * 7, // 7日間キャッシュ（再検証までの期間。ファイルを消す条件ではない）
+		// 変換済み画像の .next/cache/images の上限（LRU で古いものから消える）。
+		// 未設定だと statfs の空き容量の 50% になり、Cloud Run ではファイルシステムがメモリなので
+		// ユニーク URL の総当たりでメモリの半分まで育って OOM する（SPR-436）。
+		maximumDiskCacheSize: 128 * 1024 * 1024,
 		dangerouslyAllowSVG: true,
 		contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
 	},
