@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { checkDockerfile, checkWorkflow, readCanonicalVersion } from "../lint-node-version.mjs";
+import {
+	checkDockerfile,
+	checkDockerfilePnpm,
+	checkWorkflow,
+	readCanonicalPnpmVersion,
+	readCanonicalVersion,
+} from "../lint-node-version.mjs";
 
 describe("readCanonicalVersion", () => {
 	it("devEngines.runtime.version を返す", () => {
@@ -44,6 +50,54 @@ describe("checkDockerfile", () => {
 
 	it("FROM node: が無いのは不一致として扱う", () => {
 		assert.equal(checkDockerfile("apps/web/Dockerfile", "FROM alpine:3\n", "24.22.1").length, 1);
+	});
+});
+
+describe("readCanonicalPnpmVersion", () => {
+	it("packageManager の pnpm@x.y.z を返す（+sha512 は捨てる）", () => {
+		assert.equal(
+			readCanonicalPnpmVersion({ packageManager: "pnpm@12.16.1+sha512.abc" }),
+			"12.16.1",
+		);
+		assert.equal(readCanonicalPnpmVersion({ packageManager: "pnpm@12.16.1" }), "12.16.1");
+	});
+
+	it("無い・pnpm でない・x.y.z でないときは throw する（fail-closed）", () => {
+		assert.throws(() => readCanonicalPnpmVersion({}));
+		assert.throws(() => readCanonicalPnpmVersion({ packageManager: "yarn@4.0.0" }));
+		assert.throws(() => readCanonicalPnpmVersion({ packageManager: "pnpm@12" }));
+	});
+});
+
+describe("checkDockerfilePnpm", () => {
+	const copy = (tag) => `COPY --from=ghcr.io/pnpm/pnpm:${tag} /opt/pnpm /opt/pnpm\n`;
+
+	it("正本と同じ版のタグなら通す", () => {
+		assert.deepEqual(
+			checkDockerfilePnpm("apps/web/Dockerfile", copy("12.16.1-alpine"), "12.16.1"),
+			[],
+		);
+	});
+
+	it("Dependabot がタグだけ上げた状態を弾く", () => {
+		assert.equal(
+			checkDockerfilePnpm("apps/web/Dockerfile", copy("12.17.0-alpine"), "12.16.1").length,
+			1,
+		);
+	});
+
+	it("major だけのタグ（中身が動く）も弾く", () => {
+		assert.equal(
+			checkDockerfilePnpm("apps/web/Dockerfile", copy("12-alpine"), "12.16.1").length,
+			1,
+		);
+	});
+
+	it("公式イメージからのコピーが無いのは不一致として扱う（corepack に戻した等）", () => {
+		assert.equal(
+			checkDockerfilePnpm("apps/web/Dockerfile", "RUN corepack enable pnpm\n", "12.16.1").length,
+			1,
+		);
 	});
 });
 

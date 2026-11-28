@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { rm, stat } from "node:fs/promises";
+import { readFile, rm, stat } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { build, context } from "esbuild";
@@ -8,6 +8,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = resolve(__dirname, "..");
 const outdir = resolve(projectRoot, "lib");
 const watch = process.argv.includes("--watch");
+
+// esbuild の target は Node の版の正本（ルート package.json の devEngines.runtime.version）の major から導く。
+// ここに版を書くと、正本を上げたときに lint:node-version にも掛からず黙ってずれる（SPR-405 / SPR-422）。
+const rootPackage = JSON.parse(await readFile(resolve(projectRoot, "../../package.json"), "utf8"));
+const nodeMajor = rootPackage.devEngines.runtime.version.split(".")[0];
 
 await rm(outdir, { recursive: true, force: true });
 
@@ -22,7 +27,7 @@ const buildOptions = {
 	outdir,
 	bundle: true,
 	platform: "node",
-	target: "node24",
+	target: `node${nodeMajor}`,
 	format: "cjs",
 	sourcemap: true,
 	minify: !watch,

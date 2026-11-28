@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Node の版の写しが正本とずれていないかを弾く（SPR-405）。
+ * Node と pnpm の版の写しが正本とずれていないかを弾く（Node: SPR-405 / pnpm: SPR-422）。
  *
  * 正本はルート package.json の `devEngines.runtime.version`。pnpm（`onFail: "download"` で
  * セッション環境にも同じ版を入れる）・CI の pnpm/setup・setup-node の `node-version-file` はここを直接読む。
@@ -11,6 +11,10 @@
  *   - workflows と composite action（`.github/workflows/*.yml` / `.github/actions/<name>/action.yml`）: 版は正本から
  *     導く（deploy-functions.yml の `--runtime` 等。setup-pnpm は CI の Node の入口）。リテラルの版を書き戻すと
  *     drift の入口になるので、`--runtime nodejs<数字>` と `node-version: <数字>` を禁止する
+ *
+ * pnpm の版の正本はルート package.json の `packageManager`（`pnpm@x.y.z+sha512...`）。Dockerfile は
+ * `COPY --from=ghcr.io/pnpm/pnpm:<ver>-alpine` で公式イメージからバイナリをコピーする（Node 25 以降は corepack が
+ * 同梱されないため。pnpm 公式の Docker の手順）。このタグも写しなので、正本と完全一致を要求する。
  *
  * Dependabot docker の PR は Dockerfile だけを上げるので、ここで落ちる＝正本を揃えてからマージする合図。
  */
@@ -55,6 +59,39 @@ export function checkDockerfile(path, dockerfile, canonical) {
 }
 
 /**
+ * @param {unknown} pkg ルート package.json をパースしたもの
+ * @returns {string} pnpm の正本の版（`packageManager` の `pnpm@x.y.z` 部分）。読めなければ throw（fail-closed）
+ */
+export function readCanonicalPnpmVersion(pkg) {
+	const match = /^pnpm@(\d+\.\d+\.\d+)(?:\+.+)?$/.exec(String(pkg?.packageManager ?? ""));
+	if (!match) {
+		throw new Error(
+			`package.json の packageManager が pnpm@x.y.z ではありません: ${JSON.stringify(pkg?.packageManager)}`,
+		);
+	}
+	return match[1];
+}
+
+/**
+ * @param {string} path リポジトリルートからの相対パス（メッセージ用）
+ * @param {string} dockerfile Dockerfile の本文
+ * @param {string} canonical pnpm の正本の版
+ * @returns {string[]} 不一致の説明。公式イメージからのコピーが 1 つも無いのも不一致として扱う
+ */
+export function checkDockerfilePnpm(path, dockerfile, canonical) {
+	const tags = [...dockerfile.matchAll(/^COPY\s+--from=ghcr\.io\/pnpm\/pnpm:(\S+)/gim)].map(
+		(m) => m[1],
+	);
+	if (tags.length === 0) return [`${path} に COPY --from=ghcr.io/pnpm/pnpm:<ver> が見つかりません`];
+	return tags
+		.filter((tag) => tag.split("-")[0] !== canonical)
+		.map(
+			(tag) =>
+				`${path}: COPY --from=ghcr.io/pnpm/pnpm:${tag} が pnpm の正本 ${canonical} と一致しません`,
+		);
+}
+
+/**
  * @param {string} path リポジトリルートからの相対パス（メッセージ用）
  * @param {string} body workflow / action.yml の本文
  * @returns {string[]} リテラルの版を書いている行
@@ -84,21 +121,27 @@ function listWorkflowFiles() {
 }
 
 function main() {
-	const canonical = readCanonicalVersion(
-		JSON.parse(readFileSync(join(repoRoot, "package.json"), "utf8")),
-	);
-	const errors = DOCKERFILES.flatMap((path) =>
-		checkDockerfile(path, readFileSync(join(repoRoot, path), "utf8"), canonical),
-	);
+	const pkg = JSON.parse(readFileSync(join(repoRoot, "package.json"), "utf8"));
+	const canonical = readCanonicalVersion(pkg);
+	const canonicalPnpm = readCanonicalPnpmVersion(pkg);
+	const errors = DOCKERFILES.flatMap((path) => {
+		const body = readFileSync(join(repoRoot, path), "utf8");
+		return [
+			...checkDockerfile(path, body, canonical),
+			...checkDockerfilePnpm(path, body, canonicalPnpm),
+		];
+	});
 	for (const path of listWorkflowFiles()) {
 		errors.push(...checkWorkflow(path, readFileSync(join(repoRoot, path), "utf8")));
 	}
 	if (errors.length > 0) {
-		console.error("Node の版が正本（package.json の devEngines.runtime.version）とずれています:");
+		console.error(
+			"Node / pnpm の版が正本（package.json の devEngines.runtime.version / packageManager）とずれています:",
+		);
 		for (const e of errors) console.error(`  - ${e}`);
 		process.exit(1);
 	}
-	console.log(`lint:node-version: OK（正本 ${canonical}）`);
+	console.log(`lint:node-version: OK（正本 Node ${canonical} / pnpm ${canonicalPnpm}）`);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) main();

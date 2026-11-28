@@ -8,7 +8,7 @@
 
 # Node の版の正本はルート package.json の devEngines.runtime.version。ここは写しで、
 # 一致は pnpm lint:node-version が強制する（apps/web/Dockerfile と同じ扱い＝SPR-405）。
-FROM node:24.22.3-alpine AS base
+FROM node:26.13.1-alpine AS base
 # base image は patch まで pin しているので中身が凍結される。次の bump までに出る Alpine 側の修正を拾う
 RUN apk upgrade --no-cache && apk add --no-cache tini
 
@@ -20,15 +20,13 @@ WORKDIR /app
 
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-# pnpm の版の正本はルート package.json の packageManager。corepack install はそれを入れる。
-# 初回起動時のバイナリ取得は 30 秒で打ち切られて再試行しないので、ここで再試行付きで取りきる（web と同じ）
+# pnpm は公式イメージから自己完結バイナリをコピーする（pnpm 公式の Docker の手順。Node 25 以降は corepack が同梱されない）。
+# 版の正本はルート package.json の packageManager で、このタグはその写し。一致は pnpm lint:node-version が強制する
+# （apps/web/Dockerfile と同じ扱い＝SPR-422）。base の C ライブラリに合わせて -alpine（musl）を使う。
+COPY --from=ghcr.io/pnpm/pnpm:12.16.1-alpine /opt/pnpm /opt/pnpm
+RUN for bin in pnpm pn pnpx pnx; do ln -s "/opt/pnpm/$bin" "/usr/local/bin/$bin"; done \
+    && pnpm --version
 COPY package.json ./
-RUN corepack enable pnpm && corepack install \
-    && for attempt in 1 2 3; do \
-         pnpm --version && break; \
-         [ "$attempt" = 3 ] && exit 1; \
-         sleep 5; \
-       done
 
 # 依存の解決に要るものだけを先に入れる（ソースの変更で install のレイヤーを捨てないため）
 COPY pnpm-lock.yaml pnpm-workspace.yaml ./
