@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+	checkBiomeSchema,
 	checkDockerfile,
 	checkDockerfilePnpm,
 	checkPackageJsonPnpmCopies,
 	checkWorkflow,
+	readCanonicalBiomeVersion,
 	readCanonicalPnpmVersion,
 	readCanonicalVersion,
 } from "../lint-node-version.mjs";
@@ -131,6 +133,39 @@ describe("checkPackageJsonPnpmCopies", () => {
 	it("写しの欠落は不一致として扱う", () => {
 		assert.equal(checkPackageJsonPnpmCopies(pkg(undefined, "12.16.1"), "12.16.1").length, 1);
 		assert.equal(checkPackageJsonPnpmCopies({}, "12.16.1").length, 2);
+	});
+});
+
+describe("readCanonicalBiomeVersion", () => {
+	it("devDependencies の x.y.z を返す", () => {
+		assert.equal(
+			readCanonicalBiomeVersion({ devDependencies: { "@biomejs/biome": "2.6.8" } }),
+			"2.6.8",
+		);
+	});
+
+	it("範囲指定・欠落は throw する（fail-closed）", () => {
+		assert.throws(() =>
+			readCanonicalBiomeVersion({ devDependencies: { "@biomejs/biome": "^2.6.8" } }),
+		);
+		assert.throws(() => readCanonicalBiomeVersion({}));
+	});
+});
+
+describe("checkBiomeSchema", () => {
+	const biome = (ver) =>
+		`{\n\t"$schema": "https://biomejs.dev/schemas/${ver}/schema.json",\n\t"vcs": {}\n}\n`;
+
+	it("正本と同じ版なら通す", () => {
+		assert.deepEqual(checkBiomeSchema("biome.json", biome("2.6.8"), "2.6.8"), []);
+	});
+
+	it("Dependabot が package.json だけ上げた状態を弾く", () => {
+		assert.equal(checkBiomeSchema("biome.json", biome("2.6.4"), "2.6.8").length, 1);
+	});
+
+	it("$schema が無いのは不一致として扱う", () => {
+		assert.equal(checkBiomeSchema("biome.json", '{ "extends": "//" }', "2.6.8").length, 1);
 	});
 });
 
