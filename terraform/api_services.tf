@@ -100,3 +100,12 @@ resource "google_project_service" "searchconsole" {
   service            = "searchconsole.googleapis.com"
   disable_on_destroy = false # 無効化すると検索流入の観測経路が失われるため
 }
+
+# Vertex AI API を有効化（Gemini を GCP の請求で呼ぶ。SPR-434 の配信アーカイブの概要生成）
+# AI Studio の API キー（generativelanguage.googleapis.com）は課金が GCP と別のため、新しい用途は Vertex AI に寄せる。
+# 有効化だけでは誰も呼べない。呼ぶ主体には roles/aiplatform.user を別途付ける（claude-readonly@ には付けない）。
+resource "google_project_service" "aiplatform" {
+  project            = var.gcp_project_id
+  service            = "aiplatform.googleapis.com"
+  disable_on_destroy = false # 無効化すると概要生成の経路が止まるため
+}
