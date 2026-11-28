@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
- * Node と pnpm の版の写しが正本とずれていないかを弾く（Node: SPR-405 / pnpm: SPR-422）。
+ * Node・pnpm・Biome の版の写しが正本とずれていないかを弾く（Node: SPR-405 / pnpm: SPR-422）。
+ * Biome はツール名に合わないが、CI の Repo Lint が実行するのがこのスクリプトなので同居させる。
  *
  * 正本はルート package.json の `devEngines.runtime.version`。pnpm（`onFail: "download"` で
  * セッション環境にも同じ版を入れる）・CI の pnpm/setup・setup-node の `node-version-file` はここを直接読む。
@@ -18,6 +19,10 @@
  * 同じ package.json の `engines.pnpm`（deploy-functions.yml が Cloud Functions の buildpack に渡す pnpm の版）と
  * `devEngines.packageManager.version` も写しなので、正本と完全一致を要求する（欠落も不一致）。
  *
+ * Biome の版の正本はルート package.json の `devDependencies["@biomejs/biome"]`（x.y.z の固定）。ルート `biome.json` の
+ * `$schema`（`https://biomejs.dev/schemas/<ver>/schema.json`）は写しで、Dependabot は package.json だけを上げるため
+ * ずれると CLI が schema 不一致を警告する。正本と完全一致を要求する（揃えるのは `pnpm exec biome migrate --write`）。
+ *
  * Dependabot docker の PR は Dockerfile だけを上げるので、ここで落ちる＝正本を揃えてからマージする合図。
  */
 import { existsSync, readdirSync, readFileSync } from "node:fs";
@@ -26,6 +31,7 @@ import { fileURLToPath } from "node:url";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const DOCKERFILES = ["apps/web/Dockerfile", "apps/functions/Dockerfile"];
+const BIOME_JSON = "biome.json";
 const WORKFLOWS_DIR = ".github/workflows";
 const ACTIONS_DIR = ".github/actions";
 
@@ -108,10 +114,42 @@ const PACKAGE_JSON_PNPM_COPIES = [
  * @returns {string[]} 不一致の説明。範囲指定（`^12.16.1` 等）や欠落も不一致として扱う
  */
 export function checkPackageJsonPnpmCopies(pkg, canonical) {
-	return PACKAGE_JSON_PNPM_COPIES.filter(({ read }) => read(pkg) !== canonical).map(
-		({ path, read }) =>
-			`package.json の ${path}（${JSON.stringify(read(pkg))}）が pnpm の正本 ${canonical} と一致しません`,
+	return PACKAGE_JSON_PNPM_COPIES.map(({ path, read }) => ({ path, actual: read(pkg) }))
+		.filter(({ actual }) => actual !== canonical)
+		.map(
+			({ path, actual }) =>
+				`package.json の ${path}（${JSON.stringify(actual)}）が pnpm の正本 ${canonical} と一致しません`,
+		);
+}
+
+/**
+ * @param {unknown} pkg ルート package.json をパースしたもの
+ * @returns {string} Biome の正本の版（`devDependencies["@biomejs/biome"]`）。x.y.z の固定でなければ throw（fail-closed）
+ */
+export function readCanonicalBiomeVersion(pkg) {
+	const version = pkg?.devDependencies?.["@biomejs/biome"];
+	if (typeof version !== "string" || !/^\d+\.\d+\.\d+$/.test(version)) {
+		throw new Error(
+			`package.json の devDependencies["@biomejs/biome"] が x.y.z ではありません: ${JSON.stringify(version)}`,
+		);
+	}
+	return version;
+}
+
+/**
+ * @param {string} path リポジトリルートからの相対パス（メッセージ用）
+ * @param {string} biomeJson biome.json の本文（JSONC の可能性があるのでパースせずに読む）
+ * @param {string} canonical Biome の正本の版
+ * @returns {string[]} 不一致の説明。`$schema` が無いのも不一致として扱う
+ */
+export function checkBiomeSchema(path, biomeJson, canonical) {
+	const match = /"\$schema"\s*:\s*"https:\/\/biomejs\.dev\/schemas\/([^/"]+)\/schema\.json"/.exec(
+		biomeJson,
 	);
+	if (!match)
+		return [`${path} に $schema（https://biomejs.dev/schemas/<ver>/schema.json）が見つかりません`];
+	if (match[1] === canonical) return [];
+	return [`${path}: $schema の版 ${match[1]} が Biome の正本 ${canonical} と一致しません`];
 }
 
 /**
@@ -147,7 +185,15 @@ function main() {
 	const pkg = JSON.parse(readFileSync(join(repoRoot, "package.json"), "utf8"));
 	const canonical = readCanonicalVersion(pkg);
 	const canonicalPnpm = readCanonicalPnpmVersion(pkg);
-	const errors = checkPackageJsonPnpmCopies(pkg, canonicalPnpm);
+	const canonicalBiome = readCanonicalBiomeVersion(pkg);
+	const errors = [
+		...checkPackageJsonPnpmCopies(pkg, canonicalPnpm),
+		...checkBiomeSchema(
+			BIOME_JSON,
+			readFileSync(join(repoRoot, BIOME_JSON), "utf8"),
+			canonicalBiome,
+		),
+	];
 	for (const path of DOCKERFILES) {
 		const body = readFileSync(join(repoRoot, path), "utf8");
 		errors.push(
@@ -160,12 +206,14 @@ function main() {
 	}
 	if (errors.length > 0) {
 		console.error(
-			"Node / pnpm の版が正本（package.json の devEngines.runtime.version / packageManager）とずれています:",
+			"Node / pnpm / Biome の版が正本（package.json の devEngines.runtime.version / packageManager / devDependencies）とずれています:",
 		);
 		for (const e of errors) console.error(`  - ${e}`);
 		process.exit(1);
 	}
-	console.log(`lint:node-version: OK（正本 Node ${canonical} / pnpm ${canonicalPnpm}）`);
+	console.log(
+		`lint:node-version: OK（正本 Node ${canonical} / pnpm ${canonicalPnpm} / Biome ${canonicalBiome}）`,
+	);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) main();
