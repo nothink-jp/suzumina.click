@@ -21,16 +21,14 @@ WORKDIR /app
 
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-# pnpm の版の正本はルート package.json の packageManager（sha512 付き）。corepack install はそれを入れる。
-# pnpm 12 は corepack 経由だと初回起動時にネイティブバイナリを自前で取得し、そのメタデータ取得は
-# 30 秒で打ち切られて再試行しない。ここで起動して再試行付きで取りきり、後段の pnpm 実行で落ちないようにする
+# pnpm は公式イメージから自己完結バイナリをコピーする（pnpm 公式の Docker の手順。Node 25 以降は corepack が同梱されない）。
+# ビルド中にバイナリを取りに行かないので、corepack 時代の「初回起動の取得が 30 秒で打ち切られる」問題も起きない。
+# 版の正本はルート package.json の packageManager で、このタグはその写し。一致は pnpm lint:node-version が強制する
+# （apps/functions/Dockerfile と同じ扱い＝SPR-422）。base の C ライブラリに合わせて -alpine（musl）を使う。
+COPY --from=ghcr.io/pnpm/pnpm:12.16.1-alpine /opt/pnpm /opt/pnpm
+RUN for bin in pnpm pn pnpx pnx; do ln -s "/opt/pnpm/$bin" "/usr/local/bin/$bin"; done \
+    && pnpm --version
 COPY package.json ./
-RUN corepack enable pnpm && corepack install \
-    && for attempt in 1 2 3; do \
-         pnpm --version && break; \
-         [ "$attempt" = 3 ] && exit 1; \
-         sleep 5; \
-       done
 
 # Install dependencies only when needed
 FROM pnpm AS deps

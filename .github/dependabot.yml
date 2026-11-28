@@ -78,6 +78,8 @@ updates:
   # Node の版の正本はルート package.json の devEngines.runtime.version で、Dockerfile はその写し（SPR-405）。
   # Dependabot が書き換えるのは Dockerfile だけなので、この PR は lint:node-version で必ず落ちる。
   # それが「新しい版が出た」合図で、正本を同じ版に上げて pnpm install（lockfile の node も更新）してからマージする。
+  # pnpm も同じ扱い: Dockerfile の `COPY --from=ghcr.io/pnpm/pnpm:<ver>-alpine` は packageManager の写しで、
+  # lint:node-version が一致を見る（Node 25 以降は corepack が無いため、公式イメージからバイナリをコピーする＝SPR-422）。
   - package-ecosystem: "docker"
     directories:
       - "/apps/web"
