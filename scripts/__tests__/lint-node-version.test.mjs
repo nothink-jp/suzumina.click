@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
 	checkDockerfile,
 	checkDockerfilePnpm,
+	checkPackageJsonPnpmCopies,
 	checkWorkflow,
 	readCanonicalPnpmVersion,
 	readCanonicalVersion,
@@ -98,6 +99,38 @@ describe("checkDockerfilePnpm", () => {
 			checkDockerfilePnpm("apps/web/Dockerfile", "RUN corepack enable pnpm\n", "12.16.1").length,
 			1,
 		);
+	});
+});
+
+describe("checkPackageJsonPnpmCopies", () => {
+	const pkg = (engines, devVersion) => ({
+		engines: engines === undefined ? undefined : { pnpm: engines },
+		devEngines: { packageManager: { name: "pnpm", version: devVersion } },
+	});
+
+	it("両方の写しが正本と一致すれば通す", () => {
+		assert.deepEqual(checkPackageJsonPnpmCopies(pkg("12.16.1", "12.16.1"), "12.16.1"), []);
+	});
+
+	it("packageManager だけ上げて engines.pnpm が古いままなのを弾く（buildpack が古い版になる）", () => {
+		const errors = checkPackageJsonPnpmCopies(pkg("12.16.1", "12.17.0"), "12.17.0");
+		assert.equal(errors.length, 1);
+		assert.match(errors[0], /engines\.pnpm/);
+	});
+
+	it("devEngines.packageManager.version のずれも弾く", () => {
+		const errors = checkPackageJsonPnpmCopies(pkg("12.17.0", "12.16.1"), "12.17.0");
+		assert.equal(errors.length, 1);
+		assert.match(errors[0], /devEngines\.packageManager\.version/);
+	});
+
+	it("範囲指定は完全一致ではないので弾く", () => {
+		assert.equal(checkPackageJsonPnpmCopies(pkg("^12.16.1", "12.16.1"), "12.16.1").length, 1);
+	});
+
+	it("写しの欠落は不一致として扱う", () => {
+		assert.equal(checkPackageJsonPnpmCopies(pkg(undefined, "12.16.1"), "12.16.1").length, 1);
+		assert.equal(checkPackageJsonPnpmCopies({}, "12.16.1").length, 2);
 	});
 });
 

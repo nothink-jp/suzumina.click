@@ -15,6 +15,8 @@
  * pnpm の版の正本はルート package.json の `packageManager`（`pnpm@x.y.z+sha512...`）。Dockerfile は
  * `COPY --from=ghcr.io/pnpm/pnpm:<ver>-alpine` で公式イメージからバイナリをコピーする（Node 25 以降は corepack が
  * 同梱されないため。pnpm 公式の Docker の手順）。このタグも写しなので、正本と完全一致を要求する。
+ * 同じ package.json の `engines.pnpm`（deploy-functions.yml が Cloud Functions の buildpack に渡す pnpm の版）と
+ * `devEngines.packageManager.version` も写しなので、正本と完全一致を要求する（欠落も不一致）。
  *
  * Dependabot docker の PR は Dockerfile だけを上げるので、ここで落ちる＝正本を揃えてからマージする合図。
  */
@@ -91,6 +93,27 @@ export function checkDockerfilePnpm(path, dockerfile, canonical) {
 		);
 }
 
+/** package.json 内の pnpm の版の写し（パスはメッセージ用） */
+const PACKAGE_JSON_PNPM_COPIES = [
+	{ path: "engines.pnpm", read: (pkg) => pkg?.engines?.pnpm },
+	{
+		path: "devEngines.packageManager.version",
+		read: (pkg) => pkg?.devEngines?.packageManager?.version,
+	},
+];
+
+/**
+ * @param {unknown} pkg ルート package.json をパースしたもの
+ * @param {string} canonical pnpm の正本の版
+ * @returns {string[]} 不一致の説明。範囲指定（`^12.16.1` 等）や欠落も不一致として扱う
+ */
+export function checkPackageJsonPnpmCopies(pkg, canonical) {
+	return PACKAGE_JSON_PNPM_COPIES.filter(({ read }) => read(pkg) !== canonical).map(
+		({ path, read }) =>
+			`package.json の ${path}（${JSON.stringify(read(pkg))}）が pnpm の正本 ${canonical} と一致しません`,
+	);
+}
+
 /**
  * @param {string} path リポジトリルートからの相対パス（メッセージ用）
  * @param {string} body workflow / action.yml の本文
@@ -124,13 +147,14 @@ function main() {
 	const pkg = JSON.parse(readFileSync(join(repoRoot, "package.json"), "utf8"));
 	const canonical = readCanonicalVersion(pkg);
 	const canonicalPnpm = readCanonicalPnpmVersion(pkg);
-	const errors = DOCKERFILES.flatMap((path) => {
+	const errors = checkPackageJsonPnpmCopies(pkg, canonicalPnpm);
+	for (const path of DOCKERFILES) {
 		const body = readFileSync(join(repoRoot, path), "utf8");
-		return [
+		errors.push(
 			...checkDockerfile(path, body, canonical),
 			...checkDockerfilePnpm(path, body, canonicalPnpm),
-		];
-	});
+		);
+	}
 	for (const path of listWorkflowFiles()) {
 		errors.push(...checkWorkflow(path, readFileSync(join(repoRoot, path), "utf8")));
 	}
